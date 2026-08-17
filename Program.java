@@ -10,6 +10,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 import java.util.function.*;
+import java.io.*;
 import java.nio.*;
 import java.nio.file.*;
 
@@ -154,14 +155,14 @@ public class Program extends Test                                               
   boolean  sourceBit()          {return program().    sourceBit;}
   boolean  targetBit()          {return program().    targetBit;}
 
-  int      currentPc(int V)     {return program().     currentPc = V;}
-  int    sourceIntId(int V)     {return program().   sourceIntId = V;}
-  int   source2IntId(int V)     {return program().  source2IntId = V;}
-  int    targetIntId(int V)     {return program().   targetIntId = V;}
+  int      currentPc(int V)     {return program().    currentPc = V;}
+  int    sourceIntId(int V)     {return program().  sourceIntId = V;}
+  int   source2IntId(int V)     {return program(). source2IntId = V;}
+  int    targetIntId(int V)     {return program().  targetIntId = V;}
   int    sourceBitId(int V)     {return program().  sourceBitId = V;}
   int    targetBitId(int V)     {return program().  targetBitId = V;}
-  int      sourceInt(int V)     {return program().     sourceInt = V;}
-  int     source2Int(int V)     {return program().    source2Int = V;}
+  int      sourceInt(int V)     {return program().    sourceInt = V;}
+  int     source2Int(int V)     {return program().   source2Int = V;}
   boolean  sourceBit(boolean V) {return program().    sourceBit = V;}
   int      targetInt(int V)     {targetIntValid(true); return program().targetInt  = V;}
   boolean  targetBit(boolean V) {targetBitValid(true); return program().targetBit = V;}
@@ -1460,18 +1461,18 @@ endmodule
     .writeBitIndex   ({n}_writeBitIndex  ),                                                                             // Write boolean address
     .writeInt        ({n}_writeInt       ),                                                                             // Write data
     .writeBit        ({n}_writeBit       ),                                                                             // Write data
-    .read1IntIndex    ({n}_read1IntIndex   ),                                                                           // Read first integer address
-    .read2IntIndex    ({n}_read2IntIndex   ),                                                                           // Read second integer address
-    .read3IntIndex    ({n}_read3IntIndex   ),                                                                           // Read second integer address
-    .read1BitIndex    ({n}_read1BitIndex   ),                                                                           // Read first boolean address
-    .read2BitIndex    ({n}_read2BitIndex   ),                                                                           // Read second boolean address
-    .read3BitIndex    ({n}_read3BitIndex   ),                                                                           // Read second boolean address
-    .read1Int         ({n}_read1Int        ),                                                                           // First integer data read
-    .read2Int         ({n}_read2Int        ),                                                                           // Second integer data read
-    .read3Int         ({n}_read3Int        ),                                                                           // Third integer data read
-    .read1Bit         ({n}_read1Bit        ),                                                                           // First  boolean data read
-    .read2Bit         ({n}_read2Bit        ),                                                                           // Second boolean data read
-    .read3Bit         ({n}_read3Bit        ));                                                                          // Third boolean data read
+    .read1IntIndex   ({n}_read1IntIndex  ),                                                                             // Read first integer address
+    .read2IntIndex   ({n}_read2IntIndex  ),                                                                             // Read second integer address
+    .read3IntIndex   ({n}_read3IntIndex  ),                                                                             // Read second integer address
+    .read1BitIndex   ({n}_read1BitIndex  ),                                                                             // Read first boolean address
+    .read2BitIndex   ({n}_read2BitIndex  ),                                                                             // Read second boolean address
+    .read3BitIndex   ({n}_read3BitIndex  ),                                                                             // Read second boolean address
+    .read1Int        ({n}_read1Int       ),                                                                             // First integer data read
+    .read2Int        ({n}_read2Int       ),                                                                             // Second integer data read
+    .read3Int        ({n}_read3Int       ),                                                                             // Third integer data read
+    .read1Bit        ({n}_read1Bit       ),                                                                             // First  boolean data read
+    .read2Bit        ({n}_read2Bit       ),                                                                             // Second boolean data read
+    .read3Bit        ({n}_read3Bit       ));                                                                            // Third boolean data read
 """, "moduleName", m(), "n", n(), "name", name());
      }
 
@@ -1886,6 +1887,21 @@ cd {f}; yosys -q {y}                                                            
     final int       execSteps = steps;                                                                                  // Number of execution steps
     final int        codeSize = codeSize();                                                                             // Original uncompressed code size
     final int instructionSets;                                                                                          // Number of instruction equivalence classes
+    final BufferedWriter  out;                                                                                          // Write verilog to the file represented by this writer
+    final String     traceFile = traceFiles.v();                                                                        // Trace file name relative to Verilog code
+    final String      codeFile = verilogTestFolder.v$();                                                                // Code file
+    final String        indent = " ".repeat(6);                                                                         // Indentation for verilog code
+    final int       sizeMemory = unitMemory != null ? unitMemory.size() : 0;                                            // Size of memory
+    final int     numberOfInts = nextIntId;                                                                             // Number of integers needed
+    final int     numberOfBits = nextBitId;                                                                             // Number of booleans needed
+    final String dimensionInts = ""+(nextIntId-1);                                                                      // Number of integers needed
+    final String dimensionBits = ""+(nextBitId-1);                                                                      // Number of booleans needed
+    final InstructionMatches instructionMatches = new InstructionMatches();                                             // Mapping from instructions to blocks of matching instructions
+
+    void put(final String Verilog)                                                                                      // Write some verilog
+     {try {out.write(Verilog);}
+      catch(Exception e) {say("Unable to write to file:", codeFile, e, fullTraceBack(e));}
+     }
 
     String message()                                                                                                    // Message describing statistics
      {return f("%s:  %30s  %,9d execution,  %3d after,  %,9d before, %7.4f percent",
@@ -1916,18 +1932,7 @@ cd {f}; yosys -q {y}                                                            
      }
 
     GenerateVerilog ()                                                                                                  // Generate the Verilog corresponding to the java code
-     {final String          name = testName();                                                                          // Name of program
-      final String     traceFile = traceFiles.v();                                                                      // Trace file name relative to Verilog code
-      final String      codeFile = verilogTestFolder.v$();                                                              // Code file
-      final String        indent = " ".repeat(6);                                                                       // Indentation for verilog code
-      final int       sizeMemory = unitMemory != null ? unitMemory.size() : 0;                                          // Size of memory
-      final int     numberOfInts = nextIntId;                                                                           // Number of integers needed
-      final int     numberOfBits = nextBitId;                                                                           // Number of booleans needed
-      final String dimensionInts = ""+(nextIntId-1);                                                                    // Number of integers needed
-      final String dimensionBits = ""+(nextBitId-1);                                                                    // Number of booleans needed
-      final InstructionMatches instructionMatches = new InstructionMatches();                                           // Mapping from instructions to blocks of matching instructions
-
-      int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
+     {int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
       intMemory = new Memory(numberOfInts, "Ints")                                                                      // Memory for integers
        {String dumpJava ()    {return "";}
@@ -1943,19 +1948,21 @@ cd {f}; yosys -q {y}                                                            
       pcConstantArray = verilogArrays().new Array("pcConstant", pcConstant());                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
       pcMatchSetArray = verilogArrays().new Array("pcMatchSet", instructionMatches.pcMatchSet());                       // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
 
-      try
-       (final var out = Files.newBufferedWriter(Path.of(codeFile)))                                                     // Write the verilog to a file
-       {/*Module*/out.write(substitute("""
+      try {out = Files.newBufferedWriter(Path.of(codeFile));}
+      catch(IOException e) {say("Unable to open file:", codeFile, e, fullTraceBack(e)); throw new UncheckedIOException(e);}
+
+      /*Module*/put(substitute("""
+`define integer reg[31:0]
 `ifdef SYNTHESIS
 module {name} (                                                                                                         // Bint machine - callable module for synthesis
 """, "name", name));
 
-        for(Int i : ints) if (i.in)  out.write("  input  wire[31:0] i_"+i.name+",\n");                                  // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
-        for(Int i : ints) if (i.out) out.write("  output reg [31:0] o_"+i.name+",\n");                                  // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
-        for(Bit b : bits) if (b.in)  out.write("  input  wire       i_"+b.name+",\n");                                  // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
-        for(Bit b : bits) if (b.out) out.write("  output reg        o_"+b.name+",\n");                                  // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
+      for(Int i : ints) if (i.in)  put("  input  wire[31:0] i_"+i.name+",\n");                                          // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
+      for(Int i : ints) if (i.out) put("  output reg [31:0] o_"+i.name+",\n");                                          // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
+      for(Bit b : bits) if (b.in)  put("  input  wire       i_"+b.name+",\n");                                          // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
+      for(Bit b : bits) if (b.out) put("  output reg        o_"+b.name+",\n");                                          // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
 
-        /*Parameters*/out.write(substitute("""
+      /*Parameters*/put(substitute("""
   input wire clock,                                                                                                     // Clock pin
   input wire reset);                                                                                                    // Reset pin
 `else
@@ -1963,7 +1970,7 @@ module {name};                                                                  
 `endif
 """, "name", name));
 
-        /*Execution State Variables*/out.write("""
+        /*Execution State Variables*/put("""
 `ifndef SYNTHESIS
   reg                 clock;                                                                                            // Program clock to drive instruction execution
   wire                reset;                                                                                            // Program reset
@@ -1982,46 +1989,46 @@ module {name};                                                                  
   integer        targetBit;                                                                                             // Computed target boolean value to be loaded into a variable
 """);
 
-        /*Declare integers*/if (numberOfInts > 0) out.write(substitute("""
+      /*Declare integers*/if (numberOfInts > 0) put(substitute("""
   integer                 i[{i}:0]; integer index_ints;                                                                 // Integers
   initial begin                                                                                                         // Clear integers and booleans in verilog
     for(index_ints = 0; index_ints <= {i}; index_ints = index_ints + 1) i[index_ints] = 0;
   end
 """, "i", dimensionInts));
 
-        /*Declare booleans*/if (numberOfBits > 0) out.write(substitute("""
+      /*Declare booleans*/if (numberOfBits > 0) put(substitute("""
   reg                     b[{b}:0]; integer index_bits;                                                                 // Booleans
   initial begin                                                                                                         // Clear integers and booleans in verilog
     for(index_bits = 0; index_bits <= {b}; index_bits = index_bits + 1) b[index_bits] = 0;
   end
 """, "b", dimensionBits));
 
-        for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.connectModule());                               // Connect to verilog array modules
+      for(VerilogArrays.Array a : verilogArrays.arrays()) put(a.connectModule());                                       // Connect to verilog array modules
 
-        for(Memory m : memories)                                                                                        // Control registers for each memory
-         {out.write("\n// Memory module: "+ m.n() + " "+m.name()+"\n");                                                 // Memory module title
-          out.write("  reg     "+ pName(m.      vRead1Bit())+";\n");                                                    // First boolean read from memory
-          out.write("  reg     "+ pName(m.      vRead2Bit())+";\n");                                                    // Second boolean read from memory
-          out.write("  reg     "+ pName(m.      vRead3Bit())+";\n");                                                    // Third boolean read from memory
-          out.write("  reg     "+ pName(m.      vWriteBit())+"; initial "+pName(m.       vWriteBit()) + "= 0;\n");      // Boolean to write into memory
-          out.write("  integer "+ pName(m.      vRead1Int())+";\n");                                                    // First integer read from memory
-          out.write("  integer "+ pName(m.      vRead2Int())+";\n");                                                    // Second integer read from memory
-          out.write("  integer "+ pName(m.      vRead3Int())+";\n");                                                    // Third integer read from memory
-          out.write("  integer "+ pName(m.      vWriteInt())+"; initial "+pName(m.      vWriteInt()) + "= 0;\n");       // Integer to write into memory
-          out.write("  integer "+ pName(m. vRead1IntIndex())+"; initial "+pName(m. vRead1IntIndex()) + "= 0;\n");       // Index at which to read first integer from memory
-          out.write("  integer "+ pName(m. vRead2IntIndex())+"; initial "+pName(m. vRead2IntIndex()) + "= 0;\n");       // Index at which to read second integer from memory
-          out.write("  integer "+ pName(m. vRead3IntIndex())+"; initial "+pName(m. vRead3IntIndex()) + "= 0;\n");       // Index at which to read third integer from memory
-          out.write("  integer "+ pName(m. vRead1BitIndex())+"; initial "+pName(m. vRead1BitIndex()) + "= 0;\n");       // Index within first integer from which to get a bit
-          out.write("  integer "+ pName(m. vRead2BitIndex())+"; initial "+pName(m. vRead2BitIndex()) + "= 0;\n");       // Index within second integer from which to get a bit
-          out.write("  integer "+ pName(m. vRead3BitIndex())+"; initial "+pName(m. vRead3BitIndex()) + "= 0;\n");       // Index within third integer from which to get a bit
-          out.write("  integer "+ pName(m. vWriteIntIndex())+"; initial "+pName(m. vWriteIntIndex()) + "= 0;\n");       // Index at which to write an integer into memory
-          out.write("  integer "+ pName(m. vWriteBitIndex())+"; initial "+pName(m. vWriteBitIndex()) + "= 0;\n");       // Index within an integer at which to set a bit to represent a boolean
-          out.write("  reg     "+ pName(m.vWriteIntEnable())+"; initial "+pName(m.vWriteIntEnable()) + "= 0;\n");       // Write enable when writing integer data into memory
-          out.write("  reg     "+ pName(m.vWriteBitEnable())+"; initial "+pName(m.vWriteBitEnable()) + "= 0;\n");       // Write enable when writing boolean data into memory
-          out.write("  "+ m.connectMemoryModule());                                                                     // Connect to memory module
-         }
+      for(Memory m : memories)                                                                                          // Control registers for each memory
+       {put("\n// Memory module: "+ m.n() + " "+m.name()+"\n");                                                         // Memory module title
+        put("  reg     "+ pName(m.      vRead1Bit())+";\n");                                                            // First boolean read from memory
+        put("  reg     "+ pName(m.      vRead2Bit())+";\n");                                                            // Second boolean read from memory
+        put("  reg     "+ pName(m.      vRead3Bit())+";\n");                                                            // Third boolean read from memory
+        put("  reg     "+ pName(m.      vWriteBit())+"; initial "+pName(m.       vWriteBit()) + "= 0;\n");              // Boolean to write into memory
+        put("  integer "+ pName(m.      vRead1Int())+";\n");                                                            // First integer read from memory
+        put("  integer "+ pName(m.      vRead2Int())+";\n");                                                            // Second integer read from memory
+        put("  integer "+ pName(m.      vRead3Int())+";\n");                                                            // Third integer read from memory
+        put("  integer "+ pName(m.      vWriteInt())+"; initial "+pName(m.      vWriteInt()) + "= 0;\n");               // Integer to write into memory
+        put("  integer "+ pName(m. vRead1IntIndex())+"; initial "+pName(m. vRead1IntIndex()) + "= 0;\n");               // Index at which to read first integer from memory
+        put("  integer "+ pName(m. vRead2IntIndex())+"; initial "+pName(m. vRead2IntIndex()) + "= 0;\n");               // Index at which to read second integer from memory
+        put("  integer "+ pName(m. vRead3IntIndex())+"; initial "+pName(m. vRead3IntIndex()) + "= 0;\n");               // Index at which to read third integer from memory
+        put("  integer "+ pName(m. vRead1BitIndex())+"; initial "+pName(m. vRead1BitIndex()) + "= 0;\n");               // Index within first integer from which to get a bit
+        put("  integer "+ pName(m. vRead2BitIndex())+"; initial "+pName(m. vRead2BitIndex()) + "= 0;\n");               // Index within second integer from which to get a bit
+        put("  integer "+ pName(m. vRead3BitIndex())+"; initial "+pName(m. vRead3BitIndex()) + "= 0;\n");               // Index within third integer from which to get a bit
+        put("  integer "+ pName(m. vWriteIntIndex())+"; initial "+pName(m. vWriteIntIndex()) + "= 0;\n");               // Index at which to write an integer into memory
+        put("  integer "+ pName(m. vWriteBitIndex())+"; initial "+pName(m. vWriteBitIndex()) + "= 0;\n");               // Index within an integer at which to set a bit to represent a boolean
+        put("  reg     "+ pName(m.vWriteIntEnable())+"; initial "+pName(m.vWriteIntEnable()) + "= 0;\n");               // Write enable when writing integer data into memory
+        put("  reg     "+ pName(m.vWriteBitEnable())+"; initial "+pName(m.vWriteBitEnable()) + "= 0;\n");               // Write enable when writing boolean data into memory
+        put("  "+ m.connectMemoryModule());                                                                             // Connect to memory module
+       }
 
-        /*Execute*/out.write("""
+      /*Execute*/put("""
 
 `ifndef SYNTHESIS
   initial begin
@@ -2034,39 +2041,39 @@ module {name};                                                                  
   always_ff @(posedge clock) begin                                                                                      // Decode and execute instructions by iterating a case statement
 """);
 
-        if (!compressInstructions || !compressInstructionLabels)                                                        // No compression of instruction labels
-        /*Execute case*/out.write("""
+      if (!compressInstructions || !compressInstructionLabels)                                                          // No compression of instruction labels
+        /*Execute case*/put("""
     case(pc)
 """);
-        else                                                                                                            // Compress instruction labels
-        /*Execute case*/out.write(substitute("""
+      else                                                                                                              // Compress instruction labels
+        /*Execute case*/put(substitute("""
     case ({pcMatchSet})                                                                                                 // Decode the instruction to be executed
 """, "pcMatchSet", pcMatchSetArray.dataRegisterName()));
 
-        if (compressInstructions)                                                                                       // Compress instructions
-         {if  (!compressInstructionLabels)                                                                              // Compress by writing all labels against the first instance of an instruction
-           {for (InstructionMatches.Match m : instructionMatches.sequence)                                              // Each block of identical instructions
-             {final String v = m.first().formatVerilogCode(m.verilog);
-              out.write(indent + m.labels() + v);
-             }
-           }
-          else                                                                                                          // Compress each block to a single sequential instruction and map pc at head of case statement accordingly
-           {for (InstructionMatches.Match m : instructionMatches.sequence)                                              // Each block of identical instructions
-             {final String v = m.first().formatVerilogCode(m.verilog);
-              out.write(indent + f("%4d", m.block) + v);
-             }
+      if (compressInstructions)                                                                                         // Compress instructions
+       {if  (!compressInstructionLabels)                                                                                // Compress by writing all labels against the first instance of an instruction
+         {for (InstructionMatches.Match m : instructionMatches.sequence)                                                // Each block of identical instructions
+           {final String v = m.first().formatVerilogCode(m.verilog);
+            put(indent + m.labels() + v);
            }
          }
-        else                                                                                                            // Write instructions without compression
-         {for (I i : program().code)                                                                                    // Each identical instruction
-           {compiling(i);
-            final String v = i.formatVerilogCode(i.interiorVerilog());
-            out.write(indent + f("%4d", i.instructionNumber) + v);
+        else                                                                                                            // Compress each block to a single sequential instruction and map pc at head of case statement accordingly
+         {for (InstructionMatches.Match m : instructionMatches.sequence)                                                // Each block of identical instructions
+           {final String v = m.first().formatVerilogCode(m.verilog);
+            put(indent + f("%4d", m.block) + v);
            }
          }
-        countInstructionSets = instructionMatches.matches.size();                                                       // Instruction set size
+       }
+      else                                                                                                              // Write instructions without compression
+       {for (I i : program().code)                                                                                      // Each identical instruction
+         {compiling(i);
+          final String v = i.formatVerilogCode(i.interiorVerilog());
+          put(indent + f("%4d", i.instructionNumber) + v);
+         }
+       }
+      countInstructionSets = instructionMatches.matches.size();                                                         // Instruction set size
 
-        /* Execute default*/out.write("""
+      /* Execute default*/put("""
       default: begin
 `ifndef SYNTHESIS
         $fclose(traceFile);                                                                                             // Close trace file
@@ -2077,19 +2084,19 @@ module {name};                                                                  
   end
 """);
 
-        out.write("`ifdef SYNTHESIS\n");
-        for(Int i : ints)                                                                                               // Update variables from inputs and outputs from variables during synthesis
-         {if (i.in) out.write(substitute("""
+      put("`ifdef SYNTHESIS\n");
+      for(Int i : ints)                                                                                                 // Update variables from inputs and outputs from variables during synthesis
+       {if (i.in) put(substitute("""
   always_ff @(posedge clock) begin if (reset) i[{i}] <= 0;  else i[{i}]  <= $signed(i_{n}); end                         // Update variables from inputs - the inputs cannot be signed because silicon compiler seems to have difficulty with signed parameters.
 """, "i", ""+i.id, "n", i.name));
 
-          if (i.out) out.write(substitute("""
+        if (i.out) put(substitute("""
   always_ff @(posedge clock) begin if (reset) o_{n} <= 0; else o_{n} <= i[{i}];  end                                    // Update variables from outputs - Verilog just assigns bits without interpreting whether there is a sign present or not
 """, "i", ""+i.id, "n", i.name));
          }
-        out.write("`endif\n");
+      put("`endif\n");
 
-        /*Clear registers*/out.write(substitute("""
+      /*Clear registers*/put(substitute("""
 
   initial begin                                                                                                         // Clear registers
 //  index        = 0;
@@ -2106,7 +2113,7 @@ module {name};                                                                  
        targetBit = 0;                                                                                                   // Computed target boolean value to be loaded into a variable
 """));
 
-        /*Open trace file*/out.write(substitute("""
+      /*Open trace file*/put(substitute("""
 
 `ifndef SYNTHESIS
     traceFile = $fopen("{traceFile}", "w");                                                                             // Clear the trace file
@@ -2123,17 +2130,18 @@ module {name};                                                                  
   end
 """, "traceFile", traceFile));
 
-        for(Memory                 m : memories())                out.write(dumpVerilogMemoryInDecimal(m));             // Dump memories in Verilog
-        for(DumpLocations.Location d : dumpLocations().locations) out.write(d.define());                                // Locations in program that have requested dumps
+      for(Memory                 m : memories())                put(dumpVerilogMemoryInDecimal(m));                     // Dump memories in Verilog
+      for(DumpLocations.Location d : dumpLocations().locations) put(d.define());                                        // Locations in program that have requested dumps
 
-        out.write(dumpVerilogVariables());                                                                              // Dump verilog variables task
-        out.write(dumpVerilogRegisters());                                                                              // Dump verilog variables task
-        /*End*/out.write("""
+      put(dumpVerilogVariables());                                                                                      // Dump verilog variables task
+      put(dumpVerilogRegisters());                                                                                      // Dump verilog variables task
+      /*End*/put("""
 endmodule
 """);
-        for(VerilogArrays.Array    a : verilogArrays.arrays())    out.write(a.module());                                // Write memory module definitions for read only arrays
-        for(Memory                 m : memories())                out.write(m.memoryModule());                          // Memory modules
-       }
+      for(VerilogArrays.Array    a : verilogArrays.arrays())    put(a.module());                                        // Write memory module definitions for read only arrays
+      for(Memory                 m : memories())                put(m.memoryModule());                                  // Memory modules
+
+      try (out) {}                                                                                                      // Close output file
       catch(Exception e)                                                                                                // Failed to generate verilog
        {stop(e, fullTraceBack(e));                                                                                      // Write the error and stop
        }
@@ -3309,7 +3317,7 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
+   {oldTests();
     test_variables(!true);
    }
 
