@@ -1407,16 +1407,16 @@ public class Program extends Test                                               
  (input  wire    clock,                                                                                                 // Clock
   input  wire    writeIntEnable,                                                                                        // Write enabled for an integer
   input  wire    writeBitEnable,                                                                                        // Write enabled for a boolean
-  input  integer writeIntIndex,                                                                                         // Write Integer address
-  input  integer writeBitIndex,                                                                                         // Write boolean address
+  input  reg[31:0] writeIntIndex,                                                                                       // Write Integer address
+  input  reg[31:0] writeBitIndex,                                                                                       // Write boolean address
   input  integer writeInt,                                                                                              // Write data
   input  integer writeBit,                                                                                              // Write data
-  input  integer read1IntIndex,                                                                                         // Read first  integer address
-  input  integer read2IntIndex,                                                                                         // Read second integer address
-  input  integer read3IntIndex,                                                                                         // Read third integer address
-  input  integer read1BitIndex,                                                                                         // Read first  boolean address
-  input  integer read2BitIndex,                                                                                         // Read second boolean address
-  input  integer read3BitIndex,                                                                                         // Read second boolean address
+  input  reg[31:0] read1IntIndex,                                                                                       // Read first  integer address
+  input  reg[31:0] read2IntIndex,                                                                                       // Read second integer address
+  input  reg[31:0] read3IntIndex,                                                                                       // Read third integer address
+  input  reg[31:0] read1BitIndex,                                                                                       // Read first  boolean address
+  input  reg[31:0] read2BitIndex,                                                                                       // Read second boolean address
+  input  reg[31:0] read3BitIndex,                                                                                       // Read second boolean address
   output integer read1Int,                                                                                              // Integer data read from first memory port
   output integer read2Int,                                                                                              // Integer data read from second memory port
   output integer read3Int,                                                                                              // Integer data read from third memory port
@@ -1900,7 +1900,7 @@ cd {f}; yosys -q {y}                                                            
 
     void put(final String Verilog)                                                                                      // Write some verilog
      {try {out.write(Verilog);}
-      catch(Exception e) {say("Unable to write to file:", codeFile, e, fullTraceBack(e));}
+      catch(Exception e) {stop("Unable to write to file:", codeFile, e, fullTraceBack(e));}
      }
 
     String message()                                                                                                    // Message describing statistics
@@ -1949,10 +1949,9 @@ cd {f}; yosys -q {y}                                                            
       pcMatchSetArray = verilogArrays().new Array("pcMatchSet", instructionMatches.pcMatchSet());                       // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
 
       try {out = Files.newBufferedWriter(Path.of(codeFile));}
-      catch(IOException e) {say("Unable to open file:", codeFile, e, fullTraceBack(e)); throw new UncheckedIOException(e);}
+      catch(Exception e) {stop("Unable to open file:", codeFile, e, fullTraceBack(e)); throw new RuntimeException(e);}
 
       /*Module*/put(substitute("""
-`define integer reg[31:0]
 `ifdef SYNTHESIS
 module {name} (                                                                                                         // Bint machine - callable module for synthesis
 """, "name", name));
@@ -1977,15 +1976,15 @@ module {name};                                                                  
 `endif
   integer                pc;                                                                                            // Program counter for stepping through user code
   integer         traceFile;                                                                                            // Write verilog trace records to this file
-  integer       sourceIntId;                                                                                            // Id of source int
-  integer      source2IntId;                                                                                            // Id of source2 int
-  integer       targetIntId;                                                                                            // Id of target int
-  integer       sourceBitId;                                                                                            // Id of source bool
-  integer       targetBitId;                                                                                            // Id of target bool
+  reg[31:0]       sourceIntId;                                                                                          // Id of source int
+  reg[31:0]      source2IntId;                                                                                          // Id of source2 int
+  reg[31:0]       targetIntId;                                                                                          // Id of target int
+  reg[31:0]       sourceBitId;                                                                                          // Id of source bool
+  reg[31:0]       targetBitId;                                                                                          // Id of target bool
   integer        sourceBit;                                                                                             // Source value for a boolean  operation obtained from a variable
   integer         sourceInt;                                                                                            // Source value for an integer operation obtained from a variable
   integer        source2Int;                                                                                            // Second source value for an integer operation obtained from a variable
-  integer         targetInt;                                                                                            // Computed target integer value to be loaded into a variable
+  integer        targetInt;                                                                                             // Computed target integer value to be loaded into a variable
   integer        targetBit;                                                                                             // Computed target boolean value to be loaded into a variable
 """);
 
@@ -2007,24 +2006,24 @@ module {name};                                                                  
 
       for(Memory m : memories)                                                                                          // Control registers for each memory
        {put("\n// Memory module: "+ m.n() + " "+m.name()+"\n");                                                         // Memory module title
-        put("  reg     "+ pName(m.      vRead1Bit())+";\n");                                                            // First boolean read from memory
-        put("  reg     "+ pName(m.      vRead2Bit())+";\n");                                                            // Second boolean read from memory
-        put("  reg     "+ pName(m.      vRead3Bit())+";\n");                                                            // Third boolean read from memory
-        put("  reg     "+ pName(m.      vWriteBit())+"; initial "+pName(m.       vWriteBit()) + "= 0;\n");              // Boolean to write into memory
-        put("  integer "+ pName(m.      vRead1Int())+";\n");                                                            // First integer read from memory
-        put("  integer "+ pName(m.      vRead2Int())+";\n");                                                            // Second integer read from memory
-        put("  integer "+ pName(m.      vRead3Int())+";\n");                                                            // Third integer read from memory
-        put("  integer "+ pName(m.      vWriteInt())+"; initial "+pName(m.      vWriteInt()) + "= 0;\n");               // Integer to write into memory
-        put("  integer "+ pName(m. vRead1IntIndex())+"; initial "+pName(m. vRead1IntIndex()) + "= 0;\n");               // Index at which to read first integer from memory
-        put("  integer "+ pName(m. vRead2IntIndex())+"; initial "+pName(m. vRead2IntIndex()) + "= 0;\n");               // Index at which to read second integer from memory
-        put("  integer "+ pName(m. vRead3IntIndex())+"; initial "+pName(m. vRead3IntIndex()) + "= 0;\n");               // Index at which to read third integer from memory
-        put("  integer "+ pName(m. vRead1BitIndex())+"; initial "+pName(m. vRead1BitIndex()) + "= 0;\n");               // Index within first integer from which to get a bit
-        put("  integer "+ pName(m. vRead2BitIndex())+"; initial "+pName(m. vRead2BitIndex()) + "= 0;\n");               // Index within second integer from which to get a bit
-        put("  integer "+ pName(m. vRead3BitIndex())+"; initial "+pName(m. vRead3BitIndex()) + "= 0;\n");               // Index within third integer from which to get a bit
-        put("  integer "+ pName(m. vWriteIntIndex())+"; initial "+pName(m. vWriteIntIndex()) + "= 0;\n");               // Index at which to write an integer into memory
-        put("  integer "+ pName(m. vWriteBitIndex())+"; initial "+pName(m. vWriteBitIndex()) + "= 0;\n");               // Index within an integer at which to set a bit to represent a boolean
-        put("  reg     "+ pName(m.vWriteIntEnable())+"; initial "+pName(m.vWriteIntEnable()) + "= 0;\n");               // Write enable when writing integer data into memory
-        put("  reg     "+ pName(m.vWriteBitEnable())+"; initial "+pName(m.vWriteBitEnable()) + "= 0;\n");               // Write enable when writing boolean data into memory
+        put("  reg       "+ pName(m.      vRead1Bit())+";\n");                                                          // First boolean read from memory
+        put("  reg       "+ pName(m.      vRead2Bit())+";\n");                                                          // Second boolean read from memory
+        put("  reg       "+ pName(m.      vRead3Bit())+";\n");                                                          // Third boolean read from memory
+        put("  reg       "+ pName(m.      vWriteBit())+"; initial "+pName(m.       vWriteBit()) + "= 0;\n");            // Boolean to write into memory
+        put("  integer   "+ pName(m.      vRead1Int())+";\n");                                                          // First integer read from memory
+        put("  integer   "+ pName(m.      vRead2Int())+";\n");                                                          // Second integer read from memory
+        put("  integer   "+ pName(m.      vRead3Int())+";\n");                                                          // Third integer read from memory
+        put("  integer   "+ pName(m.      vWriteInt())+"; initial "+pName(m.      vWriteInt()) + "= 0;\n");             // Integer to write into memory
+        put("  reg[31:0] "+ pName(m. vRead1IntIndex())+"; initial "+pName(m. vRead1IntIndex()) + "= 0;\n");             // Index at which to read first integer from memory
+        put("  reg[31:0] "+ pName(m. vRead2IntIndex())+"; initial "+pName(m. vRead2IntIndex()) + "= 0;\n");             // Index at which to read second integer from memory
+        put("  reg[31:0] "+ pName(m. vRead3IntIndex())+"; initial "+pName(m. vRead3IntIndex()) + "= 0;\n");             // Index at which to read third integer from memory
+        put("  reg[31:0] "+ pName(m. vRead1BitIndex())+"; initial "+pName(m. vRead1BitIndex()) + "= 0;\n");             // Index within first integer from which to get a bit
+        put("  reg[31:0] "+ pName(m. vRead2BitIndex())+"; initial "+pName(m. vRead2BitIndex()) + "= 0;\n");             // Index within second integer from which to get a bit
+        put("  reg[31:0] "+ pName(m. vRead3BitIndex())+"; initial "+pName(m. vRead3BitIndex()) + "= 0;\n");             // Index within third integer from which to get a bit
+        put("  reg[31:0] "+ pName(m. vWriteIntIndex())+"; initial "+pName(m. vWriteIntIndex()) + "= 0;\n");             // Index at which to write an integer into memory
+        put("  reg[31:0] "+ pName(m. vWriteBitIndex())+"; initial "+pName(m. vWriteBitIndex()) + "= 0;\n");             // Index within an integer at which to set a bit to represent a boolean
+        put("  reg       "+ pName(m.vWriteIntEnable())+"; initial "+pName(m.vWriteIntEnable()) + "= 0;\n");             // Write enable when writing integer data into memory
+        put("  reg       "+ pName(m.vWriteBitEnable())+"; initial "+pName(m.vWriteBitEnable()) + "= 0;\n");             // Write enable when writing boolean data into memory
         put("  "+ m.connectMemoryModule());                                                                             // Connect to memory module
        }
 
