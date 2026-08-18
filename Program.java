@@ -367,6 +367,8 @@ public class Program extends Test                                               
 
     int pc() {return currentPc();}                                                                                      // Address of instruction
 
+    void setValid () {v = true;}                                                                                        // Mark a bit as valid
+
     abstract class LoadSourceOrTarget
      {LoadSourceOrTarget(Bit B, String MemoryIndex, String MemoryValue)                                                 // Load source or target value via id of boolean
        {final String mi = pCR(MemoryIndex);                                                                             // Index
@@ -1160,7 +1162,7 @@ public class Program extends Test                                               
        };
       new I()                                                                                                           // Set target index
        {final String f = "%8d Read1Int from Memory %8d = %8d";
-        void   a() {r.i = read1Int; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                    I.id));}
+        void   a() {r.i = read1Int; r.setValid();                                jTrace(f(f,  pc(),   r.id,                    I.id));}
         String v() {im(r); return "i[arrayData_pcConstant] <= "+vRead1Int()+"; "+vTrace(  f, "pc",  "arrayData_pcConstant", ""+I.id);}
        };
       return r;
@@ -1178,7 +1180,7 @@ public class Program extends Test                                               
        };
       new I()                                                                                                           // Set target index
        {final String f = "%8d Read2Int from Memory %8d = %8d";
-        void   a() {r.i = read2Int; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                    I.id));}
+        void   a() {r.i = read2Int; r.setValid();                                jTrace(f(f,  pc(),   r.id,                    I.id));}
         String v() {im(r); return "i[arrayData_pcConstant] <= "+vRead2Int()+"; "+vTrace(  f, "pc",  "arrayData_pcConstant", ""+I.id);}
        };
       return r;
@@ -1196,7 +1198,7 @@ public class Program extends Test                                               
        };
       new I()                                                                                                           // Set target index
        {final String f = "%8d Read3Int from Memory %8d = %8d";
-        void   a() {r.i = read3Int; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                    I.id));}
+        void   a() {r.i = read3Int; r.setValid();                                jTrace(f(f,  pc(),   r.id,                    I.id));}
         String v() {im(r); return "i[arrayData_pcConstant] <= "+vRead3Int()+"; "+vTrace(  f, "pc",  "arrayData_pcConstant", ""+I.id);}
        };
       return r;
@@ -1218,7 +1220,7 @@ public class Program extends Test                                               
        };
       new I()                                                                                                           // Set target index
        {final String f = "%8d Read1Bit from Memory %8d = %8d";
-        void   a() {r.i = read1Bit; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                   read1Bit ? 1 : 0));}
+        void   a() {r.i = read1Bit; r.setValid();                                jTrace(f(f,  pc(),   r.id,                   read1Bit ? 1 : 0));}
         String v() {im(r); return "b[arrayData_pcConstant] <= "+vRead1Bit()+"; "+vTrace(  f, "pc",   "arrayData_pcConstant", vRead1Bit());}
        };
       return r;
@@ -1240,7 +1242,7 @@ public class Program extends Test                                               
        };
       new I()                                                                                                           // Set target index
        {final String f = "%8d Read2Bit from Memory %8d = %8d";
-        void   a() {r.i = read2Bit; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                   read2Bit ? 1 : 0));}
+        void   a() {r.i = read2Bit; r.setValid();                                jTrace(f(f,  pc(),   r.id,                   read2Bit ? 1 : 0));}
         String v() {im(r); return "b[arrayData_pcConstant] <= "+vRead2Bit()+"; "+vTrace(  f, "pc",   "arrayData_pcConstant", vRead2Bit());}
        };
       return r;
@@ -1262,7 +1264,7 @@ public class Program extends Test                                               
        };
       new I()                                                                                                           // Set target index
        {final String f = "%8d Read2Bit from Memory %8d = %8d";
-        void   a() {r.i = read3Bit; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                   read3Bit ? 1 : 0));}
+        void   a() {r.i = read3Bit; r.setValid();                                jTrace(f(f,  pc(),   r.id,                   read3Bit ? 1 : 0));}
         String v() {im(r); return "b[arrayData_pcConstant] <= "+vRead3Bit()+"; "+vTrace(  f, "pc",   "arrayData_pcConstant", vRead3Bit());}
        };
       return r;
@@ -3103,7 +3105,7 @@ Memory 0
         final Int o = new Int("o");                                                                                     // Output
         i.S();                                                                                                          // Load the index of the array
         new I()
-         {void        a() {targetInt(array[i.i()]); o.v = true;}                                                        // Load from array
+         {void        a() {targetInt(array[i.i()]); o.setValid();}                                                      // Load from array
           String      v() {return "targetInt <= "+A.dataRegisterName()+";";}                                            // Load from array data register
           boolean trace() {return false;}
          };
