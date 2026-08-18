@@ -1345,7 +1345,7 @@ Leaf   at:   2 size:   4, count:   4
 
             Index.S();                                                                                                  // Load index of item we want
             new I()
-             {void        a() {targetInt(random_32[Index.i()]);}
+             {void        a() {targetInt(random_32[Index.i()]); k.setValid();}
               String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                        // Translate index into key
               boolean trace() {return false;}
              };
@@ -1628,14 +1628,14 @@ Leaf   at:   2 size:   4, count:   4
     t.dumpProgramState("AAAA");
 
     final StringBuilder s = t.print();
-    final VerilogArrays.Array a = t.verilogArrays().new Array("loadRandomKeys", random_32);                                                  // Create an array of the random keys to be deleted so that the array is accessible from Verilog
+    final VerilogArrays.Array a = t.verilogArrays().new Array("loadRandomKeys", random_32);                             // Create an array of the random keys to be deleted so that the array is accessible from Verilog
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {final Int k = t.new Int("Key");
         Index.S();                                                                                                      // Load index of item we want
         t.new I()
-         {void        a() {t.targetInt(random_32[Index.i()]);}
+         {void        a() {t.targetInt(random_32[Index.i()]); k.setValid();}
           String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                            // Translate index into key
           boolean trace() {return false;}
          };
