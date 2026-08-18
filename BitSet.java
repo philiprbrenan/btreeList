@@ -318,7 +318,7 @@ final public class BitSet extends Program                                       
   Int      heightOne (Int Pos) {subStart("Bitset.heightOne");      final Int r = new Int("one  height" );      r.T(); Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt()]);} String v() {return vt(r, hoArray );}};      r.W(); subFinish(); return r;} // Height of the specified position in the ones tree
   Int     heightZero (Int Pos) {subStart("Bitset.heightZero");     final Int r = new Int("zero height");       r.T(); Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzArray );}};      r.W(); subFinish(); return r;} // Height of the specified position in the zeros tree
 
-  void   jt (Int R, int    I) {targetInt(I); targetIntValid(true);                                             jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}                   // Java trace of array look ups
+  void   jt (Int R, int    I) {targetInt(I); R.setValid();                                                     jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}                   // Java trace of array look ups
   String vt (Int R, VerilogArrays.Array A) {return pName("targetInt") + " <= " + A.dataRegisterName() + "; " + vTrace(  "%8d "+R.name+" = %8d", "pc",        A.dataRegisterName());} // Java trace of array look ups
 
   int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
