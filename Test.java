@@ -177,7 +177,7 @@ public class Test                                                               
   static String substitute (String A, String...Pairs)                                                                   // Substitute pairs of key values into a string
    {if (Pairs.length % 2 == 1) stop("Even number of key, values required");
     for (int i = 0; i < Pairs.length; i += 2) A = A.replace("{" + Pairs[i] + "}", Pairs[i+1]);
-    return formatComments(A);
+    return A.indexOf("//") >= 0 || A.indexOf("#") >= 0 ? formatComments(A) : A;
    }
 
   static String formatComments(String Input)                                                                            // Vertically align comments in column 120 to the extent possible
