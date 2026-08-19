@@ -22,7 +22,7 @@ public class Program extends Test                                               
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
@@ -595,7 +595,7 @@ public class Program extends Test                                               
         final String mv = pCR(MemoryValue);                                                                             // Value
 
         final I i = new I()                                                                                             // Load index of integer
-         {final String c = mi + pExpr(" <= arrayData_pcConstant;");
+         {final String c = mi + pExpr(" <= arrayData_pcConstant; /*AAAA*/");
           void   a() {loadId(id);  jTrace(f("%8d ILST1 "+mi+" = %8d",  pc(),   id));}
           String v() {return c+" "+vTrace(  "%8d ILST1 "+mi+" = %8d", "pc", ""+id) ;}
          };
@@ -765,11 +765,10 @@ public class Program extends Test                                               
      }
 
     final String atf = "%8d assign targetInt = %8d";                                                                    // Trace format for an assign statement
-    String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
-     {return pCR("targetInt") + " <= "+pExpr(Value+";")+ vTrace(atf, "pc",           Value);
-     }
 
-    void jtrace ()                                      {jTrace(f(atf,  currentPc(), targetInt()));}                    // Trace the integer operation in Java
+    String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
+     {return pCR(intMemory().writeIntV()) + " <= "+pExpr(Value+";")+ vTrace(  atf, "pc",         Value);}
+    void jtrace ()                                                  {jTrace(f(atf,  currentPc(), targetInt()));}        // Trace the integer operation in Java
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -1611,6 +1610,7 @@ endmodule
 
   String vTrace (String Format, String...Message)                                                                       // Generate verilog code to write a message to the verilog trace log
    {++program().vtrace;
+err("AAAA", program().vtrace);
     if (!compiling().trace()) return "";                                                                                // Suppress tracing for this instruction
     final StringBuilder s = new StringBuilder();
     s.append("$fdisplay(traceFile, "+q(Format));
@@ -1965,7 +1965,7 @@ cd {f}; yosys -q {y}                                                            
         String dumpVerilog () {return "";}
        };
 
-      for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
+      for(I i : code) {say("BBBB");  compiling(i); instructionMatches.add(i);}                                                        // Match instructions
       pcConstantArray = verilogArrays().new Array("pcConstant", pcConstant());                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
       pcMatchSetArray = verilogArrays().new Array("pcMatchSet", instructionMatches.pcMatchSet());                       // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
 
@@ -2549,9 +2549,9 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int("a", 1);
-        final Int b = new Int("b", a.Add(2));
+        //final Int b = new Int("b", a.Add(2));
         a.ok(1);
-        b.ok(3);
+        //b.ok(3);
         dumpProgramState("AAAA");
         scDieAreaX = 300; scDieAreaY = 400;
         execute();
@@ -3273,8 +3273,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    test_programming(false);
+   {//oldTests();
+    test_addition(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
