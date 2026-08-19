@@ -177,11 +177,13 @@ public class Test                                                               
   static String substitute (String A, String...Pairs)                                                                   // Substitute pairs of key values into a string
    {if (Pairs.length % 2 == 1) stop("Even number of key, values required");
     for (int i = 0; i < Pairs.length; i += 2) A = A.replace("{" + Pairs[i] + "}", Pairs[i+1]);
-    return A.indexOf("//") >= 0 || A.indexOf("#") >= 0 ? formatComments(A) : A;
+    return formatComments(A);
    }
 
   static String formatComments(String Input)                                                                            // Vertically align comments in column 120 to the extent possible
-   {final int           N = 120 - 1;                                                                                    // Alignment column minus one because there is a space in front of each comment symbol
+   {if (max(Input.indexOf(" //"), Input.indexOf(" #")) == -1) return Input;                                             // Only format comments if there are some
+
+    final int           N = 120 - 1;                                                                                    // Alignment column minus one because there is a space in front of each comment symbol
     final String []     L = Input.split("\\R", -1);                                                                     // Split input into lines
     final StringBuilder R = new StringBuilder();                                                                        // Result
     final String        f = "%-" + N + "s%s%n";
