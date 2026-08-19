@@ -23,16 +23,16 @@ class Slots extends Program                                                     
 //D1 Construction                                                                                                       // Construct and layout the slots
 
   final static class Build                                                                                              // Specification of slots
-   {boolean                    immediate = true;                                                                        // Immediate mode
-    boolean                        trace = false;                                                                       // Trace execution
-    int                     numberOfKeys = 2;                                                                           // Number of references in the slots
-    Memory.Ref             unitMemoryRef;                                                                               // Program memory to be used
-    Program                       parent;                                                                               // Parent program if any
+   {boolean                     immediate = true;                                                                       // Immediate mode
+    boolean                         trace = false;                                                                      // Trace execution
+    int                      numberOfKeys = 2;                                                                          // Number of references in the slots
+    Memory.Ref              unitMemoryRef;                                                                              // Program memory to be used
+    Program                        parent;                                                                              // Parent program if any
     Build.MemoryPositions memoryPositions;                                                                              // Offsets of fields describing this leaf in memory
 
     Build immediate    (boolean  Immediate) {immediate     = Immediate;    return this;}
     Build numberOfKeys (int   NumberOfKeys) {numberOfKeys  = NumberOfKeys; return this;}
-    Build memory       (Memory.Ref Ref) {unitMemoryRef = Ref;          return this;}
+    Build memory       (Memory.Ref Ref)     {unitMemoryRef = Ref;          return this;}
     Build parent       (Program    Parent)  {parent        = Parent;       return this;}
     Build trace        (boolean     Trace)  {trace         = Trace;        return this;}
 
@@ -47,25 +47,24 @@ class Slots extends Program                                                     
       return p;
      }
 
-    int numberOfKeys ()        {return numberOfKeys;}                                                                   // The number of references in the slots definition
-    int numberOfSlotsToKeys () {return numberOfKeys() << 1;}                                                            // Number of slots from number of refs
-
     final class MemoryPositions                                                                                         // Positions of fields in memory
      {final int N = numberOfSlotsToKeys();
       final int R = numberOfKeys();
-      final BitSet.Build us = new BitSet.Build().bitSize(N);                                                            // Specification of bit set for used slots
-      final BitSet.Build ur = new BitSet.Build().bitSize(R).count(true);                                                // Specification of bit set for references
+      final BitSet.Build        us = new BitSet.Build().bitSize(N);                                                     // Specification of bit set for used slots
+      final BitSet.Build        ur = new BitSet.Build().bitSize(R).count(true);                                         // Specification of bit set for references
 
-      final int posSlotsToKeys     = 0;                                                                                 // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-      final int posKeysToSlots     = posSlotsToKeys     + N;                                                            // Used keys to slot referencing the key
+      final int     posSlotsToKeys = 0;                                                                                 // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+      final int     posKeysToSlots = posSlotsToKeys     + N;                                                            // Used keys to slot referencing the key
       final int posUsedSlotsToKeys = posKeysToSlots     + N;                                                            // Slots in use
       final int posUsedKeysToSlots = posUsedSlotsToKeys + N;                                                            // Slots in use
-      final int posusedKeys        = posUsedKeysToSlots + us.units();                                                   // References in use.  There are fewer references than slots to make insertions faster
-      final int posKeys            = posusedKeys        + ur.units();                                                   // Keys used in btree held unordered in this array but ordered by the slot references to them
-      final int size               = posKeys            + N;                                                            // Count of used slots
+      final int        posusedKeys = posUsedKeysToSlots + us.units();                                                   // References in use.  There are fewer references than slots to make insertions faster
+      final int            posKeys = posusedKeys        + ur.units();                                                   // Keys used in btree held unordered in this array but ordered by the slot references to them
+      final int               size = posKeys            + N;                                                            // Count of used slots
      }
 
-    int size() {return memoryPositions.size;}                                                                           // Bytes needed for the slots
+    int size()                 {return memoryPositions.size;}                                                           // Bytes needed for the slots
+    int numberOfKeys ()        {return numberOfKeys;}                                                                   // The number of references in the slots definition
+    int numberOfSlotsToKeys () {return numberOfKeys() << 1;}                                                            // Number of slots from number of refs
    }
 
   Slots(Build Build)                                                                                                    // Create the slots
