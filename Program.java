@@ -200,12 +200,7 @@ public class Program extends Test                                               
       if (immediate())                                                                                                  // Immediate execution
        {index.set(Start);                                                                                               // Start index
         for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
-         {
-say("CCCC1111", cont);
-        cont.clear();                                                                                                   // Assume the loop will not be continued unless the callee says otherwise
-say("CCCC2222", cont);
-
-          body(index, cont.clear());                                                                                    // Execute the loop body
+         {body(index, cont.clear());                                                                                    // Execute the loop body
           index.inc();                                                                                                  // Set the index to each element of the specified range
           if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation has been requested
          }
@@ -387,15 +382,15 @@ say("CCCC2222", cont);
         final String mv = pCR(MemoryValue);                                                                             // Value
 
         final I i = new I()                                                                                             // Load id of variable if requested
-         {void   a() {loadId(id);                                      jTrace(f("%8d BST1 "+mi+" = %8d",  pc(),   id));}
-          String v() {return  mi + pExpr(" <= arrayData_pcConstant; ")+vTrace(  "%8d BST1 "+mi+" = %8d", "pc", ""+id );}
+         {void   a() {loadId(id);                                      jTrace(f("%8d BST1 "+mi+" = %8d",  pc(), id)                  );}
+          String v() {return  mi + pExpr(" <= arrayData_pcConstant; ")+vTrace(  "%8d BST1 "+mi+" = %8d", "pc", "arrayData_pcConstant");}
          };
         pcConstant(i, id);                                                                                              // Id of variable being addressed by these instructions
 
         if (LoadValue)                                                                                                  // Load value if requested
          {new I()                                                                                                       // Load source value
            {void   a() {loadValue(B.i); jTrace(f("%8d BST2 "+mv+" %8d",  pc(),  B.id));}
-            String v() {return          vTrace(  "%8d BST2 "+mv+" %8d", "pc",   bitMemory().vWriteInt());}
+            String v() {return          vTrace(  "%8d BST2 "+mv+" %8d", "pc",   bitMemory().memory(MemoryIndex));}
            };
          }
        }
@@ -621,14 +616,14 @@ say("CCCC2222", cont);
 
         final I i = new I()                                                                                             // Load index of integer
          {final String c = mi + pExpr(" <= arrayData_pcConstant; /*AAAA*/");
-          void   a() {loadId(id);  jTrace(f("%8d ILST1 "+mi+" = %8d",  pc(),   id));}
-          String v() {return c+" "+vTrace(  "%8d ILST1 "+mi+" = %8d", "pc", ""+id) ;}
+          void   a() {loadId(id);  jTrace(f("%8d ILST1 "+mi+" = %8d",  pc(), id)                  );}
+          String v() {return c+" "+vTrace(  "%8d ILST1 "+mi+" = %8d", "pc", "arrayData_pcConstant");}
          };
         pcConstant(i, I.id);                                                                                            // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
 
         if (LoadValue) new I()                                                                                          // Value of integer
-         {void   a() {loadValue(I.i); jTrace(f("%8d ILST2 "+mv+" = %8d",  pc(),  I.i));}
-          String v() {return          vTrace(  "%8d ILST2 "+mv+" = %8d", "pc",   mv  );}                                // The memory module loads the corresponding value field automatically
+         {void   a() {loadValue(I.i); jTrace(f("%8d ILST2 "+mv+" = %8d",  pc(), I.i));}
+          String v() {return          vTrace(  "%8d ILST2 "+mv+" = %8d", "pc",  intMemory().memory(MemoryIndex));}      // The memory module loads the corresponding value field automatically at the end of this instruction cycle
          };
        }
 
@@ -797,7 +792,7 @@ say("CCCC2222", cont);
       final String v = vTrace(  atf, "pc",         Value);
       return t + " <= " + s + v;
      }
-    void jtrace ()    {jTrace(f(atf,  currentPc(), targetInt()));}                                                      // Trace the integer operation in Java
+    void jtrace ()    {jTrace(f(atf,  currentPc(), intMemory().writeInt));}                                             // Trace the integer operation in Java
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -1519,6 +1514,7 @@ endmodule
 
     String dumpJava ()    {return dumpAsDecimal();}
     String dumpVerilog () {return dumpVerilogMemoryInDecimalName()+"();";}
+    String memory(String Index) {return substitute("{n}.memory[{i}]", "n", n(), "i", Index);}                           // Verilog to get the indexed location in memory
 
    } // Memory
 
@@ -2564,6 +2560,29 @@ endmodule
               test_addition(false);
    }
 
+  static void test_For(boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Int N = new Int("N", 2);
+        new For(N)
+         {void body(Int Index, Bit Continue)
+           {say("AAAA", Index);
+            Continue.set();
+            dumpProgramState("AAAA");
+           }
+         };
+        scDieAreaX = 500; scDieAreaY = 400;
+        execute();
+       }
+     };
+   }
+
+  static void test_For()
+   {          test_For(true);
+              test_For(false);
+   }
+
   static void test_programming(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
@@ -2580,9 +2599,7 @@ endmodule
              {void Then() {i.add(Index);}
               void Else() {i.sub(Index);}
              };
-say("AAAA", Index, i, m, z, Continue);
             Continue.set();
-say("BBBB", Index, i, m, z, Continue);
             dumpProgramState("AAAA");
            }
          };
@@ -3276,6 +3293,7 @@ Memory 0
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_addition();
+    test_For();
     test_programming();
     test_clearSet();
     test_andOr();
@@ -3299,7 +3317,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_addition(!false);
+    test_For(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
