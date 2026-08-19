@@ -7,6 +7,7 @@
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
 // Check how often each variable is read or written to eliminate variables that are only used once.
 // add .v = tryue to bitset and tree whne setting keys from an array
+// T () needs to know whether to load the target or not when called outside class Bit or Int
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -18,7 +19,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+ {final boolean               suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
@@ -64,8 +65,8 @@ public class Program extends Test                                               
         VerilogArrays.Array              pcConstantArray = null;                                                        // Instruction to variable or memory used by the instruction. Mapped to read only memory so that Yos ys does not expand them into registers. Prefetched one instruction in advance to keep the main instruction loop fully occupied except at branches where a one instruction wait has to be inserted to allow the prefetch loop to get ahead again.
         VerilogArrays.Array              pcMatchSetArray = null;                                                        // Constants in instructions identified by program counter as above.
   final TreeMap<Integer,Integer>              pcConstant = new TreeMap<>();                                             // Instruction equivalence set identified by program counter
-  Memory                                       intMemory;                                                               // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
-  Memory                                       bitMemory;                                                               // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+  final Memory                                 intMemory;                                                               // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+  final Memory                                 bitMemory;                                                               // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
   int                                          currentPc = 0;                                                           // Current program counter
   int                                             jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
   int                                             vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
@@ -198,7 +199,12 @@ public class Program extends Test                                               
       if (immediate())                                                                                                  // Immediate execution
        {index.set(Start);                                                                                               // Start index
         for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
-         {body(index, cont.clear());                                                                                    // Execute the loop body
+         {
+say("CCCC1111", cont);
+        cont.clear();                                                                                                   // Assume the loop will not be continued unless the callee says otherwise
+say("CCCC2222", cont);
+
+          body(index, cont.clear());                                                                                    // Execute the loop body
           index.inc();                                                                                                  // Set the index to each element of the specified range
           if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation has been requested
          }
@@ -208,19 +214,18 @@ public class Program extends Test                                               
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         final Bit    done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
-        index.T();                                                                                                      // Load index
+      //index.T();                                                                                                      // Load index from memory
         final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >= End.i()) program().pc = end.offset;}                                           // Index out of range. Program counter has already been incremented so we do not need to do it again
-          String v()   {return "if (targetBit) pc <= arrayData_pcConstant; else pc <= pc + 1;";}                        // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
+          String v()   {return "if ("+bitMemory().vWriteInt()+") pc <= arrayData_pcConstant; else pc <= pc + 1;";}      // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
           int traces() {return 0;}
          };
         body(index, cont.clear());                                                                                      // Execute the loop body
         index.inc();                                                                                                    // Increment loop counter
         cont.T();                                                                                                       // Load continue
         final I E = new I(false)
-         {void   a() {program().pc = cont.b() ? start.offset : end.offset;}                                             // Continue execution of the loop as long as requested
-          String v()
-           {return "if (targetBit) pc <= arrayData_pcConstant; else pc <= pc + 1;";}
+         {void   a()   {program().pc = cont.b() ? start.offset : end.offset;}                                           // Continue execution of the loop as long as requested
+          String v()   {return "if ("+bitMemory().vRead1Int()+") pc <= arrayData_pcConstant; else pc <= pc + 1;";}
           int traces() {return 0;}
          };
         end.set();                                                                                                      // End of the loop
@@ -250,10 +255,10 @@ public class Program extends Test                                               
        {final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         final Bit    done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
-        index.T();                                                                                                      // Load index
+      //index.T();                                                                                                      // Load index
         final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >=  End.i()) program().pc = end.offset;}                                          // Index out of range
-          String v()   {return "if (targetBit) pc <= arrayData_pcConstant; else pc <= pc + 1;";}                        // Terminate the loop when the index is out of range. The if statement relies on the side effect of the previous instruction having set the target boolean value
+          String v()   {return "if ("+bitMemory().vWriteInt()+") pc <= arrayData_pcConstant; else pc <= pc + 1;";}      // Terminate the loop when the index is out of range. The if statement relies on the side effect of the previous instruction having set the target boolean value
           int traces() {return 0;}
          };
         body(index);                                                                                                    // Execute the loop
@@ -296,7 +301,7 @@ public class Program extends Test                                               
         final I Then = new I(false)                                                                                     // Jump to else if condition is false
          {void   a() {if (!Condition.b()) program().pc = lse.offset;}
           String v()
-           {return "if (!targetBit) pc <= arrayData_pcConstant; else pc <= pc + 1;";
+           {return "if (!"+bitMemory().vRead1Int()+") pc <= arrayData_pcConstant; else pc <= pc + 1;";
            }
           int traces() {return 0;}
          };
@@ -334,7 +339,7 @@ public class Program extends Test                                               
           boolean    out = false;                                                                                       // An output register if true and named and at the top
     String  name = null;                                                                                                // The name of the variable
 
-    enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
+    enum Ops {and, del, eq, flip, ne, or, set};                                                                    // Boolean operation classification by argument types
 
     Bit (String Name)            {this();  name = Name; out = top;}                                                     // Constructor with name supplied. Output register if it is at the top
     Bit (String Name, boolean I) {this(I); name = Name; in  = top;}                                                     // Input wire if we know its value at the start and it is at the top
@@ -361,16 +366,22 @@ public class Program extends Test                                               
     Bit        And (Bit     I)    {return dup().and(I);}                                                                // "And" without short circuit. Does not modify the target
     Bit        dup ()             {return new Bit(this);}                                                               // Duplicate a boolean so that the duplicated version can be modified without modifying the original
                                                                                                                         // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
-    Bit ie (Ops Op)            {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op);}}; W(); return this;}
-    Bit ie (Ops Op, boolean I) {T(); S(I);  new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
-    Bit ie (Ops Op, Bit     I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
+    Bit ie (Ops Op)        {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op);}}; W(); return this;}
+    Bit ie (Ops Op, Bit I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
+
+    Bit ie (Ops Op, boolean I)
+     {T(Op);
+      new I() {void a() {ex(Op, I);} String v() {return eV(Op, I);}};
+      W();
+      return this;
+     }
 
     int pc() {return currentPc();}                                                                                      // Address of instruction
 
     void setValid () {v = true;}                                                                                        // Mark a bit as valid
 
     abstract class LoadSourceOrTarget
-     {LoadSourceOrTarget(Bit B, String MemoryIndex, String MemoryValue)                                                 // Load source or target value via id of boolean
+     {LoadSourceOrTarget(Bit B, String MemoryIndex, String MemoryValue, boolean LoadValue)                              // Load source or target value via id of boolean
        {final String mi = pCR(MemoryIndex);                                                                             // Index
         final String mv = pCR(MemoryValue);                                                                             // Value
 
@@ -380,10 +391,12 @@ public class Program extends Test                                               
          };
         pcConstant(i, id);                                                                                              // Id of variable being addressed by these instructions
 
-        new I()                                                                                                         // Load source value
-         {void   a() {loadValue(B.i); jTrace(f("%8d BST2 "+mv+" %8d",  pc(),  B.i ? 1 : 0));}
-          String v() {return          vTrace(  "%8d BST2 "+mv+" %8d", "pc",  "b["+ mi +"]");}
-         };
+        if (LoadValue)                                                                                                  // Load value if requested
+         {new I()                                                                                                       // Load source value
+           {void   a() {loadValue(B.i); jTrace(f("%8d BST2 "+mv+" %8d",  pc(),  B.id));}
+            String v() {return          vTrace(  "%8d BST2 "+mv+" %8d", "pc",   bitMemory().vWriteInt());}
+           };
+         }
        }
       int pc() {return currentPc();}                                                                                    // Address of this instruction
       abstract void loadId   (int I);                                                                                   // Override to load the id of the variable
@@ -391,34 +404,37 @@ public class Program extends Test                                               
      } // LoadSourceOrTarget
 
     void S ()                                                                                                           // Load source delta and value
-     {new LoadSourceOrTarget(this, bitMemory().vRead2IntIndex(), bitMemory().vRead2Int())
+     {new LoadSourceOrTarget(this, bitMemory().vRead2IntIndex(), bitMemory().vRead2Int(), true)
        {void loadId   (int     I) {sourceBitId(I);}
         void loadValue(boolean V) {sourceBit  (V);}
        };
      }
 
-    void S (boolean I)                                                                                                  // Load source constant
-     {final int v = I ? 1 : 0;
-      new I()
-       {void   a() {sourceBit(I);                           jTrace(f("%8d boolLoadConstant %8d",  pc(),   v));}
-        String v() {return pCR("sourceBit") + " <= "+v+"; "+vTrace(  "%8d boolLoadConstant %8d", "pc", ""+v);}
-       };
-     }
+//    void S (boolean I)                                                                                                // Load source constant
+//     {final int v = I ? 1 : 0;
+//      new I()
+//       {void   a() {sourceBit(I);                           jTrace(f("%8d boolLoadConstant %8d",  pc(),   v));}
+//        String v() {return pCR("sourceBit") + " <= "+v+"; "+vTrace(  "%8d boolLoadConstant %8d", "pc", ""+v);}
+//       };
+//     }
 
-    void T ()                                                                                                           // Load target delta and value
-     {new LoadSourceOrTarget(this, bitMemory().vRead1IntIndex(), bitMemory().vRead1Int())
+    void T ()       {T(true);}                                                                                          // Ops that do need the target value to be loaded first
+    void T (Ops Op) {T(Op != Ops.del && Op != Ops.set);}                                                                // Ops that do not need the target value to be loaded first
+
+    void T (boolean LoadValue)                                                                                          // Load target index and optionally value at that index
+     {new LoadSourceOrTarget(this, bitMemory().vRead1IntIndex(), bitMemory().vRead1Int(), LoadValue)
        {void loadId   (int     I) {targetBitId(I);}
-        void loadValue(boolean V) {bitMemory().read1Int = V ? 1 : 0;}                                                   // targetBit(V) would have set the write file rather than the read field
+        void loadValue(boolean V) {bitMemory().read1Int = V ? 1 : 0;}
        };
      }
 
-    void W ()                                                                                                           // Write result back into variable
+    void W ()                                                                                                           // Write result back into variable assuming that the index tro write at has already been set
      {final Bit    b = this;
       final Memory M = bitMemory();
-      new I()                                                                                                           // Load value
+      new I()                                                                                                           // Write value of bit into memory
        {final String f = "%8d writeBit %8d = %8d";
-        void   a() {i = M.writeInt != 0;  M.writeIntEnable = true; jTrace(f(f,  pc(), b.id,          b.i ? 1 : 0));}
-        String v() {return pCR(M.vWriteIntEnable()) + " <= 1; "+   vTrace(  f, "pc", "targetBitId", "targetBit");}
+        void   a() {i = M.writeInt != 0;  M.writeIntEnable = true; jTrace(f(f,  pc(), b.id,                         b.i ? 1 : 0));}
+        String v() {return pCR(M.vWriteIntEnable()) + " <= 1; "+   vTrace(  f, "pc",  bitMemory().vRead1IntIndex(), bitMemory().vWriteInt());}
        };
       new I()                                                                                                           // Lower  right enable - which could be merged with the next instruction
        {void   a() {if (!immediate()) M.units[M.read1IntIndex] = M.writeInt; M.writeIntEnable = false; jTrace(f("%8d Disable write", currentPc()));}
@@ -442,12 +458,12 @@ public class Program extends Test                                               
      {executingCheck();
       v = true;
       switch (Op)
-       {case set -> {     targetBit(sourceBit());}
-        case del -> {     targetBit(sourceBit()); v = false;}                                                           // Mark the bit as having no defined value
-        case eq  -> {x(); targetBit(targetBit() == sourceBit());}
-        case ne  -> {x(); targetBit(targetBit() != sourceBit());}
-        case and -> {x(); targetBit(targetBit() && sourceBit());}
-        case or  -> {x(); targetBit(targetBit() || sourceBit());}
+       {case set -> {     targetBit(I);}
+        case del -> {     targetBit(I); v = false;}                                                                     // Mark the bit as having no defined value
+        case eq  -> {x(); targetBit(targetBit() == I);}
+        case ne  -> {x(); targetBit(targetBit() != I);}
+        case and -> {x(); targetBit(targetBit() && I);}
+        case or  -> {x(); targetBit(targetBit() || I);}
         default  -> Test.stop("Op not implemented:", Op);
        }
       jtrace();
@@ -464,29 +480,34 @@ public class Program extends Test                                               
      {final String        n = vn();                                                                                     // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
-       {case flip -> {s.append("!targetBit");}
+       {case flip -> {s.append(bitMemory().vWriteInt());}
         default   -> Test.stop("Op not implemented:", Op);
        }
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String eV (Ops Op)                                                                                                  // Execute a dyadic boolean operation
+    String eV (Ops Op)            {return eV(Op, bitMemory.vRead2Int());}                                               // Dyadic boolean operation against memory
+    String eV (Ops Op, boolean I) {return eV(Op, I ? "1" : "0");}                                                       // Dyadic boolean operation against constant
+
+    String eV (Ops Op, String Source)                                                                                   // Execute a dyadic boolean operation
      {final StringBuilder s = new StringBuilder();
+      final String S = Source;
+      final String T = bitMemory().vWriteInt();
       switch (Op)
-       {case set -> {s.append(              "sourceBit");}
-        case del -> {s.append(              "sourceBit");}
-        case eq  -> {s.append("targetBit == sourceBit");}
-        case ne  -> {s.append("targetBit != sourceBit");}
-        case and -> {s.append("targetBit && sourceBit");}
-        case or  -> {s.append("targetBit || sourceBit");}
+       {case set -> {s.append(         S);}
+        case del -> {s.append(         S);}
+        case eq  -> {s.append(T+" == "+S);}
+        case ne  -> {s.append(T+" != "+S);}
+        case and -> {s.append(T+" && "+S);}
+        case or  -> {s.append(T+" || "+S);}
         default  -> Test.stop("Op not implemented:", Op);
        }
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
     String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
-     {return pCR("targetBit")+ " <= "+pExpr(""+Value+";")+" "+
-                        vTrace("%8d bit %8d = %8d",   "pc",        "targetBitId", ""+Value);
+     {return pCR(bitMemory().vWriteInt()) + " <= "+pExpr(""+Value+";")+" "+
+                        vTrace(  "%8d bit %8d = %8d",  "pc",        "targetBitId", ""+Value);
      }
     void jtrace ()     {jTrace(f("%8d bit %8d = %8d",  currentPc(), id,              targetBit() ? 1 : 0));}            // Trace a java    boolean operation
 
@@ -767,8 +788,12 @@ public class Program extends Test                                               
     final String atf = "%8d assign targetInt = %8d";                                                                    // Trace format for an assign statement
 
     String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
-     {return pCR(intMemory().writeIntV()) + " <= "+pExpr(Value+";")+ vTrace(  atf, "pc",         Value);}
-    void jtrace ()                                                  {jTrace(f(atf,  currentPc(), targetInt()));}        // Trace the integer operation in Java
+     {final String t = intMemory().vWriteInt();
+      final String s = pExpr(Value+";");
+      final String v = vTrace(  atf, "pc",         Value);
+      return t + " <= " + s + v;
+     }
+    void jtrace ()    {jTrace(f(atf,  currentPc(), targetInt()));}                                                      // Trace the integer operation in Java
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -845,7 +870,7 @@ public class Program extends Test                                               
 
     String bev (Ops Op, Bit B)                                                                                          // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
-      final String a = pCR("sourceInt"), b = pCR("source2Int");
+      final String a = pCR(intMemory().vRead2Int()), b = pCR(intMemory().vRead3Int());
       switch(Op)
        {case eq -> s.append(a + " == " + b);
         case ne -> s.append(a + " != " + b);
@@ -860,7 +885,7 @@ public class Program extends Test                                               
 
     String bev (Ops Op, Bit B, int I)                                                                                          // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
-      final String a = pCR("sourceInt"), b = pCR("arrayData_pcConstant");
+      final String a = pCR(intMemory().vRead2Int()), b = pCR("arrayData_pcConstant");
       switch(Op)
        {case eq -> s.append(a + " == " + b);
         case ne -> s.append(a + " != " + b);
@@ -1061,6 +1086,7 @@ public class Program extends Test                                               
 //    String  vWriteBitIndex ()      {return pName(n() + "_writeBitIndex"  );}                                            // Index within an integer at which to set a bit
     String vWriteIntEnable ()      {return pName(n() + "_writeIntEnable" );}                                            // Write enable flag
     String vWriteBitEnable ()      {return pName(n() + "_writeBitEnable" );}                                            // Write enable flag
+    String         vMemory (int I) {return pName(n() + ".memory["+I+"]"  );}                                            // Memory reference
 
     String       read1IntV ()      {return                                                                                            vTrace(  "%8d read1Int       %8d",         "pc",       vRead1IntIndex()                                 );}
     String       read2IntV ()      {return                                                                                            vTrace(  "%8d read2Int       %8d",         "pc",       vRead2IntIndex()                                 );}
@@ -1610,7 +1636,6 @@ endmodule
 
   String vTrace (String Format, String...Message)                                                                       // Generate verilog code to write a message to the verilog trace log
    {++program().vtrace;
-err("AAAA", program().vtrace);
     if (!compiling().trace()) return "";                                                                                // Suppress tracing for this instruction
     final StringBuilder s = new StringBuilder();
     s.append("$fdisplay(traceFile, "+q(Format));
@@ -1787,13 +1812,13 @@ cd {f}; yosys -q {y}                                                            
   void dumpJavaVariables ()                                                                                             // Dump all memories and variables to the java trace file
    {final StringBuilder s = new StringBuilder();
     for (Int  i  : ints())                                                                                              // Dump ints
-     {s.append(f("Int  %8d == %8d", i.id, i.i));
+     {s.append(f("Int  %8d ==    %8d", i.id, i.i));
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
     for (Bit b : bits())                                                                                                // Dump bools
      {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
-      s.append(f("Bit %8d == %8d", b.id, b.i ? 1 : 0));
+      s.append(f("Bit  %8d ==    %8d", b.id, b.i ? 1 : 0));
       if (b.name != null) s.append(" "+b.name);
       s.append('\n');
      }
@@ -1802,18 +1827,18 @@ cd {f}; yosys -q {y}                                                            
 
   void dumpJavaRegisters ()                                                                                             // Dump all memories and variables to the java trace file. Cannot dump verilog array definmitions because they have not been created yet.
    {final StringBuilder s = new StringBuilder();
-    s.append(f("     currentPc = %8d\n",         pc-1));
-    s.append(f("   sourceIntId = %8d\n",  sourceIntId()));
-    s.append(f("  source2IntId = %8d\n", source2IntId()));
-    s.append(f("   targetIntId = %8d\n",  targetIntId()));
-    s.append(f("   sourceBitId = %8d\n", sourceBitId()));
-    s.append(f("   targetBitId = %8d\n", targetBitId()));
-    s.append(f("     sourceInt = %8d\n",    sourceInt()));
-    s.append(f("    source2Int = %8d\n",   source2Int()));
-    s.append(f("     targetInt = %8d\n",    targetInt()));
-    s.append(f("     sourceBit = %8d\n",   sourceBit() ? 1 : 0));
-    s.append(f("     targetBit = %8d\n",   targetBit() ? 1 : 0));
-    appendJavaTrace(""+s);
+//    s.append(f("     currentPc = %8d\n",         pc-1));
+//    s.append(f("   sourceIntId = %8d\n",  sourceIntId()));
+//    s.append(f("  source2IntId = %8d\n", source2IntId()));
+//    s.append(f("   targetIntId = %8d\n",  targetIntId()));
+//    s.append(f("   sourceBitId = %8d\n", sourceBitId()));
+//    s.append(f("   targetBitId = %8d\n", targetBitId()));
+//    s.append(f("     sourceInt = %8d\n",    sourceInt()));
+//    s.append(f("    source2Int = %8d\n",   source2Int()));
+//    s.append(f("     targetInt = %8d\n",    targetInt()));
+//    s.append(f("     sourceBit = %8d\n",   sourceBit() ? 1 : 0));
+//    s.append(f("     targetBit = %8d\n",   targetBit() ? 1 : 0));
+//    appendJavaTrace(""+s);
    }
 
   void dumpJava ()                                                                                                      // Dump all memories and variables to the java trace file
@@ -1955,17 +1980,17 @@ cd {f}; yosys -q {y}                                                            
     GenerateVerilog ()                                                                                                  // Generate the Verilog corresponding to the java code
      {int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
-      intMemory = new Memory(numberOfInts, "Ints")                                                                      // Memory for integers
-       {String            dumpJava () {return "";}
-        String         dumpVerilog () {return "";}
-       };
+//      intMemory = new Memory(numberOfInts, "Ints")                                                                      // Memory for integers
+//       {String            dumpJava () {return "";}
+//        String         dumpVerilog () {return "";}
+//       };
+//
+//      bitMemory = new Memory(numberOfBits, "Bits")                                                                      // Memory for bits
+//       {String dumpJava ()    {return "";}
+//        String dumpVerilog () {return "";}
+//       };
 
-      bitMemory = new Memory(numberOfBits, "Bits")                                                                      // Memory for bits
-       {String dumpJava ()    {return "";}
-        String dumpVerilog () {return "";}
-       };
-
-      for(I i : code) {say("BBBB");  compiling(i); instructionMatches.add(i);}                                                        // Match instructions
+      for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
       pcConstantArray = verilogArrays().new Array("pcConstant", pcConstant());                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
       pcMatchSetArray = verilogArrays().new Array("pcMatchSet", instructionMatches.pcMatchSet());                       // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
 
@@ -2056,7 +2081,7 @@ module {name};                                                                  
     clock = 0;                                                                                                          // Initialize the clock - failure to do this will result in an infinite loop as the clock cannot transition on an undefined value
     forever #1 clock = ~clock;                                                                                          // Execute instructions
   end                                                                                                                   // Execute instructions
-`endif                                                                                                                  // Clock - only needed during icarus verilog sumulation not during synthesis
+`endif                                                                                                                  // Clock - only needed during icarus verilog simulation not during synthesis
 
   always_ff @(posedge clock) begin                                                                                      // Decode and execute instructions by iterating a case statement
 """);
@@ -2121,16 +2146,16 @@ module {name};                                                                  
   initial begin                                                                                                         // Clear registers
 //  index        = 0;
     pc           = 0;
-     sourceIntId = 0;                                                                                                   // Id of source int
-    source2IntId = 0;                                                                                                   // Id of source2 int
-     targetIntId = 0;                                                                                                   // Id of target int
-     sourceBitId = 0;                                                                                                   // Id of source bool
-     targetBitId = 0;                                                                                                   // Id of target bool
-       sourceBit = 0;                                                                                                   // Source value for a boolean  operation obtained from a variable
-       sourceInt = 0;                                                                                                   // Source value for an integer operation obtained from a variable
-      source2Int = 0;                                                                                                   // Second source value for an integer operation obtained from a variable
-       targetInt = 0;                                                                                                   // Computed target integer value to be loaded into a variable
-       targetBit = 0;                                                                                                   // Computed target boolean value to be loaded into a variable
+//   sourceIntId = 0;                                                                                                   // Id of source int
+//  source2IntId = 0;                                                                                                   // Id of source2 int
+//   targetIntId = 0;                                                                                                   // Id of target int
+//   sourceBitId = 0;                                                                                                   // Id of source bool
+//   targetBitId = 0;                                                                                                   // Id of target bool
+//     sourceBit = 0;                                                                                                   // Source value for a boolean  operation obtained from a variable
+//     sourceInt = 0;                                                                                                   // Source value for an integer operation obtained from a variable
+//    source2Int = 0;                                                                                                   // Second source value for an integer operation obtained from a variable
+//     targetInt = 0;                                                                                                   // Computed target integer value to be loaded into a variable
+//     targetBit = 0;                                                                                                   // Computed target boolean value to be loaded into a variable
 """));
 
       /*Open trace file*/put(substitute("""
@@ -2399,21 +2424,21 @@ check
     final StringBuilder v = new StringBuilder();                                                                        // Dump each variable
     for(Int i : ints)                                                                                                   // Dump integers
      {if (i.name != null) v.append(substitute("""
-      $fdisplay(traceFile, "Int  %8d == %8d {name}", {id}, i[{id}]);
-""", "name", i.name, "id", ""+i.id));
+      $fdisplay(traceFile, "Int  %8d ==    %8d {name}", {id}, {v});
+""", "name", i.name, "id", ""+i.id, "v", intMemory().vMemory(i.id)));
       else v.append(substitute("""
-      $fdisplay(traceFile, "Int  %8d == %8d",        {id}, i[{id}]);
-""", "id", ""+i.id));
+      $fdisplay(traceFile, "Int  %8d ==    %8d",        {id}, {v});
+""",                 "id", ""+i.id, "v", intMemory().vMemory(i.id)));
      }
 
     for(Bit b : bits)                                                                                                   // Dump booleans
      {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
       if (b.name != null) v.append(substitute("""
-      $fdisplay(traceFile, "Bit %8d == %8d {name}", {id}, b[{id}]);
-""", "name", b.name, "id", ""+b.id));
+      $fdisplay(traceFile, "Bit  %8d ==    %8d {name}", {id}, {v});
+""", "name", b.name, "id", ""+b.id, "v", intMemory().vMemory(b.id)));
       else v.append(substitute("""
-      $fdisplay(traceFile, "Bit %8d == %8d", {id}, b[{id}]);
-""", "id", ""+b.id));
+      $fdisplay(traceFile, "Bit  %8d ==    %8d",        {id}, {v});
+""",                 "id", ""+b.id, "v", intMemory().vMemory(b.id)));
      }
 
     writeFile(includeFile.v$(), v);
@@ -2428,18 +2453,18 @@ check
   task automatic {name} ();
     begin
 `ifndef SYNTHESIS
-      $fwrite(traceFile, \"     currentPc = %8d\\n\", pc          );
-      $fwrite(traceFile, \"   sourceIntId = %8d\\n\", sourceIntId );
-      $fwrite(traceFile, \"  source2IntId = %8d\\n\", source2IntId);
-      $fwrite(traceFile, \"   targetIntId = %8d\\n\", targetIntId );
-      $fwrite(traceFile, \"   sourceBitId = %8d\\n\", sourceBitId);
-      $fwrite(traceFile, \"   targetBitId = %8d\\n\", targetBitId);
-      $fwrite(traceFile, \"     sourceInt = %8d\\n\", sourceInt   );
-      $fwrite(traceFile, \"    source2Int = %8d\\n\", source2Int  );
-      $fwrite(traceFile, \"     targetInt = %8d\\n\", targetInt   );
-      $fwrite(traceFile, \"     sourceBit = %8d\\n\", sourceBit  );
-      $fwrite(traceFile, \"     targetBit = %8d\\n\", targetBit  );
-      $fflush(traceFile);
+//    $fwrite(traceFile, \"     currentPc = %8d\\n\", pc          );
+//    $fwrite(traceFile, \"   sourceIntId = %8d\\n\", sourceIntId );
+//    $fwrite(traceFile, \"  source2IntId = %8d\\n\", source2IntId);
+//    $fwrite(traceFile, \"   targetIntId = %8d\\n\", targetIntId );
+//    $fwrite(traceFile, \"   sourceBitId = %8d\\n\", sourceBitId);
+//    $fwrite(traceFile, \"   targetBitId = %8d\\n\", targetBitId);
+//    $fwrite(traceFile, \"     sourceInt = %8d\\n\", sourceInt   );
+//    $fwrite(traceFile, \"    source2Int = %8d\\n\", source2Int  );
+//    $fwrite(traceFile, \"     targetInt = %8d\\n\", targetInt   );
+//    $fwrite(traceFile, \"     sourceBit = %8d\\n\", sourceBit  );
+//    $fwrite(traceFile, \"     targetBit = %8d\\n\", targetBit  );
+//    $fflush(traceFile);
 `endif
     end
   endtask
@@ -2580,7 +2605,9 @@ endmodule
              {void Then() {i.add(Index);}
               void Else() {i.sub(Index);}
              };
+say("AAAA", Index, i, m, z, Continue);
             Continue.set();
+say("BBBB", Index, i, m, z, Continue);
             dumpProgramState("AAAA");
            }
          };
@@ -2595,6 +2622,28 @@ endmodule
   static void test_programming()
    {          test_programming(true);
               test_programming(false);
+   }
+
+  static void test_clearSet(boolean Ex)
+   {sayCurrentTestName();
+    final Program  P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Bit a = new Bit("a", true);
+//      a.ok(true);
+//      a.clear();       a.ok(false);
+//      a.clear();       a.ok(false);
+//      a.set  ();       a.ok(true);
+//      a.set  ();       a.ok(true);
+//      a.set  (false);  a.ok(false);
+//      a.set  (true);   a.ok(true);
+        execute();
+       }
+     };
+   }
+
+  static void test_clearSet()
+   {          test_clearSet(true);
+              test_clearSet(false);
    }
 
   static void test_andOr(boolean Ex)
@@ -3253,6 +3302,7 @@ Memory 0
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_addition();
     test_programming();
+    test_clearSet();
     test_andOr();
     test_add();
     test_fibonacci();
@@ -3274,7 +3324,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_addition(false);
+    test_clearSet(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
