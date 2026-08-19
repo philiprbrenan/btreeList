@@ -8,6 +8,7 @@
 // Check how often each variable is read or written to eliminate variables that are only used once.
 // add .v = tryue to bitset and tree whne setting keys from an array
 // T () needs to know whether to load the target or not when called outside class Bit or Int
+// Improve name of gETBit()
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -339,32 +340,32 @@ say("CCCC2222", cont);
           boolean    out = false;                                                                                       // An output register if true and named and at the top
     String  name = null;                                                                                                // The name of the variable
 
-    enum Ops {and, del, eq, flip, ne, or, set};                                                                    // Boolean operation classification by argument types
+    enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
 
     Bit (String Name)            {this();  name = Name; out = top;}                                                     // Constructor with name supplied. Output register if it is at the top
     Bit (String Name, boolean I) {this(I); name = Name; in  = top;}                                                     // Input wire if we know its value at the start and it is at the top
     Bit (String Name, Bit     I) {this(I); name = Name; out = top;}                                                     // Output register if its value is unknown at the start and is at the top
 
-    Bit ()                        {ai();  del(false);     bits().push(this);}                                           // Constructors. Set newly constructed integers to invalid and minus one
-    Bit (boolean I)               {ai();  ie(Ops.set, I); bits().push(this);}
-    Bit (Bit     I)               {ai();  ie(Ops.set, I); bits().push(this);}
-    boolean      b ()             {x(); return i;}
-    void         x ()             {if (!v) variableNotSet("Bit", name);}                                                // Check a value has been set for the boolean
+    Bit ()                       {ai();  del(false);     bits().push(this);}                                            // Constructors. Set newly constructed integers to invalid and minus one
+    Bit (boolean I)              {ai();  ie(Ops.set, I); bits().push(this);}
+    Bit (Bit     I)              {ai();  ie(Ops.set, I); bits().push(this);}
+    boolean      b ()            {x(); return i;}
+    void         x ()            {if (!v) variableNotSet("Bit", name);}                                                 // Check a value has been set for the boolean
 
-    Bit        set ()             {return ie(Ops.set,  true); }                                                         // Boolean operations which modify the target
-    Bit        set (boolean I)    {return ie(Ops.set,  I);    }
-    Bit        set (Bit     I)    {return ie(Ops.set,  I);    }
-    Bit      clear ()             {return ie(Ops.set,  false);}
-    Bit        del (boolean I)    {return ie(Ops.del,  I);    }
-    Bit       flip ()             {return ie(Ops.flip);       }
-    Bit       Flip ()             {return dup().flip();}
-    Bit         ne (Bit     I)    {return ie(Ops.ne,  I);}
-    Bit         ne (boolean I)    {return ie(Ops.ne,  I);}
-    Bit         or (Bit     I)    {return ie(Ops.or,  I);}                                                              // "Or" without short circuit. Modifies the target.
-    Bit        and (Bit     I)    {return ie(Ops.and, I);}                                                              // "And" without short circuit. Modifies the target.
-    Bit         Or (Bit     I)    {return dup().or (I);}                                                                // "Or" without short circuit. Does not modify the target
-    Bit        And (Bit     I)    {return dup().and(I);}                                                                // "And" without short circuit. Does not modify the target
-    Bit        dup ()             {return new Bit(this);}                                                               // Duplicate a boolean so that the duplicated version can be modified without modifying the original
+    Bit        set ()            {return ie(Ops.set,  true); }                                                          // Boolean operations which modify the target
+    Bit        set (boolean I)   {return ie(Ops.set,  I);    }
+    Bit        set (Bit     I)   {return ie(Ops.set,  I);    }
+    Bit      clear ()            {return ie(Ops.set,  false);}
+    Bit        del (boolean I)   {return ie(Ops.del,  I);    }
+    Bit       flip ()            {return ie(Ops.flip);       }
+    Bit       Flip ()            {return dup().flip();}
+    Bit         ne (Bit     I)   {return ie(Ops.ne,  I);}
+    Bit         ne (boolean I)   {return ie(Ops.ne,  I);}
+    Bit         or (Bit     I)   {return ie(Ops.or,  I);}                                                               // "Or" without short circuit. Modifies the target.
+    Bit        and (Bit     I)   {return ie(Ops.and, I);}                                                               // "And" without short circuit. Modifies the target.
+    Bit         Or (Bit     I)   {return dup().or (I);}                                                                 // "Or" without short circuit. Does not modify the target
+    Bit        And (Bit     I)   {return dup().and(I);}                                                                 // "And" without short circuit. Does not modify the target
+    Bit        dup ()            {return new Bit(this);}                                                                // Duplicate a boolean so that the duplicated version can be modified without modifying the original
                                                                                                                         // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
     Bit ie (Ops Op)        {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op);}}; W(); return this;}
     Bit ie (Ops Op, Bit I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
@@ -506,10 +507,13 @@ say("CCCC2222", cont);
      }
 
     String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
-     {return pCR(bitMemory().vWriteInt()) + " <= "+pExpr(""+Value+";")+" "+
-                        vTrace(  "%8d bit %8d = %8d",  "pc",        "targetBitId", ""+Value);
+     {final String id = bitMemory().vRead1IntIndex();
+      return pCR(bitMemory().vWriteInt()) + " <= "+pExpr(""+Value+";")+" "+
+      vTrace(  "%8d bit %8d = %8d",  "pc",        id,  ""+Value);
      }
-    void jtrace ()     {jTrace(f("%8d bit %8d = %8d",  currentPc(), id,              targetBit() ? 1 : 0));}            // Trace a java    boolean operation
+    void jtrace ()                                                                                                      // Trace a java    boolean operation
+     {jTrace(f("%8d bit %8d = %8d",  currentPc(), id, bitMemory().writeInt));
+     }
 
     public String toString ()                                                                                           // Print the boolean
      {final String u = "undefined_Bit";
@@ -1392,15 +1396,17 @@ say("CCCC2222", cont);
       return ""+s;
      }
 
-    String dumpAsDecimal()                                                                                              // Dump memory in decimal format
+    String dumpAsDecimal ()                                                                                             // Dump memory in decimal format
      {final int N = 10;
       final StringBuilder s = new StringBuilder();
-      s.append(substitute("Memory {i}{n}\n", "i", ""+id, "n", nameSp()));
+
+      s.append(substitute("Memory {i}{n}\n", "i", ""+id, "n", nameSp()));                                               // Title
       s.append("         ");
-      for (int i = 0; i < N; i++)                s.append(f("%4d ", i));
+
+      for (int i = 0; i < N; i++)                s.append(f("%4d ", i));                                                // Column headers
       s.append("\n");
 
-      for (int i = 0; i < size(); i++)
+      for (int i = 0; i < size(); i++)                                                                                  // Memory values
        {if (i % N == 0)                          s.append(f("%08d ", i));
 
         final int b = units[i];
@@ -1408,26 +1414,16 @@ say("CCCC2222", cont);
         if ((i + 1) % N == 0)                    s.append("\n");
        }
       if (size() % N != 0)                       s.append("\n");
-//    s.append(f(" Read1IntIndex = %8d\n", read1IntIndex    ));                                                         // Index at which to read first integer from memory
-//    s.append(f(" Read2IntIndex = %8d\n", read2IntIndex    ));                                                         // Index at which to read second integer from memory
-//    s.append(f(" Read3IntIndex = %8d\n", read3IntIndex    ));                                                         // Index at which to read third integer from memory
-//    s.append(f(" Read1BitIndex = %8d\n", read1BitIndex    ));                                                         // Index within first integer from which to get first bit
-//    s.append(f(" Read2BitIndex = %8d\n", read2BitIndex    ));                                                         // Index within second integer from which to get second bit
-//    s.append(f(" Read3BitIndex = %8d\n", read3BitIndex    ));                                                         // Index within third integer from which to get second bit
-//    s.append(f(" WriteIntIndex = %8d\n", writeIntIndex    ));                                                         // Index at which to write an integer into memory
-//    s.append(f(" WriteBitIndex = %8d\n", writeBitIndex    ));                                                         // Index within an integer at which to set a bit
-//    s.append(f("      WriteInt = %8d\n", writeInt         ));                                                         // Integer to write into memory
-//    s.append(f("      WriteBit = %8d\n", writeBit ? 1 : 0));                                                          // Boolean to write into memory
       return ""+s;
      }
 
-    String save()                                                                                                       // Save memory to a string representation
+    String save ()                                                                                                      // Save memory to a string representation
      {final ByteBuffer b = ByteBuffer.allocate(ib(size()));
       for (int i : units) b.putInt(i);
       return Base64.getEncoder().encodeToString(b.array());
      }
 
-    void reload(String s)                                                                                               // Reload memory from a saved string representation
+    void reload (String s)                                                                                              // Reload memory from a saved string representation
      {final byte[]b = Base64.getDecoder().decode(s);
       if (b.length != ib(size()))
        {stop("Mismatched reloaded memory length in bytes for memory:", id, "expected:", b.length, "got:", ib(size()));
@@ -2144,18 +2140,7 @@ module {name};                                                                  
       /*Clear registers*/put(substitute("""
 
   initial begin                                                                                                         // Clear registers
-//  index        = 0;
     pc           = 0;
-//   sourceIntId = 0;                                                                                                   // Id of source int
-//  source2IntId = 0;                                                                                                   // Id of source2 int
-//   targetIntId = 0;                                                                                                   // Id of target int
-//   sourceBitId = 0;                                                                                                   // Id of source bool
-//   targetBitId = 0;                                                                                                   // Id of target bool
-//     sourceBit = 0;                                                                                                   // Source value for a boolean  operation obtained from a variable
-//     sourceInt = 0;                                                                                                   // Source value for an integer operation obtained from a variable
-//    source2Int = 0;                                                                                                   // Second source value for an integer operation obtained from a variable
-//     targetInt = 0;                                                                                                   // Computed target integer value to be loaded into a variable
-//     targetBit = 0;                                                                                                   // Computed target boolean value to be loaded into a variable
 """));
 
       /*Open trace file*/put(substitute("""
@@ -2228,16 +2213,6 @@ endmodule
       end
 
       if ({size} % N != 0) $fwrite(traceFile, "\\n");
-//    $fwrite(traceFile, " Read1IntIndex = %8d\\n", {memoryName}_read1IntIndex);                                        // Index at which to read firstinteger from memory
-//    $fwrite(traceFile, " Read2IntIndex = %8d\\n", {memoryName}_read2IntIndex);                                        // Index at which to read second integer from memory
-//    $fwrite(traceFile, " Read3IntIndex = %8d\\n", {memoryName}_read3IntIndex);                                        // Index at which to read third integer from memory
-//    $fwrite(traceFile, " Read1BitIndex = %8d\\n", {memoryName}_read1BitIndex);                                        // Index within first integer from which to get a bit
-//    $fwrite(traceFile, " Read2BitIndex = %8d\\n", {memoryName}_read2BitIndex);                                        // Index within second integer from which to get a bit
-//    $fwrite(traceFile, " Read3BitIndex = %8d\\n", {memoryName}_read3BitIndex);                                        // Index within third integer from which to get a bit
-//    $fwrite(traceFile, " WriteIntIndex = %8d\\n", {memoryName}_writeIntIndex);                                        // Index at which to write an integer into memory
-//    $fwrite(traceFile, " WriteBitIndex = %8d\\n", {memoryName}_writeBitIndex);                                        // Index within an integer at which to set a bit to represent a boolean
-//    $fwrite(traceFile, "      WriteInt = %8d\\n", {memoryName}_writeInt     );                                        // Integer to write into memory
-//    $fwrite(traceFile, "      WriteBit = %8d\\n", {memoryName}_writeBit     );                                        // Boolean to write into memory
       $fflush(traceFile);
 `endif
     end
@@ -2435,10 +2410,10 @@ check
      {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
       if (b.name != null) v.append(substitute("""
       $fdisplay(traceFile, "Bit  %8d ==    %8d {name}", {id}, {v});
-""", "name", b.name, "id", ""+b.id, "v", intMemory().vMemory(b.id)));
+""", "name", b.name, "id", ""+b.id, "v", bitMemory().vMemory(b.id)));
       else v.append(substitute("""
       $fdisplay(traceFile, "Bit  %8d ==    %8d",        {id}, {v});
-""",                 "id", ""+b.id, "v", intMemory().vMemory(b.id)));
+""",                 "id", ""+b.id, "v", bitMemory().vMemory(b.id)));
      }
 
     writeFile(includeFile.v$(), v);
@@ -2629,13 +2604,13 @@ say("BBBB", Index, i, m, z, Continue);
     final Program  P = new Program(new Build().immediate(Ex))
      {void code()
        {final Bit a = new Bit("a", true);
-//      a.ok(true);
-//      a.clear();       a.ok(false);
-//      a.clear();       a.ok(false);
-//      a.set  ();       a.ok(true);
-//      a.set  ();       a.ok(true);
-//      a.set  (false);  a.ok(false);
-//      a.set  (true);   a.ok(true);
+        a.ok(true);
+        a.clear();       a.ok(false);
+        a.clear();       a.ok(false);
+        a.set  ();       a.ok(true);
+        a.set  ();       a.ok(true);
+        a.set  (false);  a.ok(false);
+        a.set  (true);   a.ok(true);
         execute();
        }
      };
@@ -3324,7 +3299,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_clearSet(false);
+    test_addition(!false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
