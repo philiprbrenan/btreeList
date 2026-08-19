@@ -389,7 +389,7 @@ public class Program extends Test                                               
 
         if (LoadValue)                                                                                                  // Load value if requested
          {new I()                                                                                                       // Load source value
-           {void   a() {loadValue(B.i); jTrace(f("%8d BST2 "+mv+" %8d",  pc(),  B.id));}
+           {void   a() {loadValue(B.i); jTrace(f("%8d BST2 "+mv+" %8d",  pc(),  B.i ? 1 : 0));}
             String v() {return          vTrace(  "%8d BST2 "+mv+" %8d", "pc",   bitMemory().memory(MemoryIndex));}
            };
          }
@@ -2567,9 +2567,9 @@ endmodule
        {final Int N = new Int("N", 2);
         new For(N)
          {void body(Int Index, Bit Continue)
-           {say("AAAA", Index);
+           {dumpProgramState("AAAA");
             Continue.set();
-            dumpProgramState("AAAA");
+            dumpProgramState("BBBB");
            }
          };
         scDieAreaX = 500; scDieAreaY = 400;
