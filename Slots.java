@@ -1798,18 +1798,18 @@ Zero:
 
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {final Slots                s = this;
-        final StringBuilder        t = new StringBuilder();
+       {final Slots               s = this;
+        final StringBuilder       t = new StringBuilder();
         final VerilogArrays.Array a = verilogArrays().new Array("keys", keys);
 
         new ForCount(keys.length)                                                                                       // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
-           {final Int  k = new Int();
+           {final Int  k = new Int(0);
 
             Index.S();                                                                                                  // Load index of item we want
             new I()                                                                                                     // Set the key to insert
-             {void        a() {targetInt(keys[Index.i()]); k.setValid();}
-              String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                        // Translate index into key
+             {void        a() {       intMemory(). writeInt      =     keys[Index.i()];}
+              String      v() {return intMemory().vWriteInt()+" <= "+a.dataRegisterName()+";";}                         // Translate index into key
               boolean trace() {return false;}
              };
 
@@ -1898,12 +1898,12 @@ keys     :   14  13  16  15  18  17  12  11
 
         new ForCount(keys.length)                                                                                       // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
-           {final   Int k = new Int();
+           {final   Int k = new Int(0);
 
             Index.S();                                                                                                  // Load index of item we want
             new I()                                                                                                     // Set the key to insert
-             {void        a() {targetInt(keys[Index.i()]); k.setValid();}
-              String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                        // Translate index into key
+             {void        a() {       intMemory(). writeInt        =     keys[Index.i()];}
+              String      v() {return intMemory().vWriteInt() + " <= "+a.dataRegisterName()+";";}                       // Translate index into key
               boolean trace() {return false;}
              };
 
