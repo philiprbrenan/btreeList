@@ -6,8 +6,6 @@
 // Write pc on memory dump title
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
 // Check how often each variable is read or written to eliminate variables that are only used once.
-// add .v = tryue to bitset and tree whne setting keys from an array
-// T () needs to know whether to load the target or not when called outside class Bit or Int
 // Use parallel loads in putBit etc as marked with Improvement:
 // Rename  read1* to read0 to better align names
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
@@ -25,7 +23,7 @@ public class Program extends Test                                               
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
