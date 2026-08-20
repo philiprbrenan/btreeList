@@ -1341,12 +1341,12 @@ Leaf   at:   2 size:   4, count:   4
 
         new ForCount(N)
          {void body(Int Index)
-           {final Int k = new Int("Key");
+           {final Int k = new Int("Key", 0);
 
             Index.S();                                                                                                  // Load index of item we want
             new I()
-             {void        a() {targetInt(random_32[Index.i()]); k.setValid();}
-              String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                        // Translate index into key
+             {void        a() {       intMemory(). writeInt        =     random_32[Index.i()];}
+              String      v() {return intMemory().vWriteInt() + " <= "+a.dataRegisterName()+";";}                       // Translate index into key
               boolean trace() {return false;}
              };
             k.W();                                                                                                      // Write key into variable
@@ -1632,11 +1632,11 @@ Leaf   at:   2 size:   4, count:   4
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
-       {final Int k = t.new Int("Key");
+       {final Int k = t.new Int("Key", 0);
         Index.S();                                                                                                      // Load index of item we want
         t.new I()
-         {void        a() {t.targetInt(random_32[Index.i()]); k.setValid();}
-          String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                            // Translate index into key
+         {void        a() {       t.intMemory(). writeInt        =     random_32[Index.i()];}
+          String      v() {return t.intMemory().vWriteInt() + " <= "+a.dataRegisterName()+";";}                           // Translate index into key
           boolean trace() {return false;}
          };
         k.W();                                                                                                          // Write key into variable
