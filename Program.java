@@ -8,7 +8,8 @@
 // Check how often each variable is read or written to eliminate variables that are only used once.
 // add .v = tryue to bitset and tree whne setting keys from an array
 // T () needs to know whether to load the target or not when called outside class Bit or Int
-// Improve name of gETBit()
+// Use parallel loads in putBit etc as marked with Improvement:
+// Rename  read1* to read0 to better align names
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -1166,8 +1167,9 @@ public class Program extends Test                                               
      }
 
     Int getInt (Int I)                                                                                                  // Retrieve the indicated integer from this memory using its first read port
-     {final Int       r = new Int();                                                                                    // Integer retrieved from memory holding integers
+     {final Int       r = new Int();                                                                                    // Location at which the retrieved integer will be stored in the integer memory
       final Memory ints = intMemory();                                                                                  // Integer memory
+      final boolean   x = !immediate();                                                                                 // The integer and bit memories are not created during immediate execution
 
       I.T();                                                                                                            // Retrieve value of the indexing integer from the memory that holds integers so it can be used to index this memory
 
@@ -1188,16 +1190,17 @@ public class Program extends Test                                               
        };
 
       new I()                                                                                                           // Complete write
-       {void   a() {ints.units[r.id] = r.i; ints. writeIntEnable        = false; jTrace(f("%8d getInt4 disable write",  currentPc()));}
-        String v() {return                  ints.vWriteIntEnable() + " <= 0;" +  vTrace(  "%8d getInt4 disable write", "pc"         );}
+       {void   a() {if (x) ints.units[r.id] = r.i; ints. writeIntEnable        = false; jTrace(f("%8d getInt4 disable write",  currentPc()));}
+        String v() {return                         ints.vWriteIntEnable() + " <= 0;" +  vTrace(  "%8d getInt4 disable write", "pc"         );}
        };
       return r;
      }
 
-    Bit getBit (Int I, Int J)                                                                                           // Get the bit in the specified byte at the specified position within the byte using the first memory read port and save it into the memory used to store bits
-     {final Bit       r = new Bit();
+    Bit getBit (Int I, Int J)                                                                                           // Get the indicated bit in indicated memory location in this memory and store it into the bit memory
+     {final Bit       r = new Bit();                                                                                    // Location at which the bit will be stored in the bit memory
       final Memory ints = intMemory();                                                                                  // Integer memory
       final Memory bits = bitMemory();                                                                                  // Integer memory
+      final boolean   x = !immediate();                                                                                 // The integer and bit memories are not created during immediate execution
 
       I.T(); J.S();                                                                                                     // Retrieve value of the indexing integers from the memory that holds integers so it can be used to index this memory for the desired bit.  Obviously at some point these instructions should be executed in parallel as we have enough read ports to do so
 
@@ -1218,8 +1221,8 @@ public class Program extends Test                                               
        };
 
       new I()                                                                                                           // Complete write
-       {void   a() {bits.units[r.id] = r.i ? 1 : 0; bits. writeIntEnable        = false; jTrace(f("%8d getBit4 disable write",  currentPc()));}
-        String v() {return                          bits.vWriteIntEnable() + " <= 0;" +  vTrace(  "%8d getBit4 disable write", "pc"         );}
+       {void   a() {if (x) bits.units[r.id] = r.i ? 1 : 0; bits. writeIntEnable        = false; jTrace(f("%8d getBit4 disable write",  currentPc()));}
+        String v() {return                                 bits.vWriteIntEnable() + " <= 0;" +  vTrace(  "%8d getBit4 disable write", "pc"         );}
        };
       return r;
      }
@@ -1229,8 +1232,10 @@ public class Program extends Test                                               
     Memory putInt (Int Index, Int Value)                                                                                // Write to the indexed memory location the value of the specified source integer
      {final Int I = Index, J = Value;                                                                                   // Load the index and the value
       final Memory ints = intMemory();
-      I.S(); J.S2();
-      new I()                                                                                                           // Set target index of memory to be written
+
+      I.S(); J.S2();                                                                                                    // Load integer values from the integers memory. Improvement: perform these operations in parallel
+
+      new I()                                                                                                           // Set target index of memory to be written while waiting for last read to complete
        {void   a() {read1IntIndex = ints.read2Int;                           jTrace(f("%8d putInt2 Index %8d",  currentPc(), ints. read2Int ));}
         String v() {return vRead1IntIndex() + " <= " + ints.vRead2Int()+"; "+vTrace(  "%8d putInt2 Index %8d", "pc",         ints.vRead2Int());}
        };
@@ -1245,24 +1250,24 @@ public class Program extends Test                                               
       return this;
      }
 
-    Memory putBit (Int I, Int J, Bit K)                                                                                 // Set the bit at the indicated position in the byte at the specified position to the specified value
-     {if (I != null) new I()                                                                                            // Set target index if not already set
-       {void   a() {              read1IntIndexJ(I);}
-        String v() {im(I); return read1IntIndexV(I);}
+    Memory putBit (Int Index, Int Bit, Bit Value)                                                                       // Set the bit at the indicated position at the indexed location in this memory tot he specified value
+     {final Int I = Index, J = Bit; final Bit K = Value;
+      final Memory bits = bitMemory();
+      final Memory ints = intMemory();
+
+      K.S(); I.S(); J.S2();                                                                                             // Retrieve the value of the bit from the bit memory and the values of the integers from the integer memory.  Improvement: these instructions should be in parallel
+
+      new I()                                                                                                           // Set target index of memory to be written
+       {void   a() {        read1IntIndex        =     ints. read2Int;        read1BitIndex        =     ints.read3Int;        jTrace(f("%8d putBit2 Index %8d.%8d",  currentPc(), ints. read2Int,   ints.read3Int  ));}
+        String v() {return vRead1IntIndex() + " <= " + ints.vRead2Int()+"; "+vRead1BitIndex() + " <= " + ints.vRead3Int()+"; "+vTrace(  "%8d putBit2 Index %8d.%8d", "pc",         ints.vRead2Int(), ints.vRead3Int());}
        };
-      if (J != null) new I()                                                                                            // Set target bit index if not already set
-       {void   a() {              read1BitIndexJ(J);}
-        String v() {im(J); return read1BitIndexV(J);}
+      new I()                                                                                                           // Integer to write
+       {void   a() {        writeBit        =     bits. read2Int != 0;   writeIntEnable        =       writeBitEnable        = true; jTrace(f("%8d putBit3 Value %8d",  currentPc(), bits. read2Int ));}
+        String v() {return vWriteBit() + " <= " + bits.vRead2Int()+"; "+vWriteIntEnable() + " <= 1; "+vWriteBitEnable() + " <= 1;" + vTrace(  "%8d putBit3 Value %8d", "pc",         bits.vRead2Int());}
        };
-      if (K != null) new I()                                                                                            // If a value to be written has been supplied then put it into the control register, else assume the control register has already been set
-       {final String f = "%8d writeBit2 %8d, %8d = %8d < %8d";
-         void  a() {                     writeBit = K.b();                           jTrace(f(f,  pc(), read1IntIndex,    read1BitIndex,        K.i ? 1 : 0,  writeBit ? 1 : 0));}
-        String v() {im(K); return web()+vWriteBit() + "<= b[arrayData_pcConstant]; "+vTrace(  f, "pc", vRead1IntIndex(), vRead1BitIndex(), "b["+K.id+"]", "b["+K.id+"]");}
-       };
-      else stop("Bit to write not set");                                                                                // Writes must have the Bit to be written as we need the instruction to write enable - the too, too clever scheme for reusing an existing value has melted, thawed, resolved itself into dew and does not work any more
-      new I()                                                                                                           // Write into memory
-       {void   a() {             writeBitJ();}
-        String v() {return wdb()+writeBitV();}
+      new I()                                                                                                           // Finish write
+       {void   a() {units[I.i] = setBit(units[I.i], J.i, K.i);  writeIntEnable        =        writeBitEnable        = false; jTrace(f("%8d putBit4 Finish",  currentPc()));}
+        String v() {return                                     vWriteIntEnable() + " <= 0;" + vWriteBitEnable() + " <= 0;" +  vTrace(  "%8d putBit4 Finish", "pc"         );}
        };
       return this;
      }
@@ -2812,10 +2817,14 @@ endmodule
        {final Memory m = unitMemory;
         final Int a = new Int("a"); a.set(2) ;                   m.putInt(new Int(1), a);
         final Int b = m.getInt(new Int(1));                      b.name = "b"; b.ok(2);
-        dumpProgramState("AAAA");
         final Bit c = m.getBit(new Int(1), new Int(1));          c.name = "c"; c.ok(true);
         final Bit d = m.getBit(new Int(1), new Int(0));          d.name = "d"; d.ok(false);
-        //m.putBit(new Int(1), new Int(0),   new Bit(true));
+        ok(nws(m.dumpAsDecimal()), """
+Memory 0
+            0    1    2    3    4    5    6    7    8    9
+00000000         2
+""");
+        m.putBit(new Int(1), new Int(0),   new Bit(true));
         //m.putBit(new Int(1), new Int(1),   new Bit(false));
         //m.putBit(new Int(0), new Int(13),  new Bit(true));
         //final Int e = new Int("e"); e.set(m.getInt(new Int(1)));  e.name = "e"; e.ok(1);
@@ -3268,7 +3277,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_mem(false);
+    test_mem(!false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
