@@ -1100,53 +1100,17 @@ public class Program extends Test                                               
 
     int pc() {return currentPc();}
 
-    Memory copy (Memory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                                    // Copy the specified memory
+    Memory copy (Memory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                                    // Copy from the specified memory into the current one
      {subStart("Program.Memory.copy");
       final Memory S = SourceMemory;
+
       new ForCount(Width)
        {void body(Int Index)
          {final Int s = SourceOffset.Add(Index);
           final Int t = TargetOffset.Add(Index);
-          new I()                                                                                                       // Set source index
-           {void   a() {       SourceMemory.read1IntIndexJ(s);}
-            String v() {return SourceMemory.read1IntIndexV(s);}
-           };
-          new I()                                                                                                       // Read from source memory
-           {void   a() {       SourceMemory.read1IntJ();}
-            String v() {return SourceMemory.read1IntV();}
-           };
-          new I()                                                                                                       // Set target index
-           {void   a() {       read1IntIndexJ(t);}
-            String v() {return read1IntIndexV(t);}
-           };
-          new I()                                                                                                       // Set write from read
-           {final String f = "%8d writeInt=read1Int %8d";
-            void   a() {              writeInt        =   S. read1Int;         jTrace(f(f,  pc(),   writeInt));}        // Java updates variables immediately so their value can be used later in the same expression
-            String v() {return wei()+vWriteInt() + " <= "+S.vRead1Int() + "; "+vTrace(  f, "pc",  S.vRead1Int());}      // Verilog updates at the end of the block so we have to supply the original expression
-           };
-          new I()                                                                                                       // Write into target memory
-           {void   a() {             writeIntJ();}
-            String v() {return wdi()+writeIntV();}
-           };
+          final Int v = SourceMemory.getInt(s);                                                                                                       // Set source index
+                                     putInt(t, v);                                                                                                       // Set source index
          }
-       };
-      subFinish();
-      return this;
-     }
-
-    Memory clearUnit (Int Index)                                                                                        // Clear memory unit
-     {subStart("Program.Memory.clearUnit(I)");
-      new I()                                                                                                           // Set target index
-       {void   a() {       read1IntIndexJ(Index);}
-        String v() {return read1IntIndexV(Index);}
-       };
-      new I()                                                                                                           // Set write from read
-       {void   a() {              writeInt = 0;          jTrace(f("%8d writeInt=0",  pc()));}
-        String v() {return wei()+vWriteInt() + " <= 0; "+vTrace(  "%8d writeInt=0", "pc"  );}
-       };
-      new I()                                                                                                           // Write into target memory
-       {void   a() {             writeIntJ();}
-        String v() {return wdi()+writeIntV();}
        };
       subFinish();
       return this;
@@ -1154,14 +1118,16 @@ public class Program extends Test                                               
 
     Memory clear ()                                                                                                     // Clear memory in Java
      {subStart("Program.Memory.clear(I)");
-      new ForCount(size()) {void  body(Int Index) {clearUnit(Index);}};
+      final Int z = new Int(0);
+      new ForCount(size()) {void  body(Int Index) {putInt(Index, z);}};
       subFinish();
       return this;
      }
 
     Memory clear (Int Start, int Width)                                                                                 // Clear memory range in Java
      {subStart("Program.Memory.clear(II)");
-      new ForCount (Start, Start.Add(Width)) {void  body(Int Index) {clearUnit(Index);}};
+      final Int z = new Int(0);
+      new ForCount (Start, Start.Add(Width)) {void  body(Int Index) {putInt(Index, z);}};
       subFinish();
       return this;
      }
@@ -1397,7 +1363,7 @@ endmodule
       writeFile(f.v$(), ""+s);
       blackBoxes.push(f);
 
-      return "\n`ifndef SYNTHESIS"+s+"`endif\n";                                                                        // During testing the black boxes are included in line and iverilog simulates them directly ignoring the black box flag. When using silicon compiler, the black boxes are put in separate files whiach are added to the project phase via the appropriate file set.
+      return "\n`ifndef SYNTHESIS"+s+"`endif\n";                                                                        // During testing the black boxes are included in line and icarus verilog simulates them directly ignoring the black box flag. When using silicon compiler, the black boxes are put in separate files whiach are added to the project phase via the appropriate file set.
      }
 
     String instantiateModule ()                                                                                         // Instantiate a memory module
@@ -1657,7 +1623,7 @@ cd {f}; yosys -q {y}                                                            
       //final String        v = "vvp -M../../vpi -mwall_time " +testName();                                             // Command to run verilog simulation
         final String        v = "vvp " +testName();                                                                     // Command to run verilog simulation
 
-        s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {v} && {t} vvp {n}",                             // Construct command
+        s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {v} && {t} vvp {n}",                             // Construct icarus verilog command
                             "f", verilogTestFolder.folder,
                             "n", testName(),
                             "v", verilogTestFolder.v(),
@@ -1698,11 +1664,11 @@ cd {f}; yosys -q {y}                                                            
 
 //D2 Dump                                                                                                               // Dump the state of the program at requested locations during execution of both Java and Verilog so that the evolution of memories, variables, registers can be confirmed
 
-  class DumpLocations                                                                                                   // Create a dump location definition to write the title of the dump without having to use string parameters which do not seem to work on iverilog
+  class DumpLocations                                                                                                   // Create a dump location definition to write the title of the dump without having to use string parameters which do not seem to work on icarus verilog
    {final Stack<Location> locations = new Stack<>();                                                                    // Locations in the code at which dumps have been requested
     final TreeSet<String>   defined = new TreeSet<>();                                                                  // Location dump routines defined
 
-    class Location                                                                                                      // Create a dump location definition to write the title of the dump without having to use string parameters which do not seem to work on iverilog
+    class Location                                                                                                      // Create a dump location definition to write the title of the dump without having to use string parameters which do not seem to work on icarus verilog
      {final int location;                                                                                               // Location in program of dump
       final String title;                                                                                               // Title of dump
 
@@ -1968,9 +1934,10 @@ module {name};                                                                  
     clock = 0;                                                                                                          // Initialize the clock - failure to do this will result in an infinite loop as the clock cannot transition on an undefined value
     forever #1 clock = ~clock;                                                                                          // Execute instructions
   end                                                                                                                   // Execute instructions
-`endif                                                                                                                  // Clock - only needed during icarus verilog simulation not during synthesis
-
+  always @(posedge clock) begin                                                                                      // Decode and execute instructions by iterating a case statement
+`else                                                                                                                  // Clock - only needed during icarus verilog simulation not during synthesis
   always_ff @(posedge clock) begin                                                                                      // Decode and execute instructions by iterating a case statement
+`endif                                                                                                                  // Clock - only needed during icarus verilog simulation not during synthesis
 """);
 
       if (!compressInstructions || !compressInstructionLabels)                                                          // No compression of instruction labels
@@ -2184,7 +2151,7 @@ def gen(module):
   design = Design     (module)                                                                                          # Silicon compiler work flow driver
   design.set_topmodule(f"{module}", fileset="rtl")                                                                      # Name the top module
   design.add_file     (f"{v}",      fileset="rtl")                                                                      # Verilog
-  design.add_define   ("SYNTHESIS", fileset="rtl")                                                                      # Set a macro variable to differentiate between testing using iverilog and synthesizing with silicon compiler
+  design.add_define   ("SYNTHESIS", fileset="rtl")                                                                      # Set a macro variable to differentiate between testing using icarus verilog and synthesizing with silicon compiler
 
   macros = YosysStdCellLibrary()
   macros.set_name("{n}_macros")
@@ -2356,7 +2323,7 @@ check
         pcIndexed = true;
        }
 
-      String indexRegisterName () {return pcIndexed ? "pc" : "sourceInt";}                                              // Name of the register used to index the array
+      String indexRegisterName () {return pcIndexed ? "pc" : intMemory().vRead2Int();}                                  // Name of the integer register used to index the array.
       String  dataRegisterName () {return "arrayData_" + name;}                                                         // Name of the register to contain the result from the indexed location in the array
       String          loadName () {return "load_"       +name;}                                                         // Free data associated with instruction matching as it can get quite big
       String         arrayName () {return "array_"      +name;}                                                         // Free data associated with instruction matching as it can get quite big
@@ -2819,15 +2786,27 @@ endmodule
         final Int b = m.getInt(new Int(1));                      b.name = "b"; b.ok(2);
         final Bit c = m.getBit(new Int(1), new Int(1));          c.name = "c"; c.ok(true);
         final Bit d = m.getBit(new Int(1), new Int(0));          d.name = "d"; d.ok(false);
-        ok(nws(m.dumpAsDecimal()), """
+        //stop(nws(m.dumpAsDecimal()));
+        ok(()->nws(m.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000         2
 """);
         m.putBit(new Int(1), new Int(0),   new Bit(true));
-        //m.putBit(new Int(1), new Int(1),   new Bit(false));
-        //m.putBit(new Int(0), new Int(13),  new Bit(true));
-        //final Int e = new Int("e"); e.set(m.getInt(new Int(1)));  e.name = "e"; e.ok(1);
+        //stop(nws(m.dumpAsDecimal()));
+        ok(()->nws(m.dumpAsDecimal()), """
+Memory 0
+            0    1    2    3    4    5    6    7    8    9
+00000000         3
+""");
+        m.putBit(new Int(1), new Int(1),   new Bit(false));
+        //stop(nws(m.dumpAsDecimal()));
+        ok(()->nws(m.dumpAsDecimal()), """
+Memory 0
+            0    1    2    3    4    5    6    7    8    9
+00000000         1
+""");
+        final Int e = new Int("e"); e.set(m.getInt(new Int(1)));  e.name = "e"; e.ok(1);
         scDieAreaX = 500; scDieAreaY = 500;
         execute();
        }
@@ -3031,7 +3010,7 @@ Memory 0
         i.S();                                                                                                          // Load the index of the array
         new I()
          {void        a() {targetInt(array[i.i()]); o.setValid();}                                                      // Load from array
-          String      v() {return "targetInt <= "+A.dataRegisterName()+";";}                                            // Load from array data register
+          String      v() {return intMemory().vWriteInt()+" <= "+A.dataRegisterName()+";";}                             // Load from array data register
           boolean trace() {return false;}
          };
         o.W();                                                                                                          // Write array element into output
@@ -3276,8 +3255,7 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_mem(!false);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
