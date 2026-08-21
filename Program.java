@@ -135,10 +135,10 @@ public class Program extends Test                                               
 
   Program maxSteps (int MaxSteps) {program().maxSteps = MaxSteps; return this;}                                         // Set number of steps
 
-  I compiling ()                 {return compiling;}                                                        // Instruction currently being compiled
-  I executing ()                 {return executing;}                                                        // Instruction currently being executed
-  I compiling (I I)              {return compiling = I;}                                                    // Instruction currently being compiled
-  I executing (I I)              {return executing = I;}                                                    // Instruction currently being executed
+  I compiling ()                 {return program().compiling;}                                                          // Instruction currently being compiled
+  I executing ()                 {return program().executing;}                                                          // Instruction currently being executed
+  I compiling (I I)              {return program().compiling = I;}                                                      // Instruction currently being compiled
+  I executing (I I)              {return program().executing = I;}                                                      // Instruction currently being executed
 
   Stack<Int>  ints ()            {return ints;}
   Stack<Bit>  bits ()            {return bits;}
@@ -381,7 +381,7 @@ public class Program extends Test                                               
         final String mv = pV(MemoryValue);                                                                             // Value
 
         final I i = new I()                                                                                             // Load id of variable if requested
-         {void   a() {loadId(id);                                      jTrace(f("%8d BST1 "+mi+" = %8d",  pc(), id)                  );}
+         {void   a() {loadId(id);                                   jTrace(f("%8d BST1 "+mi+" = %8d",  pc(), id)                  );}
           String v() {return  mi + pV(" <= arrayData_pcConstant; ")+vTrace(  "%8d BST1 "+mi+" = %8d", "pc", "arrayData_pcConstant");}
          };
         pcConstant(i, id);                                                                                              // Id of variable being addressed by these instructions
