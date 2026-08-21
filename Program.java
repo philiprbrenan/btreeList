@@ -86,7 +86,6 @@ public class Program extends Test                                               
   Program (Build Build)                                                                                                 // Construct
    {immediate       = Build.immediate;                                                                                  // Immediate or delayed execution
     parentProgram   = Build.parent == null ? this : Build.parent;                                                       // Parent program that will contain the code
-    unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                             // Memory associated with program if any
     deleteAllFiles(verilogTestFolder.folder, 999);                                                                      // Delete generated Verilog files created by a prior run of the current test
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
@@ -102,6 +101,7 @@ public class Program extends Test                                               
     intMemory       = p ? new Memory(0, "Ints") : program().intMemory;                                                  // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
     bitMemory       = p ? new Memory(0, "Bits") : program().bitMemory;                                                  // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
 
+    unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                             // Memory associated with program if any
     initializeRegisters();                                                                                              // Start registers in known state
     code();                                                                                                             // Load or execute the code associated with this program
    }
@@ -135,43 +135,43 @@ public class Program extends Test                                               
 
   Program maxSteps (int MaxSteps) {program().maxSteps = MaxSteps; return this;}                                         // Set number of steps
 
-  I compiling ()                 {return   program().compiling;}                                                        // Instruction currently being compiled
-  I executing ()                 {return   program().executing;}                                                        // Instruction currently being executed
-  I compiling (I I)              {return   program().compiling = I;}                                                    // Instruction currently being compiled
-  I executing (I I)              {return   program().executing = I;}                                                    // Instruction currently being executed
+  I compiling ()                 {return compiling;}                                                        // Instruction currently being compiled
+  I executing ()                 {return executing;}                                                        // Instruction currently being executed
+  I compiling (I I)              {return compiling = I;}                                                    // Instruction currently being compiled
+  I executing (I I)              {return executing = I;}                                                    // Instruction currently being executed
 
-  Stack<Int>  ints ()            {return   program().ints;}
-  Stack<Bit>  bits ()            {return   program().bits;}
-  Stack<Memory> memories ()      {return   program().memories;}
+  Stack<Int>  ints ()            {return ints;}
+  Stack<Bit>  bits ()            {return bits;}
+  Stack<Memory> memories ()      {return memories;}
 
-  int      currentPc ()          {return   program().currentPc;}
-  int    targetIntId ()          {return intMemory().read1IntIndex;}
-  int    sourceIntId ()          {return intMemory().read2IntIndex;}
-  int   source2IntId ()          {return intMemory().read3IntIndex;}
-  int    targetBitId ()          {return bitMemory().read1IntIndex;}
-  int    sourceBitId ()          {return bitMemory().read2IntIndex;}
-  int      targetInt ()          {return intMemory().read1Int;}
-  int      sourceInt ()          {return intMemory().read2Int;}
-  int     source2Int ()          {return intMemory().read3Int;}
-  boolean  targetBit ()          {return bitMemory().read1Int != 0;}
-  boolean  sourceBit ()          {return bitMemory().read2Int != 0;}
+  int      currentPc ()          {return currentPc;}
+  int    targetIntId ()          {return intMemory.read1IntIndex;}
+  int    sourceIntId ()          {return intMemory.read2IntIndex;}
+  int   source2IntId ()          {return intMemory.read3IntIndex;}
+  int    targetBitId ()          {return bitMemory.read1IntIndex;}
+  int    sourceBitId ()          {return bitMemory.read2IntIndex;}
+  int      targetInt ()          {return intMemory.read1Int;}
+  int      sourceInt ()          {return intMemory.read2Int;}
+  int     source2Int ()          {return intMemory.read3Int;}
+  boolean  targetBit ()          {return bitMemory.read1Int != 0;}
+  boolean  sourceBit ()          {return bitMemory.read2Int != 0;}
 
-  void    currentPc (int V)     {ngv();   program().currentPc = V;}
-  void  targetIntId (int V)     {ngv(); intMemory().read1IntIndex = V;}
-  void  sourceIntId (int V)     {ngv(); intMemory().read2IntIndex = V;}
-  void source2IntId (int V)     {ngv(); intMemory().read3IntIndex = V;}
-  void  targetBitId (int V)     {ngv(); bitMemory().read1IntIndex = V;}
-  void  sourceBitId (int V)     {ngv(); bitMemory().read2IntIndex = V;}
-  void    targetInt (int V)     {ngv(); intMemory().writeInt      = V;}                                                 // Currently bits are stored wastefully as integers hoping that yosys will remove unused paths
-  void    sourceInt (int V)     {ngv(); intMemory().read2Int      = V;}
-  void   source2Int (int V)     {ngv(); intMemory().read3Int      = V;}
-  void    targetBit (boolean V) {ngv(); bitMemory().writeInt      = V ? 1 : 0;}
-  void    sourceBit (boolean V) {ngv(); bitMemory().read2Int      = V ? 1 : 0;}
+  void    currentPc (int V)      {ngv(); currentPc = V;}
+  void  targetIntId (int V)      {ngv(); intMemory.read1IntIndex = V;}
+  void  sourceIntId (int V)      {ngv(); intMemory.read2IntIndex = V;}
+  void source2IntId (int V)      {ngv(); intMemory.read3IntIndex = V;}
+  void  targetBitId (int V)      {ngv(); bitMemory.read1IntIndex = V;}
+  void  sourceBitId (int V)      {ngv(); bitMemory.read2IntIndex = V;}
+  void    targetInt (int V)      {ngv(); intMemory.writeInt      = V;}                                                 // Currently bits are stored wastefully as integers hoping that yosys will remove unused paths
+  void    sourceInt (int V)      {ngv(); intMemory.read2Int      = V;}
+  void   source2Int (int V)      {ngv(); intMemory.read3Int      = V;}
+  void    targetBit (boolean V)  {ngv(); bitMemory.writeInt      = V ? 1 : 0;}
+  void    sourceBit (boolean V)  {ngv(); bitMemory.read2Int      = V ? 1 : 0;}
 
   void  ngv() {if (generatingVerilog) stop("Cannot call this function while generating verilog");}                      // The variable is owned by the associated verilog memory module and so cannot be written to by the main module although the main module can read the value
 
-  Memory   intMemory ()          {return program().intMemory;}
-  Memory   bitMemory ()          {return program().bitMemory;}
+  Memory   intMemory ()          {return intMemory;}
+  Memory   bitMemory ()          {return bitMemory;}
 
   void initializeRegisters ()                                                                                           // Initialize registers
    {currentPc(0);
@@ -180,9 +180,9 @@ public class Program extends Test                                               
     targetInt(0);   targetBit(false);
    }
 
-  TreeMap<Integer,Integer> pcConstant () {return program().pcConstant;}                                                 // Instruction number to variable or memory
-  VerilogArrays         verilogArrays () {return program().verilogArrays;}                                              // Verilog array definitions
-  DumpLocations         dumpLocations () {return program().dumpLocations;}                                              // Verilog array definitions
+  TreeMap<Integer,Integer> pcConstant () {return pcConstant;}                                                           // Instruction number to variable or memory
+  VerilogArrays         verilogArrays () {return verilogArrays;}                                                        // Verilog array definitions
+  DumpLocations         dumpLocations () {return dumpLocations;}                                                        // Verilog array definitions
 
   void pcConstant (I I, Label Target)    {pcConstant().put(I.instructionNumber, Target.offset);}                        // Save a constant label into the instruction to constant map
   void pcConstant (I I, int   Target)    {pcConstant().put(I.instructionNumber, Target);}                               // Save a constant integer into the instruction to constant map
