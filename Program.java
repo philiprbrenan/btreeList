@@ -19,9 +19,9 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final boolean               suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final boolean                    suppressTraceComments =!true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                     compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+ {final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+  final boolean                     compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
@@ -92,8 +92,8 @@ public class Program extends Test                                               
     unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                             // Memory associated with program if any
     deleteAllFiles(verilogTestFolder.folder, 999);                                                                      // Delete generated Verilog files created by a prior run of the current test
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
-    if (program().intMemory() == null) program().intMemory = new Memory(0, "Ints");                                     // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
-    if (program().bitMemory() == null) program().bitMemory = new Memory(0, "Bits");                                     // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    if (intMemory() == null) program().intMemory = new Memory(0, "Ints");                                               // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    if (bitMemory() == null) program().bitMemory = new Memory(0, "Bits");                                               // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
     initializeRegisters();                                                                                              // Start registers in known state
     code();                                                                                                             // Load or execute the code associated with this program
    }
