@@ -2658,10 +2658,10 @@ endmodule
         a.add(3).ok(4);
        }
      };
-    ok(P.ints.size(), 2);
-    ok(Q.ints.size(), 0);
     P.scDieAreaX = 300; P.scDieAreaY = 400;
     P.execute();
+    ok(P.intMemory.size(), P.immediate() ? 0 : 2);
+    ok(Q.intMemory.size(), Q.immediate() ? 0 : 2);
    }
 
   static void test_remote()
@@ -2706,21 +2706,21 @@ endmodule
         final Bit d = m.getBit(new Int(1), new Int(0));          d.name = "d"; d.ok(false);
         //stop(nws(m.dumpAsDecimal()));
         ok(()->nws(m.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000         2
 """);
         m.putBit(new Int(1), new Int(0),   new Bit(true));
         //stop(nws(m.dumpAsDecimal()));
         ok(()->nws(m.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000         3
 """);
         m.putBit(new Int(1), new Int(1),   new Bit(false));
         //stop(nws(m.dumpAsDecimal()));
         ok(()->nws(m.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000         1
 """);
@@ -2839,7 +2839,7 @@ Memory 0
              {void Then()
                {//stop(nws(M.dumpAsDecimal()));
                 ok(()->nws(M.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
 """);
@@ -2847,7 +2847,7 @@ Memory 0
               void Else()
                {//stop(nws(M.dumpAsDecimal()));
                 ok(()->nws(M.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
 """);
@@ -2865,7 +2865,7 @@ Memory 0
             dumpProgramState("AAAA2222");
             //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              1    7
 """);
@@ -2878,28 +2878,28 @@ Memory 0
             m.getInt (new Int( 1)).ok(6);
             //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              1    6
 """);
             m.clear(1);
             //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000                   6
 """);
             m.copy(n, 1);
             //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              6    6
 """);
             M.clear();
             //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
-Memory 0
+Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000
 """);
@@ -3173,7 +3173,7 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
+   {oldTests();
     test_addition(false);
    }
 
