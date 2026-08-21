@@ -231,6 +231,16 @@ public class Test                                                               
     return S;
    }
 
+  static String trimRight(String S) {return S.stripTrailing();}                                                         // Remove spaces at the end of a string if there are any
+
+  static StringBuilder trimRight(StringBuilder S)                                                                       // Remove spaces at the end of a string builder if there are any
+   {while (S.length() > 0 && S.charAt(S.length() - 1) == ' ') S.setLength(S.length() - 1);
+    return S;
+   }
+
+  static String        trimRightAndPad(String        S, int Length) {return pad(trimRight(S), Length);}                 // Remove spaces at the end of a string if there are any and pad to the specified length
+  static StringBuilder trimRightAndPad(StringBuilder S, int Length) {return pad(trimRight(S), Length);}                 // Remove spaces at the end of a string builder if there are any and pad to the specified length
+
   static String q (String S)                                                                                            // Quote a string
    {return "\"" + S
         .replace("\\", "\\\\")
@@ -1714,11 +1724,20 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     class Caller
      {final String name = callerName();
       Caller()
-       {ok(callerName(), "test_callerName");                                                                                //
+       {ok(callerName(), "test_callerName");
        }
      }
     final Caller c = new Caller();
     ok(c.name, "test_callerName");
+   }
+
+  static void test_trimRightAndPad()
+   {final String    S = "A   ";
+    ok(trimRightAndPad(S, 2), "A ");
+    ok(trimRightAndPad(S, 3), "A  ");
+    final StringBuilder s = new StringBuilder("A   ");
+    trimRightAndPad(s, 2); ok(""+s, "A ");
+    trimRightAndPad(s, 3); ok(""+s, "A  ");
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -1739,6 +1758,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     test_hextoInt();
     test_formatComments();
     test_callerName();
+    test_trimRightAndPad();
    }
 
   static void newTests()                                                                                                // Tests being worked on
