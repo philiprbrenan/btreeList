@@ -59,7 +59,7 @@ final public class BitSet extends Program                                       
 
     int units()                                                                                                         // Units needed for the bitset, the bitset trees and the count field
      {final int s = Memory.bitsPerUnit();
-      return (s - 1 + 3 * nextPowerOfTwo(bitSize)) / s + (trackCount ? 1 : 0);
+      return (s - 1 + 3 * nextPowerOfTwo(bitSize)) / s + (trackCount ? 1 : 0);                                          // The  bit set plus the ones and zeros trees which are one less in size than the bitset
      }
 
     Program.Build build ()                                                                                              // Description of containing program
