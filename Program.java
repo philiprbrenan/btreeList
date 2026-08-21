@@ -1838,7 +1838,8 @@ module {name} (                                                                 
 
       /*Parameters*/put(substitute("""
   input wire clock,                                                                                                     // Clock pin
-  input wire reset);                                                                                                    // Reset pin
+  input wire reset,                                                                                                     // Reset
+  output reg[31:0] o_pc);                                                                                                 // This is just to create some output so that yosys does not collapse the chip to nothing because it does not produces any output
 `else
 module {name};                                                                                                          // Bint machine - standalone for execution
 `endif
@@ -1851,6 +1852,9 @@ module {name};                                                                  
 `endif
   integer                pc;                                                                                            // Program counter for stepping through user code
   integer         traceFile;                                                                                            // Write verilog trace records to this file
+`ifdef SYNTHESIS
+  assign o_pc = pc[31:0];                                                                                                     // Prevent yosys collapsing the chip to nothing
+`endif
 """);
 
       for(VerilogArrays.Array a : verilogArrays.arrays()) put(a.connectModule());                                       // Connect to verilog array modules
