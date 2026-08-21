@@ -19,9 +19,9 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                     compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+ {final boolean               suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final boolean                    suppressTraceComments =!true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+  final boolean                     compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
@@ -65,8 +65,8 @@ public class Program extends Test                                               
         VerilogArrays.Array              pcConstantArray = null;                                                        // Instruction to variable or memory used by the instruction. Mapped to read only memory so that Yos ys does not expand them into registers. Prefetched one instruction in advance to keep the main instruction loop fully occupied except at branches where a one instruction wait has to be inserted to allow the prefetch loop to get ahead again.
         VerilogArrays.Array              pcMatchSetArray = null;                                                        // Constants in instructions identified by program counter as above.
   final TreeMap<Integer,Integer>              pcConstant = new TreeMap<>();                                             // Instruction equivalence set identified by program counter
-  final Memory                                 intMemory;                                                               // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
-  final Memory                                 bitMemory;                                                               // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+  Memory                                       intMemory;                                                               // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+  Memory                                       bitMemory;                                                               // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
   int                                          currentPc = 0;                                                           // Current program counter
   int                                             jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
   int                                             vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
@@ -92,8 +92,8 @@ public class Program extends Test                                               
     unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                             // Memory associated with program if any
     deleteAllFiles(verilogTestFolder.folder, 999);                                                                      // Delete generated Verilog files created by a prior run of the current test
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
-    intMemory       = new Memory(0, "Ints");                                                                            // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
-    bitMemory       = new Memory(0, "Bits");                                                                            // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    if (program().intMemory() == null) program().intMemory = new Memory(0, "Ints");                                     // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    if (program().bitMemory() == null) program().bitMemory = new Memory(0, "Bits");                                     // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
     initializeRegisters();                                                                                              // Start registers in known state
     code();                                                                                                             // Load or execute the code associated with this program
    }
@@ -459,7 +459,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op)                                                                                                  // Execute a monadic boolean operation
-     {final String        n = vn();                                                                                     // Name of the variable in Verilog
+     {//final String        n = vn();                                                                                     // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
        {case flip -> {s.append("!"+bitMemory().vWriteInt()+"/*flip*/");}
@@ -468,7 +468,7 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String eV (Ops Op)            {return eV(Op, bitMemory.vRead2Int());}                                               // Dyadic boolean operation against memory
+    String eV (Ops Op)            {return eV(Op, bitMemory().vRead2Int());}                                             // Dyadic boolean operation against memory
     String eV (Ops Op, boolean I) {return eV(Op, I ? "1" : "0");}                                                       // Dyadic boolean operation against constant
 
     String eV (Ops Op, String Source)                                                                                   // Execute a dyadic boolean operation
@@ -502,10 +502,10 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    String   vn ()                                                                                                      // Verilog name of this boolean variable
-     {final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
-      return pName("b["+id+"]"+n);
-     }
+//    String   vn ()                                                                                                      // Verilog name of this boolean variable
+//     {final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
+//      return pName("b["+id+"]"+n);
+//     }
 
     Bit ok (boolean Value)                                                                                              // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace and so there will be an empty instruction generated in the verilog to "regulate the service"
      {final Bit got = this;
@@ -893,10 +893,10 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    String   vn ()                                                                                                      // Verilog name of this variable
-     {final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
-      return pName("i["+id+"]"+n);
-     }
+//  String   vn2 ()                                                                                                     // Verilog name of this variable
+//   {final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
+//    return pName("i["+id+"]"+n);
+//   }
 
     Int ok (int Value)                                                                                                  // Check the integer. There is no corresponding check in Verilog other than the execution logs matching so there will be an empty instruction generated in the verilog to "regulate the service"
      {final Int got = this;
@@ -1024,11 +1024,11 @@ public class Program extends Test                                               
 
     int size ()                    {return units.length;}                                                               // Size of memory
     String i ()                    {return ""+id;}                                                                      // Number of memory a string for use in writing verilog
-    String n ()                    {return "m_"+id;}                                                                    // Name of memory
-    String m ()                    {return "memory_"+id;}                                                               // Name of memory module used to externalize memory for yosys
+    String n ()                    {return this == intMemory() ? "ints" : this == bitMemory() ? "bits" : "m_"+id;}      // Name of memory
+    String m ()                    {return "memory_"+n();}                                                              // Name of memory module used to externalize memory for yosys
     String n (String Index)        {return n() + "["+Index+"]";}                                                        // Name of indexed memory
     String n (String I, String J)  {return n() + "["+I+"]["+J+"]";}                                                     // Name of indexed memory
-    String name ()                 {return name == null ? "" :     name;}                                               // Name of the verilog routine to dump this memory in decimal
+    String name ()                 {return name == null ? "" :     name + "/*ZZZ*/";}                                   // Name of the verilog routine to dump this memory in decimal
     String nameSp ()               {return name == null ? "" : " "+name;}                                               // Simplifies code that would otherwise leave a trailing blank when a name was not supplied by the caller
     String dumpVerilogMemoryInDecimalName () {return "dumpDecimal_"+id;}                                                // Name of the verilog routine to dump this memory in decimal
 
@@ -1357,22 +1357,22 @@ endmodule
     String instantiateModule ()                                                                                         // Instantiate a memory module
      {final StringBuilder s = new StringBuilder();
       s.append("\n// Memory module: "+ n() + " " + name() + "\n");                                                      // Memory module title
-      s.append("  reg       "+ pName(      vRead1Bit())+";\n");                                                         // First boolean read from memory
-      s.append("  reg       "+ pName(      vRead2Bit())+";\n");                                                         // Second boolean read from memory
-      s.append("  reg       "+ pName(      vRead3Bit())+";\n");                                                         // Third boolean read from memory
-      s.append("  reg       "+ pName(      vWriteBit())+"; initial "+pName(      vWriteBit()) + "= 0;\n");              // Boolean to write into memory
-      s.append("  integer   "+ pName(      vRead1Int())+";\n");                                                         // First integer read from memory
-      s.append("  integer   "+ pName(      vRead2Int())+";\n");                                                         // Second integer read from memory
-      s.append("  integer   "+ pName(      vRead3Int())+";\n");                                                         // Third integer read from memory
-      s.append("  integer   "+ pName(      vWriteInt())+"; initial "+pName(      vWriteInt()) + "= 0;\n");              // Integer to write into memory
-      s.append("  reg[31:0] "+ pName( vRead1IntIndex())+"; initial "+pName( vRead1IntIndex()) + "= 0;\n");              // Index at which to read first integer from memory
-      s.append("  reg[31:0] "+ pName( vRead2IntIndex())+"; initial "+pName( vRead2IntIndex()) + "= 0;\n");              // Index at which to read second integer from memory
-      s.append("  reg[31:0] "+ pName( vRead3IntIndex())+"; initial "+pName( vRead3IntIndex()) + "= 0;\n");              // Index at which to read third integer from memory
-      s.append("  reg[31:0] "+ pName( vRead1BitIndex())+"; initial "+pName( vRead1BitIndex()) + "= 0;\n");              // Index within first integer from which to get a bit
-      s.append("  reg[31:0] "+ pName( vRead2BitIndex())+"; initial "+pName( vRead2BitIndex()) + "= 0;\n");              // Index within second integer from which to get a bit
-      s.append("  reg[31:0] "+ pName( vRead3BitIndex())+"; initial "+pName( vRead3BitIndex()) + "= 0;\n");              // Index within third integer from which to get a bit
-      s.append("  reg       "+ pName(vWriteIntEnable())+"; initial "+pName(vWriteIntEnable()) + "= 0;\n");              // Write enable when writing integer data into memory
-      s.append("  reg       "+ pName(vWriteBitEnable())+"; initial "+pName(vWriteBitEnable()) + "= 0;\n");              // Write enable when writing boolean data into memory
+      s.append("  reg       "+       vRead1Bit() +";\n");                                                               // First boolean read from memory
+      s.append("  reg       "+       vRead2Bit() +";\n");                                                               // Second boolean read from memory
+      s.append("  reg       "+       vRead3Bit() +";\n");                                                               // Third boolean read from memory
+      s.append("  reg       "+       vWriteBit() +"; initial "+pName(      vWriteBit()) + "= 0;\n");                    // Boolean to write into memory
+      s.append("  integer   "+       vRead1Int() +";\n");                                                               // First integer read from memory
+      s.append("  integer   "+       vRead2Int() +";\n");                                                               // Second integer read from memory
+      s.append("  integer   "+       vRead3Int() +";\n");                                                               // Third integer read from memory
+      s.append("  integer   "+       vWriteInt() +"; initial "+       vWriteInt() + "= 0;\n");                          // Integer to write into memory
+      s.append("  reg[31:0] "+  vRead1IntIndex() +"; initial "+  vRead1IntIndex() + "= 0;\n");                          // Index at which to read first integer from memory
+      s.append("  reg[31:0] "+  vRead2IntIndex() +"; initial "+  vRead2IntIndex() + "= 0;\n");                          // Index at which to read second integer from memory
+      s.append("  reg[31:0] "+  vRead3IntIndex() +"; initial "+  vRead3IntIndex() + "= 0;\n");                          // Index at which to read third integer from memory
+      s.append("  reg[31:0] "+  vRead1BitIndex() +"; initial "+  vRead1BitIndex() + "= 0;\n");                          // Index within first integer from which to get a bit
+      s.append("  reg[31:0] "+  vRead2BitIndex() +"; initial "+  vRead2BitIndex() + "= 0;\n");                          // Index within second integer from which to get a bit
+      s.append("  reg[31:0] "+  vRead3BitIndex() +"; initial "+  vRead3BitIndex() + "= 0;\n");                          // Index within third integer from which to get a bit
+      s.append("  reg       "+ vWriteIntEnable() +"; initial "+ vWriteIntEnable() + "= 0;\n");                          // Write enable when writing integer data into memory
+      s.append("  reg       "+ vWriteBitEnable() +"; initial "+ vWriteBitEnable() + "= 0;\n");                          // Write enable when writing boolean data into memory
       s.append("  "+ connectMemoryModule());                                                                            // Connect to memory module
       return ""+s;
      }
@@ -1971,17 +1971,17 @@ module {name};                                                                  
   end
 """);
 
-      put("`ifdef SYNTHESIS\n");
-      for(Int i : ints)                                                                                                 // Update variables from inputs and outputs from variables during synthesis
-       {if (i.in) put(substitute("""
-  always_ff @(posedge clock) begin if (reset) i[{i}] <= 0;  else i[{i}]  <= $signed(i_{n}); end                         // Update variables from inputs - the inputs cannot be signed because silicon compiler seems to have difficulty with signed parameters.
-""", "i", ""+i.id, "n", i.name));
-
-        if (i.out) put(substitute("""
-  always_ff @(posedge clock) begin if (reset) o_{n} <= 0; else o_{n} <= i[{i}];  end                                    // Update variables from outputs - Verilog just assigns bits without interpreting whether there is a sign present or not
-""", "i", ""+i.id, "n", i.name));
-         }
-      put("`endif\n");
+//      put("`ifdef SYNTHESIS\n");
+//      for(Int i : ints)                                                                                                 // Update variables from inputs and outputs from variables during synthesis
+//       {if (i.in) put(substitute("""
+//  always_ff @(posedge clock) begin if (reset) i[{i}] <= 0;  else i[{i}]  <= $signed(i_{n}); end                         // Update variables from inputs - the inputs cannot be signed because silicon compiler seems to have difficulty with signed parameters.
+//""", "i", ""+i.id, "n", i.name));
+//
+//        if (i.out) put(substitute("""
+//  always_ff @(posedge clock) begin if (reset) o_{n} <= 0; else o_{n} <= i[{i}];  end                                    // Update variables from outputs - Verilog just assigns bits without interpreting whether there is a sign present or not
+//""", "i", ""+i.id, "n", i.name));
+//         }
+//      put("`endif\n");
 
       /*Clear registers*/put(substitute("""
 
