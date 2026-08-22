@@ -21,10 +21,25 @@ my $wfcpd   = q(.github/workflows/cpd.yml);                                     
 my @ext     = qw(c java pl md);                                                                                         # Extensions of files to upload to github
 my %tasks   = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
 my $include = q(.);                                                                                                     # Java files to include in testing as they are not yet ready
-#   $include = q(Program);                                                                                               # Java files to include in testing as they are not yet ready
+#   $include = q(Program);                                                                                              # Java files to include in testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
+
+sub getRunParameters()                                                                                                  # Get run time parameters from java
+ {my @p;
+  my @l = readFile fpe $folder, qw(Program java);
+  for my $l(@l)
+   {if ($l =~ m(final\s+boolean\s+(run\w+)\s+=\s*(\!?(true|false))))
+     {my $k = $1; my $v = $2;
+      $v =~ s/true/1/; $v =~ s/false/0/; $v =~ s/\!0/1/; $v =~ s/\!1/0/;
+      push @p, "$k = $v";
+     }
+   }
+  join ", ", @p
+ }
+
+my $runParameters = getRunParameters();
 
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
    @files = grep {!m(verilog/)}        @files;                                                                          # Eliminate the temporary verilog folder
@@ -64,7 +79,6 @@ if (rand() < 0.1)                                                               
                           readFile(qq($home/.xprofile)));
 }
 
-
 if (@java)                                                                                                              # Write workflow to test java files
  {my @j = map {fn $_} @java;                                                                                            # Java class names from files
   my $d = dateTimeStamp;
@@ -85,7 +99,7 @@ if (@java)                                                                      
   my $y = <<"END";
 # Test $d
 
-name: Test
+name: $runParameters
 run-name: $repo
 
 on:
