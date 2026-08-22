@@ -1587,15 +1587,13 @@ cd {f}; yosys -q {y}                                                            
         ok(readFileAsString(traceFiles.v$()).equals(readFileAsString(traceFiles.java$())));                             // Compare corresponding Java and Verilog trace files -  says failed if it fails and provides a traceback
 
         if (github_actions && runSiliconCompiler)                                                                       // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
-         {say("Silicon compiler");
-          final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
+         {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
          }
 
         if (runYosys)                                                                                                   // Run Yosys to get a faster check on whether the Verilog can be synthesized
-         {say("Yosys");
-          final ExecCommand X = new ExecCommand(ysCmd);                                                                 // Execute silicon compiler commands
+         {final ExecCommand X = new ExecCommand(ysCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
           ok(X.exitCode == 0);                                                                                          // Check return code from Yosys
