@@ -30,7 +30,7 @@ class Branch extends Program implements Program.Locatable                       
 
     Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
     Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory   (Memory.Ref Ref) {unitMemoryRef = Ref;       return this;}
+    Build memory   (Memory.Ref Ref)     {unitMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
     Build at       (Int     At        ) {at            = At;        return this;}
 
@@ -74,31 +74,27 @@ class Branch extends Program implements Program.Locatable                       
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
    }
 
-  Branch initializeMemory()                                                                                             // Initialize slots and data associated with the branch
+  Branch initializeMemory ()                                                                                            // Initialize slots and data associated with the branch
    {clear();                                                                                                            // Clear backing memory
     //slots.initializeMemory();                                                                                         // Initialize slots
     return this;
    }
 
-  public Bint getLocation() {return at;}                                                                                // The location of this node in memory
+  public Bint getLocation () {return at;}                                                                               // The location of this node in memory
 
   void branchCode() {}                                                                                                  // Override this method to provide code for testing the branch
 
-  Bit empty()   {return slots.empty();}                                                                                 // Is the branch empty
-  Bit full ()   {return slots.full ();}                                                                                 // Is the branch full
-  Int  count()   {return slots.count();}                                                                                // Number of key/data pairs in the branch
-  int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the branch
+  Bit       empty ()                     {return slots.empty();}                                                        // Is the branch empty
+  Bit        full ()                     {return slots.full ();}                                                        // Is the branch full
+  Int       count ()                     {return slots.count();}                                                        // Number of key/data pairs in the branch
+  int     maxSize ()                     {return maxSize;}                                                              // Number of key/data pairs in the branch
+  Int        data (Int Index)            {return refData.getInt(Index);}                                                // Get data at an index
+  void       data (Int Index, Int Value) {refData.putInt(Index, Value);}                                                // Set data at the specified index
+  int bytesNeeded ()                     {return build.size();}                                                         // Number of bytes needed to contain a branch
+  void      clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                          // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
+  void       copy (Branch Source)        {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                     // Copy one branch into another branch
 
-  Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
-  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // Set data at the specified index
-
-  int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a branch
-  void      clear() {unitMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
-
-  void copy (Branch Source) {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
-//void invalidate()         {unitMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
-
-//D1  Delete, find, insert                                                                                              // Delete, find, insert keys and data in a branch
+//D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a branch
 
   Bint find  (Int Key) {return getDataFromKey(Key, false);}                                                             // Get the data associated with a key
   Bint delete(Int Key) {return getDataFromKey(Key, true);}                                                              // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
@@ -977,7 +973,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_mergeLeft();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
