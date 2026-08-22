@@ -99,8 +99,8 @@ if (@java)                                                                      
   my $y = <<"END";
 # Test $d
 
-name: $runParameters
-run-name: $repo
+name: $repo
+run-name: $runParameters
 
 on:
   push:
