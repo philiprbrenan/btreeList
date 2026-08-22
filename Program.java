@@ -19,18 +19,16 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
-  final boolean                     compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
-  final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final boolean                          generateVerilog = true;                                                        // Generate Verilog version of each program
-  final boolean                               runVerilog = true;                                                        // Execute  Verilog version of each program
-  final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                       runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
-  final int                               verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-        int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
-        int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
+ {final static boolean        suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean             suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
+  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+  final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
+  final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
+  final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
+  final static boolean       suppressNamesInInstructions = true;                                                        // Include names in instructions
+  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
   final static FileNames                   verilogFolder = new FileNames(fp("verilog"));                                // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.down("test");                                  // Verilog tests
@@ -62,7 +60,9 @@ public class Program extends Test                                               
   static String                                subsTrace = null;                                                        // Traceback through the methods currently active
   I                                            executing = null;                                                        // Instruction currently being executed
   I                                            compiling = null;                                                        // Instruction currently being compiled
-  int                                                pc;                                                                // Program counter indicating the instruction to be executed after the current one
+  int                                           maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
+  int                                              steps = 0;                                                           // Number of instruction steps executed so far during the latest execution of this program
+  int                                                 pc;                                                               // Program counter indicating the instruction to be executed after the current one
   int                                          currentPc = 0;                                                           // Current program counter
   int                                             jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
   int                                             vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
@@ -1475,7 +1475,7 @@ endmodule
 
   void jTrace (String Message)                                                                                          // Trace a Java instruction by writing a message to the Java trace file unless the instruction has suppressed tracing
    {++program().jtrace;                                                                                                 // Count trace records written
-    if (program().suppressInstructionTracing) return;                                                                   // Suppress instruction tracing
+    if (suppressInstructionTracing) return;                                                                             // Suppress instruction tracing
     if (!executing().trace()) return;                                                                                   // Not tracing this instruction
     appendJavaTrace(Message+"\n");                                                                                      // Write tracing message
    }
