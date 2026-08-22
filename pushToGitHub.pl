@@ -30,7 +30,7 @@ sub getRunParameters()                                                          
  {my @p;
   my @l = readFile fpe $folder, qw(Program java);
   for my $l(@l)
-   {if ($l =~ m(final\s+boolean\s+(run\w+)\s+=\s*(\!?(true|false))))
+   {if ($l =~ m(boolean\s+(run\w+)\s+=\s*(\!?(true|false))))
      {my $k = $1; my $v = $2;
       $v =~ s/true/1/; $v =~ s/false/0/; $v =~ s/\!0/1/; $v =~ s/\!1/0/;
       push @p, "$k = $v";
@@ -40,6 +40,7 @@ sub getRunParameters()                                                          
  }
 
 my $runParameters = getRunParameters();
+say STDERR "AAAA $runParameters";
 
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
    @files = grep {!m(verilog/)}        @files;                                                                          # Eliminate the temporary verilog folder
