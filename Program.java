@@ -599,9 +599,9 @@ public class Program extends Test                                               
         final String mv = pV(MemoryValue);                                                                              // Value
 
         final I i = new I()                                                                                             // Load index of integer
-         {final String c = mi + pV(" <= arrayData_pcConstant; /*"+I.id+"*/");
+         {final String c = mi + pV(" <= arrayData_pcConstant;");
           void   a() {loadId(id);  jTrace(f("%8d ILST1 "+mi+" = %8d",  pc(), id)                              );}
-          String v() {return c+" "+vTrace(  "%8d ILST1 "+mi+" = %8d", "pc", "arrayData_pcConstant/*"+I.id+"*/");}
+          String v() {return c+" "+vTrace(  "%8d ILST1 "+mi+" = %8d", "pc", "arrayData_pcConstant");}
          };
         pcConstant(i, I.id);                                                                                            // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
 
@@ -716,7 +716,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op, int I)                                                                                           // Execute a monadic integer operation on a constant
-     {final String        n = intMemory().vRead0Int(), c = pV("arrayData_pcConstant/*"+I+"*/");                         // The constant will be stored in the instruction to constant map
+     {final String        n = intMemory().vRead0Int(), c = pV("arrayData_pcConstant");                                  // The constant will be stored in the instruction to constant map
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        c+"/*seti*/");}
@@ -848,7 +848,7 @@ public class Program extends Test                                               
 
     String bev (Ops Op, Bit B, int I)                                                                                   // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
-      final String a = intMemory().vRead1Int(), b = pV("arrayData_pcConstant/*"+I+"*/");
+      final String a = intMemory().vRead1Int(), b = pV("arrayData_pcConstant");
       switch(Op)
        {case eq -> s.append(a + " == " + b+"/*eqi*/");
         case ne -> s.append(a + " != " + b+"/*nei*/");
@@ -1098,8 +1098,8 @@ public class Program extends Test                                               
        };
 
       final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold integers
-       {void   a() {       ints. read0IntIndex        =  r.id;                               jTrace(f("%8d getInt2 Set write index %8d",  currentPc(), r.id)                );}
-        String v() {return ints.vRead0IntIndex() + " <= arrayData_pcConstant/*"+r.id+"*/;" + vTrace(  "%8d getInt2 Set write index %8d", "pc",        "arrayData_pcConstant");}
+       {void   a() {       ints. read0IntIndex        =  r.id;                   jTrace(f("%8d getInt2 Set write index %8d",  currentPc(), r.id)                );}
+        String v() {return ints.vRead0IntIndex() + " <= arrayData_pcConstant;" + vTrace(  "%8d getInt2 Set write index %8d", "pc",        "arrayData_pcConstant");}
        };
       pcConstant(i, r.id);
 
@@ -1130,7 +1130,7 @@ public class Program extends Test                                               
 
       final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold bits
        {void   a() {       bits. read0IntIndex        =  r.id;                               jTrace(f("%8d getBit2 Set write index %8d",  currentPc(), r.id)                );}
-        String v() {return bits.vRead0IntIndex() + " <= arrayData_pcConstant/*"+r.id+"*/;" + vTrace(  "%8d getBit2 Set write index %8d", "pc",        "arrayData_pcConstant");}
+        String v() {return bits.vRead0IntIndex() + " <= arrayData_pcConstant;" + vTrace(  "%8d getBit2 Set write index %8d", "pc",        "arrayData_pcConstant");}
        };
       pcConstant(i, r.id);
 
@@ -1274,17 +1274,17 @@ public class Program extends Test                                               
  (input  wire              clock,                                                                                       // Clock
   input  wire     writeIntEnable,                                                                                       // Write enabled for an integer
   input  wire     writeBitEnable,                                                                                       // Write enabled for a boolean
-  input  integer        writeInt,                                                                                       // Write integer
+  input  reg[31:0]        writeInt,                                                                                     // Write reg[31:0]
   input  reg            writeBit,                                                                                       // Write boolean
-  input  reg[31:0] read0IntIndex,                                                                                       // Read first  integer address
-  input  reg[31:0] read1IntIndex,                                                                                       // Read second integer address
-  input  reg[31:0] read2IntIndex,                                                                                       // Read third integer address
+  input  reg[31:0] read0IntIndex,                                                                                       // Read first  reg[31:0] address
+  input  reg[31:0] read1IntIndex,                                                                                       // Read second reg[31:0] address
+  input  reg[31:0] read2IntIndex,                                                                                       // Read third reg[31:0] address
   input  reg[31:0] read0BitIndex,                                                                                       // Read first  boolean address
   input  reg[31:0] read1BitIndex,                                                                                       // Read second boolean address
   input  reg[31:0] read2BitIndex,                                                                                       // Read second boolean address
-  output integer        read0Int,                                                                                       // Integer data read from first memory port
-  output integer        read1Int,                                                                                       // Integer data read from second memory port
-  output integer        read2Int,                                                                                       // Integer data read from third memory port
+  output reg[31:0]      read0Int,                                                                                       // Integer data read from first memory port
+  output reg[31:0]      read1Int,                                                                                       // Integer data read from second memory port
+  output reg[31:0]      read2Int,                                                                                       // Integer data read from third memory port
   output reg            read0Bit,                                                                                       // Boolean data read from first memory port
   output reg            read1Bit,                                                                                       // Boolean data read from second memory port
   output reg            read2Bit);                                                                                      // Boolean data read from third memory port
