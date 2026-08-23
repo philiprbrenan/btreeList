@@ -1,4 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 // Distributed sparse slots used to hold the key of the Btree.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
@@ -726,7 +727,12 @@ class Slots extends Program                                                     
 
       if (immediate() && empty().b()) stop("Insert after find requires a non empty set of slots");                      // The slots must have at least one element
 
-      new If (s.Sub(p).abs().ge(redistributionWidth()))                                                                 // Redistribution width
+      final Bit rd = new Bit(false);                                                                                    // Block extends far enough up   to require a redistribution to create new insertion points within it.  Might it be possible to do this locally without having to redistribute through the entire set of slots?
+      new If (s.ge(p))
+       {void Then() {rd.set(s.Sub(p).ge(redistributionWidth()));}
+        void Else() {rd.set(p.Sub(s).ge(redistributionWidth()));}
+       };
+      new If (rd)                                                                                                       // Redistribution required
        {void Then()
          {final Int b = new Int(getSlotToKeyIndex(f.slot.i()));                                                         // Index of the key before redistribution
           redistribute();                                                                                               // Redistribute slots
@@ -2422,7 +2428,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_slots(false);
+    test_splitRightOdd(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
