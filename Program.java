@@ -7,7 +7,7 @@
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
 // Check how often each variable is read or written to eliminate variables that are only used once.
 // Use parallel loads in putBit etc as marked with Improvement:
-// Remove program(). in front of final program elements as they are now redicreted from sub classess ot the original
+// Add a messgew variabvle that beocmes a parmeter
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -28,6 +28,7 @@ public class Program extends Test                                               
   final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
+  final static String                     currentProject = "Replace verilog integers with regs";                        // Current prohect being worked on
 
   final static FileNames                   verilogFolder = new FileNames(fp("verilog"));                                // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.down("test");                                  // Verilog tests
