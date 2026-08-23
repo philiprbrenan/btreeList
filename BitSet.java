@@ -1762,7 +1762,7 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();
+   {oldTests();
     test_b4(!true);
    }
 
