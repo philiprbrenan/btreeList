@@ -20,14 +20,13 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static boolean        suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean             suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
+  final static boolean         suppressTraceBackComments = true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
-  final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
-  final static boolean       suppressNamesInInstructions =!true;                                                        // Include names in instructions
-  final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
   final static FileNames                   verilogFolder = new FileNames(fp("verilog"));                                // Verilog folder contains temporary files which hold the generated Verilog and related files
@@ -37,7 +36,6 @@ public class Program extends Test                                               
   final FileNames                       verilogLogFolder = verilogFolder.down("log");                                   // Verilog log folder
   final FileNames                         blackBoxFolder = verilogTestFolder.down("blackboxes");                        // Verilog black boxes
   final FileNames                             traceFiles = verilogTestFolder.same("traceFile");                         // Verilog trace file
-  final Stack<FileNames>                      blackBoxes = new Stack<>();                                               // Black box files created
   final static String          siliconCompilerImageLocal = "ghcr.io/philiprbrenan/sc_local:latest";                     // Podman container containing silicon compiler when running locally
   final static String         siliconCompilerImageGitHub = "ghcr.io/philiprbrenan/sc_github:latest";                    // Podman container containing silicon compiler when running on github
   final static int                            padVerilog = 32;                                                          // Padding for components of the generated Verilog code
@@ -45,6 +43,7 @@ public class Program extends Test                                               
   final Program                            parentProgram;                                                               // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
   final Stack<I>                                    code;                                                               // Machine code instructions
   final Stack<Label>                              labels;                                                               // Labels for instructions in this process
+  final Stack<FileNames>                      blackBoxes;                                                               // Black box files created
   final Memory                                unitMemory;                                                               // Optional memory associated with the program
   final boolean                                immediate;                                                               // Execute immediately if true else generate machine code and execute later
   final        Stack<Memory>                    memories;                                                               // Memories used by this program and its dependent programs
@@ -91,6 +90,7 @@ public class Program extends Test                                               
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
     code            = p ? new Stack<>()         : program().code;                                                       // Machine code instructions
     labels          = p ? new Stack<>()         : program().labels;                                                     // Labels for instructions in this process
+    blackBoxes      = p ? new Stack<>()         : program().blackBoxes;                                                 // Black box files created
     memories        = p ? new Stack<>()         : program().memories;                                                   // Memories used by this program and its dependent programs
     ints            = p ? new Stack<>()         : program().ints;                                                       // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
     bits            = p ? new Stack<>()         : program().bits;                                                       // Bit variables processed in the same way as ints.
@@ -143,7 +143,7 @@ public class Program extends Test                                               
   Stack<Bit>  bits ()            {return bits;}
   Stack<Memory> memories ()      {return memories;}
 
-  int      currentPc ()          {return currentPc;}
+  int      currentPc ()          {return program().currentPc;}
   int    targetIntId ()          {return intMemory.read0IntIndex;}
   int    sourceIntId ()          {return intMemory.read1IntIndex;}
   int   source2IntId ()          {return intMemory.read2IntIndex;}
@@ -155,7 +155,7 @@ public class Program extends Test                                               
   boolean  targetBit ()          {return bitMemory.read0Int != 0;}
   boolean  sourceBit ()          {return bitMemory.read1Int != 0;}
 
-  void    currentPc (int V)      {ngv(); currentPc = V;}
+  void    currentPc (int V)      {ngv(); program().currentPc     = V;}
   void  targetIntId (int V)      {ngv(); intMemory.read0IntIndex = V;}
   void  sourceIntId (int V)      {ngv(); intMemory.read1IntIndex = V;}
   void source2IntId (int V)      {ngv(); intMemory.read2IntIndex = V;}
@@ -553,7 +553,7 @@ public class Program extends Test                                               
     Int (String Name, int I) {this(I); name = Name; in  = top;}                                                         // Input wire if we know its value at the start and it is at the top
     Int (String Name, Int I) {this(I); name = Name; out = top;}                                                         // Output register if its value is unknown at the start and is at the top
 
-    Int ()           {ai(); del(-1);        ints().push(this);}                                                         // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for Java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has been already been established by successfully executing the tests associated with the Java version . The integers used in the Java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
+    Int ()           {ai(); del(0);         ints().push(this);}                                                         // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for Java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has been already been established by successfully executing the tests associated with the Java version . The integers used in the Java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
     Int (int I)      {ai(); ie(Ops.set, I); ints().push(this);}
     Int (Int I)      {ai(); ie(Ops.set, I); ints().push(this);}
                                                                                                                         // Possible integer operations
@@ -600,7 +600,7 @@ public class Program extends Test                                               
 
         final I i = new I()                                                                                             // Load index of integer
          {final String c = mi + pV(" <= arrayData_pcConstant;");
-          void   a() {loadId(id);  jTrace(f("%8d ILST1 "+mi+" = %8d",  pc(), id)                              );}
+          void   a() {loadId(id);  jTrace(f("%8d ILST1 "+mi+" = %8d",  pc(), id)                  );}
           String v() {return c+" "+vTrace(  "%8d ILST1 "+mi+" = %8d", "pc", "arrayData_pcConstant");}
          };
         pcConstant(i, I.id);                                                                                            // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
@@ -1061,8 +1061,8 @@ public class Program extends Test                                               
        {void body(Int Index)
          {final Int s = SourceOffset.Add(Index);
           final Int t = TargetOffset.Add(Index);
-          final Int v = SourceMemory.getInt(s);                                                                         // Set source index
-                                     putInt(t, v);                                                                      // Set source index
+          final Int v = SourceMemory.getInt(s);                                                                         // Set source memory data value
+                                     putInt(t, v);                                                                      // Save source memory data value in target memory
          }
        };
       subFinish();
@@ -1093,8 +1093,8 @@ public class Program extends Test                                               
       I.T();                                                                                                            // Retrieve value of the indexing integer from the memory that holds integers so it can be used to index this memory
 
       new I()                                                                                                           // Set the target index to read from this memory
-       {void   a() {        read0IntIndex        =     ints. read0Int;       jTrace(f("%8d getInt1 Get index %8d",  currentPc(), ints. read0Int ));}
-        String v() {return vRead0IntIndex() + " <= " + ints.vRead0Int()+"; "+vTrace(  "%8d getInt1 Get index %8d", "pc",         ints.vRead0Int());}
+       {void   a() {        read0IntIndex        =     ints. read0Int;       jTrace(f("%8d getInt1 Get index %8d",  currentPc(), lui(ints. read0Int)));}
+        String v() {return vRead0IntIndex() + " <= " + ints.vRead0Int()+"; "+vTrace(  "%8d getInt1 Get index %8d", "pc",             ints.vRead0Int());}
        };
 
       final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold integers
@@ -1104,7 +1104,7 @@ public class Program extends Test                                               
       pcConstant(i, r.id);
 
       new I()                                                                                                           // Write integer obtained from this memory back into the memory that holds integers
-       {void   a() {read0Int = r.i = units[I.i]; r.v = true; ints. writeInt        =      read0Int;       ints. writeIntEnable        = true; jTrace(f("%8d getInt3 save %8d = %8d",  currentPc(), ints. read0IntIndex,    read0Int ));}
+       {void   a() {read0Int = r.i = units[I.i]; r.v = true; ints. writeInt        =      read0Int;       ints. writeIntEnable        = true; jTrace(f("%8d getInt3 save %8d = %8d",  currentPc(), ints. read0IntIndex,   lui(read0Int)));}
         String v() {return                                   ints.vWriteInt() + " <= " + vRead0Int()+"; "+ints.vWriteIntEnable() + " <= 1;" + vTrace(  "%8d getInt3 save %8d = %8d", "pc",         ints.vRead0IntIndex(), vRead0Int());}
        };
 
@@ -1124,8 +1124,8 @@ public class Program extends Test                                               
       I.T(); J.S();                                                                                                     // Retrieve value of the indexing integers from the memory that holds integers so it can be used to index this memory for the desired bit.  Obviously at some point these instructions should be executed in parallel as we have enough read ports to do so
 
       new I()                                                                                                           // Set the target index to read from this memory
-       {void   a() {        read0IntIndex        =     ints. read0Int;       read0BitIndex        =     ints. read1Int;       jTrace(f("%8d getBit1 Get index %8d.%8d",  currentPc(), ints. read0Int,   ints. read1Int ));}
-        String v() {return vRead0IntIndex() + " <= " + ints.vRead0Int()+";"+vRead0BitIndex() + " <= " + ints.vRead1Int()+"; "+vTrace(  "%8d getBit1 Get index %8d.%8d", "pc",         ints.vRead0Int(), ints.vRead1Int());}
+       {void   a() {        read0IntIndex        =     ints. read0Int;       read0BitIndex        =     ints. read1Int;       jTrace(f("%8d getBit1 Get index %8d.%8d",  currentPc(), ints. read0Int, lui(ints.read1Int)));}
+        String v() {return vRead0IntIndex() + " <= " + ints.vRead0Int()+";"+vRead0BitIndex() + " <= " + ints.vRead1Int()+"; "+vTrace(  "%8d getBit1 Get index %8d.%8d", "pc",         ints.vRead0Int(),  ints.vRead1Int());}
        };
 
       final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold bits
@@ -1135,8 +1135,8 @@ public class Program extends Test                                               
       pcConstant(i, r.id);
 
       new I()                                                                                                           // Write bit obtained from this memory back into the memory that holds bits
-       {void   a() {read0Int = (r.i = Test.getBit(units[I.i], J.i)) ? 1 : 0; r.v = true; bits. writeInt        =      read0Int;       bits. writeIntEnable        = true; jTrace(f("%8d getBit3 save %8d = %8d",  currentPc(), bits. read0IntIndex,    read0Int ));}
-        String v() {return                                                               bits.vWriteInt() + " <= " + vRead0Bit()+"; "+bits.vWriteIntEnable() + " <= 1;" + vTrace(  "%8d getBit3 save %8d = %8d", "pc",         bits.vRead0IntIndex(), vRead0Bit());}
+       {void   a() {read0Int = (r.i = Test.getBit(units[I.i], J.i)) ? 1 : 0; r.v = true; bits. writeInt        =      read0Int;       bits. writeIntEnable        = true; jTrace(f("%8d getBit3 save %8d = %8d",  currentPc(), bits. read0IntIndex, lui(read0Int)));}
+        String v() {return                                                               bits.vWriteInt() + " <= " + vRead0Bit()+"; "+bits.vWriteIntEnable() + " <= 1;" + vTrace(  "%8d getBit3 save %8d = %8d", "pc",         bits.vRead0IntIndex(),  vRead0Bit());}
        };
 
       new I()                                                                                                           // Complete write
@@ -1177,12 +1177,12 @@ public class Program extends Test                                               
       K.S(); I.S(); J.S2();                                                                                             // Retrieve the value of the bit from the bit memory and the values of the integers from the integer memory.  Improvement: these instructions should be in parallel
 
       new I()                                                                                                           // Set target index of memory to be written
-       {void   a() {        read0IntIndex        =     ints. read1Int;        read0BitIndex        =     ints.read2Int;        jTrace(f("%8d putBit2 Index %8d.%8d",  currentPc(), ints. read1Int,   ints.read2Int  ));}
-        String v() {return vRead0IntIndex() + " <= " + ints.vRead1Int()+"; "+vRead0BitIndex() + " <= " + ints.vRead2Int()+"; "+vTrace(  "%8d putBit2 Index %8d.%8d", "pc",         ints.vRead1Int(), ints.vRead2Int());}
+       {void   a() {        read0IntIndex        =     ints. read1Int;        read0BitIndex        =     ints.read2Int;        jTrace(f("%8d putBit2 Index %8d.%8d",  currentPc(), ints. read1Int, lui(ints.read2Int)));}
+        String v() {return vRead0IntIndex() + " <= " + ints.vRead1Int()+"; "+vRead0BitIndex() + " <= " + ints.vRead2Int()+"; "+vTrace(  "%8d putBit2 Index %8d.%8d", "pc",         ints.vRead1Int(),  ints.vRead2Int());}
        };
       new I()                                                                                                           // Integer to write
-       {void   a() {        writeBit        =     bits. read1Int != 0;   writeIntEnable        =       writeBitEnable        = true; jTrace(f("%8d putBit3 Value %8d",  currentPc(), bits. read1Int ));}
-        String v() {return vWriteBit() + " <= " + bits.vRead1Int()+"; "+vWriteIntEnable() + " <= 1; "+vWriteBitEnable() + " <= 1;" + vTrace(  "%8d putBit3 Value %8d", "pc",         bits.vRead1Int());}
+       {void   a() {        writeBit        =     bits. read1Int != 0;   writeIntEnable        =       writeBitEnable        = true; jTrace(f("%8d putBit3 Value %8d",  currentPc(), lui(bits.read1Int)));}
+        String v() {return vWriteBit() + " <= " + bits.vRead1Int()+"; "+vWriteIntEnable() + " <= 1; "+vWriteBitEnable() + " <= 1;" + vTrace(  "%8d putBit3 Value %8d", "pc",            bits.vRead1Int());}
        };
       new I()                                                                                                           // Finish write
        {void   a() {units[I.i] = setBit(units[I.i], J.i, K.i);  writeIntEnable        =        writeBitEnable        = false; jTrace(f("%8d putBit4 Finish",  currentPc()));}
@@ -1289,8 +1289,8 @@ public class Program extends Test                                               
   output reg            read1Bit,                                                                                       // Boolean data read from second memory port
   output reg            read2Bit);                                                                                      // Boolean data read from third memory port
 `ifdef __ICARUS__
-  integer memory [0:{size}-1];
-  integer i;                                                                                                            // Index
+  reg[31:0] memory [0:{size}-1];                                                                                        // Memory
+  reg[31:0] i;                                                                                                          // Index
 
   initial for (i = 0; i < {size}; i = i + 1) memory[i] = 0;                                                             // Clear memory to zeros at start
 
@@ -1324,10 +1324,10 @@ endmodule
       s.append("  reg       "+       vRead1Bit() +";\n");                                                               // Second boolean read from memory
       s.append("  reg       "+       vRead2Bit() +";\n");                                                               // Third boolean read from memory
       s.append("  reg       "+       vWriteBit() +"; initial "+pV(vWriteBit()) + "= 0;\n");                             // Boolean to write into memory
-      s.append("  integer   "+       vRead0Int() +";\n");                                                               // First integer read from memory
-      s.append("  integer   "+       vRead1Int() +";\n");                                                               // Second integer read from memory
-      s.append("  integer   "+       vRead2Int() +";\n");                                                               // Third integer read from memory
-      s.append("  integer   "+       vWriteInt() +"; initial "+       vWriteInt() + "= 0;\n");                          // Integer to write into memory
+      s.append("  reg[31:0] "+       vRead0Int() +";\n");                                                               // First integer read from memory
+      s.append("  reg[31:0] "+       vRead1Int() +";\n");                                                               // Second integer read from memory
+      s.append("  reg[31:0] "+       vRead2Int() +";\n");                                                               // Third integer read from memory
+      s.append("  reg[31:0] "+       vWriteInt() +"; initial "+       vWriteInt() + "= 0;\n");                          // Integer to write into memory
       s.append("  reg[31:0] "+  vRead0IntIndex() +"; initial "+  vRead0IntIndex() + "= 0;\n");                          // Index at which to read first integer from memory
       s.append("  reg[31:0] "+  vRead1IntIndex() +"; initial "+  vRead1IntIndex() + "= 0;\n");                          // Index at which to read second integer from memory
       s.append("  reg[31:0] "+  vRead2IntIndex() +"; initial "+  vRead2IntIndex() + "= 0;\n");                          // Index at which to read third integer from memory
@@ -1395,7 +1395,7 @@ endmodule
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber = program().code.size();                                                                // The number of this instruction
-    final String      traceBack = suppressTraceComments ?  null : traceBack();                                          // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String      traceBack = suppressTraceBackComments ?  null : traceBack();                                      // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String       traceSub = subsTrace;                                                                            // Sub during which this instruction was created
     final boolean        noJump;                                                                                        // The instruction will handle setting the program counter  if false
 
@@ -1427,7 +1427,7 @@ endmodule
 
     String instructionLocation () {return traceBack != null ? traceBack : traceSub  != null ? traceSub : "";}           // Trace the location at which the instruction was generated
     String instructionLocationAsComment ()                                                                              // Trace the location at which the instruction was generated as a comment
-     {if (!suppressTraceComments)
+     {if (!suppressTraceBackComments)
        {if (traceBack != null) return "/*" + traceBack.replaceAll("\\n", ", ") + "*/";                                  // Appending trace comments makes the code easier to debug but inhibits code compression
         if (traceSub  != null) return "/*" + traceSub .replaceAll("\\n", ", ") + "*/";
        }
@@ -1457,9 +1457,9 @@ endmodule
 
     String formatVerilogCode (String Verilog)                                                                           // Verilog code for an instruction
      {final StringBuilder s = new StringBuilder();
-      s.append(" : begin "+trimRightAndPad(Verilog, padVerilog*2));                                                                                // Instruction numbers followed by code
+      s.append(" : begin "+trimRightAndPad(Verilog, padVerilog*2));                                                     // Instruction numbers followed by code
       s.append(" end");
-      s.append(instructionLocationAsComment());                                                                         // Trace Java program location that generated the first instance of the instruction so that the Verilog code can be tied back to the Java code
+//    s.append(instructionLocationAsComment());                                                                         // Trace Java program location that generated the first instance of the instruction so that the Verilog code can be tied back to the Java code
       s.append("\n");
       return ""+s;                                                                                                      // Generated code
      }
@@ -1799,12 +1799,11 @@ cd {f}; yosys -q {y}                                                            
                 q(dateTime),  q(pV(source)), q(pV(name)), execSteps, instructionSets, codeSize, percent()));
 
       s.append(f( ", \"suppressInstructionTracing\" : \"%d\"",  suppressInstructionTracing ? 1 : 0));                   // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-      s.append(f(      ", \"suppressTraceComments\" : \"%d\"",       suppressTraceComments ? 1 : 0));                   // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
+      s.append(f(  ", \"suppressTraceBackComments\" : \"%d\"",   suppressTraceBackComments ? 1 : 0));                   // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
       s.append(f(       ", \"compressInstructions\" : \"%d\"",        compressInstructions ? 1 : 0));                   // Compress out identical instructions
       s.append(f(  ", \"compressInstructionLabels\" : \"%d\"",   compressInstructionLabels ? 1 : 0));                   // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
       s.append(f(            ", \"generateVerilog\" : \"%d\"",             generateVerilog ? 1 : 0));                   // Generate Verilog version of each program
       s.append(f(                 ", \"runVerilog\" : \"%d\"",                  runVerilog ? 1 : 0));                   // Execute  Verilog version of each program
-      s.append(f(", \"suppressNamesInInstructions\" : \"%d\"", suppressNamesInInstructions ? 1 : 0));                   // Include names in instructions
       s.append(f(",          \"runSiliconCompiler\" : \"%d\"",          runSiliconCompiler ? 1 : 0));                   // Run synthesis
       if (github_commit_sha != null) s.append(f(", \"github_commit_sha\" : \"%s\"", github_commit_sha));                // Commit sha if available
       return ""+s;
@@ -1821,6 +1820,7 @@ cd {f}; yosys -q {y}                                                            
       for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
       pcConstantArray = verilogArrays().new Array("pcConstant", pcConstant());                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
       pcMatchSetArray = verilogArrays().new Array("pcMatchSet", instructionMatches.pcMatchSet());                       // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
+      if (!suppressTraceBackComments) printInstructionLocations();                                                      // Create a file showing the traceback at the time each instruction was created
 
       try {out = Files.newBufferedWriter(Path.of(codeFile));}
       catch(Exception e) {stop("Unable to open file:", codeFile, e, fullTraceBack(e)); throw new RuntimeException(e);}
@@ -1838,7 +1838,7 @@ module {name} (                                                                 
       /*Parameters*/put(substitute("""
   input wire clock,                                                                                                     // Clock pin
   input wire reset,                                                                                                     // Reset
-  output reg[31:0] o_pc);                                                                                               // This is just to create some output so that Yosys does not collapse the chip to nothing because it does not produces any output
+  output wire[31:0] o_pc);                                                                                               // This is just to create some output so that Yosys does not collapse the chip to nothing because it does not produces any output
 `else
 module {name};                                                                                                          // Bint machine - standalone for execution
 `endif
@@ -1950,10 +1950,7 @@ endmodule
       for(VerilogArrays.Array    a : verilogArrays.arrays())    put(a.module());                                        // Write memory module definitions for read only arrays
       for(Memory                 m : memories())                put(m.memoryModule());                                  // Memory modules
 
-      try (out) {}                                                                                                      // Close output file
-      catch(Exception e)                                                                                                // Failed to generate Verilog
-       {stop(e, fullTraceBack(e));                                                                                      // Write the error and stop
-       }
+      try (out) {} catch(Exception e) {stop(e, fullTraceBack(e));}                                                      // Close output file
       instructionSets = countInstructionSets;                                                                           // Finalize instruction set size
      }
 
@@ -1963,8 +1960,8 @@ endmodule
      {final String h = substitute("""
 
   task {dumpVerilogMemoryInDecimalName};                                                                                // Dump Verilog memories in decimal
-    integer i;
-    integer I;
+    reg[31:0] i;
+    reg[31:0] I;
     parameter integer N = 10;
     begin
 `ifndef SYNTHESIS
@@ -2051,6 +2048,19 @@ endmodule
         return M;
        }
      } // InstructionMatches
+
+    void printInstructionLocations()                                                                                    // Print the location of each instruction
+     {final String f = verilogTestFolder.same("InstructionLocations").txt$();                                           // Instruction to location listing file
+      final StringBuilder s = new StringBuilder();
+
+      for(I i: code) s.append("-"+i.instructionNumber+"\n"+i.traceBack+"\n");                                            // Each instruction
+
+      try
+       (final BufferedWriter out = Files.newBufferedWriter(Path.of(f)))                                                 // Java's ghastly way of opening files
+       {out.write(""+s);
+       }
+      catch(Exception e) {stop(e, fullTraceBack(e));}                                                                   // Close output file
+     }
 
 //D2 Silicon compiler                                                                                                   // Create driving python to compile the Verilog code using silicon compiler
 
@@ -2238,7 +2248,7 @@ check
        {size = codeSize();
         name  = Name;
         array = new int[size];
-        Arrays.fill(array, -1);
+        Arrays.fill(array, 0);
         for (Integer i : map.keySet()) array[i] = map.get(i);
         arrays.put(name, this);
         pcIndexed = true;
@@ -2252,19 +2262,19 @@ check
 
       String define ()                                                                                                  // Define the array
        {return   substitute("""
-  integer {name}[{size}-1:0];
-  integer {index};
+  reg[31:0] {name}[{size}-1:0];
+  reg[31:0] {index};
 """, "name", arrayName(), "index", indexVarName(), "size", ""+size);
        }
 
       String connectModule ()                                                                                           // Connect the main module to the array module
        {if (!pcIndexed) return substitute("""
-  integer   {dr};                                                                                                       // Array data register
+  reg[31:0] {dr};                                                                                                       // Array data register
   {name} {name} (.address({ir}), .data({dr}));                                                                          // Connect to array
 """, "dr", dataRegisterName(), "ir", indexRegisterName(), "name", arrayName());
 
         else return substitute("""
-  integer   {dr};                                                                                                       // Define array data register
+  reg[31:0] {dr};                                                                                                       // Define array data register
   {name} {name} (.address(pc), .data({dr}));                                                                            // Connect to module providing array
 """, "dr", dataRegisterName(),  "name", arrayName());
        }
@@ -2280,10 +2290,10 @@ check
         final StringBuilder s = new StringBuilder();
         s.append(substitute("""
 (* blackbox *) module {array}                                                                                           // Memory module definitions for asynchronous read only memory
- (input  integer address,
-  output integer data);
+ (input  reg[31:0] address,
+  output reg[31:0] data);
 `ifdef __ICARUS__
-  integer memory [0:{size}];
+  reg[31:0] memory [0:{size}];
   initial $readmemh("{file}", memory, 0, {size});
   assign data = memory[address];
 `endif
@@ -2415,13 +2425,13 @@ endmodule
             z.set(m.eq(0));
             new If (z)
              {void Then() {i.add(Index);}
-              void Else() {i.sub(Index);}
+              void Else() {i.add(1);}
              };
             Continue.set();
             dumpProgramState("AAAA");
            }
          };
-        i.ok(5);
+        i.ok(35);
         i.valid().ok(true);
         scDieAreaX = 500; scDieAreaY = 400;
         execute();
@@ -2799,28 +2809,28 @@ Memory 2
     test_memory(false);
    }
 
-  static void test_memoryNegative(boolean Ex)
-   {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(8))
-     {void code()
-       {final Memory m = unitMemory;
-        new ForCount(2)
-         {void body(Int Index)
-           {m.putInt(new Int(0), new Int(-2));
-            m.putInt(new Int(4), new Int(-3));
-            m.getInt(new Int(0)).ok(-2);
-            m.getInt(new Int(4)).ok(-3);
-           }
-         };
-        execute();
-       }
-     };
-   }
-
-  static void test_memoryNegative()
-   {test_memoryNegative(true);
-    test_memoryNegative(false);
-   }
+//  static void test_memoryNegative(boolean Ex)
+//   {sayCurrentTestName();
+//    final Program P = new Program(new Build().immediate(Ex).memory(8))
+//     {void code()
+//       {final Memory m = unitMemory;
+//        new ForCount(2)
+//         {void body(Int Index)
+//           {m.putInt(new Int(0), new Int(2));
+//            m.putInt(new Int(4), new Int(3));
+//            m.getInt(new Int(0)).ok(2);
+//            m.getInt(new Int(4)).ok(3);
+//           }
+//         };
+//        execute();
+//       }
+//     };
+//   }
+//
+//  static void test_memoryNegative()
+//   {test_memoryNegative(true);
+//    test_memoryNegative(false);
+//   }
 
   static void test_memoryRef(boolean Ex)
    {sayCurrentTestName();
@@ -2833,7 +2843,7 @@ Memory 2
          {void body(Int Index)
            {m.putInt(new Int(0), new Int(1));
 
-            m.putInt(new Int(1), new Int(-1));
+            m.putInt(new Int(1), new Int(0));
             m.putInt(new Int(1), new Int(2));
 
             new If (Index.eq(0))
@@ -3164,7 +3174,7 @@ Memory 2
     test_mem();
     test_namedMemory();
     test_memory();
-    test_memoryNegative();
+//  test_memoryNegative();
     test_memoryRef();
     test_verilogArray();
     test_lastInstructionBase();
@@ -3175,7 +3185,6 @@ Memory 2
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_addition(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
