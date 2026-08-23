@@ -26,7 +26,7 @@ my $copyAndPasteCheck = 0;                                                      
 
 say STDERR timeStamp,  " push to github $repo";
 
-sub getRunParameters()                                                                                                  # Get run time parameters from java
+sub getRunParameters()                                                                                                  # Get run time parameters from java so they can be displayed in github
  {my @p;
   my @l = readFile fpe $folder, qw(Program java);
   for my $l(@l)
@@ -40,7 +40,6 @@ sub getRunParameters()                                                          
  }
 
 my $runParameters = getRunParameters();
-say STDERR "AAAA $runParameters";
 
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
    @files = grep {!m(verilog/)}        @files;                                                                          # Eliminate the temporary verilog folder
