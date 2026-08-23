@@ -359,6 +359,8 @@ public class Test                                                               
     return (int)Math.sqrt(Value);
    }
 
+  static long lui(int Value) {return Integer.toUnsignedLong(Value);}                                                    // Teat an integer as unsigned and convert it to long to lock in the unsignedness
+
 //D1 Bit routines                                                                                                       // Routines operating on bits
 
   static boolean getBit (int value, int index)              {return ((value >>> index) & 1) > 0;}                       // Extract a bit from an integer
