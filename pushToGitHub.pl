@@ -36,7 +36,7 @@ sub getRunParameters()                                                          
       push @p, "$k = $v";
      }
     elsif ($l =~ m((currentProject)\s*=\s*"(.*?)"))                                                                       # Project name from Java
-     {push @p, "$1 = $2";
+     {push @p, "$2";
      }
    }
   join ", ", @p
