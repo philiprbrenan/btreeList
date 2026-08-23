@@ -1239,7 +1239,7 @@ public class Program extends Test                                               
       for (int i = 0; i < size(); i++)                                                                                  // Memory values
        {if (i % N == 0)                          s.append(f("%08d ", i));
 
-        final int b = units[i];
+        final long b = lui(units[i]);
         if (b != 0) s.append(f("%4d ", b)); else s.append("     ");
         if ((i + 1) % N == 0)                    s.append("\n");
        }
