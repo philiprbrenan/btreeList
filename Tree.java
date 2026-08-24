@@ -8,20 +8,18 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;
 
 class Tree extends Program                                                                                              // A tree that translates keys into values to be implemented as an application specific integrated circuit
- {final int             maxLeafSize;                                                                                    // The maximum number of entries in a leaf of the tree
-  final int           maxBranchSize;                                                                                    // The maximum number of entries in a branch of the tree
-  final BitSet            freeChain;                                                                                    // Nodes currently free
-  final int           numberOfNodes;                                                                                    // Maximum number of leaves plus branches in this tree
-  final int   maximumNumberOfLevels;                                                                                    // Maximum number of levels in tree to prevent runaways while debugging
-  final int              sizeOfNode;                                                                                    // The size of each node in the tree: a node must be able to hold a branch or a leaf
-  final Memory.Ref     refNodes;                                                                                        // The nodes associated with this tree
-  final Memory.Ref refFreeChain;                                                                                        // The free chain for this tree
-  final Memory.Ref     refCount;                                                                                        // The number of keys in this tree
-  final Build                 build;                                                                                    // Memory containing the tree base followed by the leaves and branches of the tree
-  final int     linesToPrintABranch = 4;                                                                                // The number of lines required to print a branch
-  final Memory        mergePath;                                                                                        // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
-  final Memory     traverseNode;                                                                                        // Memory to hold outstanding branches and leaves during a traverse
-  final Memory   traverseAction;                                                                                        // Memory to hold requested action against each branch during a traverse
+ {final int           maxLeafSize;                                                                                      // The maximum number of entries in a leaf of the tree
+  final int         maxBranchSize;                                                                                      // The maximum number of entries in a branch of the tree
+  final BitSet          freeChain;                                                                                      // Nodes currently free
+  final int         numberOfNodes;                                                                                      // Maximum number of leaves plus branches in this tree
+  final int maximumNumberOfLevels;                                                                                      // Maximum number of levels in tree to prevent runaways while debugging
+  final int            sizeOfNode;                                                                                      // The size of each node in the tree: a node must be able to hold a branch or a leaf
+  final Memory.Ref       refNodes;                                                                                      // The nodes associated with this tree
+  final Memory.Ref   refFreeChain;                                                                                      // The free chain for this tree
+  final Memory.Ref       refCount;                                                                                      // The number of keys in this tree
+  final Build               build;                                                                                      // Memory containing the tree base followed by the leaves and branches of the tree
+  final int   linesToPrintABranch = 4;                                                                                  // The number of lines required to print a branch
+  final Memory          mergePath;                                                                                      // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
 //D1 Construction                                                                                                       // Construct and layout a tree
 
@@ -38,7 +36,7 @@ class Tree extends Program                                                      
     Branch.Build     branch;
     Leaf  .Build       leaf;
     int unitsNeededForNodes;                                                                                            // Bytes needed for all the nodes
-    int unitsNeededForFree;                                                                                             // Bytes needed for free chain
+    int  unitsNeededForFree;                                                                                            // Bytes needed for free chain
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
 
     Build     immediate (boolean Immediate    ) {immediate     = Immediate;     return this;}
@@ -68,7 +66,7 @@ class Tree extends Program                                                      
      {final int posNodes     = 0;                                                                                       // A tree consists of nodes: leaves and branches. This field tells us which one we have
       final int posFreeChain = posNodes     + unitsNeededForNodes;
       final int posCount     = posFreeChain + unitsNeededForFree;
-      final int size         = posCount     + ib();
+      final int size         = posCount     + 1;
      }
 
     int size () {return memoryPositions.size;}                                                                          // Bytes needed for the slots
@@ -101,9 +99,7 @@ class Tree extends Program                                                      
     refFreeChain   = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                            // Memory for free chain
     refCount       = unitMemoryRef.step(build.memoryPositions.posCount);                                                // Memory for key count
 
-    mergePath      = new Memory(ib(mnl()));                                                                             // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
-    traverseNode   = new Memory(ib(2*mnl()));                                                                           // Memory to hold outstanding branches and leaves in a traverse
-    traverseAction = new Memory(ib(2*mnl()));                                                                           // Memory to hold requested action against each branch in a traverse
+    mergePath      = new Memory(mnl());                                                                             // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
@@ -150,34 +146,34 @@ class Tree extends Program                                                      
     int value()              {return value;}
    }
 
-  Int  root ()        {return new Int(0);}                                                                              // The root is always at node zero
-  Bit isRootLeaf  () {return checkType(root(), BranchOrLeaf.leaf);}                                                     // Whether the root is a leaf
-  Bit isRootBranch() {return checkType(root(), BranchOrLeaf.branch);}                                                   // Whether the root is a branch
+  Int         root () {return new Int(0);}                                                                              // The root is always at node zero
+  Bit   isRootLeaf () {return checkType(root(), BranchOrLeaf.leaf);}                                                    // Whether the root is a leaf
+  Bit isRootBranch () {return checkType(root(), BranchOrLeaf.branch);}                                                  // Whether the root is a branch
 
-  Bit checkType(Int Node, BranchOrLeaf Type)                                                                            // Check the type of a node
-   {final Int  a = nodeAddress(Node);
-    final Int  t = unitMemory.getInt(a);
+  Bit checkType (Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
+   {final Int a = nodeAddress(Node);
+    final Int t = unitMemory.getInt(a);
     final Bit r = new Bit(false);
     new If (t.eq(Type.value())) {void Then() {r.set(true);}};
     return r;
    }
 
-  void setType(Int Node, BranchOrLeaf Type)                                                                             // Set the type of a node
+  void setType (Int Node, BranchOrLeaf Type)                                                                            // Set the type of a node
    {final Int a = nodeAddress(Node);
     unitMemory.putInt(a, new Int(Type.value()));
    }
 
-  Bit isBranch(Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                 // Whether the indexed node a branch
-  Bit isLeaf  (Int Node) {return checkType(Node, BranchOrLeaf.leaf  );}                                                 // Whether the indexed node a leaf
+  Bit isBranch (Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                // Whether the indexed node a branch
+  Bit   isLeaf (Int Node) {return checkType(Node, BranchOrLeaf.leaf  );}                                                // Whether the indexed node a leaf
 
-  Leaf leaf(Int Node) {return leaf(Node, true);}                                                                        // Index an existing leaf in memory            confirming that it really is a leaf
-  Leaf leaf(Int Node, boolean Check)                                                                                    // Index an existing leaf in memory optionally confirming that it really is a leaf
+  Leaf leaf (Int Node) {return leaf(Node, true);}                                                                       // Index an existing leaf in memory            confirming that it really is a leaf
+  Leaf leaf (Int Node, boolean Check)                                                                                   // Index an existing leaf in memory optionally confirming that it really is a leaf
    {if (immediate() && Check && !isLeaf(Node).b()) stop("Not a leaf:", Node);                                           // Check the location actually holds a leaf
     final Memory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                         // Address leaf
     return new Leaf(build.leaf.parent(program()).memory(r).at(Node));                                                   // Base leaf at the indexed address
    }
 
-  Leaf makeLeaf(Int Node)                                                                                               // Make a leaf from the specified node
+  Leaf makeLeaf (Int Node)                                                                                              // Make a leaf from the specified node
    {final Leaf l = leaf(Node, false);
     l.initializeMemory();
     setType(Node, BranchOrLeaf.leaf);
@@ -201,8 +197,7 @@ class Tree extends Program                                                      
    }
 
   Branch branch () {return makeBranch(allocate());}                                                                     // Create and initialize a branch in memory and return its index
-
-  Int  count ()    {return refCount.getInt();}                                                                          // Number of keys in tree
+  Int     count () {return refCount.getInt();}                                                                          // Number of keys in tree
   void countInc () {refCount.putInt(count().inc());}                                                                    // Increment the key count
   void countDec () {refCount.putInt(count().dec());}                                                                    // Decrement the key count
 
@@ -746,175 +741,87 @@ class Tree extends Program                                                      
 //D2 Traverse the tree                                                                                                  // Traverse the tree in order
 
   class Traverse                                                                                                        // Traverse the tree in order by maintaining a stack of outstanding actions
-   {final Memory      node = traverseNode;                                                                              // Memory to hold outstanding branches and leaves
-    final Memory    action = traverseAction;                                                                            // Memory to hold requested action against each branch
-    final int action_first = -1,                                                                                        // Add first child branch and update to slot of the first child. Process through the children indicated by positive values then go to top when there are no more children to process
-                action_top = -2,                                                                                        // Add top goto remove
-             action_remove = -3;                                                                                        // Remove this branch from stack
-    final Int        depth = new Int("depth");                                                                          // Depth we have reached in the tree. -1 indicates thatthe stack is empty.
-
-    final class LeafContext                                                                                             // The context of a leaf shows its relationship to its parent branch
-     {final Bit   root = new Bit();                                                                                     // Whether the current leaf is the root or not
-      final Int parent = new Int();                                                                                     // If the current leaf is not the root then the parent branch of the current leaf
-      final Int   leaf = new Int();                                                                                     // The current leaf
-      final Int   slot = new Int();                                                                                     // The slot in the parent branch
-      final Int  depth = new Int();                                                                                     // Depth of this leaf
-
-      LeafContext(Int Leaf, Int Slot, Int Depth, Int Parent)                                                            // Leaf under a branch
-       {root  .set(false);
-        parent.set(Parent);
-        leaf  .set(Leaf);
-        slot  .set(Slot);
-        depth .set(Depth);
-       }
-
-      LeafContext()                                                                                                     // Leaf as a tree
-       {root  .set(true);
-        parent.set(0);
-        leaf  .set(0);
-        slot  .set(0);
-        depth .set(0);
-       }
+   {Slots slots(int Index, int Keys)                                                                                    // Slots for a node by index - the slots are always located starting at the second memory unit of the node
+     {final int p = Index * build.nodeSize+1;
+      return new Slots(new Slots.Build().numberOfKeys(Keys).memory(refNodes.step(p)).parent(program()));
      }
 
-    final class BranchContext                                                                                           // The context of a branch shows its relationship to its parent and currently being processed child
-     {final Bit root       = new Bit();                                                                                 // Whether the current branch is the root or not
-      final Int  parent     = new Int();                                                                                // If the current branch is not the root then the parent of the current branch
-      final Int  parentSlot = new Int();                                                                                // If the current branch is not the root then the slot through which this branch was reached
-      final Int  branch     = new Int();                                                                                // The current branch
-      final Int  branchSlot = new Int();                                                                                // The slot in the current branch that has just been processed
-      final Int  child      = new Int();                                                                                // The child of the current branch that has just been processed
-      final Int  Depth      = new Int();                                                                                // Depth of this branch
-      BranchContext()                                                                                                   // Set the current context
-       {new If(depth.eq(0))                                                                                             // The branch currently being processed is the root
-         {void Then()
-           {root.set(true);
-            parent.set(0); parentSlot.set(0);
-            branch.set(0);
+    boolean isLeaf (int Index)                                                                                          // Whether the indexed node is a leaf or not
+     {final int p = Index * build.nodeSize;
+      final int rootType = refNodes.getInt(p);
+      return rootType == BranchOrLeaf.leaf.value;
+     }
+
+    void traverse (int Index, int Parent, int Depth)                                                                                // Traverse the branch at the indicated index
+     {if (Depth > maximumNumberOfLevels)  return;                                                                       // Terminate large traverses perhaps produced in error
+      final Slots          s = slots(Index*build.nodeSize, maxBranchSize);                                              // Slots for branch
+      final Memory.Ref nodes = refNodes.step(1 + s.build.size());                                                       // Indices of child nodes
+      final int            t = nodes.getInt(maxBranchSize);
+
+      if (isLeaf(t))
+       {for(int i = 0; i < maxLeafSize*2; ++i)
+         {if (s.getSlotToKeysInUse(i))
+           {final int k = s.getSlotToKeyValue(i);
+            final int n = s.getSlotToKeyIndex(i);
+            final int l = nodes.getInt(n);
+            pLeaf(l, Depth+1, Index, i);
+            branchSlot(Index, Depth, Parent, i, k);
            }
-          void Else()                                                                                                   // The branch being currently processed is not the root
-           {root.set(false);                                                                                            // Not on the root
-            final Int d = depth.Dec();
-            parent     .set(node  .getInt(ib(d    )));                                                                  // Parent branch
-            parentSlot .set(action.getInt(ib(d    )));                                                                  // Slot in parent whereby we reached the current branch
-            branch     .set(node  .getInt(ib(depth)));                                                                  // The current branch
-           }
-         };
-        branchSlot .set(action.getInt(ib(depth)));                                                                      // The slot in the current branch that has just been processed
-        child      .set(node  .getInt(ib(depth.Inc())));                                                                // The leaf or branch below this branch that has just been processed
-        Depth      .set(depth);                                                                                         // Show the depth of this branch
+         }
+        branchTop(t, Depth);
+        pLeaf(t, Depth+1, Index, -1);
+        return;
+       }
+
+      for(int i = 0; i < maxBranchSize*2; ++i)
+       {if (s.getSlotToKeysInUse(i))
+         {final int k = s.getSlotToKeyValue(i);
+          final int n = s.getSlotToKeyIndex(i);
+          final int c = nodes.getInt(n);
+          traverse(c, Index, Depth+1);
+          branchSlot(Index, Depth, Parent, i, k);
+         }
+        branchTop(t, Depth);
+        traverse (t, Index, Depth+1);
        }
      }
 
-    Int parentBranch(Int Index)                                                                                         // Index of parent branch
-     {final Int B = new Int(-1);
-      new If (Index.ge(0))
-       {void Then()
-         {B.set(node.getInt(ib(Index)));                                                                                // Index of parent branch
-         }
-       };
-      return B;
+    Traverse ()                                                                                                         // Traverse the tree visiting each leaf and branch in order
+     {if (isLeaf(0)) pLeaf    (0, 0, 0, 0);
+      else           traverse (0, 0, 0);
      }
 
-    Traverse()                                                                                                          // Traverse the tree visiting each leaf and branch in order
-     {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has the effect of requesting the first child of the root be added to the stack
-      final Tree tree = Tree.this;
-
-      new If (isRootBranch())                                                                                           // Tree starts with a branch
-       {void Then()
-         {new For(numberOfNodes*2)                                                                                      // Each node in the tree
-           {void body(Int Index, Bit Continue)                                                                          // Process each remaining branch
-             {new If (depth.ge(0))                                                                                      // Branches waiting to be processed
-               {void Then()                                                                                             // Branches still present on branches stack
-                 {Continue.set();                                                                                       // Continue as long as there are branches to be processed
-                  new If (isBranch(node.getInt(ib(depth))))                                                             // Processing a branch
-                   {void Then()
-                     {final Int    a = action.getInt(ib(depth));  a.name = "action";                                    // Action to be performed on branch
-                      final Branch b = branch(node.getInt(ib(depth)));                                                  // Branch on which action is to be performed
-                      new If (a.eq(action_first))                                                                       // Add first child
-                       {void Then()
-                         {final Bint c = b.slots.usedSlotsToKeys.firstOne();                                            // First child if any
-                          new If (c)                                                                                    // Put first child on stack
-                           {void Then()
-                             {action.putInt(ib(depth), c.i());                                                          // Current child
-                              depth.inc();                                                                              // Next child next time
-                              node  .putInt(ib(depth), b.data(b.slots.getSlotToKeyIndex(c.i())));                       // First child
-                              action.putInt(ib(depth), new Int(action_first));
-                             }
-                            void Else()
-                             {action.putInt(ib(depth), new Int(action_top));                                            // No children so move to top
-                             }
-                           };
-                         }
-
-                        void Else()
-                         {new If (a.eq(action_top))                                                                     // Add top
-                           {void Then()
-                             {action.putInt(ib(depth), new Int(action_remove));                                         // Remove after processing top
-                              new If (b.slots.empty())                                                                  // Print a place holder if the body is empty
-                               {void Then()
-                                 {final BranchContext bc = new BranchContext();                                         // Context of current branch
-                                  branchBodyEmpty(bc);                                                                  // Processed this slot in this branch
-                                 }
-                               };
-                              depth.inc();                                                                              // Next child next time
-                              node.putInt(ib(depth), b.top());                                                          // Add top
-                              action.putInt(ib(depth), new Int(action_first));                                          // First child if any
-                             }
-
-                            void Else()                                                                                 // Remove
-                             {new If (a.eq(action_remove))
-                               {void Then()
-                                 {depth.dec();                                                                          // Remove from stack uncovering previous item
-                                 }
-                                void Else()                                                                             // Next child
-                                 {final BranchContext bc = new BranchContext();                                         // Context of current branch
-                                  branchBody(bc);                                                                       // Processed this slot in this branch
-                                  final Bint n = b.slots.usedSlotsToKeys.nextOne(bc.branchSlot);                        // Next child slot
-                                  new If (n)                                                                            // Valid next child
-                                   {void Then()
-                                     {action.putInt(ib(depth), n.i());                                                  // Current child
-                                      depth.inc();                                                                      // Next child next time
-                                      final Int N = b.data(b.slots.getSlotToKeyIndex(n.i()));                           // Next child index
-                                      node.putInt(ib(depth), N);                                                        // First child
-                                      action.putInt(ib(depth), new Int(action_first));                                  // Request first child of added branch if it is a branch else it wil be processed as a leaf
-                                     }
-                                    void Else()                                                                         // No more children so move to top
-                                     {action.putInt(ib(depth), new Int(action_top));
-                                     }
-                                   };
-                                 }
-                               };
-                             }
-                           };
-                         }
-                       };
-                     }
-                    void Else()                                                                                         // Process a leaf from the stack
-                     {final Int   d = depth.Dec();
-                      final Int   b = parentBranch(d);
-                      final Slots s = branch(b).slots;
-                      leafBody(new LeafContext(node.getInt(ib(depth)), action.getInt(ib(d)), depth, b));                // Process the referenced leaf
-                      depth.dec();
-                     }
-                   };
-                 }
-               };
-             }
-           };
-         }
-        void Else()                                                                                                     // Process a tree consisting of a single leaf
-         {leafBody(new LeafContext());
-         }
-       };
+    void pLeaf(int Index, int Depth, int Parent, int ParentSlot)                                                        // Process a leaf
+     {final Slots         slots = slots(Index, maxLeafSize);
+      final Stack<Integer> keys = new Stack<>();
+      for(int i = 0; i < maxLeafSize*2; ++i) if (slots.getSlotToKeysInUse(i)) keys.push(slots.getSlotToKeyValue(i));
+      leaf(Index, Depth, Parent, ParentSlot, keys);
      }
 
-    void leafBody       (LeafContext   LC) {}                                                                           // Override to process each leaf
-    void branchBody     (BranchContext BC) {}                                                                           // Override to process each branch
-    void branchBodyEmpty(BranchContext BC) {}                                                                           // Override to process branches that have a empty body
+    void leaf (      int Index, int Depth, int Parent, int Slot, Stack<Integer> Keys)                                   // Process a leaf
+     {say("AAAA", "Index", Index, "Depth", Depth, "Parent", Parent, "Slot", Slot, "Keys", Keys, slots(Index, maxLeafSize));
+     }
+
+    void branchSlot (int Index, int Depth, int Parent, int Slot, int Key)                                               // Process branch slot by printing the tree to the left of the slot and then the slot
+     {say("BBBB", "Index", Index, "Depth", Depth, "Parent", Parent, "Slot", Slot, "Key",  Key, slots(Index, maxBranchSize));
+     }
+
+    void branchTop ( int Index, int Depth)                                                                              // Process branch top by printing its sub tree to the right
+     {say("TTTT", "Index", Index, "Depth", Depth);
+     }
    }
 
-//D2 Print                                                                                                              // Print the tree horizontally
+  void check (StringBuilder A, String B) {Test.ok(""+A, B);}
+
+//D2 Print
+//                                                          16  br slot key                                                            |
+//                                                          (0) br index                                                            |
+//                                                          [9,2] child index, slot                                                          |
+//         4             8                12                                20              24              28              |
+//         (9,0,2)       (9,0,2)          (9,0,2)                           (6,0)           (6,0)           (6,0)           |
+//         [12,0]        [5,2]            [10,4]                            [7,0]           [4,2]           [3,4]           |
+// 1,2,3,4        5,6,7,8       9,10,11,12       13,14,15,16     17,18,19,20     21,22,23,24     25,26,27,28     29,30,31,32|
+// (12,9,0)       (5,9,2)       (10,9,4)         (8,9)           (7,6,0)         (4,6,2)         (3,6,4)         (2,6)      |
 
   final class Print                                                                                                     // Print the tree
    {final Stack<StringBuilder> P = new Stack<>();
@@ -922,96 +829,52 @@ class Tree extends Program                                                      
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
      {subStart("Tree.Print");
 
-      new I() {void a() {P.clear();} boolean trace() {return false;}};                                                  // Clear output area
-
       new Traverse()
-       {@Override void leafBody(LeafContext LC)                                                                         // Print keys of leaf and optionally the details of the parent
-         {final Leaf          l = leaf(LC.leaf);
-          final StringBuilder s = new StringBuilder();
-          new I() {void a() {clearStringBuilder(s);} boolean trace() {return false;}};                                  // Clear the print
-          l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
-          new I()                                                                                                       // Print leaf keys
-           {void a()
-             {final int d = LC.depth.i() * linesToPrintABranch;                                                         // Line in output
-              pad(d+1);                                                                                                 // Pad the output area so that all the lines have the same length
-              chompStringBuilder(s);                                                                                    // Remove trailing comma
-              P.elementAt(d).append(s);                                                                                 // Write first line
-              if (Context && !LC.root.b())                                                                              // Parent details if requested
-               {final StringBuilder t = clearStringBuilder(new StringBuilder());
-                final int lI = LC.leaf.i(), lP = LC.parent.i(), lS = LC.slot.i();                                       // Components of second line: leaf number, parent branch number, slot in parent
-                if (lS < 0) t.append("("+lI+","+lP+")"); else t.append("("+lI+","+lP+","+lS+")");                       // Format second line
-                P.elementAt(d+1).append(t);                                                                             // Write second line
-               }
+       {@Override void leaf(int Index, int Depth, int Parent, int Slot, Stack<Integer> Keys)                            // Process a leaf
+         {final StringJoiner k = new StringJoiner(",");
+          for(Integer i: Keys) k.add(""+i);
+          final int d = Depth * linesToPrintABranch;                                                                    // Line in output
+          if (Context)                                                                                                  // Print relationships with surrounding nodes
+           {pad(d+2);                                                                                                   // Pad the output area so that all the lines have the same length
+            P.elementAt(d).append(""+k);                                                                                // Write first line
+            if (Depth > 0)                                                                                              // Parent details if not root
+             {final StringBuilder t = P.elementAt(d+1);
+              if (Slot == -1) t.append("("+Index+","+Parent+")"); else t.append("("+Index+","+Parent+","+Slot+")");     // Format second line
              }
-            boolean trace() {return false;}
-           };
+           }
+          else                                                                                                          // Keys without connections to surrounding nodes
+           {pad(d+1);
+            P.elementAt(d).append(""+k);
+           }
          }
 
-        @Override void branchBody(BranchContext BC)                                                                     // Print keys of branch and optionally the details of the parent and the children of this branch
-         {final Branch b = branch(BC.branch);
-          final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                       // Key of slot
-
-          new I()                                                                                                       // Place in output area
-           {void a()
-             {final int d = BC.Depth.i() * linesToPrintABranch;
-              pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
-              P.elementAt(d).append(""+K.i());                                                                          // Write key into output area
-
-              if (Context)                                                                                              // Context requested
-               {if (BC.Depth.i() == 0)                                                                                  // Parent details if requested and there is a parent
-                 {P.elementAt(d+1).append("("+BC.branch.i()+")");                                                       // Format second line for a root
-                 }
-                else
-                 {final int bI = BC.branch.i(), bP = BC.parent.i(), bS = BC.parentSlot.i();                             // Components of second line: branch number, parent branch number, slot in parent
-                  if (bS >= 0) P.elementAt(d+1).append("("+bI+","+bP+","+bS+")");                                       // Format second line for a non root branch showing the parent of the branch and the slot in the parent this branch came from
-                  else         P.elementAt(d+1).append("("+bI+","+bP+")");                                              // Format second line for a non root branch showing the parent of the branch and that it came from top
-                 }
-
-                if (true)                                                                                               // Write directions to child as third line
-                 {final int bS = BC.branchSlot.i(), bC = BC.child.i();                                                  // Components of second line: branch slot, child index
-                  P.elementAt(d+2).append("["+bC+","+bS+"]");
-                 }
-               }
-             }
-            boolean trace() {return false;}
-           };
+        @Override void branchSlot(int Index, int Depth, int Parent, int Slot, int Key)                                  // Print keys of branch and optionally the details of the parent and the children of this branch
+         {final int d = Depth * linesToPrintABranch;
+          if (Context)                                                                                                  // Print relationships with surrounding nodes
+           {pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
+            P.elementAt(d).append(f("%04d", Key));                                                                       // Write key into output area
+            if (Depth == 0) P.elementAt(d+1).append("("+Index+")");                                                     // Format second line for a root
+            else P.elementAt(d+1).append("("+Index+","+Parent+","+Slot+")");                                            // Format second line for a non root branch showing the parent of the branch and the slot in the parent this branch came from
+           }
+          else                                                                                                          // Keys without connections to surrounding nodes
+           {pad(d+3);
+            P.elementAt(d).append(f("%04d", Key));
+           }
          }
 
-        @Override void branchBodyEmpty(BranchContext BC)                                                                // Print a branch with an empty body
-         {final Branch b = branch(BC.branch);
-          final Int    t = b.top();
-
-          final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                       // Key of slot
-
-          new I()                                                                                                       // Place in output area
-           {void a()
-             {final int d = BC.Depth.i() * linesToPrintABranch;
-              pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
-
-              if (Context)                                                                                              // Context requested
-               {if (BC.Depth.i() == 0)                                                                                  // Parent details if requested and there is a parent
-                 {P.elementAt(d+1).append("("+BC.branch.i()+")");                                                       // Format second line for a root
-                 }
-                else
-                 {final int bI = BC.branch.i(), bP = BC.parent.i(), bS = BC.parentSlot.i();                             // Components of second line: branch number, parent branch number, slot in parent
-                  if (bS >= 0) P.elementAt(d+1).append("("+bI+","+bP+","+bS+")");                                       // Format second line for a non root branch showing the parent of the branch and the slot in the parent this branch came from
-                  else         P.elementAt(d+1).append("("+bI+","+bP+")");                                              // Format second line for a non root branch showing the parent of the branch and that it came from top
-                 }
-
-                if (true)                                                                                               // Write directions to child as third line
-                 {P.elementAt(d+2).append("["+t.i()+"]");
-                 }
-               }
-             }
-            boolean trace() {return false;}
-           };
+        @Override void branchTop(int Index, int Depth)                                                                  // Print node referenced by top
+         {if (Context)
+           {final int d = Depth * linesToPrintABranch;
+            pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
+            trimRight(P.elementAt(d+1)).append(""+Index);                                                               // Add index of top to slot second line
+           }
          }
        };
       subFinish();
      }
 
     void pad(int level)                                                                                                 // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
-     {for (int i = P.size(); i <= level; ++i) P.push(clearStringBuilder(new StringBuilder()));                          // Make sure we have a full deck of strings
+     {for (int i = P.size(); i < level; ++i) P.push(clearStringBuilder(new StringBuilder()));                           // Make sure we have a full deck of strings
       int m = 0;                                                                                                        // Maximum length
       for (StringBuilder s : P) m = m < s.length() ? s.length() : m;                                                    // Find maximum length
       for (StringBuilder s : P) if (s.length() < m) s.append(" ".repeat(m - s.length()));                               // Pad each string to the length of the longest string
@@ -1147,81 +1010,81 @@ Number of Keys:    0
     test_tree(false);
    }
 
-  static String[]tree6 = {"AAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUggAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUQAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdSIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTAAAAAgAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAQAAAAYAAAAHAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAR94gAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAABQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoAAAAAQAAAAYAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
-
-  static void test_saveReload(boolean Ex)
-   {sayCurrentTestName();
-
-    final boolean createNew = true;
-
-    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-
-    if (createNew)
-     {t.new ForCount(t.new Int(1), t.new Int(7))
-       {void body(Int Index)
-         {t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
-         }
-       };
-      //t.new I() {void a() {say("  static String[]tree6 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
-     }
-    else
-     {t.new I() {void a() {t.reloadMemories(tree6);} String v() {return "";} boolean trace() {return false;}};
-     }
-
-    t.check (t.dumpTree(), """
-Tree memory dump
-Leaf   size   :   41
-Branch size   :   33
-Node   size   :   41
-MaxLeafSize   :    4
-MaxBranchSize :    3
-NumberOfNodes :    4
-Allocations   :    3
-Number of Keys:    6
-Branch         size:   3, count:   1, top:   2
- Ref   Key  Data
-   0     2     1
-Leaf   at:   1 size:   4, count:   2
- Ref   Key  Data
-   0     1    12
-   1     2    24
-Leaf   at:   2 size:   4, count:   4
- Ref   Key  Data
-   2     3    36
-   3     4    48
-   0     5    60
-   1     6    72
-""");
-
-    t.check(t.dump(), """
-       2           |
-       (0)         |
-       [1,3]       |
-1,2         3,4,5,6|
-(1,0,3)     (2,0)  |
-""");
-
-
-    t.maxSteps(999_999);
-    t.execute();
-   }
-
-  static void test_saveReload()
-   {          test_saveReload(true);
-              test_saveReload(false);
-   }
+//  static String[]tree6 = {"AAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUggAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUQAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdSIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTAAAAAgAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAQAAAAYAAAAHAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAR94gAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAABQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoAAAAAQAAAAYAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
+//
+//  static void test_saveReload(boolean Ex)
+//   {sayCurrentTestName();
+//
+//    final boolean createNew = true;
+//
+//    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
+//
+//    if (createNew)
+//     {t.new ForCount(t.new Int(1), t.new Int(7))
+//       {void body(Int Index)
+//         {t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
+//         }
+//       };
+//      //t.new I() {void a() {say("  static String[]tree6 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
+//     }
+//    else
+//     {t.new I() {void a() {t.reloadMemories(tree6);} String v() {return "";} boolean trace() {return false;}};
+//     }
+//
+//    t.check (t.dumpTree(), """
+//Tree memory dump
+//Leaf   size   :   41
+//Branch size   :   33
+//Node   size   :   41
+//MaxLeafSize   :    4
+//MaxBranchSize :    3
+//NumberOfNodes :    4
+//Allocations   :    3
+//Number of Keys:    6
+//Branch         size:   3, count:   1, top:   2
+// Ref   Key  Data
+//   0     2     1
+//Leaf   at:   1 size:   4, count:   2
+// Ref   Key  Data
+//   0     1    12
+//   1     2    24
+//Leaf   at:   2 size:   4, count:   4
+// Ref   Key  Data
+//   2     3    36
+//   3     4    48
+//   0     5    60
+//   1     6    72
+//""");
+//
+//    t.check(t.dump(), """
+//       2           |
+//       (0)         |
+//       [1,3]       |
+//1,2         3,4,5,6|
+//(1,0,3)     (2,0)  |
+//""");
+//
+//
+//    t.maxSteps(999_999);
+//    t.execute();
+//   }
+//
+//  static void test_saveReload()
+//   {          test_saveReload(true);
+//              test_saveReload(false);
+//   }
 
   final static String[]tree32 = {"AAAAAgAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAUgQAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUgAAAAEAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAALAAAACQAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAWAAAAIQAAACwAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdSIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTAAAAAgAAABkAAAAaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEwAAAR4AAAEpAAABNAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAACAAAAAwAAAAEAAAAFAAAABgAAAAcAAAAAAAAAAAAAAAAAAAAAAAR94gAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAAHQAAAB4AAAAfAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAE/AAABSgAAAVUAAAFgAAAAAQAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAMAAAAAAAAAAAAAAAIAAAAEAAAABgAAAAAAAAAAAAAAAAAAAAAAAH9VAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/wAAAAQAAAABAAAAAgAAAAMAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAWAAAAIQAAACwAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAf1UAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAABAAAAAUAAAAGAAAABwAAAAgAAAAAAAAAAAAAAAAAAAAAAAAANwAAAEIAAABNAAAAWAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAAAAAACAAAABAAAAAYAAAAAAAAAAAAAAAAAAAAAAAB/VQAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAAFQAAABYAAAAXAAAAGAAAAAAAAAAAAAAAAAAAAAAAAADnAAAA8gAAAP0AAAEIAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAAAAAAAdxUAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9wAAAAMAAAAUAAAAGAAAABwAAAAAAAAAAAAAAAAAAAAKAAAABQAAAAwAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAf1UAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAABAAAAAkAAAAKAAAACwAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAYwAAAG4AAAB5AAAAhAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAAAAAACAAAABAAAAAYAAAAAAAAAAAAAAAAAAAAAAAB/VQAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAADQAAAA4AAAAPAAAAEAAAAAAAAAAAAAAAAAAAAAAAAACPAAAAmgAAAKUAAACwAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAAAAAAAdxUAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9wAAAAMAAAAEAAAACAAAAAwAAAAAAAAAAAAAAAAAAAADAAAABAAAAAcAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAf1UAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAABAAAABEAAAASAAAAEwAAABQAAAAAAAAAAAAAAAAAAAAAAAAAuwAAAMYAAADRAAAA3AAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFIEAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFEAAAABAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAoAAAAFAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAMAAAAAAAAAAAAAAAIAAAAEAAAABgAAAAAAAAAAAAAAAAAAAAAAAH9VAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/wAAAAQAAAAZAAAAGgAAABsAAAAcAAAAAAAAAAAAAAAAAAAAAAAAARMAAAEeAAABKQAAATQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//6AJ//f/hFnh/wAAAABUAAAAgAAAAAAAAAAAAAAAA", "AAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
 
   static void test_insert(boolean Ex)
    {sayCurrentTestName();
 
-    final boolean createNew = true;
+// final boolean createNew = true;
 
     final int  N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
 
-    if (createNew)                                                                                                      // Create the tree and dump it
+//  if (createNew)                                                                                                      // Create the tree and dump it
      {t.new ForCount(t.new Int(1), t.new Int(N+1))
        {void body(Int Index)
          {t.insert(Index, Index.Mul(11));
@@ -1230,9 +1093,9 @@ Leaf   at:   2 size:   4, count:   4
        };
       //t.new I() {void a() {say("final static String[]tree32 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
      }
-    else
-     {t.new I() {void a() {t.reloadMemories(tree32);} boolean trace() {return false;}};
-     }
+//    else
+//     {t.new I() {void a() {t.reloadMemories(tree32);} boolean trace() {return false;}};
+//     }
 
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
@@ -1256,15 +1119,15 @@ Leaf   at:   2 size:   4, count:   4
               test_insert(false);
    }
 
-  static Tree test_reloadTree(boolean Ex)                                                                               // Reload a tree from memory as faster than reconstructing it
-   {final int  N = 32;
-    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeBody()
-       {new I() {void a() {reloadMemories(tree32);} boolean trace() {return false;}};
-       }
-     };
-    return t;
-   }
+//  static Tree test_reloadTree(boolean Ex)                                                                               // Reload a tree from memory as faster than reconstructing it
+//   {final int  N = 32;
+//    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
+//     {void treeBody()
+//       {new I() {void a() {reloadMemories(tree32);} boolean trace() {return false;}};
+//       }
+//     };
+//    return t;
+//   }
 
   static void test_insertMerged(boolean Ex)
    {sayCurrentTestName();
@@ -1809,6 +1672,30 @@ Leaf           size:   4, count:   2
               test_find(false);
    }
 
+  static void test_print(boolean Ex)
+   {sayCurrentTestName();
+
+    final int  N = 32;
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N+1).immediate(Ex));
+
+    t.new ForCount(t.new Int(1), t.new Int(N))
+     {void body(Int Index)
+       {t.insert(Index, Index.Mul(11));
+       }
+     };
+    t.insert(t.new Int(N), t.new Int(N*11));
+    say("PPPP", t.dump());
+    say("QQQQ", t.print());
+
+    t.maxSteps(9_999_999);
+    t.execute();
+   }
+
+  static void test_print()
+   {          test_print(true);
+              test_print(false);
+   }
+
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (rtg( 1)) test_tree();
@@ -1826,9 +1713,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending();
-    test_deleteDescending();
-    test_deleteRandom32();
+    test_print(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
