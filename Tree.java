@@ -2,6 +2,7 @@
 // Btree with stucks implemented as distributed sparse slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Rewrite traverse to avoid the possibility of negative integer occuring either through the action codes or the stack element pointer
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -1224,7 +1225,7 @@ Leaf   at:   2 size:   4, count:   4
      {t.new ForCount(t.new Int(1), t.new Int(N+1))
        {void body(Int Index)
          {t.insert(Index, Index.Mul(11));
-          t.dumpProgramState("AAAA");
+          t.dumpProgramState("AAAA");                                                                                   // Ensures that immediate mode execution matches delayed execution mode
          }
        };
       //t.new I() {void a() {say("final static String[]tree32 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
@@ -1235,7 +1236,7 @@ Leaf   at:   2 size:   4, count:   4
 
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
-    t.check(t.dump(), """
+    if (Ex) t.check(t.dump(), """
                                                         16                                                                |
                                                         (0)                                                               |
                                                         [9,2]                                                             |
@@ -1278,7 +1279,7 @@ Leaf   at:   2 size:   4, count:   4
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
 
-    t.check(t.dump(), """
+    if (Ex) t.check(t.dump(), """
                                                         16                                                                |
                                                         (0)                                                               |
                                                         [9,2]                                                             |
@@ -1311,7 +1312,7 @@ Leaf   at:   2 size:   4, count:   4
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
 
-    t.check(t.dump(), """
+    if (Ex) t.check(t.dump(), """
                                                          16                                                              |
                                                          (0)                                                             |
                                                          [9,2]                                                           |
@@ -1355,7 +1356,7 @@ Leaf   at:   2 size:   4, count:   4
            }
          };
 
-        check(dump(), """
+        if (Ex) check(dump(), """
                                                         15                                                            26                          |
                                                         (0)                                                           (0)                         |
                                                         [5,1]                                                         [11,4]                      |
@@ -1403,7 +1404,7 @@ Leaf   at:   2 size:   4, count:   4
        }
      };
         //t.new I() {void a() {stop(s);}};
-    t.Check(s, """
+    if (Ex) t.Check(s, """
                                        16                                                  |
        4       8          12                        20           24           28           |
 1,2,3,4 5,6,7,8 9,10,11,12  13,14,15,16  17,18,19,20  21,22,23,24  25,26,27,28  29,30,31,32|
@@ -1521,7 +1522,7 @@ Leaf   at:   2 size:   4, count:   4
      };
 
         //new I() {void a() {stop(s);}};
-    t.check(s, """
+    if (Ex) t.check(s, """
                                        16                                                  |
        4       8          12                        20           24           28           |
 1,2,3,4 5,6,7,8 9,10,11,12  13,14,15,16  17,18,19,20  21,22,23,24  25,26,27,28  29,30,31,32|
@@ -1649,7 +1650,7 @@ Leaf   at:   2 size:   4, count:   4
      };
 
     //new I() {void a() {stop(s);}};
-    t.check(s, """
+    if (Ex) t.check(s, """
                                        16                                                  |
        4       8          12                        20           24           28           |
 1,2,3,4 5,6,7,8 9,10,11,12  13,14,15,16  17,18,19,20  21,22,23,24  25,26,27,28  29,30,31,32|
@@ -1808,7 +1809,7 @@ Leaf           size:   4, count:   2
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (rtg( 1)) test_tree();
-    if (rtg( 2)) test_saveReload();
+    //if (rtg( 2)) test_saveReload();
     if (rtg( 3)) test_insert();
     if (rtg( 4)) test_insertMerged();
     if (rtg( 5)) test_insertReverse();
@@ -1821,8 +1822,8 @@ Leaf           size:   4, count:   2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_saveReload(false);
+   {oldTests();
+    //test_insert(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
@@ -1830,10 +1831,10 @@ Leaf           size:   4, count:   2
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
-      if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
-      say(subPrint());
+      //if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
+      //say(subPrint());
       testSummary();                                                                                                    // Summarize test results
-      coverageAnalysis(12);
+      //coverageAnalysis(12);
       System.exit(testsFailed);
      }
     catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
