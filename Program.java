@@ -1488,7 +1488,7 @@ endmodule
     s.append("$fdisplay(traceFile, "+q(Format));
     for(int i = 0; i < Message.length; ++i) s.append(", "+Message[i]);
     s.append("); $fflush(traceFile);");
-    return ""+s;
+    return "`ifndef SYNTHESIS\n"+s+"`endif\n";
    }
 
 // D2 Execute                                                                                                           // Execute the code in the current program
@@ -2206,7 +2206,7 @@ check
 """,                 "id", ""+b.id, "v", bitMemory().vMemory(b.id)));
      }
 
-    writeFile(includeFile.v$(), v);
+    writeFile(includeFile.v$(), "`ifndef SYNTHESIS\n"+v+"`endif\n");
     return ""+s;
    }
 
@@ -3186,6 +3186,7 @@ Memory 2
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    //test_ifThen();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
