@@ -1391,9 +1391,7 @@ Leaf   at:   2 size:   4, count:   4
      };
     t.dumpProgramState("AAAA");
 
-    final StringBuilder s = new StringBuilder();
-    final StringBuilder S = t.print();
-    t.new I() {void a() {s.append(S);} boolean trace() {return false;}};
+    final StringBuilder s = Ex ? t.print() : new StringBuilder();
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
@@ -1510,9 +1508,7 @@ Leaf   at:   2 size:   4, count:   4
      };
     t.dumpProgramState("AAAA");
 
-    final StringBuilder s = new StringBuilder();
-    final StringBuilder S = t.print();
-    t.new I() {void a() {s.append(S);} boolean trace() {return false;}};
+    final StringBuilder s = Ex ? t.print() : new StringBuilder();
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
@@ -1633,7 +1629,7 @@ Leaf   at:   2 size:   4, count:   4
      };
     t.dumpProgramState("AAAA");
 
-    final StringBuilder s = t.print();
+    final StringBuilder s = Ex ? t.print() : new StringBuilder();
     final VerilogArrays.Array a = t.verilogArrays().new Array("loadRandomKeys", random_32);                             // Create an array of the random keys to be deleted so that the array is accessible from Verilog
 
     t.new ForCount(t.new Int(N))
