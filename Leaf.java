@@ -29,7 +29,7 @@ class Leaf extends Program implements Program.Locatable                         
 
     Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
     Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory   (Memory.Ref Ref) {unitMemoryRef = Ref;       return this;}
+    Build memory   (Memory.Ref Ref    ) {unitMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
     Build at       (Int     At        ) {at            = At;        return this;}
 
@@ -79,16 +79,15 @@ class Leaf extends Program implements Program.Locatable                         
 
   public Bint getLocation() {return at;}                                                                                // The location of this node in memory
 
-  Bit empty()   {return slots.empty();}                                                                                 // Is the leaf empty
-  Bit full ()   {return slots.full ();}                                                                                 // Is the leaf full
-  Int  count()   {return slots.count();}                                                                                // Number of key/data pairs in the leaf
-  int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the leaf
-
-  Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
-  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // Set the data at the specified index
-
-  int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
-  void      clear() {unitMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
+  Bit       empty ()                     {return slots.empty();}                                                        // Is the leaf empty
+  Bit        full ()                     {return slots.full ();}                                                        // Is the leaf full
+  Int       count ()                     {return slots.count();}                                                        // Number of key/data pairs in the leaf
+  int     maxSize ()                     {return maxSize;}                                                              // Number of key/data pairs in the leaf
+  Int        data (Int Index)            {return refData.getInt(Index);}                                                // Get data at an index
+  int        data (int Index)            {return refData.getInt(Index);}                                                // Get data at an index
+  void       data (Int Index, Int Value) {refData.putInt(Index, Value);}                                                // Set the data at the specified index
+  int bytesNeeded ()                     {return build.size();}                                                         // Number of bytes needed to contain a leaf
+  void      clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                          // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
   void copy (Leaf Source) {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
 
