@@ -24,20 +24,18 @@ class Slots extends Program                                                     
 //D1 Construction                                                                                                       // Construct and layout the slots
 
   final static class Build                                                                                              // Specification of slots
-   {boolean                     immediate = true;                                                                       // Immediate mode
-    boolean                         trace = false;                                                                      // Trace execution
+   {boolean                     immediate = true;                                                                       // Immediate execution mode
     int                      numberOfKeys = 2;                                                                          // Number of references in the slots
     Memory.Ref              unitMemoryRef;                                                                              // Program memory to be used
     Program                        parent;                                                                              // Parent program if any
     Build.MemoryPositions memoryPositions;                                                                              // Offsets of fields describing this leaf in memory
 
-    Build immediate    (boolean  Immediate) {immediate     = Immediate;    return this;}
+    Build    immediate (boolean  Immediate) {immediate     = Immediate;    return this;}
     Build numberOfKeys (int   NumberOfKeys) {numberOfKeys  = NumberOfKeys; return this;}
-    Build memory       (Memory.Ref Ref)     {unitMemoryRef = Ref;          return this;}
-    Build parent       (Program    Parent)  {parent        = Parent;       return this;}
-    Build trace        (boolean     Trace)  {trace         = Trace;        return this;}
+    Build       memory (Memory.Ref Ref)     {unitMemoryRef = Ref;          return this;}
+    Build       parent (Program    Parent)  {parent        = Parent;       return this;}
 
-    Program.Build build()                                                                                               // Create a description of the needed containing program
+    Program.Build build ()                                                                                               // Create a description of the needed containing program
      {subStart("Slots.build()");
       final Program.Build   p = new Program.Build();                                                                    // Description of containing program
       final MemoryPositions s = memoryPositions = new MemoryPositions();                                                // Now we know the size of the slots
@@ -63,7 +61,7 @@ class Slots extends Program                                                     
       final int               size = posKeys            + N;                                                            // Count of used slots
      }
 
-    int size()                 {return memoryPositions.size;}                                                           // Bytes needed for the slots
+    int size()                 {return memoryPositions.size;}                                                           // Memory needed for the slots
     int numberOfKeys ()        {return numberOfKeys;}                                                                   // The number of references in the slots definition
     int numberOfSlotsToKeys () {return numberOfKeys() << 1;}                                                            // Number of slots from number of refs
    }
@@ -127,11 +125,11 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  Bit    getSlotToKeysInUse(Int Index)    {return usedSlotsToKeys.getBit(Index);}                                       // Check whether a slot is in use
+  Bit    getSlotToKeysInUse (Int Index)    {return usedSlotsToKeys.getBit(Index);}                                      // Check whether a slot is in use
   Int     getSlotToKeyIndex (Int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slots
   Int     getKeyToSlotIndex (Int Index)    {return refKeysToSlots .getInt(Index);}                                      // Index to slots from keys
-  Bit    getKeyInUse       (Int Index)    {return usedKeys       .getBit(Index);}                                       // Check whether a key is in use
-  Int     getKeyValue       (Int Index)    {return refKeys        .getInt(Index);}                                      // Value of referenced key
+  Bit           getKeyInUse (Int Index)    {return usedKeys       .getBit(Index);}                                      // Check whether a key is in use
+  Int           getKeyValue (Int Index)    {return refKeys        .getInt(Index);}                                      // Value of referenced key
 
   boolean getSlotToKeysInUse(int Index)    {return usedSlotsToKeys.getBitNC(Index);}                                    // Check whether a slot is in use
   int     getSlotToKeyIndex (int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slot
@@ -142,9 +140,10 @@ class Slots extends Program                                                     
   Int     getSlotToKeyValue (Int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
   int     getSlotToKeyValue (int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
 
-  Bit                empty ()             {return usedKeys.empty();}                                                    // All bits in the corresponding bitset are unused so the Slots must be empty
-  Bit                 full ()             {return usedKeys.full ();}                                                    // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+  Bit                 empty ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
+  Bit                  full ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
   Int                 count ()             {return usedKeys.count();}                                                   // The computed number of keys in the slots
+  int                 Count ()             {return usedKeys.Count();}                                                   // The computed number of keys in the slots
 //void  invalidateMemory ()                {unitMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   Int          numberOfKeys ()             {return new Int(numberOfKeys);}                                              // The number of references in the slots definition
   int   numberOfSlotsToKeys ()             {return numberOfKeys<<1;}                                                    // Number of slots from number of refs
