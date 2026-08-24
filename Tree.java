@@ -1398,8 +1398,10 @@ Leaf   at:   2 size:   4, count:   4
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.delete(Index.Inc());
-        final StringBuilder T = t.print();
-        t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
+        if (Ex)
+         {final StringBuilder T = t.print();
+          t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
+         }
         t.dumpProgramState("BBBB");
        }
      };
@@ -1515,8 +1517,11 @@ Leaf   at:   2 size:   4, count:   4
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.delete(t.new Int(N).sub(Index));
-        final StringBuilder T = t.print();
-        t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
+
+        if (Ex)
+         {final StringBuilder T = t.print();
+          t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
+         }
         t.dumpProgramState("BBBB");
        }
      };
@@ -1643,8 +1648,10 @@ Leaf   at:   2 size:   4, count:   4
         k.W();                                                                                                          // Write key into variable
         t.delete(k);
 
-        final StringBuilder T = t.print();
-        t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
+        if (Ex)
+         {final StringBuilder T = t.print();
+          t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
+         }
         t.dumpProgramState("BBBB");
        }
      };
@@ -1822,8 +1829,10 @@ Leaf           size:   4, count:   2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_insert(false);
+   {//oldTests();
+    test_deleteAscending();
+    test_deleteDescending();
+    test_deleteRandom32();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
