@@ -978,9 +978,9 @@ public class Program extends Test                                               
 
 //D1 Memory                                                                                                             // Operations on memory divided into units
 
-  static int ib ()      {return Integer.BYTES;}                                                                         // Number of bytes in an integer
-  static int ib (int I) {return I * ib();}                                                                              // Number of bytes in a number of integers
-  static Int ib (Int I) {return I.Mul(ib());}                                                                           // Number of bytes in a number of integers
+//  static int ib ()      {return Integer.BYTES;}                                                                         // Number of bytes in an integer
+//  static int ib (int I) {return I * ib();}                                                                              // Number of bytes in a number of integers
+//  static Int ib (Int I) {return I.Mul(ib());}                                                                           // Number of bytes in a number of integers
 
   class Memory                                                                                                          // Memory made of units
    {final String name;                                                                                                  // Optional name for the memory
@@ -1248,20 +1248,20 @@ public class Program extends Test                                               
       return ""+s;
      }
 
-    String save ()                                                                                                      // Save memory to a string representation
-     {final ByteBuffer b = ByteBuffer.allocate(ib(size()));
-      for (int i : units) b.putInt(i);
-      return Base64.getEncoder().encodeToString(b.array());
-     }
-
-    void reload (String s)                                                                                              // Reload memory from a saved string representation
-     {final byte[]b = Base64.getDecoder().decode(s);
-      if (b.length != ib(size()))
-       {stop("Mismatched reloaded memory length in bytes for memory:", id, "expected:", b.length, "got:", ib(size()));
-       }
-      final ByteBuffer B = ByteBuffer.wrap(b);
-      for (int i = 0; i < size(); i++) units[i] = B.getInt();
-     }
+//  String save ()                                                                                                      // Save memory to a string representation
+//   {final ByteBuffer b = ByteBuffer.allocate(ib(size()));
+//    for (int i : units) b.putInt(i);
+//    return Base64.getEncoder().encodeToString(b.array());
+//   }
+//
+//  void reload (String s)                                                                                              // Reload memory from a saved string representation
+//   {final byte[]b = Base64.getDecoder().decode(s);
+//    if (b.length != ib(size()))
+//     {stop("Mismatched reloaded memory length in bytes for memory:", id, "expected:", b.length, "got:", ib(size()));
+//     }
+//    final ByteBuffer B = ByteBuffer.wrap(b);
+//    for (int i = 0; i < size(); i++) units[i] = B.getInt();
+//   }
 
 //D3 Verilog                                                                                                            // Verilog representation of memory
 
@@ -1377,18 +1377,18 @@ endmodule
 
 //  String dumpMemory () {return program().unitMemory.dumpAsDecimal();}                                                 // Dump memory in decimal format
 
-  String saveMemories ()                                                                                                // Save all the memories to an array of strings
-   {final StringJoiner j = new StringJoiner(", ");
-    for (Memory m : memories()) j.add(q(m.save()));
-    return "{"+j+"}";
-   }
-
-  void reloadMemories (String[]Dump)                                                                                    // Reload saved memories
-   {if (Dump.length != memories().size())                                                                               // Check number of memories match
-     {stop("Number of memories supplied and present differ:", Dump.length, memories().size());
-     }
-    for (int i = 0; i < Dump.length; ++i) memories().elementAt(i).reload(Dump[i]);                                      // Reload each memory
-   }
+//  String saveMemories ()                                                                                                // Save all the memories to an array of strings
+//   {final StringJoiner j = new StringJoiner(", ");
+//    for (Memory m : memories()) j.add(q(m.save()));
+//    return "{"+j+"}";
+//   }
+//
+//  void reloadMemories (String[]Dump)                                                                                    // Reload saved memories
+//   {if (Dump.length != memories().size())                                                                               // Check number of memories match
+//     {stop("Number of memories supplied and present differ:", Dump.length, memories().size());
+//     }
+//    for (int i = 0; i < Dump.length; ++i) memories().elementAt(i).reload(Dump[i]);                                      // Reload each memory
+//   }
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
