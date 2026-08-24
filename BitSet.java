@@ -33,14 +33,14 @@ final public class BitSet extends Program                                       
   final  String         poVerilog;
   final  String         pzVerilog;
 
-  VerilogArrays.Array luoArray;                                                                                         // Verilog arrays for lookup tables
-  VerilogArrays.Array luzArray;
-  VerilogArrays.Array lloArray;
-  VerilogArrays.Array llzArray;
-  VerilogArrays.Array  hoArray;
-  VerilogArrays.Array  hzArray;
-  VerilogArrays.Array  poArray;
-  VerilogArrays.Array  pzArray;
+  VerilogArrays.Array    luoArray;                                                                                      // Verilog arrays for lookup tables
+  VerilogArrays.Array    luzArray;
+  VerilogArrays.Array    lloArray;
+  VerilogArrays.Array    llzArray;
+  VerilogArrays.Array     hoArray;
+  VerilogArrays.Array     hzArray;
+  VerilogArrays.Array     poArray;
+  VerilogArrays.Array     pzArray;
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
@@ -109,9 +109,13 @@ final public class BitSet extends Program                                       
   int                size () {return build.bitSize;}                                                                    // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
   Int          logBitSize () {return new Int(logBitSize);}                                                              // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
   Int         logBitSize1 () {return new Int(logBitSize-1);}                                                            // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
-  Int               count ()                                                                                            // Count number of set bits in bitset - the performasnc will nbe order (1) if the count is being tracked else N log(N)
+  Int               count ()                                                                                            // Count of number of set bits in bitset if this information is being tracked it is available in order (1) time otherwise it is not provided
    {if (!trackCount) stop("Count capability not requested, use Build.count(true) to do so");
     return memoryCount.getInt();
+   }
+  int               Count ()                                                                                            // Count of number of set bits in bitset if this information is being tracked it is available in order (1) time otherwise it is not provided
+   {if (!trackCount) stop("Count capability not requested, use Build.count(true) to do so");
+    return memoryCount.getInt(0);
    }
 
 //D1 Get and Set Bits                                                                                                   // Get and set bits in the bitset setting the corresponding paths in the bits trees
