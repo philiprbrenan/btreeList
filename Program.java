@@ -5,9 +5,9 @@
 // Start with memory randomized
 // Write pc on memory dump title
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
-// Check how often each variable is read or written to eliminate variables that are only used once.
+// Check how often each variable is read or written to eliminate variables that are only used once
 // Use parallel loads in putBit etc as marked with Improvement:
-// Add a messgew variabvle that beocmes a parmeter
+// Remove ib() methods
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -19,13 +19,13 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static boolean        suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+ {final static boolean        suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
   final static String                     currentProject = "Replace verilog integers with regs";                        // Current prohect being worked on
@@ -607,7 +607,7 @@ public class Program extends Test                                               
         pcConstant(i, I.id);                                                                                            // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
 
         if (LoadValue) new I()                                                                                          // Value of integer
-         {void   a() {loadValue(I.i); jTrace(f("%8d ILST2 "+mv+" = %8d",  pc(), I.i));}
+         {void   a() {loadValue(I.i); jTrace(f("%8d ILST2 "+mv+" = %8d",  pc(), lui(I.i)));}
           String v() {return          vTrace(  "%8d ILST2 "+mv+" = %8d", "pc",  intMemory().memory(MemoryIndex));}      // The memory module loads the corresponding value field automatically at the end of this instruction cycle
          };
        }
@@ -646,8 +646,8 @@ public class Program extends Test                                               
       final Memory M = intMemory();
       new I()                                                                                                           // Load value into integer or memory
        {final String f = "%8d writeInt %8d = %8d";
-        void   a() {i = M.writeInt; M. writeIntEnable = true;        jTrace(f(f,  currentPc(), M. read0IntIndex,   M. writeInt ));}
-        String v() {return          M.vWriteIntEnable() + " <= 1; "+ vTrace(  f, "pc",         M.vRead0IntIndex(), M.vWriteInt());}
+        void   a() {i = M.writeInt; M. writeIntEnable = true;        jTrace(f(f,  currentPc(), M. read0IntIndex, lui(M.writeInt)));}
+        String v() {return          M.vWriteIntEnable() + " <= 1; "+ vTrace(  f, "pc",         M.vRead0IntIndex(),  M.vWriteInt());}
        };
       new I()                                                                                                           // Lower  right enable - which could be merged with the next instruction
        {void   a() {if (!immediate()) M.units[M.read0IntIndex] = M.writeInt; M.writeIntEnable = false; jTrace(f("%8d Disable write", currentPc()));}
@@ -757,7 +757,7 @@ public class Program extends Test                                               
       final String v = vTrace(  atf, "pc",         Value);
       return t + " <= " + s + v;
      }
-    void jtrace ()    {jTrace(f(atf,  currentPc(), intMemory().writeInt));}                                             // Trace the integer operation in Java
+    void jtrace ()    {jTrace(f(atf,  currentPc(), lui(intMemory().writeInt)));}                                        // Trace the integer operation in Java
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -1156,12 +1156,12 @@ public class Program extends Test                                               
       I.S(); J.S2();                                                                                                    // Load integer values from the integers memory. Improvement: perform these operations in parallel
 
       new I()                                                                                                           // Set target index of memory to be written while waiting for last read to complete
-       {void   a() {read0IntIndex = ints.read1Int;                           jTrace(f("%8d putInt2 Index %8d",  currentPc(), ints. read1Int ));}
-        String v() {return vRead0IntIndex() + " <= " + ints.vRead1Int()+"; "+vTrace(  "%8d putInt2 Index %8d", "pc",         ints.vRead1Int());}
+       {void   a() {read0IntIndex = ints.read1Int;                           jTrace(f("%8d putInt2 Index %8d",  currentPc(), lui(ints.read1Int)));}
+        String v() {return vRead0IntIndex() + " <= " + ints.vRead1Int()+"; "+vTrace(  "%8d putInt2 Index %8d", "pc",            ints.vRead1Int());}
        };
       new I()                                                                                                           // Integer to write
-       {void   a() {        writeInt        =     ints. read2Int;        writeIntEnable        = true; jTrace(f("%8d putInt3 Value %8d",  currentPc(), ints. read2Int ));}
-        String v() {return vWriteInt() + " <= " + ints.vRead2Int()+"; "+vWriteIntEnable() + " <= 1;" + vTrace(  "%8d putInt3 Value %8d", "pc",         ints.vRead2Int());}
+       {void   a() {        writeInt        =     ints. read2Int;        writeIntEnable        = true; jTrace(f("%8d putInt3 Value %8d",  currentPc(), lui(ints.read2Int)));}
+        String v() {return vWriteInt() + " <= " + ints.vRead2Int()+"; "+vWriteIntEnable() + " <= 1;" + vTrace(  "%8d putInt3 Value %8d", "pc",            ints.vRead2Int());}
        };
       new I()                                                                                                           // Finish write
        {void   a() {units[I.i] = J.i;  writeIntEnable        = false; jTrace(f("%8d putInt4 Finish",  currentPc()));}
@@ -1178,8 +1178,8 @@ public class Program extends Test                                               
       K.S(); I.S(); J.S2();                                                                                             // Retrieve the value of the bit from the bit memory and the values of the integers from the integer memory.  Improvement: these instructions should be in parallel
 
       new I()                                                                                                           // Set target index of memory to be written
-       {void   a() {        read0IntIndex        =     ints. read1Int;        read0BitIndex        =     ints.read2Int;        jTrace(f("%8d putBit2 Index %8d.%8d",  currentPc(), ints. read1Int, lui(ints.read2Int)));}
-        String v() {return vRead0IntIndex() + " <= " + ints.vRead1Int()+"; "+vRead0BitIndex() + " <= " + ints.vRead2Int()+"; "+vTrace(  "%8d putBit2 Index %8d.%8d", "pc",         ints.vRead1Int(),  ints.vRead2Int());}
+       {void   a() {        read0IntIndex        =     ints. read1Int;        read0BitIndex        =     ints.read2Int;        jTrace(f("%8d putBit2 Index %8d.%8d",  currentPc(), lui(ints. read1Int), lui(ints.read2Int)));}
+        String v() {return vRead0IntIndex() + " <= " + ints.vRead1Int()+"; "+vRead0BitIndex() + " <= " + ints.vRead2Int()+"; "+vTrace(  "%8d putBit2 Index %8d.%8d", "pc",         ints.vRead1Int(),       ints.vRead2Int());}
        };
       new I()                                                                                                           // Integer to write
        {void   a() {        writeBit        =     bits. read1Int != 0;   writeIntEnable        =       writeBitEnable        = true; jTrace(f("%8d putBit3 Value %8d",  currentPc(), lui(bits.read1Int)));}
@@ -1367,8 +1367,8 @@ endmodule
 
 //D2 Memory Dumps                                                                                                       // Overridable dump memory methods for Java and Verilog
 
-    String dumpJava ()    {return dumpAsDecimal();}
-    String dumpVerilog () {return dumpVerilogMemoryInDecimalName()+"();";}
+    String dumpJava ()          {return dumpAsDecimal();}
+    String dumpVerilog ()       {return dumpVerilogMemoryInDecimalName()+"();";}
     String memory(String Index) {return substitute("{n}.memory[{i}]", "n", n(), "i", Index);}                           // Verilog to get the indexed location in memory
 
    } // Memory
@@ -1673,9 +1673,9 @@ cd {f}; yosys -q {y}                                                            
    }
 
   void dumpJavaRegisters ()                                                                                             // Dump all memories and variables to the Java trace file. Cannot dump Verilog array definitions because they have not been created yet.
-   {final StringBuilder s = new StringBuilder();
-    s.append(f("     currentPc = %8d\n",         pc-1));
-    appendJavaTrace(""+s);
+   {//final StringBuilder s = new StringBuilder();
+    //s.append(f("     currentPc = %8d\n",         pc-1));
+    //appendJavaTrace(""+s);
    }
 
   void dumpJava ()                                                                                                      // Dump all memories and variables to the Java trace file
@@ -2218,8 +2218,8 @@ check
   task automatic {name} ();
     begin
 `ifndef SYNTHESIS
-    $fwrite(traceFile, \"     currentPc = %8d\\n\", pc          );
-    $fflush(traceFile);
+    //$fwrite(traceFile, \"     currentPc = %8d\\n\", pc          );
+    //$fflush(traceFile);
 `endif
     end
   endtask
