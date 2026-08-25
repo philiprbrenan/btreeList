@@ -13,7 +13,7 @@ class Slots extends Program                                                     
   final int                      size;                                                                                  // Number of bytes needed to hold slots
   final BitSet        usedSlotsToKeys;                                                                                  // The slots in use.  There are more slots than references so that they can be distributed with intervening empty slots to make insertions faster
   final BitSet               usedKeys;                                                                                  // The references in use.
-  Memory.Ref            unitMemoryRef = null;                                                                           // Byte memory reference containing the slots
+  Memory.Ref            unitMemoryRef = null;                                                                           // Memory reference containing the slots
   final Memory.Ref     refSlotsToKeys;                                                                                  // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
   final Memory.Ref     refKeysToSlots;                                                                                  // The slot associated with each in use key
   final Memory.Ref refUsedSlotsToKeys;                                                                                  // Bitset showing which slots are being used to map to keys
