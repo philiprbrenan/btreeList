@@ -20,7 +20,7 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static boolean        suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
@@ -1201,7 +1201,7 @@ public class Program extends Test                                               
       final Memory m     = Memory.this;
 
       Ref (int Offset) {offset.set(Offset);}                                                                            // Offset this ref
-      //Ref (Int Offset) {offset.set(Offset);}                                                                            // Offset this ref
+      Ref (Int Offset) {offset.set(Offset);}                                                                            // Offset this ref
 
       Ref        copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width);       return this;}       // Copy the specified memory possibly from another byte memory
       Ref       clear (int Width)            {m.clear(offset, Width);                               return this;}       // Clear memory by setting its bytes to zero
@@ -1211,7 +1211,7 @@ public class Program extends Test                                               
       Ref      putInt (Int J)                {m.putInt (offset, J);                                 return this;}       // Put the referenced int at zero offset in this memory reference
       Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);                   return this;}       // Set the int at the indicated position relative to the start to the specified value
       Ref      putBit (Int I, Bit K)         {m.putBit(        I.Add(offset.Mul(Integer.SIZE)), K); return this;}       // Set the bit at the bit indexed position
-      Ref        step (int Width)            {return new Ref(offset.i + Width);}                                        // Step up from an existing ref to make a new one - only while not executing
+      Ref        step (int Width)            {return new Ref(offset.Add(Width));}                                       // Step up from an existing ref to make a new one - only while not executing
 
       int      getInt (int I) {                                        return units[I+offset.i];}                       // Get an integer immediately when debugging
       boolean  getBit (int I) {final int i = getInt(I / Integer.SIZE); return Test.getBit(i, I % Integer.SIZE);}        // Get a boolean  immediately when debugging
@@ -1374,6 +1374,12 @@ endmodule
    } // Memory
 
   interface Locatable {Bint getLocation();}                                                                             // The location of an object in memory
+
+  String memoriesMd5Sum ()                                                                                              // Get md5 sums of memories
+   {final StringJoiner j = new StringJoiner(", ");
+    for (Memory m : memories()) if (m != intMemory() && m != bitMemory) j.add(md5Sum(m.units));
+    return "{"+j+"}";
+   }
 
 //  String dumpMemory () {return program().unitMemory.dumpAsDecimal();}                                                 // Dump memory in decimal format
 
