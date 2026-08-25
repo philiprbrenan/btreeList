@@ -153,6 +153,18 @@ public class Test                                                               
     return null;
    }
 
+  static String md5Sum (int [] Array)                                                                                   // Md5 sum of an array of integers
+   {try
+     {final MessageDigest m = MessageDigest.getInstance("MD5");
+      final StringBuilder s = new StringBuilder();
+      for(int i = 0; i < Array.length; ++i) s.append(""+Array[i]);
+      final byte[] b = m.digest((""+s).getBytes("UTF-8"));
+      return HexFormat.of().formatHex(b);
+     }
+    catch(Exception e) {stop(e);}
+    return null;
+   }
+
   static String md5SumFile(String File)                                                                                 // Md5 sum of the bytes in a file
    {try
      {return HexFormat.of().formatHex(MessageDigest.getInstance("MD5").digest(Files.readAllBytes(Path.of(File))));
@@ -1638,6 +1650,9 @@ BBBB
 
   static void test_md5()
    {ok(md5Sum("Hello World"), "b10a8db164e0754105b7a99be72e3fe5");
+    final int[]a = {1,2,3};
+    //stop(md5Sum(a));
+    ok(md5Sum(a), "202cb962ac59075b964b07152d234b70");
    }
 
   static void test_fileNames()
