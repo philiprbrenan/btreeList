@@ -1019,7 +1019,7 @@ Number of Keys:    0
     test_tree(false);
    }
 
-  static void test_insert(boolean Ex)
+  static void test_insert (boolean Ex)
    {sayCurrentTestName();
 
     final int  N = 32;
@@ -1028,32 +1028,34 @@ Number of Keys:    0
     t.new ForCount(t.new Int(1), t.new Int(N+1))
      {void body(Int Index)
        {t.insert(Index, Index.Mul(11));
-        t.dumpProgramState("AAAA");                                                                                   // Ensures that immediate mode execution matches delayed execution mode
+        t.dumpProgramState("AAAA");
        }
      };
 
-    t.ok(()->t.dump(), """
-                                                   0008                                                                                                                                          0024                                                           |
-                                                   (19,0,2)14                                                                                                                                    (20,0,2)6                                                      |
-                                                   [9,2]                                                                                                                                         [21,2]                                                         |
-       0002           0004           0006                             0010             0012              0014                              0018              0020              0022                               0026            0028            0030          |
-       (9,19,0)       (9,19,2)       (9,19,4)8                        (14,19,0)        (14,19,2)         (14,19,4)13                       (21,20,0)         (21,20,2)         (21,20,4)18                        (6,20,0)        (6,20,2)        (6,20,4)2     |
-       [3,0]          [4,2]          [7,4]                            [10,0]           [5,2]             [12,4]                            [15,0]            [11,2]            [17,4]                             [22,0]          [16,2]          [24,4]        |
-1,2            3,4            5,6             7,8            9,10              11,12            13,14               15,16         17,18             19,20             21,22               23,24           25,26           27,28           29,30            31,32|
-(3,9,0)        (4,9,2)        (7,9,4)         (8,9)          (10,14,0)         (5,14,2)         (12,14,4)           (13,14)       (15,21,0)         (11,21,2)         (17,21,4)           (18,21)         (22,6,0)        (16,6,2)        (24,6,4)         (2,6)|
+    //stop(t.memoriesMd5Sum());
+    if (!Ex) t.ok(()->t.memoriesMd5Sum(), "{995d7c9b4b37d2a72d6be9d7eb521a65, c77d99f7299b1247cf51cdcb396e65df}");
+
+    if (Ex) ok(t.dump(), """
+                                                         0016                                                                    |
+                                                         (0,2)6                                                                  |
+                                                         [9,2]                                                                   |
+       0004          0008             0012                                0020              0024              0028               |
+       (9,0,0)       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [3,0]         [4,2]            [7,4]                               [10,0]            [5,2]             [12,4]             |
+1,2,3,4       5,6,7,8       9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(3,9,0)       (4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
 """);
-    t.ok(()->t.print(), """
-                                                           0016                                                                    |
-                        0008                                                                   0024                                |
-   0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
-1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
+    if (Ex) t.ok(t.print(), """
+                                               0016                                                        |
+       0004       0008          0012                          0020           0024           0028           |
+1,2,3,4    5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
 """);
 
     t.maxSteps(9_999_999);
     t.execute();
    }
 
-  static void test_insert()
+  static void test_insert ()
    {          test_insert(true);
               test_insert(false);
    }
@@ -1614,7 +1616,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert();
+    test_insert(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
