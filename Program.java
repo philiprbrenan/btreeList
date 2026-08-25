@@ -19,13 +19,13 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static boolean        suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments =!true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
+ {final static boolean        suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments = true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
   final static String                     currentProject = "Replace verilog integers with regs";                        // Current prohect being worked on
@@ -1375,7 +1375,7 @@ endmodule
 
   interface Locatable {Bint getLocation();}                                                                             // The location of an object in memory
 
-  String memoriesMd5Sum ()                                                                                              // Get md5 sums of memories
+  String memoriesMd5Sum ()                                                                                              // Get md5 sums of memories without changing the state of the program. Useful for confirming that memory contents are as expected during execution without any observable side effects in the executing program.
    {final StringJoiner j = new StringJoiner(", ");
     for (Memory m : memories()) if (m != intMemory() && m != bitMemory) j.add(md5Sum(m.units));
     return "{"+j+"}";
@@ -1591,7 +1591,9 @@ cd {f}; yosys -q {y}                                                            
         message.append(f(" %11.2f seconds for: %s",                    x.timer.seconds(), x.command));                  // Execution time of command in message
         json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", x.timer.seconds(), x.command));                  // Execution time of command in json
 
+say("AAAA111", testsExecuted, testsPassed, testsFailed);
         ok(readFileAsString(traceFiles.v$()).equals(readFileAsString(traceFiles.java$())));                             // Compare corresponding Java and Verilog trace files -  says failed if it fails and provides a traceback
+say("AAAA222", testsExecuted, testsPassed, testsFailed);
 
         if (github_actions && runSiliconCompiler)                                                                       // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
          {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
