@@ -2,7 +2,6 @@
 // Btree with stucks implemented as distributed sparse slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Rewrite traverse to avoid the possibility of negative integer occuring either through the action codes or the stack element pointer
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -932,8 +931,12 @@ class Tree extends Program                                                      
     A.insert(t.new Int(1), t.new Int(11)); t.countInc();
     B.insert(t.new Int(3), t.new Int(33)); t.countInc();
     C.insert(t.new Int(6), t.new Int(66));
+    t.dumpProgramState("AAAA");
 
-    t.check(t.dumpTree(), """
+    //stop(t.memoriesMd5Sum());
+    t.ok(()->t.memoriesMd5Sum(), "{f371c5bdbcbff6af8e6531681045dd0e, b4b147bc522828731f1a016bfa72c073}");
+
+    if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
 Branch size   :   33
@@ -959,7 +962,11 @@ Branch at:   2 size:   3, count:   2, top:   0
 
                t.isAllocated(a.at.i()).ok(true);
     t.free(A); t.isAllocated(a.at.i()).ok(false);  t.countDec(); t.countDec();
-    t.check(t.dumpTree(), """
+    t.dumpProgramState("BBBB");
+
+    //stop(t.memoriesMd5Sum());
+    t.ok(()->t.memoriesMd5Sum(), "{11b051f5015cfffe5e1b8dac5472013e, b4b147bc522828731f1a016bfa72c073}");
+    if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
 Branch size   :   33
@@ -980,7 +987,11 @@ Branch at:   2 size:   3, count:   2, top:   0
 """);
                t.isAllocated(b.at.i()).ok(true);
     t.free(b); t.isAllocated(b.at.i()).ok(false);   t.countDec(); t.countDec();
-    t.check(t.dumpTree(), """
+    t.dumpProgramState("CCCC");
+
+    //stop(t.memoriesMd5Sum());
+    t.ok(()->t.memoriesMd5Sum(), "{623d8ee8624f6871fc426c828d6cefb6, b4b147bc522828731f1a016bfa72c073}");
+    if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
 Branch size   :   33
@@ -998,7 +1009,11 @@ Branch at:   2 size:   3, count:   2, top:   0
 
                t.isAllocated(c.at.i()).ok(true);
     t.free(c); t.isAllocated(c.at.i()).ok(false);
-    t.check(t.dumpTree(), """
+    t.dumpProgramState("DDDD");
+
+    //stop(t.memoriesMd5Sum());
+    t.ok(()->t.memoriesMd5Sum(), "{ff5da33d1ca92818dc85b214aabca86f, b4b147bc522828731f1a016bfa72c073}");
+    if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
 Branch size   :   33
@@ -1762,7 +1777,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteRandom32(false);
+    test_update();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
