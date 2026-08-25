@@ -1705,7 +1705,9 @@ Number of Keys:    0
              };
            }
          };
-        check(dumpTree(), """
+        //stop(memoriesMd5Sum());
+        ok(()->memoriesMd5Sum(), "{65dd292088a9fd3ef5ef0fe905a1a1a6, b4b147bc522828731f1a016bfa72c073}");
+        if (Ex) ok(dumpTree(), """
 Tree memory dump
 Leaf   size   :   41
 Branch size   :   33
@@ -1777,7 +1779,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_update();
+    //test_update();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
@@ -1788,7 +1790,6 @@ Leaf           size:   4, count:   2
       //if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
       //say(subPrint());
       testSummary();                                                                                                    // Summarize test results
-      //coverageAnalysis(12);
       System.exit(testsFailed);
      }
     catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
