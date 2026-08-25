@@ -739,6 +739,14 @@ class Tree extends Program                                                      
    }
 
 //D2 Traverse the tree                                                                                                  // Traverse the tree in order
+//                                                         16                                                                |
+//                                                         (0)                                                               |
+//                                                         [9,2]                                                             |
+//        4             8                12                                20               24              28               |
+//        (9,0,2)       (9,0,2)          (9,0,2)                           (6,0)            (6,0)           (6,0)            |
+//        [3,0]         [4,2]            [7,4]                             [10,0]           [5,2]           [12,4]           |
+// 1,2,3,4       5,6,7,8       9,10,11,12       13,14,15,16     17,18,19,20      21,22,23,24     25,26,27,28      29,30,31,32|
+// (3,9,0)       (4,9,2)       (7,9,4)          (8,9)           (10,6,0)         (5,6,2)         (12,6,4)         (2,6)      |
 
   class Traverse                                                                                                        // Traverse the tree in order by maintaining a stack of outstanding actions
    {Slots slots(int Index, int Keys)                                                                                    // Slots for a node by index - the slots are always located starting at the second memory unit of the node
@@ -752,37 +760,37 @@ class Tree extends Program                                                      
       return rootType == BranchOrLeaf.leaf.value;
      }
 
-    void traverse (int Index, int Parent, int Depth)                                                                                // Traverse the branch at the indicated index
-     {if (Depth > maximumNumberOfLevels)  return;                                                                       // Terminate large traverses perhaps produced in error
-      final Slots          s = slots(Index*build.nodeSize, maxBranchSize);                                              // Slots for branch
-      final Memory.Ref nodes = refNodes.step(1 + s.build.size());                                                       // Indices of child nodes
+    void traverse (int Index, int Parent, int Depth)                                                                 // Traverse the branch at the indicated index
+     {final Slots          s = slots(Index, maxBranchSize);                                                             // Slots for branch
+      final Memory.Ref nodes = refNodes.step(Index*build.nodeSize + 1 + s.build.size());                                // Array of child nodes
       final int            t = nodes.getInt(maxBranchSize);
 
       if (isLeaf(t))
-       {for(int i = 0; i < maxLeafSize*2; ++i)
+       {for(int i = 0; i < maxBranchSize*2; ++i)                                                                        // Each leaf
          {if (s.getSlotToKeysInUse(i))
            {final int k = s.getSlotToKeyValue(i);
             final int n = s.getSlotToKeyIndex(i);
             final int l = nodes.getInt(n);
             pLeaf(l, Depth+1, Index, i);
-            branchSlot(Index, Depth, Parent, i, k);
+            branchSlot(Index, Depth, Parent, i, k, l);
            }
          }
         branchTop(t, Depth);
         pLeaf(t, Depth+1, Index, -1);
-        return;
        }
+      else
+       {for(int i = 0; i < maxBranchSize*2; ++i)                                                                        // Each sub branch
+         {if (s.getSlotToKeysInUse(i))
+           {final int k = s.getSlotToKeyValue(i);
+            final int n = s.getSlotToKeyIndex(i);
+            final int c = nodes.getInt(n);
+            if (Depth <= maximumNumberOfLevels) traverse(c, Index, Depth+1);                                            // Terminate large traverses perhaps produced in error
 
-      for(int i = 0; i < maxBranchSize*2; ++i)
-       {if (s.getSlotToKeysInUse(i))
-         {final int k = s.getSlotToKeyValue(i);
-          final int n = s.getSlotToKeyIndex(i);
-          final int c = nodes.getInt(n);
-          traverse(c, Index, Depth+1);
-          branchSlot(Index, Depth, Parent, i, k);
+            branchSlot(Index, Depth, Parent, i, k, c);
+           }
          }
         branchTop(t, Depth);
-        traverse (t, Index, Depth+1);
+        if (Depth <= maximumNumberOfLevels) traverse (t, Index, Depth+1);
        }
      }
 
@@ -799,11 +807,11 @@ class Tree extends Program                                                      
      }
 
     void leaf (      int Index, int Depth, int Parent, int Slot, Stack<Integer> Keys)                                   // Process a leaf
-     {say("AAAA", "Index", Index, "Depth", Depth, "Parent", Parent, "Slot", Slot, "Keys", Keys, slots(Index, maxLeafSize));
+     {say("LLLL", "Index", Index, "Depth", Depth, "Parent", Parent, "Slot", Slot, "Keys", Keys, slots(Index, maxLeafSize));
      }
 
-    void branchSlot (int Index, int Depth, int Parent, int Slot, int Key)                                               // Process branch slot by printing the tree to the left of the slot and then the slot
-     {say("BBBB", "Index", Index, "Depth", Depth, "Parent", Parent, "Slot", Slot, "Key",  Key, slots(Index, maxBranchSize));
+    void branchSlot (int Index, int Depth, int Parent, int Slot, int Key, int Child)                                    // Process branch slot by printing the tree to the left of the slot and then the slot
+     {say("BBBB", "Index", Index, "Depth", Depth, "Parent", Parent, "Slot", Slot, "Key",  Key, "Child", Child, slots(Index, maxBranchSize));
      }
 
     void branchTop ( int Index, int Depth)                                                                              // Process branch top by printing its sub tree to the right
@@ -848,13 +856,14 @@ class Tree extends Program                                                      
            }
          }
 
-        @Override void branchSlot(int Index, int Depth, int Parent, int Slot, int Key)                                  // Print keys of branch and optionally the details of the parent and the children of this branch
+        @Override void branchSlot(int Index, int Depth, int Parent, int Slot, int Key, int Child)                       // Print keys of branch and optionally the details of the parent and the children of this branch
          {final int d = Depth * linesToPrintABranch;
           if (Context)                                                                                                  // Print relationships with surrounding nodes
            {pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
-            P.elementAt(d).append(f("%04d", Key));                                                                       // Write key into output area
-            if (Depth == 0) P.elementAt(d+1).append("("+Index+")");                                                     // Format second line for a root
+            P.elementAt(d).append(f("%04d", Key));                                                                      // Write key into output area
+            if (Depth == 0) P.elementAt(d+1).append("("+Index+","+Slot+")");                                            // Format second line for a root
             else P.elementAt(d+1).append("("+Index+","+Parent+","+Slot+")");                                            // Format second line for a non root branch showing the parent of the branch and the slot in the parent this branch came from
+            P.elementAt(d+3).append("["+Child+","+Slot+"]");                                                            // Format third line
            }
           else                                                                                                          // Keys without connections to surrounding nodes
            {pad(d+3);
@@ -866,7 +875,7 @@ class Tree extends Program                                                      
          {if (Context)
            {final int d = Depth * linesToPrintABranch;
             pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
-            trimRight(P.elementAt(d+1)).append(""+Index);                                                               // Add index of top to slot second line
+            trimRight(P.elementAt(d+1)).append(""+Index);                                                         // Add index of top to slot second line
            }
          }
        };
@@ -1010,104 +1019,34 @@ Number of Keys:    0
     test_tree(false);
    }
 
-//  static String[]tree6 = {"AAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUggAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUQAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdSIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTAAAAAgAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAQAAAAYAAAAHAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAR94gAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAABQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoAAAAAQAAAAYAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
-//
-//  static void test_saveReload(boolean Ex)
-//   {sayCurrentTestName();
-//
-//    final boolean createNew = true;
-//
-//    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-//
-//    if (createNew)
-//     {t.new ForCount(t.new Int(1), t.new Int(7))
-//       {void body(Int Index)
-//         {t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
-//         }
-//       };
-//      //t.new I() {void a() {say("  static String[]tree6 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
-//     }
-//    else
-//     {t.new I() {void a() {t.reloadMemories(tree6);} String v() {return "";} boolean trace() {return false;}};
-//     }
-//
-//    t.check (t.dumpTree(), """
-//Tree memory dump
-//Leaf   size   :   41
-//Branch size   :   33
-//Node   size   :   41
-//MaxLeafSize   :    4
-//MaxBranchSize :    3
-//NumberOfNodes :    4
-//Allocations   :    3
-//Number of Keys:    6
-//Branch         size:   3, count:   1, top:   2
-// Ref   Key  Data
-//   0     2     1
-//Leaf   at:   1 size:   4, count:   2
-// Ref   Key  Data
-//   0     1    12
-//   1     2    24
-//Leaf   at:   2 size:   4, count:   4
-// Ref   Key  Data
-//   2     3    36
-//   3     4    48
-//   0     5    60
-//   1     6    72
-//""");
-//
-//    t.check(t.dump(), """
-//       2           |
-//       (0)         |
-//       [1,3]       |
-//1,2         3,4,5,6|
-//(1,0,3)     (2,0)  |
-//""");
-//
-//
-//    t.maxSteps(999_999);
-//    t.execute();
-//   }
-//
-//  static void test_saveReload()
-//   {          test_saveReload(true);
-//              test_saveReload(false);
-//   }
-
-  final static String[]tree32 = {"AAAAAgAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAUgQAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUgAAAAEAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAALAAAACQAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAWAAAAIQAAACwAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdSIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTAAAAAgAAABkAAAAaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEwAAAR4AAAEpAAABNAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAACAAAAAwAAAAEAAAAFAAAABgAAAAcAAAAAAAAAAAAAAAAAAAAAAAR94gAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAAHQAAAB4AAAAfAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAE/AAABSgAAAVUAAAFgAAAAAQAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAMAAAAAAAAAAAAAAAIAAAAEAAAABgAAAAAAAAAAAAAAAAAAAAAAAH9VAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/wAAAAQAAAABAAAAAgAAAAMAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAWAAAAIQAAACwAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAf1UAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAABAAAAAUAAAAGAAAABwAAAAgAAAAAAAAAAAAAAAAAAAAAAAAANwAAAEIAAABNAAAAWAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAAAAAACAAAABAAAAAYAAAAAAAAAAAAAAAAAAAAAAAB/VQAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAAFQAAABYAAAAXAAAAGAAAAAAAAAAAAAAAAAAAAAAAAADnAAAA8gAAAP0AAAEIAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAAAAAAAdxUAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9wAAAAMAAAAUAAAAGAAAABwAAAAAAAAAAAAAAAAAAAAKAAAABQAAAAwAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAf1UAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAABAAAAAkAAAAKAAAACwAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAYwAAAG4AAAB5AAAAhAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAAAAAACAAAABAAAAAYAAAAAAAAAAAAAAAAAAAAAAAB/VQAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAADQAAAA4AAAAPAAAAEAAAAAAAAAAAAAAAAAAAAAAAAACPAAAAmgAAAKUAAACwAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAAAAAAAdxUAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9wAAAAMAAAAEAAAACAAAAAwAAAAAAAAAAAAAAAAAAAADAAAABAAAAAcAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAf1UAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAABAAAABEAAAASAAAAEwAAABQAAAAAAAAAAAAAAAAAAAAAAAAAuwAAAMYAAADRAAAA3AAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFIEAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFEAAAABAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAoAAAAFAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAMAAAAAAAAAAAAAAAIAAAAEAAAABgAAAAAAAAAAAAAAAAAAAAAAAH9VAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/wAAAAQAAAAZAAAAGgAAABsAAAAcAAAAAAAAAAAAAAAAAAAAAAAAARMAAAEeAAABKQAAATQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//6AJ//f/hFnh/wAAAABUAAAAgAAAAAAAAAAAAAAAA", "AAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
-
   static void test_insert(boolean Ex)
    {sayCurrentTestName();
-
-// final boolean createNew = true;
 
     final int  N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
 
-//  if (createNew)                                                                                                      // Create the tree and dump it
-     {t.new ForCount(t.new Int(1), t.new Int(N+1))
-       {void body(Int Index)
-         {t.insert(Index, Index.Mul(11));
-          t.dumpProgramState("AAAA");                                                                                   // Ensures that immediate mode execution matches delayed execution mode
-         }
-       };
-      //t.new I() {void a() {say("final static String[]tree32 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
-     }
-//    else
-//     {t.new I() {void a() {t.reloadMemories(tree32);} boolean trace() {return false;}};
-//     }
+    t.new ForCount(t.new Int(1), t.new Int(N+1))
+     {void body(Int Index)
+       {t.insert(Index, Index.Mul(11));
+        t.dumpProgramState("AAAA");                                                                                   // Ensures that immediate mode execution matches delayed execution mode
+       }
+     };
 
-    //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
-    //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
-    if (Ex) t.check(t.dump(), """
-                                                        16                                                                |
-                                                        (0)                                                               |
-                                                        [9,2]                                                             |
-       4             8                12                                20               24              28               |
-       (9,0,2)       (9,0,2)          (9,0,2)                           (6,0)            (6,0)           (6,0)            |
-       [3,0]         [4,2]            [7,4]                             [10,0]           [5,2]           [12,4]           |
-1,2,3,4       5,6,7,8       9,10,11,12       13,14,15,16     17,18,19,20      21,22,23,24     25,26,27,28      29,30,31,32|
-(3,9,0)       (4,9,2)       (7,9,4)          (8,9)           (10,6,0)         (5,6,2)         (12,6,4)         (2,6)      |
+    t.ok(()->t.dump(), """
+                                                   0008                                                                                                                                          0024                                                           |
+                                                   (19,0,2)14                                                                                                                                    (20,0,2)6                                                      |
+                                                   [9,2]                                                                                                                                         [21,2]                                                         |
+       0002           0004           0006                             0010             0012              0014                              0018              0020              0022                               0026            0028            0030          |
+       (9,19,0)       (9,19,2)       (9,19,4)8                        (14,19,0)        (14,19,2)         (14,19,4)13                       (21,20,0)         (21,20,2)         (21,20,4)18                        (6,20,0)        (6,20,2)        (6,20,4)2     |
+       [3,0]          [4,2]          [7,4]                            [10,0]           [5,2]             [12,4]                            [15,0]            [11,2]            [17,4]                             [22,0]          [16,2]          [24,4]        |
+1,2            3,4            5,6             7,8            9,10              11,12            13,14               15,16         17,18             19,20             21,22               23,24           25,26           27,28           29,30            31,32|
+(3,9,0)        (4,9,2)        (7,9,4)         (8,9)          (10,14,0)         (5,14,2)         (12,14,4)           (13,14)       (15,21,0)         (11,21,2)         (17,21,4)           (18,21)         (22,6,0)        (16,6,2)        (24,6,4)         (2,6)|
+""");
+    t.ok(()->t.print(), """
+                                                           0016                                                                    |
+                        0008                                                                   0024                                |
+   0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
+1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
 """);
 
     t.maxSteps(9_999_999);
@@ -1119,16 +1058,6 @@ Number of Keys:    0
               test_insert(false);
    }
 
-//  static Tree test_reloadTree(boolean Ex)                                                                               // Reload a tree from memory as faster than reconstructing it
-//   {final int  N = 32;
-//    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-//     {void treeBody()
-//       {new I() {void a() {reloadMemories(tree32);} boolean trace() {return false;}};
-//       }
-//     };
-//    return t;
-//   }
-
   static void test_insertMerged(boolean Ex)
    {sayCurrentTestName();
     final int N = 32;
@@ -1139,8 +1068,6 @@ Number of Keys:    0
         t.dumpProgramState("AAAA");
        }
      };
-    //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
-    //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
 
     if (Ex) t.check(t.dump(), """
                                                         16                                                                |
@@ -1172,8 +1099,6 @@ Number of Keys:    0
         t.dumpProgramState("AAAA");
        }
      };
-    //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
-    //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
 
     if (Ex) t.check(t.dump(), """
                                                          16                                                              |
@@ -1672,30 +1597,6 @@ Leaf           size:   4, count:   2
               test_find(false);
    }
 
-  static void test_print(boolean Ex)
-   {sayCurrentTestName();
-
-    final int  N = 32;
-    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N+1).immediate(Ex));
-
-    t.new ForCount(t.new Int(1), t.new Int(N))
-     {void body(Int Index)
-       {t.insert(Index, Index.Mul(11));
-       }
-     };
-    t.insert(t.new Int(N), t.new Int(N*11));
-    say("PPPP", t.dump());
-    say("QQQQ", t.print());
-
-    t.maxSteps(9_999_999);
-    t.execute();
-   }
-
-  static void test_print()
-   {          test_print(true);
-              test_print(false);
-   }
-
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (rtg( 1)) test_tree();
@@ -1713,7 +1614,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_print(true);
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
