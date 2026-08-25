@@ -1,7 +1,7 @@
-# Test 2026-08-25 at 19:19:03
+# Test 2026-08-25 at 19:32:12
 
 name: btreeList
-run-name: runVerilog = 1, runSiliconCompiler = 0, runYosys = 0, Replace verilog integers with regs
+run-name: runVerilog = 1, runSiliconCompiler = 0, runYosys = 1, Replace verilog integers with regs
 
 on:
   push:
