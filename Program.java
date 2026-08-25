@@ -1591,9 +1591,7 @@ cd {f}; yosys -q {y}                                                            
         message.append(f(" %11.2f seconds for: %s",                    x.timer.seconds(), x.command));                  // Execution time of command in message
         json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", x.timer.seconds(), x.command));                  // Execution time of command in json
 
-say("AAAA111", testsExecuted, testsPassed, testsFailed);
         ok(readFileAsString(traceFiles.v$()).equals(readFileAsString(traceFiles.java$())));                             // Compare corresponding Java and Verilog trace files -  says failed if it fails and provides a traceback
-say("AAAA222", testsExecuted, testsPassed, testsFailed);
 
         if (github_actions && runSiliconCompiler)                                                                       // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
          {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
