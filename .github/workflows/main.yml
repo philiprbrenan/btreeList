@@ -1,4 +1,4 @@
-# Test 2026-08-26 at 03:59:51
+# Test 2026-08-26 at 05:23:49
 
 name: btreeList
 run-name: runVerilog = 1, runSiliconCompiler = 1, runYosys = 0, Synthesis
@@ -51,7 +51,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_1
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_2
@@ -65,7 +65,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_2
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_3
@@ -79,7 +79,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_3
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_4
@@ -93,7 +93,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_4
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_5
@@ -107,7 +107,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_5
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_6
@@ -121,7 +121,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_6
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_7
@@ -135,7 +135,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_7
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_8
@@ -149,7 +149,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_8
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_9
@@ -163,7 +163,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_9
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_10
@@ -177,7 +177,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_10
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: BitSet_11
@@ -191,7 +191,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: BitSet_11
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_1
@@ -205,7 +205,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_1
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_2
@@ -219,7 +219,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_2
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_3
@@ -233,7 +233,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_3
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_4
@@ -247,7 +247,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_4
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_5
@@ -261,7 +261,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_5
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_6
@@ -275,7 +275,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_6
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_7
@@ -289,7 +289,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_7
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_8
@@ -303,7 +303,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_8
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_9
@@ -317,7 +317,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_9
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_10
@@ -331,7 +331,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_10
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_11
@@ -345,7 +345,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_11
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Branch_12
@@ -359,7 +359,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Branch_12
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Gds_1
@@ -373,7 +373,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Gds_1
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_1
@@ -387,7 +387,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_1
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_2
@@ -401,7 +401,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_2
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_3
@@ -415,7 +415,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_3
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_4
@@ -429,7 +429,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_4
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_5
@@ -443,7 +443,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_5
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_6
@@ -457,7 +457,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_6
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_7
@@ -471,7 +471,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_7
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_8
@@ -485,7 +485,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_8
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_9
@@ -499,7 +499,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_9
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Leaf_10
@@ -513,7 +513,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Leaf_10
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Lef_1
@@ -527,7 +527,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Lef_1
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Program_1
@@ -541,7 +541,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Program_1
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_1
@@ -555,7 +555,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_1
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_2
@@ -569,7 +569,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_2
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_3
@@ -583,7 +583,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_3
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_4
@@ -597,7 +597,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_4
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_5
@@ -611,7 +611,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_5
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_6
@@ -625,7 +625,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_6
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_7
@@ -639,7 +639,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_7
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_8
@@ -653,7 +653,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_8
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_9
@@ -667,7 +667,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_9
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_10
@@ -681,7 +681,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_10
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_11
@@ -695,7 +695,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_11
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_12
@@ -709,7 +709,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_12
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_13
@@ -723,7 +723,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_13
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_14
@@ -737,7 +737,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_14
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_15
@@ -751,7 +751,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_15
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_16
@@ -765,7 +765,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_16
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_17
@@ -779,7 +779,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_17
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_18
@@ -793,7 +793,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_18
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_19
@@ -807,7 +807,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_19
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_20
@@ -821,7 +821,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_20
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_21
@@ -835,7 +835,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_21
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_22
@@ -849,7 +849,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_22
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Slots_23
@@ -863,7 +863,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_23
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Test_1
@@ -877,7 +877,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Test_1
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_1
@@ -891,7 +891,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_1
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_2
@@ -905,7 +905,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_2
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_3
@@ -919,7 +919,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_3
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_4
@@ -933,7 +933,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_4
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_5
@@ -947,7 +947,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_5
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_6
@@ -961,7 +961,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_6
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_7
@@ -975,7 +975,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_7
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_8
@@ -989,7 +989,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_8
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_9
@@ -1003,7 +1003,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_9
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_10
@@ -1017,7 +1017,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_10
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 
     - name: Tree_11
@@ -1031,7 +1031,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_11
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
   release:
     needs: test
