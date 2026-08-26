@@ -993,7 +993,7 @@ Zero:
                                 b.lastZero ()            .ok( 15);
 
     b.maxSteps(999_999);
-    b.scDieAreaX - 1000; b.scDieAreaY = 1000;
+    b.scDieAreaX = 1000; b.scDieAreaY = 1000;
     b.execute();
    }
 
@@ -1049,6 +1049,7 @@ Zero:
                                 b.firstOne()            .ok(  4);
                                 b.lastOne ()            .ok( 15);
     b.maxSteps(999_999);
+    b.scDieAreaX = 1000; b.scDieAreaY = 1000;
     b.execute();
    }
 
@@ -1076,7 +1077,8 @@ Zero:
      }
     b.count().ok(0);
     b.maxSteps(999_999);
-    b.execute();
+   b.scDieAreaX = 1000; b.scDieAreaY = 1000;
+   b.execute();
     //testStop(s);
     ok(""+s, """
 Start:
@@ -1292,6 +1294,7 @@ Zero:
     b.full().ok(true);
 
     b.maxSteps(999_999);
+    b.scDieAreaX = 1000; b.scDieAreaY = 1000;
     b.execute();
    }
 
@@ -1320,6 +1323,7 @@ Zero:
     b.countAllZeros().ok(N-4);
 
     b.maxSteps(999_999);
+    b.scDieAreaX = 1000; b.scDieAreaY = 1000;
     b.execute();
    }
 
@@ -1767,8 +1771,7 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();
-    test_prevNext01(!true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
