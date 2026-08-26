@@ -1841,6 +1841,7 @@ module {name} (                                                                 
 //    for(Int i : ints) if (i.out) put("  output reg [31:0] o_"+i.name+",\n");                                          // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
 //    for(Bit b : bits) if (b.in)  put("  input  wire       i_"+b.name+",\n");                                          // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
 //    for(Bit b : bits) if (b.out) put("  output reg        o_"+b.name+",\n");                                          // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
+
       /*Parameters*/put(substitute("""
   input wire clock,                                                                                                     // Clock pin
   input wire reset,                                                                                                     // Reset
