@@ -2320,7 +2320,7 @@ endmodule
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  static void deleteAllFileInVerilogTestsFolder() {deleteAllFiles(verilogTestsFolder.folder, 1999);}                    // Delete generated Verilog files created by a prior run of the current test
+  static void deleteAllFileInVerilogTestsFolder() {deleteAllFiles(verilogTestsFolder.folder, 9999);}                    // Delete generated Verilog files created by a prior run of the current test
 
   void check (StringBuilder G, String E)                                                                                // Test the supplied content against the specified string, then clear the output area ready for the next report
    {new I() {void a() {Test.ok(nws(G), nws(E));} int traces() {return 0;}};
