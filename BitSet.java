@@ -993,6 +993,7 @@ Zero:
                                 b.lastZero ()            .ok( 15);
 
     b.maxSteps(999_999);
+    b.scDieAreaX - 1000; b.scDieAreaY = 1000;
     b.execute();
    }
 
@@ -1766,8 +1767,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();
-    test_b4(!true);
+   {//oldTests();
+    test_prevNext01(!true);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
