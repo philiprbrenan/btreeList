@@ -1837,15 +1837,15 @@ cd {f}; yosys -q {y}                                                            
 module {name} (                                                                                                         // Bint machine - callable module for synthesis
 """, "name", name));
 
-      for(Int i : ints) if (i.in)  put("  input  wire[31:0] i_"+i.name+",\n");                                          // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
-      for(Int i : ints) if (i.out) put("  output reg [31:0] o_"+i.name+",\n");                                          // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
-      for(Bit b : bits) if (b.in)  put("  input  wire       i_"+b.name+",\n");                                          // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
-      for(Bit b : bits) if (b.out) put("  output reg        o_"+b.name+",\n");                                          // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
+//    for(Int i : ints) if (i.in)  put("  input  wire[31:0] i_"+i.name+",\n");                                          // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
+//    for(Int i : ints) if (i.out) put("  output reg [31:0] o_"+i.name+",\n");                                          // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
+//    for(Bit b : bits) if (b.in)  put("  input  wire       i_"+b.name+",\n");                                          // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
+//    for(Bit b : bits) if (b.out) put("  output reg        o_"+b.name+",\n");                                          // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
 
       /*Parameters*/put(substitute("""
   input wire clock,                                                                                                     // Clock pin
   input wire reset,                                                                                                     // Reset
-  output wire[31:0] o_pc);                                                                                               // This is just to create some output so that Yosys does not collapse the chip to nothing because it does not produces any output
+  output wire[31:0] o_pc);                                                                                              // This is just to create some output so that Yosys does not collapse the chip to nothing because it does not produces any output
 `else
 module {name};                                                                                                          // Bint machine - standalone for execution
 `endif
@@ -3181,7 +3181,7 @@ Memory 2
     test_mem();
     test_namedMemory();
     test_memory();
-//  test_memoryNegative();
+//  test_memoryNegative();                                                                                              // No longer using negative numbers per Open Road
     test_memoryRef();
     test_verilogArray();
     test_lastInstructionBase();
@@ -3191,8 +3191,8 @@ Memory 2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_ifThen();
+   {//oldTests();
+    test_forLoops(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
