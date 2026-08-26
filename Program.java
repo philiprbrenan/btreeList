@@ -85,7 +85,6 @@ public class Program extends Test                                               
   Program (Build Build)                                                                                                 // Construct
    {immediate       = Build.immediate;                                                                                  // Immediate or delayed execution
     parentProgram   = Build.parent == null ? this : Build.parent;                                                       // Parent program that will contain the code
-    deleteAllFiles(verilogTestFolder.folder, 999);                                                                      // Delete generated Verilog files created by a prior run of the current test
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
@@ -1197,8 +1196,9 @@ public class Program extends Test                                               
 //D2 Memory references                                                                                                  // References to byte memory
 
     final class Ref                                                                                                     // Reference into memory
-     {final Int   offset = new Int("memoryReferenceOffset");                                                            // Offset of this reference in memory
-      final Memory m     = Memory.this;
+//    final Int   offset = new Int("memoryReferenceOffset");                                                            // Offset of this reference in memory
+     {final Int   offset = new Int();                                                                                   // Offset of this reference in memory
+      final Memory     m = Memory.this;
 
       Ref (int Offset) {offset.set(Offset);}                                                                            // Offset this ref
       Ref (Int Offset) {offset.set(Offset);}                                                                            // Offset this ref
