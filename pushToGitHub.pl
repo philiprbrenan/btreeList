@@ -167,7 +167,7 @@ END
       uses: actions/upload-artifact\@v7
       with:
         name: $N
-        path: verilog/log/*
+        path: verilog/*
         if-no-files-found: ignore
 END
    }
