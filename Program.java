@@ -68,8 +68,8 @@ public class Program extends Test                                               
   int                                             vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
   int                                          nextIntId = 0;                                                           // Unique id for each Int
   int                                          nextBitId = 0;                                                           // Unique id for each Bit
-  int                                         scDieAreaX = 10_000;                                                      // Default size of x dimension for chip
-  int                                         scDieAreaY = 10_000;                                                      // Default size of y dimension for chip
+  int                                         scDieAreaX = 1_000;                                                       // Default size of x dimension for chip
+  int                                         scDieAreaY = 1_000;                                                       // Default size of y dimension for chip
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
 
   final static class Build                                                                                              // Builder for this program
