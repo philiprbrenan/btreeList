@@ -1,4 +1,4 @@
-# 2026-08-27 at 05:43:26
+# 2026-08-27 at 18:17:16
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -304,22 +304,13 @@ jobs:
         RUN mkdir -p ${PDK_ROOT}
 
         ########################################################################
-        # Install the Sky130 PDK
-        #
-        # These versions are the versions pinned by the OpenRAM stable
-        # Makefile.
+        # Install the Sky130 PDK using OpenRAM's own pinned installation
         ########################################################################
 
-        ARG SKY130_CIEL=e8294524e5f67c533c5d0c3afa0bcc5b2a5fa066
-
-        RUN ciel enable --pdk sky130 ${SKY130_CIEL}
+        RUN make sky130-pdk
 
         ########################################################################
-        # Install the OpenRAM Sky130 SRAM cell library and construct the
-        # OpenRAM technology libraries.
-        #
-        # This uses OpenRAM's own Makefile, including its pinned SRAM-library
-        # revision and its technology-library construction.
+        # Install the OpenRAM Sky130 SRAM library and technology files
         ########################################################################
 
         RUN make sky130-install
@@ -362,25 +353,26 @@ jobs:
         # Generic user
         ########################################################################
 
-        RUN useradd cad-user
-        RUN mkdir /home/cad-user
-        RUN chown -R cad-user /home/cad-user
-        RUN chgrp -R cad-user /home/cad-user
+        RUN useradd $userId
+        RUN mkdir /home/$userId
+        RUN chown -R $userId /home/$userId
+        RUN chgrp -R $userId /home/$userId
 
         ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 
         ENV KLAYOUT_HOME=/usr/local/klayout
         ENV PATH=${PATH}:${KLAYOUT_HOME}
-        ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${KLAYOUT_HOME}
+        #ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${KLAYOUT_HOME}
 
         ENV XYCE_HOME=/usr/local/Xyce/Parallel
         ENV XYCE_PATH=${XYCE_HOME}/bin
         ENV PATH=${PATH}:${XYCE_PATH}
         ENV XYCE_LIB=${XYCE_HOME}/lib
-        ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${XYCE_LIB}
 
-        USER cad-user
-        WORKDIR /home/cad-user
+        ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${KLAYOUT_HOME}:${XYCE_LIB}
+
+        USER $userId
+        WORKDIR /home/$userId
 
         CMD ["/bin/bash"]
         EOF
