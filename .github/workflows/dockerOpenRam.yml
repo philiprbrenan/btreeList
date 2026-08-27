@@ -1,4 +1,4 @@
-# 2026-08-27 at 21:03:18
+# 2026-08-27 at 22:34:00
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -112,10 +112,7 @@ jobs:
 
         RUN git clone https://github.com/KLayout/klayout
         WORKDIR /root/klayout
-        RUN git checkout ${KLAYOUT_COMMIT}
-        RUN ./build.sh -qt5 -debug -j$(nproc)
-        RUN cp -r bin-debug /usr/local/klayout
-        RUN rm -rf /root/klayout
+        RUN git checkout ${KLAYOUT_COMMIT} && ./build.sh -qt5 -debug -j$(nproc) && cp -r bin-debug /usr/local/klayout && rm -rf /root/klayout
 
         ### Trilinos ###
 
@@ -181,10 +178,10 @@ jobs:
             -DTPL_ENABLE_BLAS=ON \
             -DTPL_ENABLE_LAPACK=ON \
             -DTPL_ENABLE_MPI=ON \
-            /root/Trilinos
-
-        RUN make -j4
-        RUN make install
+            /root/Trilinos \
+            && make -j4     \
+            && make install \
+            && rm -rf /root/Trilinos
 
         ### Xyce ###
 
@@ -211,9 +208,9 @@ jobs:
             F77=mpif77 \
             --prefix=/usr/local/Xyce/Parallel \
             --enable-shared \
-            --enable-xyce-shareable
-
-        RUN make -j4 install
+            --enable-xyce-shareable \
+            && make -j4 install \
+            && rm -rf /root/Xyce
 
         ### ngspice ###
 
@@ -226,12 +223,11 @@ jobs:
         WORKDIR /root/ngspice
 
         RUN git checkout ${NGSPICE_COMMIT}
-        RUN ./autogen.sh
-        RUN ./configure --enable-openmp --with-readline
-        RUN make
-        RUN make install
-
-        RUN rm -rf /root/ngspice
+            && ./autogen.sh  \
+            && ./configure --enable-openmp --with-readline \
+            && make \
+            && make install \
+            && rm -rf /root/ngspice
 
         ### Netgen ###
 
@@ -244,11 +240,10 @@ jobs:
         WORKDIR /root/netgen
 
         RUN git checkout ${NETGEN_COMMIT}
-        RUN ./configure
-        RUN make -j$(nproc)
-        RUN make install
-
-        RUN rm -rf /root/netgen
+        && ./configure \
+        && make -j$(nproc) \
+        && make install \
+        && rm -rf /root/netgen
 
         ### Icarus Verilog ###
 
@@ -265,11 +260,10 @@ jobs:
         WORKDIR /root/magic
 
         RUN git checkout ${MAGIC_COMMIT}
-        RUN ./configure
-        RUN make
-        RUN make install
-
-        RUN rm -rf /root/magic
+        && ./configure \
+        && make        \
+        && make install \
+        && rm -rf /root/magic
 
         ########################################################################
         # OpenRAM
@@ -332,6 +326,14 @@ jobs:
         RUN python3 -c "import openram"
 
         ########################################################################
+        # Remove source trees and build artefacts
+        ########################################################################
+
+        RUN rm -rf 
+            /root/Trilinos 
+            /root/Xyce
+
+        ########################################################################
         # Clean up
         ########################################################################
 
@@ -375,6 +377,17 @@ jobs:
         WORKDIR /home/phil
 
         CMD ["/bin/bash"]
+
+        ########################################################################
+        # Look for files that can be removed
+        ########################################################################
+
+        RUN echo "=== /opt ===" && \
+            du -sh /opt/* 2>/dev/null | sort -h && \
+            echo "=== /root ===" && \
+            du -sh /root/* 2>/dev/null | sort -h && \
+            echo "=== /usr/local ===" && \
+            du -sh /usr/local/* 2>/dev/null | sort -h
         EOF
 
     - name: local - Build Docker image
