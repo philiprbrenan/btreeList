@@ -1,4 +1,4 @@
-# 2026-08-27 at 22:34:00
+# 2026-08-27 at 22:47:06
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -112,7 +112,10 @@ jobs:
 
         RUN git clone https://github.com/KLayout/klayout
         WORKDIR /root/klayout
-        RUN git checkout ${KLAYOUT_COMMIT} && ./build.sh -qt5 -debug -j$(nproc) && cp -r bin-debug /usr/local/klayout && rm -rf /root/klayout
+        RUN git checkout ${KLAYOUT_COMMIT} \
+            && ./build.sh -qt5 -debug -j$(nproc) \
+            && cp -r bin-debug /usr/local/klayout \
+            && rm -rf /root/klayout
 
         ### Trilinos ###
 
@@ -135,13 +138,10 @@ jobs:
 
         RUN git clone --depth 1 \
             --branch ${TRILINOS_COMMIT} \
-            https://github.com/trilinos/Trilinos.git
-
-        RUN mkdir /root/Trilinos/build
-
-        WORKDIR /root/Trilinos/build
-
-        RUN cmake \
+            https://github.com/trilinos/Trilinos.git \
+            && mkdir /root/Trilinos/build \
+            && cd /root/Trilinos/build && \
+            && cmake \
             -G "Unix Makefiles" \
             -DCMAKE_C_COMPILER=mpicc \
             -DCMAKE_CXX_COMPILER=mpic++ \
@@ -189,16 +189,13 @@ jobs:
 
         WORKDIR /root
 
-        RUN git clone https://github.com/Xyce/Xyce.git
-        WORKDIR /root/Xyce
-        RUN git checkout ${XYCE_COMMIT}
-
-        RUN ./bootstrap
-        RUN mkdir /root/Xyce/build
-
-        WORKDIR /root/Xyce/build
-
-        RUN ../configure \
+        RUN git clone https://github.com/Xyce/Xyce.git \
+        && cd /root/Xyce \
+        && git checkout ${XYCE_COMMIT} \
+        && ./bootstrap \
+        && mkdir /root/Xyce/build \
+        && cd /root/Xyce/build \
+        && ../configure \
             CXXFLAGS="-O3 -std=c++11" \
             ARCHDIR="/usr/local/XyceLibs/Parallel" \
             CPPFLAGS="-I/usr/include/suitesparse" \
@@ -218,11 +215,9 @@ jobs:
 
         WORKDIR /root
 
-        RUN git clone git://git.code.sf.net/p/ngspice/ngspice
-
-        WORKDIR /root/ngspice
-
-        RUN git checkout ${NGSPICE_COMMIT}
+        RUN git clone git://git.code.sf.net/p/ngspice/ngspice  \
+            && cd /root/ngspice \
+            && git checkout ${NGSPICE_COMMIT} \
             && ./autogen.sh  \
             && ./configure --enable-openmp --with-readline \
             && make \
@@ -235,11 +230,9 @@ jobs:
 
         WORKDIR /root
 
-        RUN git clone git://opencircuitdesign.com/netgen netgen
-
-        WORKDIR /root/netgen
-
-        RUN git checkout ${NETGEN_COMMIT}
+        RUN git clone git://opencircuitdesign.com/netgen netgen  \
+        && cd  /root/netgen \
+        && git checkout ${NETGEN_COMMIT} \
         && ./configure \
         && make -j$(nproc) \
         && make install \
@@ -255,11 +248,9 @@ jobs:
 
         WORKDIR /root
 
-        RUN git clone git://opencircuitdesign.com/magic magic
-
-        WORKDIR /root/magic
-
-        RUN git checkout ${MAGIC_COMMIT}
+        RUN git clone git://opencircuitdesign.com/magic magic \
+        && cd /root/magic \
+        && git checkout ${MAGIC_COMMIT} \
         && ./configure \
         && make        \
         && make install \
