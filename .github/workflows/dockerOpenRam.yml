@@ -1,4 +1,4 @@
-# 2026-08-27 at 22:47:06
+# 2026-08-27 at 22:49:00
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -315,14 +315,6 @@ jobs:
         RUN test -d ${PDK_ROOT}/sky130_fd_bd_sram
         RUN test -d /opt/OpenRAM/technology/sky130
         RUN python3 -c "import openram"
-
-        ########################################################################
-        # Remove source trees and build artefacts
-        ########################################################################
-
-        RUN rm -rf 
-            /root/Trilinos 
-            /root/Xyce
 
         ########################################################################
         # Clean up
