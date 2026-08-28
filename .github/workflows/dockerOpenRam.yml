@@ -1,4 +1,4 @@
-# 2026-08-27 at 23:36:17
+# 2026-08-28 at 01:04:28
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -114,8 +114,8 @@ jobs:
         RUN git clone https://github.com/KLayout/klayout
         WORKDIR /root/klayout
         RUN git checkout ${KLAYOUT_COMMIT} \
-        && ./build.sh -qt5 -debug -j$(nproc) \
-        && cp -r bin-debug /usr/local/klayout \
+        && ./build.sh -qt5 -j$(nproc) \
+        && cp -r bin-release /usr/local/klayout \
         && rm -rf /root/klayout
 
         ### Trilinos ###
@@ -348,7 +348,7 @@ jobs:
 
         ENV KLAYOUT_HOME=/usr/local/klayout
         ENV PATH=${PATH}:${KLAYOUT_HOME}
-        #ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${KLAYOUT_HOME}
+        #ENV LD_LIBRARY_PATH=${KLAYOUT_HOME}
 
         ENV XYCE_HOME=/usr/local/Xyce/Parallel
         ENV XYCE_PATH=${XYCE_HOME}/bin
@@ -373,6 +373,13 @@ jobs:
         && echo "=== /usr/local ===" \
         && du -sh /usr/local/* 2>/dev/null | sort -h
         EOF
+
+    - name: local - log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: local - Build Docker image
       run: |
