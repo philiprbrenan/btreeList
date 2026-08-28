@@ -1,4 +1,4 @@
-# 2026-08-28 at 01:04:28
+# 2026-08-28 at 17:37:22
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -24,6 +24,7 @@ jobs:
       run: |
         cat << 'EOF' > Dockerfile
         FROM ubuntu:20.04
+        LABEL org.opencontainers.image.source = "https://github.com/philiprbrenan/btreeList"
 
         ENV DEBIAN_FRONTEND=noninteractive
         ENV TZ=America/Los_Angeles
@@ -268,6 +269,7 @@ jobs:
         RUN git clone https://github.com/VLSIDA/OpenRAM.git OpenRAM
         WORKDIR /opt/OpenRAM
         RUN git checkout ${OPENRAM_COMMIT}
+        RUN git config --global --add safe.directory /opt/OpenRAM
 
         ########################################################################
         # Ciel
@@ -300,6 +302,15 @@ jobs:
         ########################################################################
 
         RUN make sky130-install
+
+        ########################################################################
+        # Configure OpenRAM to use the tools already installed in this image
+        # rather than attempting to bootstrap them with Nix.
+        ########################################################################
+
+        RUN sed -i 's/^    use_nix = True$/    use_nix = False/' \
+            /opt/OpenRAM/compiler/options.py \
+            && grep -q '^    use_nix = False$' /opt/OpenRAM/compiler/options.py
 
         ########################################################################
         # Install OpenRAM as a Python package
