@@ -1,4 +1,4 @@
-# 2026-08-28 at 17:37:22
+# 2026-08-28 at 17:50:35
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -417,5 +417,4 @@ jobs:
 
     - name: Test gitHub version of container
       run: |
-        pip show siliconcompiler
-        python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'
+        pip3 show openram
