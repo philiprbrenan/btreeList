@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Convert a constant array of non-negative integers into a minimal set of parallel Verilog assigning if statements
+// Conver t a constant array of non-negative integers into a minimal set of parallel Verilog assigning if statements
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
