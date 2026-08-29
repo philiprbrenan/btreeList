@@ -2,6 +2,8 @@
 // Locate set or cleared bits in a fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Place the one tree first, the bit set second, and the zero tree last so that the computation of parent, child etc. can be done with boolean functions rather than memory looks ups.
+// Update the trees using "and" and "or" gates rippling through rather than instructions using array indexing.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
