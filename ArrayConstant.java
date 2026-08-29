@@ -64,13 +64,16 @@ public class ArrayConstant extends Test                                         
    {final StringBuilder s = new StringBuilder();
 
     for(Block b : blocks)
-     {s.append(s("if ({source}[{size}-:{width}] == {base}[{size}-:{width}]}) {target} <= {value};\n",
+     {if (logLen > 0 && b.width() > 0) s.append(s("if ({source}[{size}-:{width}] == {base}[{size}-:{width}]}) {target} <= {value};\n",
       "base",   ""+b.base,
       "size",   ""+(logLen-1),
       "source", ""+Source,
       "target", ""+Target,
       "value",  ""+b.value,
       "width",  ""+b.width()));
+      else            s.append(s("{target} <= {value};\n",
+      "target", ""+Target,
+      "value",  ""+b.value));
      }
     return ""+s;
    }
@@ -97,19 +100,30 @@ public class ArrayConstant extends Test                                         
    {//                       0
     final int []        A = {1};
     final ArrayConstant a = new ArrayConstant(A);
-    stop(a.verilog("i", "v"));
+    //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
-if (i[0-:1] == 0) v <= 1;
+v <= 1;
 """);
    }
 
-  static void test_a2()
+  static void test_a2_0()
+   {//                0   1
+    final int [] A = {0,  1};
+    final ArrayConstant a = new ArrayConstant(A);
+    //stop(a.verilog("i", "v"));
+    ok(a.verilog("i", "v"), """
+if (i[0-:1] == 0[0-:1]}) v <= 0;
+if (i[0-:1] == 1[0-:1]}) v <= 1;
+""");
+   }
+
+  static void test_a2_1()
    {//                0   1
     final int [] A = {1,  1};
     final ArrayConstant a = new ArrayConstant(A);
     //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
-if (i[1:0] == 0) v <= 1;
+v <= 1;
 """);
    }
 
@@ -117,16 +131,16 @@ if (i[1:0] == 0) v <= 1;
    {//                0   1   2   3   4   5   6   7   8   9  10  11  12
     final int [] A = {1,  1,  2,  0,  0,  0,  3,  3,  3,  3,  4,  4,  5};
     final ArrayConstant a = new ArrayConstant(A);
-    stop(a.verilog("i", "v"));
-    ok(a.verilog("index", "value"), """
-if (index[4:3] == 0) value <= 1;
-if (index[4:4] == 2) value <= 2;
-if (index[4:4] == 3) value <= 0;
-if (index[4:3] == 2) value <= 0;
-if (index[4:3] == 3) value <= 3;
-if (index[4:3] == 4) value <= 3;
-if (index[4:3] == 5) value <= 4;
-if (index[4:4] == 12) value <= 5;
+    //stop(a.verilog("i", "v"));
+    ok(a.verilog("i", "v"), """
+if (i[3-:3] == 0[3-:3]}) v <= 1;
+if (i[3-:4] == 2[3-:4]}) v <= 2;
+if (i[3-:4] == 3[3-:4]}) v <= 0;
+if (i[3-:3] == 4[3-:3]}) v <= 0;
+if (i[3-:3] == 6[3-:3]}) v <= 3;
+if (i[3-:3] == 8[3-:3]}) v <= 3;
+if (i[3-:3] == 10[3-:3]}) v <= 4;
+if (i[3-:4] == 12[3-:4]}) v <= 5;
 """);
    }
 
@@ -134,19 +148,18 @@ if (index[4:4] == 12) value <= 5;
    {//                0   1   2   3   4   5   6   7   8   9  10  11  12  13  14
     final int [] A = {1,  1,  2,  0,  0,  0,  0,  0,  0,  3,  3,  3,  3,  4,  4};
     final ArrayConstant a = new ArrayConstant(A);
-    say(a);
-    stop(a.verilog("i", "v"));
+    //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
-if (i[4:3] == 0) v <= 1;
-if (i[4:4] == 2) v <= 2;
-if (i[4:4] == 3) v <= 0;
-if (i[4:1] == 0) v <= 0;
-if (i[4:4] == 8) v <= 0;
-if (i[4:4] == 9) v <= 3;
-if (i[4:3] == 5) v <= 3;
-if (i[4:4] == 12) v <= 3;
-if (i[4:4] == 13) v <= 4;
-if (i[4:4] == 14) v <= 4;
+if (i[3-:3] == 0[3-:3]}) v <= 1;
+if (i[3-:4] == 2[3-:4]}) v <= 2;
+if (i[3-:4] == 3[3-:4]}) v <= 0;
+if (i[3-:2] == 4[3-:2]}) v <= 0;
+if (i[3-:4] == 8[3-:4]}) v <= 0;
+if (i[3-:4] == 9[3-:4]}) v <= 3;
+if (i[3-:3] == 10[3-:3]}) v <= 3;
+if (i[3-:4] == 12[3-:4]}) v <= 3;
+if (i[3-:4] == 13[3-:4]}) v <= 4;
+if (i[3-:4] == 14[3-:4]}) v <= 4;
 """);
    }
 
@@ -154,7 +167,6 @@ if (i[4:4] == 14) v <= 4;
    {//                0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18
     final int [] A = {1,  1,  2,  0,  0,  0,  0,  0,  0,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4};
     final ArrayConstant a = new ArrayConstant(A);
-    //say(a);
     //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
 if (i[4-:4] == 0[4-:4]}) v <= 1;
@@ -174,10 +186,8 @@ if (i[4-:5] == 18[4-:5]}) v <= 4;
    {//                0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19
     final int [] A = {1,  1,  2,  0,  0,  0,  0,  0,  0,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  5};
     final ArrayConstant a = new ArrayConstant(A);
-    //say(a);
     //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
-perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/ArrayConstant.java" --javaHome "/home/phil/btreeList" (in directory: /home/phil/btreeList)
 if (i[4-:4] == 0[4-:4]}) v <= 1;
 if (i[4-:5] == 2[4-:5]}) v <= 2;
 if (i[4-:5] == 3[4-:5]}) v <= 0;
@@ -188,12 +198,14 @@ if (i[4-:4] == 10[4-:4]}) v <= 3;
 if (i[4-:3] == 12[4-:3]}) v <= 3;
 if (i[4-:4] == 16[4-:4]}) v <= 4;
 if (i[4-:5] == 18[4-:5]}) v <= 4;
+if (i[4-:5] == 19[4-:5]}) v <= 5;
 """);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_a1();
-    test_a2();
+    test_a2_0();
+    test_a2_1();
     test_a12();
     test_a14();
     test_a18();
