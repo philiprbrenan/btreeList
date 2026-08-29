@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Convert a constant array of non negative integers into a minimal set of parallel Verilog assigning if statements
+// Convert a constant array of non-negative integers into a minimal set of parallel Verilog assigning if statements
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
@@ -8,22 +8,22 @@ import java.util.*;
 
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
-public class ArrayConstant extends Test                                                                                 // Convert a constant array of non negative integers into a minimal set of parallel Verilog assigning if statements
+public class ArrayConstant extends Test                                                                                 // Convert a constant array of non-negative integers into a minimal set of parallel Verilog assigning if statements
  {final Stack<Block> blocks = new Stack<>();                                                                            // Array values that can all be deduced from one comparison
   final int []        array;                                                                                            // Array to convert
-  final int          logLen;                                                                                            // The next power of two that contains the length of the array
+  final int          logLen;                                                                                            // Number of address bits required to index the array
 
-  ArrayConstant (int [] Array)                                                                                          // Construct
+  ArrayConstant (int [] Array)                                                                                          // Start with one block for each array element then repeatedly merge adjacent blocks having the same value do their value can bs= selected with one less bit from the index
    {array = Array;
     validate(array);
     logLen = logTwo(Array.length);
 
     for (int i = 0; i < Array.length; ++i) blocks.push(new Block(i, Array[i]));                                         // Initially each number in the array is unpaired with its neighbors
 
-    for(int i = 1; i <= logLen+1; ++i)                                                                                  // Consider each pair and try and merge them into a bigger block. The blocks are scanned log(N) times which seems acceptable as it is not part of the on chip run time
+    for(int i = 1; i <= logLen+1; ++i)                                                                                  // Consider each pair and try and merge them to make a bigger block that can be selected with an index that is one bit shorter. The blocks are scanned log(N) times which seems acceptable as it is not part of the on chip run time
      {final Stack<Block> n = new Stack<>();                                                                             // Resulting stack
       n.push(blocks.elementAt(0));
-      for(int b = 1; b < blocks.size(); ++b)                                                                            // Compare each block with the lprior block
+      for(int b = 1; b < blocks.size(); ++b)                                                                            // Compare each block with the prior block
        {final Block A = n.lastElement();
         final Block B = blocks.elementAt(b);
         if (pair(A, B, i)) A.size = i << 1; else n.push(B);                                                             // Merge the two blocks or continue with two blocks
@@ -34,10 +34,10 @@ public class ArrayConstant extends Test                                         
      }
    }
 
-  boolean pair (Block A, Block B, int Size)                                                                             // Pair two adjacent blocks if possible
+  boolean pair (Block A, Block B, int Size)                                                                             // Two blocks can be merged when they have the same value, the same size, and differ only in the next address bit
    {if ( A.size != Size  ||  B.size != Size)  return false;                                                             // The blocks must match the current size being merged
-    if ((A.base >> Size) != (B.base >> Size)) return false;                                                             // The base must match
-    if ( A.value         !=  B.value)         return false;                                                             // The value must match
+    if ((A.base >> Size) != (B.base >> Size)) return false;                                                             // The bases must match
+    if ( A.value         !=  B.value)         return false;                                                             // The values must match
     return true;
    }
 
@@ -47,7 +47,7 @@ public class ArrayConstant extends Test                                         
     return ""+s;
    }
 
-  void validate(int [] Array)                                                                                           // Confirm that the array has at least one element and that all elements are non negative
+  void validate(int [] Array)                                                                                           // Confirm that the array has at least one element and that all elements are non-negative
    {if (Array.length == 0) stop("Array must have one or more integers");
     for(int i = 0; i < Array.length; ++i)
      {final int a = Array[i];
@@ -55,17 +55,19 @@ public class ArrayConstant extends Test                                         
      }
    }
 
-  String printInBinary(int Value)                                                                                       // Print an index of the array in binary
+  String printInBinary(int Value) {return printInBinary(Value, logLen);}                                                // Print a number in binary to fit a field of the default width by adding leading zeros
+
+  String printInBinary(int Value, int Width)                                                                            // Print a number in binary to fit a field of specified width by adding leading zeros
    {final String b = Integer.toBinaryString(Value);
-    return "0".repeat(logLen - b.length())+b;
+    return "0".repeat(Width - b.length())+b;
    }
 
   String verilog(String Source, String Target)                                                                          // Print verilog if statements implementing the array
    {final StringBuilder s = new StringBuilder();
 
     for(Block b : blocks)
-     {if (logLen > 0 && b.width() > 0) s.append(s("if ({source}[{size}-:{width}] == {base}[{size}-:{width}]}) {target} <= {value};\n",
-      "base",   ""+b.base,
+     {if (logLen > 0 && b.width() > 0) s.append(s("if ({source}[{size}-:{width}] == {width}'b{base}) {target} <= {value};\n",
+      "base",   printInBinary(b.base >> logTwo(b.size), b.width()),
       "size",   ""+(logLen-1),
       "source", ""+Source,
       "target", ""+Target,
@@ -78,6 +80,39 @@ public class ArrayConstant extends Test                                         
     return ""+s;
    }
 
+  String verilogModule(String File)                                                                                     // Print a verilog module that can be tested
+   {final StringBuilder s = new StringBuilder();
+
+    s.append(s("""
+module test;
+ integer i;
+ integer a[{size}];
+""", "size", ""+array.length));
+
+    for(int i = 0; i < array.length; ++i) s.append("  initial a["+i+"] = "+array[i]+";\n");
+
+    s.append("""
+  function automatic integer v(input integer i);
+""");
+    s.append(verilog("i", "v").replaceAll(" <= ", "  = " ));
+
+    s.append("""
+  endfunction
+
+  initial begin
+    #10;
+""");
+
+    for(int i = 0; i < array.length; ++i) s.append("  assert(v("+i+") == "+array[i]+") else $fatal(v("+i+") != "+array[i]+");\n");
+
+    s.append("""
+  end
+endmodule
+""");
+    writeFile(File, ""+s);
+    return ""+s;
+   }
+
   class Block                                                                                                           // A block of indices that index the same array value that can consequently be located with a single if statement
    {final int  base;                                                                                                    // The starting index for this block
     final int value;                                                                                                    // The value of the array element associated with this block
@@ -85,7 +120,7 @@ public class ArrayConstant extends Test                                         
 
     Block (int Base, int Value) {base = Base; value = Value;}                                                           // Construct
 
-    int width() {return logLen - logTwo(size);}                                                                                  // Width of bit string representation of index that should be considered in the if statement
+    int width() {return logLen - logTwo(size);}                                                                         // Width of bit-string representation of index that should be considered in the if statement
 
     public String toString()                                                                                            // Print the current state of a block of indices pointing to the same array value
      {final StringBuilder s = new StringBuilder();
@@ -112,8 +147,8 @@ v <= 1;
     final ArrayConstant a = new ArrayConstant(A);
     //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
-if (i[0-:1] == 0[0-:1]}) v <= 0;
-if (i[0-:1] == 1[0-:1]}) v <= 1;
+if (i[0-:1] == 1'b0) v <= 0;
+if (i[0-:1] == 1'b1) v <= 1;
 """);
    }
 
@@ -133,14 +168,14 @@ v <= 1;
     final ArrayConstant a = new ArrayConstant(A);
     //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
-if (i[3-:3] == 0[3-:3]}) v <= 1;
-if (i[3-:4] == 2[3-:4]}) v <= 2;
-if (i[3-:4] == 3[3-:4]}) v <= 0;
-if (i[3-:3] == 4[3-:3]}) v <= 0;
-if (i[3-:3] == 6[3-:3]}) v <= 3;
-if (i[3-:3] == 8[3-:3]}) v <= 3;
-if (i[3-:3] == 10[3-:3]}) v <= 4;
-if (i[3-:4] == 12[3-:4]}) v <= 5;
+if (i[3-:3] == 3'b000) v <= 1;
+if (i[3-:4] == 4'b0010) v <= 2;
+if (i[3-:4] == 4'b0011) v <= 0;
+if (i[3-:3] == 3'b010) v <= 0;
+if (i[3-:3] == 3'b011) v <= 3;
+if (i[3-:3] == 3'b100) v <= 3;
+if (i[3-:3] == 3'b101) v <= 4;
+if (i[3-:4] == 4'b1100) v <= 5;
 """);
    }
 
@@ -150,16 +185,16 @@ if (i[3-:4] == 12[3-:4]}) v <= 5;
     final ArrayConstant a = new ArrayConstant(A);
     //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
-if (i[3-:3] == 0[3-:3]}) v <= 1;
-if (i[3-:4] == 2[3-:4]}) v <= 2;
-if (i[3-:4] == 3[3-:4]}) v <= 0;
-if (i[3-:2] == 4[3-:2]}) v <= 0;
-if (i[3-:4] == 8[3-:4]}) v <= 0;
-if (i[3-:4] == 9[3-:4]}) v <= 3;
-if (i[3-:3] == 10[3-:3]}) v <= 3;
-if (i[3-:4] == 12[3-:4]}) v <= 3;
-if (i[3-:4] == 13[3-:4]}) v <= 4;
-if (i[3-:4] == 14[3-:4]}) v <= 4;
+if (i[3-:3] == 3'b000) v <= 1;
+if (i[3-:4] == 4'b0010) v <= 2;
+if (i[3-:4] == 4'b0011) v <= 0;
+if (i[3-:2] == 2'b01) v <= 0;
+if (i[3-:4] == 4'b1000) v <= 0;
+if (i[3-:4] == 4'b1001) v <= 3;
+if (i[3-:3] == 3'b101) v <= 3;
+if (i[3-:4] == 4'b1100) v <= 3;
+if (i[3-:4] == 4'b1101) v <= 4;
+if (i[3-:4] == 4'b1110) v <= 4;
 """);
    }
 
@@ -169,16 +204,16 @@ if (i[3-:4] == 14[3-:4]}) v <= 4;
     final ArrayConstant a = new ArrayConstant(A);
     //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
-if (i[4-:4] == 0[4-:4]}) v <= 1;
-if (i[4-:5] == 2[4-:5]}) v <= 2;
-if (i[4-:5] == 3[4-:5]}) v <= 0;
-if (i[4-:3] == 4[4-:3]}) v <= 0;
-if (i[4-:5] == 8[4-:5]}) v <= 0;
-if (i[4-:5] == 9[4-:5]}) v <= 3;
-if (i[4-:4] == 10[4-:4]}) v <= 3;
-if (i[4-:3] == 12[4-:3]}) v <= 3;
-if (i[4-:4] == 16[4-:4]}) v <= 4;
-if (i[4-:5] == 18[4-:5]}) v <= 4;
+if (i[4-:4] == 4'b0000) v <= 1;
+if (i[4-:5] == 5'b00010) v <= 2;
+if (i[4-:5] == 5'b00011) v <= 0;
+if (i[4-:3] == 3'b001) v <= 0;
+if (i[4-:5] == 5'b01000) v <= 0;
+if (i[4-:5] == 5'b01001) v <= 3;
+if (i[4-:4] == 4'b0101) v <= 3;
+if (i[4-:3] == 3'b011) v <= 3;
+if (i[4-:4] == 4'b1000) v <= 4;
+if (i[4-:5] == 5'b10010) v <= 4;
 """);
    }
 
@@ -188,18 +223,24 @@ if (i[4-:5] == 18[4-:5]}) v <= 4;
     final ArrayConstant a = new ArrayConstant(A);
     //stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
-if (i[4-:4] == 0[4-:4]}) v <= 1;
-if (i[4-:5] == 2[4-:5]}) v <= 2;
-if (i[4-:5] == 3[4-:5]}) v <= 0;
-if (i[4-:3] == 4[4-:3]}) v <= 0;
-if (i[4-:5] == 8[4-:5]}) v <= 0;
-if (i[4-:5] == 9[4-:5]}) v <= 3;
-if (i[4-:4] == 10[4-:4]}) v <= 3;
-if (i[4-:3] == 12[4-:3]}) v <= 3;
-if (i[4-:4] == 16[4-:4]}) v <= 4;
-if (i[4-:5] == 18[4-:5]}) v <= 4;
-if (i[4-:5] == 19[4-:5]}) v <= 5;
+if (i[4-:4] == 4'b0000) v <= 1;
+if (i[4-:5] == 5'b00010) v <= 2;
+if (i[4-:5] == 5'b00011) v <= 0;
+if (i[4-:3] == 3'b001) v <= 0;
+if (i[4-:5] == 5'b01000) v <= 0;
+if (i[4-:5] == 5'b01001) v <= 3;
+if (i[4-:4] == 4'b0101) v <= 3;
+if (i[4-:3] == 3'b011) v <= 3;
+if (i[4-:4] == 4'b1000) v <= 4;
+if (i[4-:5] == 5'b10010) v <= 4;
+if (i[4-:5] == 5'b10011) v <= 5;
 """);
+
+    final String file = "/tmp/aaaa.v";
+    a.verilogModule(file);
+    final String cmd = "rm -f aaaa; iverilog -I/tmp/includes/ -g2012 -o aaaa /tmp/aaaa.v  && timeout 1m ./aaaa";
+    final ExecCommand x = new ExecCommand(cmd);                                                                         // Execute Verilog commands
+    ok(x.exitCode, 0);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
