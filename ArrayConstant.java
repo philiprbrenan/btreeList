@@ -20,7 +20,7 @@ public class ArrayConstant extends Test                                         
 
     for (int i = 0; i < Array.length; ++i) blocks.push(new Block(i, Array[i]));                                         // Initially each number in the array is unpaired with its neighbors
 
-    for(int i = 1; i <= logLen+1; ++i)                                                                                  // Consider each pair and try and merge them into a bigger block
+    for(int i = 1; i <= logLen+1; ++i)                                                                                  // Consider each pair and try and merge them into a bigger block. The blocks are scanned log(N) times which seems acceptable as it is not part of the on chip run time
      {final Stack<Block> n = new Stack<>();                                                                             // Resulting stack
       n.push(blocks.elementAt(0));
       for(int b = 1; b < blocks.size(); ++b)                                                                            // Compare each block with the lprior block
@@ -64,9 +64,9 @@ public class ArrayConstant extends Test                                         
    {final StringBuilder s = new StringBuilder();
 
     for(Block b : blocks)
-     {s.append(s("if ({source}[{size}:{width}] == {prefix}) {target} <= {value};\n",
-      "prefix", ""+(b.base >> b.size-1),
-      "size",   ""+logLen,
+     {s.append(s("if ({source}[{size}-:{width}] == {base}[{size}-:{width}]}) {target} <= {value};\n",
+      "base",   ""+b.base,
+      "size",   ""+(logLen-1),
       "source", ""+Source,
       "target", ""+Target,
       "value",  ""+b.value,
@@ -75,28 +75,49 @@ public class ArrayConstant extends Test                                         
     return ""+s;
    }
 
-  class Block                                                                                                           // A block of index = value pairs that can be located with a single if statement
-   {final int  base;                                                                                                    // The starting integer for this block
-    final int value;                                                                                                    // The array element associated with this block
-    int        size = 1;                                                                                                // The size of the block
+  class Block                                                                                                           // A block of indices that index the same array value that can consequently be located with a single if statement
+   {final int  base;                                                                                                    // The starting index for this block
+    final int value;                                                                                                    // The value of the array element associated with this block
+    int        size = 1;                                                                                                // Log of the size of the block
 
-    Block (int Base, int Value) {base = Base; value = Value;}                                                           // The starting integer for this block
+    Block (int Base, int Value) {base = Base; value = Value;}                                                           // Construct
 
-    int width() {return logLen + 1 - size;}                                                                             // Width of bit string representation of index that should be considered in the if statement
+    int width() {return logLen - logTwo(size);}                                                                                  // Width of bit string representation of index that should be considered in the if statement
 
-    public String toString()
+    public String toString()                                                                                            // Print the current state of a block of indices pointing to the same array value
      {final StringBuilder s = new StringBuilder();
       final StringJoiner  j = new StringJoiner(", ");
       return f("%s  %4d  (%d,%d)\n", printInBinary(base), value, size, width());
      }
    }
 
-//D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
+//D1 Testing                                                                                                            // Tests
+
+  static void test_a1()
+   {//                       0
+    final int []        A = {1};
+    final ArrayConstant a = new ArrayConstant(A);
+    stop(a.verilog("i", "v"));
+    ok(a.verilog("i", "v"), """
+if (i[0-:1] == 0) v <= 1;
+""");
+   }
+
+  static void test_a2()
+   {//                0   1
+    final int [] A = {1,  1};
+    final ArrayConstant a = new ArrayConstant(A);
+    //stop(a.verilog("i", "v"));
+    ok(a.verilog("i", "v"), """
+if (i[1:0] == 0) v <= 1;
+""");
+   }
 
   static void test_a12()
    {//                0   1   2   3   4   5   6   7   8   9  10  11  12
     final int [] A = {1,  1,  2,  0,  0,  0,  3,  3,  3,  3,  4,  4,  5};
     final ArrayConstant a = new ArrayConstant(A);
+    stop(a.verilog("i", "v"));
     ok(a.verilog("index", "value"), """
 if (index[4:3] == 0) value <= 1;
 if (index[4:4] == 2) value <= 2;
@@ -113,7 +134,8 @@ if (index[4:4] == 12) value <= 5;
    {//                0   1   2   3   4   5   6   7   8   9  10  11  12  13  14
     final int [] A = {1,  1,  2,  0,  0,  0,  0,  0,  0,  3,  3,  3,  3,  4,  4};
     final ArrayConstant a = new ArrayConstant(A);
-    //stop(a.verilog("i", "v"));
+    say(a);
+    stop(a.verilog("i", "v"));
     ok(a.verilog("i", "v"), """
 if (i[4:3] == 0) v <= 1;
 if (i[4:4] == 2) v <= 2;
@@ -128,9 +150,54 @@ if (i[4:4] == 14) v <= 4;
 """);
    }
 
+  static void test_a18()
+   {//                0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18
+    final int [] A = {1,  1,  2,  0,  0,  0,  0,  0,  0,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4};
+    final ArrayConstant a = new ArrayConstant(A);
+    //say(a);
+    //stop(a.verilog("i", "v"));
+    ok(a.verilog("i", "v"), """
+if (i[4-:4] == 0[4-:4]}) v <= 1;
+if (i[4-:5] == 2[4-:5]}) v <= 2;
+if (i[4-:5] == 3[4-:5]}) v <= 0;
+if (i[4-:3] == 4[4-:3]}) v <= 0;
+if (i[4-:5] == 8[4-:5]}) v <= 0;
+if (i[4-:5] == 9[4-:5]}) v <= 3;
+if (i[4-:4] == 10[4-:4]}) v <= 3;
+if (i[4-:3] == 12[4-:3]}) v <= 3;
+if (i[4-:4] == 16[4-:4]}) v <= 4;
+if (i[4-:5] == 18[4-:5]}) v <= 4;
+""");
+   }
+
+  static void test_a19()
+   {//                0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19
+    final int [] A = {1,  1,  2,  0,  0,  0,  0,  0,  0,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  5};
+    final ArrayConstant a = new ArrayConstant(A);
+    //say(a);
+    //stop(a.verilog("i", "v"));
+    ok(a.verilog("i", "v"), """
+perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/ArrayConstant.java" --javaHome "/home/phil/btreeList" (in directory: /home/phil/btreeList)
+if (i[4-:4] == 0[4-:4]}) v <= 1;
+if (i[4-:5] == 2[4-:5]}) v <= 2;
+if (i[4-:5] == 3[4-:5]}) v <= 0;
+if (i[4-:3] == 4[4-:3]}) v <= 0;
+if (i[4-:5] == 8[4-:5]}) v <= 0;
+if (i[4-:5] == 9[4-:5]}) v <= 3;
+if (i[4-:4] == 10[4-:4]}) v <= 3;
+if (i[4-:3] == 12[4-:3]}) v <= 3;
+if (i[4-:4] == 16[4-:4]}) v <= 4;
+if (i[4-:5] == 18[4-:5]}) v <= 4;
+""");
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {test_a12();
+   {test_a1();
+    test_a2();
+    test_a12();
     test_a14();
+    test_a18();
+    test_a19();
    }
 
   static void newTests()                                                                                                // Tests being worked on
