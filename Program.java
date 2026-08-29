@@ -7,7 +7,7 @@
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
 // Check how often each variable is read or written to eliminate variables that are only used once
 // Use parallel loads in putBit etc as marked with Improvement:
-// Remove ib() methods
+// pippit.ai
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -976,10 +976,6 @@ public class Program extends Test                                               
    }
 
 //D1 Memory                                                                                                             // Operations on memory divided into units
-
-//  static int ib ()      {return Integer.BYTES;}                                                                         // Number of bytes in an integer
-//  static int ib (int I) {return I * ib();}                                                                              // Number of bytes in a number of integers
-//  static Int ib (Int I) {return I.Mul(ib());}                                                                           // Number of bytes in a number of integers
 
   class Memory                                                                                                          // Memory made of units
    {final String name;                                                                                                  // Optional name for the memory
