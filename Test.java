@@ -192,6 +192,8 @@ public class Test                                                               
     return formatComments(A);
    }
 
+  static String s (String A, String...Pairs)  {return substitute(A, Pairs);}                                            // Substitute pairs of key values into a string - short name
+
   static String formatComments(String Input)                                                                            // Vertically align comments in column 120 to the extent possible
    {if (max(Input.indexOf(" //"), Input.indexOf(" #")) == -1) return Input;                                             // Only format comments if there are some
 
@@ -330,7 +332,7 @@ public class Test                                                               
 
   static int nextPowerOfTwo (int n)                                                                                     // If this is a power of two return it, else return the next power of two greater than this number
    {int p = 1;
-    for (int i = 0; i < 32; ++i, p *= 2) if (p >= n) return p;
+    for (int i = 0; i < Integer.SIZE; ++i, p *= 2) if (p >= n) return p;
     stop("Cannot find next power of two for", n);
     return -1;
    }
@@ -338,14 +340,14 @@ public class Test                                                               
   static int prevPowerOfTwo (int n)                                                                                     // If this is a power of two return it, else return the previous power of two
    {int p = 1;
     if (n == 0) stop("No previous power of two for zero");
-    for (int i = 0; i < 32; ++i, p *= 2) if (p*2 > n) return p;
+    for (int i = 0; i < Integer.SIZE; ++i, p *= 2) if (p*2 > n) return p;
     stop("Cannot find previous power of two for", n);
     return -1;
    }
 
   static int logTwo (int n)                                                                                             // Log 2 of containing power of 2
    {int p = 1;
-    for (int i = 0; i < 32; ++i, p *= 2) if (p >= n) return i;
+    for (int i = 0; i < Integer.SIZE; ++i, p *= 2) if (p >= n) return i;
     stop("Cannot find log two for", n);
     return -1;
    }
