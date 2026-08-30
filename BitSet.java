@@ -314,7 +314,7 @@ final public class BitSet extends Program                                       
   int      base_zero ()        {return posZero(0);}                                                                     // Start of the zeros tree
   int       base_one ()        {return posOne (0);}                                                                     // Start of the ones tree
 
-  final boolean F = false;
+  final boolean F = false;                                                                                              // No need to load the target value as we are going to over write it so we only need to address it
   Int       pos_zero (Int Pos) {subStart("Bitset.pos_zero");       final Int r = new Int("pos_zero" );         r.T(F); Pos.S(); new I() {void a() {jt(r, posZero        [sourceInt()]);} String v() {return vt(r, pzArray );}};      r.W(); subFinish(); return r;} // Position in the current row in the zeros tree
   Int        pos_one (Int Pos) {subStart("Bitset.pos_one");        final Int r = new Int("pos_one"  );         r.T(F); Pos.S(); new I() {void a() {jt(r, posOne         [sourceInt()]);} String v() {return vt(r, poArray );}};      r.W(); subFinish(); return r;} //N Position in the current row in the ones tree
   Int  limitUpperOne (Int Pos) {subStart("Bitset.limitUpperOne");  final Int r = new Int("one  upper limit" ); r.T(F); Pos.S(); new I() {void a() {jt(r, limitsUpperOne [sourceInt()]);} String v() {return vt(r, luoArray);}};      r.W(); subFinish(); return r;} // Upper limit of the current row in the ones tree
@@ -324,8 +324,10 @@ final public class BitSet extends Program                                       
   Int      heightOne (Int Pos) {subStart("Bitset.heightOne");      final Int r = new Int("one  height" );      r.T(F); Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt()]);} String v() {return vt(r, hoArray );}};      r.W(); subFinish(); return r;} // Height of the specified position in the ones tree
   Int     heightZero (Int Pos) {subStart("Bitset.heightZero");     final Int r = new Int("zero height");       r.T(F); Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzArray );}};      r.W(); subFinish(); return r;} // Height of the specified position in the zeros tree
 
-  void   jt (Int R, int    I)              {                   targetInt(I); R.setValid();                          jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}                   // Java trace of array look ups
-  String vt (Int R, VerilogArrays.Array A) {return intMemory().vWriteInt() + " <= " + A.dataRegisterName() + "; " + vTrace(  "%8d "+R.name+" = %8d", "pc",        A.dataRegisterName());} // Java trace of array look ups
+//void   jt (Int R, int I)                 {                   targetInt(I); R.setValid();                          jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}                   // Java trace of array look ups
+//String vt (Int R, VerilogArrays.Array A) {return intMemory().vWriteInt() + " <= " + A.dataRegisterName() + "; " + vTrace(  "%8d "+R.name+" = %8d", "pc",        A.dataRegisterName());} // Verilog trace of array look ups
+  void   jt (Int R, int I)                 {                   targetInt(I); R.setValid();                                                jTrace(f("%8d "+R.name, currentPc()));} // Java trace of array look ups
+  String vt (Int R, VerilogArrays.Array A) {return new ArrayConstant(A.array).verilog(intMemory().vRead1Int(), intMemory().vWriteInt()) + vTrace(  "%8d "+R.name, "pc"        );} // Verilog trace of array look up - cannot get the looku value yet because of non blocking assign
 
   int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
    {final int p = Pos < bitSize ? Pos : Pos < base_zero() ?  0 : pos_one(Pos - base_zero() + bitSize);
