@@ -314,9 +314,9 @@ final public class BitSet extends Program                                       
   int      base_zero ()        {return posZero(0);}                                                                     // Start of the zeros tree
   int       base_one ()        {return posOne (0);}                                                                     // Start of the ones tree
 
+// Can we use t.T(false) here ?
   Int       pos_zero (Int Pos) {subStart("Bitset.pos_zero");       final Int r = new Int("pos_zero" );         r.T(); Pos.S(); new I() {void a() {jt(r, posZero        [sourceInt()]);} String v() {return vt(r, pzArray );}};      r.W(); subFinish(); return r;} // Position in the current row in the zeros tree
   Int        pos_one (Int Pos) {subStart("Bitset.pos_one");        final Int r = new Int("pos_one"  );         r.T(); Pos.S(); new I() {void a() {jt(r, posOne         [sourceInt()]);} String v() {return vt(r, poArray );}};      r.W(); subFinish(); return r;} //N Position in the current row in the ones tree
-
   Int  limitUpperOne (Int Pos) {subStart("Bitset.limitUpperOne");  final Int r = new Int("one  upper limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperOne [sourceInt()]);} String v() {return vt(r, luoArray);}};      r.W(); subFinish(); return r;} // Upper limit of the current row in the ones tree
   Int limitUpperZero (Int Pos) {subStart("Bitset.limitUpperZero"); final Int r = new Int("zero upper limit");  r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperZero[sourceInt()]);} String v() {return vt(r, luzArray);}};      r.W(); subFinish(); return r;} // Upper limit of the current row in the zeros tree
   Int  limitLowerOne (Int Pos) {subStart("Bitset.limitLowerOne");  final Int r = new Int("one  lower limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsLowerOne [sourceInt()]);} String v() {return vt(r, lloArray);}};      r.W(); subFinish(); return r;} // Lower limit of the current row in the ones tree
