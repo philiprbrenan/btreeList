@@ -2,8 +2,8 @@
 // Locate set or cleared bits in a fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Place the one tree first, the bit set second, and the zero tree last so that the computation of parent, child etc. can be done with boolean functions rather than memory looks ups.
-// Update the trees using "and" and "or" gates rippling through rather than instructions using array indexing.
+// Can the expressions for parent, child in the ones and zeros trees can be simplified by placing the one tree first, the bit set second, and the zero tree last?
+// Construct the ones and zeros trees using "and" and "or" gates rippling through rather than instructions using bit array indexing.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
@@ -35,14 +35,14 @@ final public class BitSet extends Program                                       
   final  String         poVerilog;
   final  String         pzVerilog;
 
-  VerilogArrays.Array    luoArray;                                                                                      // Verilog arrays for lookup tables
-  VerilogArrays.Array    luzArray;
-  VerilogArrays.Array    lloArray;
-  VerilogArrays.Array    llzArray;
-  VerilogArrays.Array     hoArray;
-  VerilogArrays.Array     hzArray;
-  VerilogArrays.Array     poArray;
-  VerilogArrays.Array     pzArray;
+  String                 luoArray;                                                                                      // Verilog code for constant lookup tables
+  String                 luzArray;
+  String                 lloArray;
+  String                 llzArray;
+  String                  hoArray;
+  String                  hzArray;
+  String                  poArray;
+  String                  pzArray;
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
@@ -326,8 +326,8 @@ final public class BitSet extends Program                                       
 
 //void   jt (Int R, int I)                 {                   targetInt(I); R.setValid();                          jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}                   // Java trace of array look ups
 //String vt (Int R, VerilogArrays.Array A) {return intMemory().vWriteInt() + " <= " + A.dataRegisterName() + "; " + vTrace(  "%8d "+R.name+" = %8d", "pc",        A.dataRegisterName());} // Verilog trace of array look ups
-  void   jt (Int R, int I)                 {                   targetInt(I); R.setValid();                                                jTrace(f("%8d "+R.name, currentPc()));} // Java trace of array look ups
-  String vt (Int R, VerilogArrays.Array A) {return new ArrayConstant(A.array).verilog(intMemory().vRead1Int(), intMemory().vWriteInt()) + vTrace(  "%8d "+R.name, "pc"        );} // Verilog trace of array look up - cannot get the looku value yet because of non blocking assign
+  void   jt (Int R, int I)    {targetInt(I); R.setValid(); jTrace(f("%8d "+R.name, currentPc()));}                      // Java trace of array look ups
+  String vt (Int R, String V) {return V +                  vTrace(  "%8d "+R.name, "pc"        );}                      // Verilog trace of array look up - cannot get the looku value yet because of non blocking assign
 
   int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
    {final int p = Pos < bitSize ? Pos : Pos < base_zero() ?  0 : pos_one(Pos - base_zero() + bitSize);
@@ -344,19 +344,21 @@ final public class BitSet extends Program                                       
 
   void  posZeroArray ()                                                                                                 // Position in row from position in ones tree
    {for (int i = 0, N = top_zero(); i <= N; ++i) posZero[i] = pos_zero(i);
-    pzArray = verilogArrays().new Array(pzVerilog, posZero);
+    pzArray = new ArrayConstant(posZero).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   void   posOneArray ()                                                                                                 // Position in row from position in ones tree
    {for (int i = 0, N = top_one(); i <= N; ++i) posOne[i] = pos_one(i);
-    poArray = verilogArrays().new Array(poVerilog, posOne);
+//  poArray = verilogArrays().new Array(poVerilog, posOne);
+    poArray = new ArrayConstant(posOne).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   void limitsUpperOne ()                                                                                                // Upper limits of the ones tree
    {int l = bitSize1, w = bitSize;
     final int N = top_one();
     for (int i = 0; i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
-    luoArray = verilogArrays().new Array(luoVerilog, limitsUpperOne);
+//  luoArray = verilogArrays().new Array(luoVerilog, limitsUpperOne);
+    luoArray = new ArrayConstant(limitsUpperOne).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   void limitsUpperZero ()                                                                                               // Upper limits of the zeros tree
@@ -364,13 +366,15 @@ final public class BitSet extends Program                                       
      {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i];
       else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
      }
-    luzArray = verilogArrays().new Array(luzVerilog, limitsUpperZero);
+//  luzArray = verilogArrays().new Array(luzVerilog, limitsUpperZero);
+    luzArray = new ArrayConstant(limitsUpperZero).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   void limitsLowerOne ()                                                                                                // Lower limits of the ones tree
    {int l = 0, w = bitSize;
     for (int i = 0, N = top_one(); i <= N; ++i) {limitsLowerOne[i] = l; if (i >= l+w-1) {l += w; w >>>= 1;}}
-    lloArray = verilogArrays().new Array(lloVerilog, limitsLowerOne);
+//  lloArray = verilogArrays().new Array(lloVerilog, limitsLowerOne);
+    lloArray = new ArrayConstant(limitsLowerOne).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   void limitsLowerZero ()                                                                                               // Lower limits of the zeros tree
@@ -378,20 +382,23 @@ final public class BitSet extends Program                                       
      {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i];
       else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
      }
-    llzArray = verilogArrays().new Array(llzVerilog, limitsLowerZero);
+//  llzArray = verilogArrays().new Array(llzVerilog, limitsLowerZero);
+    llzArray = new ArrayConstant(limitsLowerZero).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   void heightOne ()                                                                                                     // Height of each node in the ones tree
    {int l = 0, w = bitSize, h = 0;
     for (int i = 0, N = top_one(); i <= N; ++i) {heightOne[i] = h; if (i >= l+w-1) {l += w; w >>>= 1; ++h;}}
-    hoArray = verilogArrays().new Array(hoVerilog, heightOne);
+//  hoArray = verilogArrays().new Array(hoVerilog, heightOne);
+    hoArray = new ArrayConstant(heightOne).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   void heightZero ()                                                                                                    // Height of each node in the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) heightZero[i] = heightOne[i]; else {heightZero[bitSize1 + i] = heightOne[i];}
      }
-    hzArray = verilogArrays().new Array(hzVerilog, heightZero);
+//  hzArray = verilogArrays().new Array(hzVerilog, heightZero);
+    hzArray = new ArrayConstant(heightZero).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   Int lowOne (Int Pos)                                                                                                  // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
