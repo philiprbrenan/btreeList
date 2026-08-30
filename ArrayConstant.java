@@ -65,17 +65,17 @@ public class ArrayConstant extends Test                                         
   String verilog(String Source, String Target)                                                                          // Print verilog if statements implementing the array
    {final StringBuilder s = new StringBuilder();
 
-    for(Block b : blocks)
-     {if (logLen > 0 && b.width() > 0) s.append(s("if ({source}[{size}-:{width}] == {width}'b{base}) {target} <= {value};\n",
-      "base",   printInBinary(b.base >> logTwo(b.size), b.width()),
-      "size",   ""+(logLen-1),
-      "source", ""+Source,
-      "target", ""+Target,
-      "value",  ""+b.value,
-      "width",  ""+b.width()));
-      else            s.append(s("{target} <= {value};\n",
-      "target", ""+Target,
-      "value",  ""+b.value));
+    for(Block b : blocks)                                                                                               // create an if statament for each block
+     {if (logLen > 0 && b.width() > 0)
+       {s.append(s("if ({source}[{size}-:{width}] == {width}'b{base}) {target} <= {value};\n",
+        "base",   printInBinary(b.base >> logTwo(b.size), b.width()),
+        "size",   ""+(logLen-1),
+        "source", ""+Source,
+        "target", ""+Target,
+        "value",  ""+b.value,
+        "width",  ""+b.width()));
+       }
+      else s.append(s("{target} <= {value};\n", "target", ""+Target, "value",  ""+b.value));
      }
     return ""+s;
    }
