@@ -324,8 +324,6 @@ final public class BitSet extends Program                                       
   Int      heightOne (Int Pos) {subStart("Bitset.heightOne");      final Int r = new Int("one  height" );      r.T(F); Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt()]);} String v() {return vt(r, hoArray );}};      r.W(); subFinish(); return r;} // Height of the specified position in the ones tree
   Int     heightZero (Int Pos) {subStart("Bitset.heightZero");     final Int r = new Int("zero height");       r.T(F); Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzArray );}};      r.W(); subFinish(); return r;} // Height of the specified position in the zeros tree
 
-//void   jt (Int R, int I)                 {                   targetInt(I); R.setValid();                          jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}                   // Java trace of array look ups
-//String vt (Int R, VerilogArrays.Array A) {return intMemory().vWriteInt() + " <= " + A.dataRegisterName() + "; " + vTrace(  "%8d "+R.name+" = %8d", "pc",        A.dataRegisterName());} // Verilog trace of array look ups
   void   jt (Int R, int I)    {targetInt(I); R.setValid(); jTrace(f("%8d "+R.name, currentPc()));}                      // Java trace of array look ups
   String vt (Int R, String V) {return V +                  vTrace(  "%8d "+R.name, "pc"        );}                      // Verilog trace of array look up - cannot get the looku value yet because of non blocking assign
 
@@ -349,7 +347,6 @@ final public class BitSet extends Program                                       
 
   void   posOneArray ()                                                                                                 // Position in row from position in ones tree
    {for (int i = 0, N = top_one(); i <= N; ++i) posOne[i] = pos_one(i);
-//  poArray = verilogArrays().new Array(poVerilog, posOne);
     poArray = new ArrayConstant(posOne).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
@@ -357,7 +354,6 @@ final public class BitSet extends Program                                       
    {int l = bitSize1, w = bitSize;
     final int N = top_one();
     for (int i = 0; i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
-//  luoArray = verilogArrays().new Array(luoVerilog, limitsUpperOne);
     luoArray = new ArrayConstant(limitsUpperOne).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
@@ -366,14 +362,12 @@ final public class BitSet extends Program                                       
      {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i];
       else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
      }
-//  luzArray = verilogArrays().new Array(luzVerilog, limitsUpperZero);
     luzArray = new ArrayConstant(limitsUpperZero).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   void limitsLowerOne ()                                                                                                // Lower limits of the ones tree
    {int l = 0, w = bitSize;
     for (int i = 0, N = top_one(); i <= N; ++i) {limitsLowerOne[i] = l; if (i >= l+w-1) {l += w; w >>>= 1;}}
-//  lloArray = verilogArrays().new Array(lloVerilog, limitsLowerOne);
     lloArray = new ArrayConstant(limitsLowerOne).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
@@ -382,14 +376,12 @@ final public class BitSet extends Program                                       
      {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i];
       else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
      }
-//  llzArray = verilogArrays().new Array(llzVerilog, limitsLowerZero);
     llzArray = new ArrayConstant(limitsLowerZero).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
   void heightOne ()                                                                                                     // Height of each node in the ones tree
    {int l = 0, w = bitSize, h = 0;
     for (int i = 0, N = top_one(); i <= N; ++i) {heightOne[i] = h; if (i >= l+w-1) {l += w; w >>>= 1; ++h;}}
-//  hoArray = verilogArrays().new Array(hoVerilog, heightOne);
     hoArray = new ArrayConstant(heightOne).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
@@ -397,7 +389,6 @@ final public class BitSet extends Program                                       
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) heightZero[i] = heightOne[i]; else {heightZero[bitSize1 + i] = heightOne[i];}
      }
-//  hzArray = verilogArrays().new Array(hzVerilog, heightZero);
     hzArray = new ArrayConstant(heightZero).verilog(intMemory().vRead1Int(), intMemory().vWriteInt());
    }
 
@@ -1004,7 +995,7 @@ Zero:
                                 b.lastZero ()            .ok( 15);
 
     b.maxSteps(999_999);
-    b.scDieAreaX = 1000; b.scDieAreaY = 1000;
+    b.scDieAreaX = 600; b.scDieAreaY = 600;
     b.execute();
    }
 
@@ -1088,7 +1079,7 @@ Zero:
      }
     b.count().ok(0);
     b.maxSteps(999_999);
-   b.scDieAreaX = 1000; b.scDieAreaY = 1000;
+   b.scDieAreaX = 700; b.scDieAreaY = 700;
    b.execute();
     //testStop(s);
     ok(""+s, """
@@ -1782,7 +1773,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();
+   {//oldTests();
+    test_prevNext10(false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
