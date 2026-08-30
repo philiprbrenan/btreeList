@@ -22,7 +22,7 @@ public class ArrayConstant extends Test                                         
 
     for(int i = 1; i <= logLen+1; ++i)                                                                                  // Consider each pair and try and merge them to make a bigger block that can be selected with an index that is one bit shorter. The blocks are scanned log(N) times which seems acceptable as it is not part of the on chip run time
      {final Stack<Block> n = new Stack<>();                                                                             // Resulting stack
-      n.push(blocks.elementAt(0));
+      n.push(blocks.firstElement());                                                                                    // Known to exist as we check that the input array has at least one element
       for(int b = 1; b < blocks.size(); ++b)                                                                            // Compare each block with the prior block
        {final Block A = n.lastElement();
         final Block B = blocks.elementAt(b);
@@ -65,18 +65,18 @@ public class ArrayConstant extends Test                                         
   String verilog(String Source, String Target)                                                                          // Print verilog if statements implementing the array
    {final StringBuilder s = new StringBuilder();
 
-    for(Block b : blocks)                                                                                               // create an if statament for each block
-     {if (logLen > 0 && b.width() > 0)
+    if (blocks.size() > 1)                                                                                              // More than one block left so we will have to use if statements to separate them
+     {for(Block b : blocks)                                                                                             // Create an if statement for each block
        {s.append(s("if ({source}[{size}-:{width}] == {width}'b{base}) {target} <= {value};\n",
-        "base",   printInBinary(b.base >> logTwo(b.size), b.width()),
-        "size",   ""+(logLen-1),
-        "source", ""+Source,
-        "target", ""+Target,
-        "value",  ""+b.value,
-        "width",  ""+b.width()));
+          "base",   printInBinary(b.base >> logTwo(b.size), b.width()),
+          "size",   ""+(logLen-1),
+          "source", ""+Source,
+          "target", ""+Target,
+          "value",  ""+b.value,
+          "width",  ""+b.width()));
        }
-      else s.append(s("{target} <= {value};\n", "target", ""+Target, "value",  ""+b.value));
      }
+    else s.append(s("{target} <= {value};\n", "target", ""+Target, "value",  ""+blocks.firstElement().value));          // There must be at least one block as we checked that the input array had at least one element
     return ""+s;
    }
 
