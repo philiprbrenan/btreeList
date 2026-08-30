@@ -24,11 +24,11 @@ public class Program extends Test                                               
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
-  final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final static String                     currentProject = "Synthesis, reduced IO pins";                                // Project currently being worked on
+  final static String                     currentProject = "Integer usage";                                             // Project currently being worked on
 
   final static FileNames                   verilogFolder = new FileNames(fp("verilog"));                                // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.down("test");                                  // Verilog tests
@@ -545,6 +545,7 @@ public class Program extends Test                                               
     final boolean    top = callerName() == "code";                                                                      // A declaration at the top level
           boolean     in = false;                                                                                       // An input wire: named at the top and set by the constructor to a constant
           boolean    out = false;                                                                                       // An output register:: named at the top and set by the constructor to the value of a variable
+    int nrt, ns1, ns2, nwt;                                                                                             // Number of reads and writes
 
     int         i ()  {x(); return i;}                                                                                  // Current value
     void        x ()  {if (!v) variableNotSet("Int", name);}                                                            // Check a value has been set for the integer
@@ -593,10 +594,28 @@ public class Program extends Test                                               
       return this;                                                                                                      // The current integer
      }
 
+    String indexRegisterName(int R)                                                                                     // Index register name for integer memory name from number
+     {return switch (R)
+       {case 0  -> intMemory().vRead0IntIndex();
+        case 1  -> intMemory().vRead1IntIndex();
+        case 2  -> intMemory().vRead2IntIndex();
+        default -> {stop("Register must be from 0-2 not:", R); yield null;}
+       };
+     }
+
+    String registerName(int R)                                                                                          // Register name for integer memory name from number
+     {return switch (R)
+       {case 0  -> intMemory().vRead0Int();
+        case 1  -> intMemory().vRead1Int();
+        case 2  -> intMemory().vRead2Int();
+        default -> {stop("Register must be from 0-2 not:", R); yield null;}
+       };
+     }
+
     abstract class LoadSourceOrTarget                                                                                   // Set index and values of memory for integer variables
-     {LoadSourceOrTarget(Int I, String MemoryIndex, String MemoryValue, boolean LoadValue)                              // The value should not be set for operations where the target already contains the value to store
-       {final String mi = pV(MemoryIndex);                                                                              // Index
-        final String mv = pV(MemoryValue);                                                                              // Value
+     {LoadSourceOrTarget(Int I, int Register, boolean LoadValue)                                                        // The value should not be set for operations where the target already contains the value to store
+       {final String mi = pV(indexRegisterName(Register));                                                              // Index register
+        final String mv = pV(     registerName(Register));                                                              // Value register
 
         final I i = new I()                                                                                             // Load index of integer
          {final String c = mi + pV(" <= arrayData_pcConstant;");
@@ -607,7 +626,7 @@ public class Program extends Test                                               
 
         if (LoadValue) new I()                                                                                          // Value of integer
          {void   a() {loadValue(I.i); jTrace(f("%8d ILST2 "+mv+" = %8d",  pc(), lui(I.i)));}
-          String v() {return          vTrace(  "%8d ILST2 "+mv+" = %8d", "pc",  intMemory().memory(MemoryIndex));}      // The memory module loads the corresponding value field automatically at the end of this instruction cycle
+          String v() {return          vTrace(  "%8d ILST2 "+mv+" = %8d", "pc",  intMemory().memory(mi));}               // The memory module loads the corresponding value field automatically at the end of this instruction cycle
          };
        }
 
@@ -617,14 +636,14 @@ public class Program extends Test                                               
      } // LoadSourceOrTarget
 
     void S ()                                                                                                           // Address first source integer and load its value
-     {new LoadSourceOrTarget(this, intMemory().vRead1IntIndex(), intMemory().vRead1Int(), true)
+     {new LoadSourceOrTarget(this, 1, true)
        {void loadId   (int I) {sourceIntId(I);}
         void loadValue(int V) {sourceInt  (V);}
        };
      }
 
     void S2 ()                                                                                                          // Address second source integer and loads its value
-     {new LoadSourceOrTarget(this, intMemory().vRead2IntIndex(), intMemory().vRead2Int(), true)
+     {new LoadSourceOrTarget(this, 2, true)
        {void loadId   (int I) {source2IntId(I);}
         void loadValue(int V) {source2Int  (V);}
        };
@@ -634,7 +653,7 @@ public class Program extends Test                                               
     void T (Ops Op) {T(Op != Ops.set && Op != Ops.del);}                                                                // Address target and load its value if needed
 
     void T (boolean LoadValue)                                                                                          // Address target optionally loading its value
-     {new LoadSourceOrTarget(this, intMemory().vRead0IntIndex(), intMemory().vRead0Int(), LoadValue)
+     {new LoadSourceOrTarget(this, 0, LoadValue)
        {void loadId   (int I) {targetIntId(I);}
         void loadValue(int V) {intMemory().read0Int = V;}                                                               // targetInt(V) would have set the write file rather than the read field
        };
@@ -3187,8 +3206,8 @@ Memory 2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_forLoops(false);
+   {oldTests();
+    //test_forLoops(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
