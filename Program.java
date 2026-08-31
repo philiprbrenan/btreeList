@@ -20,15 +20,16 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static boolean        suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
+ {final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final static boolean     supressIntegerUsageStatistics = true || github_actions;                                      // Print read/write usage of integers
+  final static boolean    suppressIntegerUsageStatistics = true || github_actions;                                      // Print read/write usage of integers
+  final static boolean       suppressInstructionCoverage =!true || github_actions;                                      // Track instruction execution by location in Java code where the instruction was generated
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
   final static String                     currentProject = "Integer usage";                                             // Project currently being worked on
 
@@ -53,7 +54,8 @@ public class Program extends Test                                               
   final        Stack<Int>                           ints;                                                               // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
   final        Stack<Bit>                           bits;                                                               // Bit variables processed in the same way as ints.
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
-  final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
+  final static TreeMap<String,Counter> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
+  final static TreeMap<String,Counter>  instructionCover = new TreeMap<>();                                             // Instruction coverage over all tests showing which parts of the java code has generated instructions which have and have not been executed
   final DumpLocations                      dumpLocations;                                                               // Locations in the code at which dumps have been requested
   final VerilogArrays                      verilogArrays;                                                               // Verilog read only array definitions that are mapped into a read only memory to prevent Yosys from expanding them.
   final TreeMap<Integer,Integer>              pcConstant;                                                               // Instruction equivalence set identified by program counter
@@ -189,6 +191,8 @@ public class Program extends Test                                               
   void pcConstant (I I, int   Target)    {pcConstant().put(I.instructionNumber, Target);}                               // Save a constant integer into the instruction to constant map
 
   String pV (      String Text)          {return pad(Text, padVerilog);}                                                // Pad Verilog expressions
+
+  static class Counter {int count = 0;}                                                                                 // A mutable counter
 
 //D1 Program                                                                                                            // Program execution structures.  The //D* comments are headers at different levels in the documentation describing this code
 
@@ -540,15 +544,15 @@ public class Program extends Test                                               
 //D2 Integer values                                                                                                     // Operations on integer values
 
   final class Int                                                                                                       // An integer value
-   {private int        i = 0;                                                                                           // Value of the integer
-    private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
-            String  name = null;                                                                                        // The name of the variable
-    final int         id = program().nextIntId++;                                                                       // Unique id for Int
-    final boolean    top = callerName() == "code";                                                                      // A declaration at the top level
-          boolean     in = false;                                                                                       // An input wire: named at the top and set by the constructor to a constant
-          boolean    out = false;                                                                                       // An output register named at the top and set by the constructor to the value of a variable
+   {private int          i = 0;                                                                                         // Value of the integer
+    private boolean      v = false;                                                                                     // Whether the current value of the integer is valid or not
+            String    name = null;                                                                                      // The name of the variable
+    final int           id = program().nextIntId++;                                                                     // Unique id for Int
+    final boolean      top = callerName() == "code";                                                                    // A declaration at the top level
+          boolean       in = false;                                                                                     // An input wire: named at the top and set by the constructor to a constant
+          boolean      out = false;                                                                                     // An output register named at the top and set by the constructor to the value of a variable
+    final String traceBack = suppressIntegerUsageStatistics ? null : traceBack();                                        // Location of this integer
     int nr0, nr1, nr2, nw, dup, reads, writes, bint;                                                                    // Number of reads and writes via instruction processing, number of duplications, number of reads and writes outside instructions
-    final String traceBack = supressIntegerUsageStatistics ? null : traceBack();                                        // Location of this integer
 
     int         i ()       {x();   reads++;  return i;}                                                                 // Get current value
     int         i (int I)  {i = I; writes++; return i;}                                                                 // Set current value value
@@ -1223,7 +1227,6 @@ public class Program extends Test                                               
 //D2 Memory references                                                                                                  // References to byte memory
 
     final class Ref                                                                                                     // Reference into memory
-//    final Int   offset = new Int("memoryReferenceOffset");                                                            // Offset of this reference in memory
      {final Int   offset = new Int();                                                                                   // Offset of this reference in memory
       final Memory     m = Memory.this;
 
@@ -1429,7 +1432,8 @@ endmodule
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber = program().code.size();                                                                // The number of this instruction
-    final String      traceBack = suppressTraceBackComments ?  null : traceBack();                                      // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String      traceBack = suppressTraceBackComments   ? null : traceBack();                                     // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String      traceTest = suppressInstructionCoverage ? null : traceTest();                                     // Line at which this instruction was created up to the enclosing test - suppressible because it imposes a lot of extra processing
     final String       traceSub = subsTrace;                                                                            // Sub during which this instruction was created
     final boolean        noJump;                                                                                        // The instruction will handle setting the program counter  if false
     int                executed = 0;                                                                                    // The number of times executed
@@ -1468,6 +1472,8 @@ endmodule
        }
       return "";
      }
+
+    void updateInstructionCoverage() {instructionCover.get(traceTest).count++;}                                         // Update instruction coverage by location in Java code where instruction was generated
 
 //D3 Verilog                                                                                                            // Generate Verilog for an instruction
 
@@ -1544,12 +1550,15 @@ endmodule
     initializeJavaMemory();                                                                                             // Initialize memory
     initializeJavaVars();                                                                                               // Initialize variables
 
+    if (!suppressInstructionCoverage) initializeInstructionCoverage();                                                    // Update instruction coverage by location in Java code where instruction was generated
+
     for(steps = 0; steps < maxSteps && pc >= 0 && pc < N; ++steps)                                                      // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
       try
        {currentPc = pc++;                                                                                               // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
         executing = i;                                                                                                  // Currently executing instruction
         jtrace    = 0;                                                                                                  // Number of java trace records produced
+        if (!suppressInstructionCoverage) i.updateInstructionCoverage();                                                // Update instruction coverage by location in Java code where instruction was generated
         i.a();                                                                                                          // Execute the instruction
         i.executed++;                                                                                                   // Count the executions of the instruction
         if (i.trace())                                                                                                  // Check tracing
@@ -1572,7 +1581,7 @@ endmodule
     else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steps unless we are going to print this in during the Verilog process
 
     printReadWriteUsage();                                                                                              // Print read write usage of integers
-    printExecutionCoverage();                                                                                           // Print details of which instructions were executed and which were not
+    printExecutionCoverageForTest();                                                                                    // Print details of which instructions were executed and which were not
 
     if (generateVerilog)                                                                                                // Run Verilog
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
@@ -1642,6 +1651,12 @@ cd {f}; yosys -q {y}                                                            
       say(message);                                                                                                     // Report Verilog statistics
       appendFile(verilogLogFolder.log$(),  message+ "\n");                                                              // Log in text format
       appendFile(verilogLogFolder.json$(), "{"+json+"}\n");                                                             // Log in json format
+     }
+   }
+
+  void initializeInstructionCoverage()                                                                                  // Initialize instruction coverage by location in Java code of each new instruction encountered
+   {for (I i: program().code)
+     {if (!instructionCover.containsKey(i.traceTest)) instructionCover.put(i.traceTest, new Counter());                 // Only initialize if we have not seen this instruction before and have already started recording execution counts for it
      }
    }
 
@@ -1770,13 +1785,13 @@ cd {f}; yosys -q {y}                                                            
   static void subStart (String Name)
    {subs.push(Name);
     subsTrace = joinStrings(subs, "\n");                                                                                // Trace of active subs
-    if (!instructionCounts.containsKey(Name)) instructionCounts.put(Name, 0);                                           // Initialize instruction count for this subroutine
+    if (!instructionCounts.containsKey(Name)) instructionCounts.put(Name, new Counter());                               // Initialize instruction count for this subroutine
    }
 
   static void subInc ()                                                                                                 // Increment the number of instructions associated with a method
    {if (subs.size() > 0)
      {final String n = subs.lastElement();
-      instructionCounts.put(n, instructionCounts.get(n) + 1);
+      instructionCounts.get(n).count++;
      }
    }
 
@@ -1785,22 +1800,25 @@ cd {f}; yosys -q {y}                                                            
     subs.pop();
    }
 
-  static String subPrint ()                                                                                             // Print instruction counts
+  static String subPrint()                                                                                              // Print instruction counts
    {final StringBuilder s = new StringBuilder();
-    int N = 0;
-    final List<Map.Entry<String, Integer>> sorted = instructionCounts.entrySet().stream()
-                                                   .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-                                                   .toList();
-    for (Map.Entry<String, Integer> e : sorted)
-     {s.append(f("%,12d  %s\n", e.getValue(), e.getKey()));
-      N += e.getValue();
+
+    final List<Map.Entry<String, Counter>> sorted = new ArrayList<>(instructionCounts.entrySet());                      // Make a list of the map entries
+    sorted.sort((a, b) -> Integer.compare(a.getValue().count, b.getValue().count));                                     // Sort the entries by count, largest first
+    int N = 0;                                                                                                          // Print the entries and calculate the total
+
+    for (Map.Entry<String, Counter> e : sorted)                                                                         // Print with the most called methods first
+     {final int count = e.getValue().count;
+      s.append(f("%,12d  %s\n", count, e.getKey()));
+      N += count;
      }
-    s.append(f("%,8d  Total\n", N));
+    s.append(f("%,8d  Total\n", N));                                                                                    // Total number of calls
+
     return ""+s;
    }
 
   void printReadWriteUsage ()                                                                                           // Print reads and writes for each integer
-   {if (supressIntegerUsageStatistics || ints().size() == 0) return;                                                      // No integers were used
+   {if (suppressIntegerUsageStatistics || ints().size() == 0) return;                                                   // No integers were used
     final List<List<Integer>> columns = new ArrayList<>();
     for (int j = 0; j < 10; ++j) columns.add(new ArrayList<>());                                                        // Count of columns requiring statistics
 
@@ -1844,7 +1862,7 @@ cd {f}; yosys -q {y}                                                            
     say(""+s);
    }
 
-  void printExecutionCoverage ()                                                                                        // Print the number of instructions executed and not executed by this test
+  void printExecutionCoverageForTest ()                                                                                 // Print the number of instructions executed and not executed by this test
    {int e = 0, n = 0, m = 0, t = 0;                                                                                     // Executed, not executed, most executed, total executed
 
     for (I i : program().code)                                                                                          // Each instruction
@@ -1853,7 +1871,25 @@ cd {f}; yosys -q {y}                                                            
      }
     final int cp = 100*e/code.size();
     final int mp = 100*m/t;
-    say(f("Instruction execution Cover: %4d, single: %4d, total: %8d", cp, mp, t));
+    say(f("Instruction execution cover for %s: %4d%%, single: %4d%%, total: %8d", testName(), cp, mp, t));
+   }
+
+  static void printExecutionCoverageGlobal (Integer Max)                                                                // Print the locations in the java code that produced instructions that were never tested
+   {int n = 0;
+    boolean print = true;
+    for (String t : instructionCover.keySet())                                                                          // Each Java location that generated an instruction
+     {final Counter c = instructionCover.get(t);
+      if (c.count == 0)                                                                                                 // Print details of instructions never executed
+       {++n;
+        if (print) say(f("%4d  Instruction not executed:\n%s", n, t));
+       }
+      if (print && Max != null && n == Max)                                                                             // Stop printing if the report gets too big and an output limit has been requested
+       {say("Terminating instructions not executed report due to size limit:", Max);
+        print = false;
+       }
+     }
+    if (instructionCover.size() > 0 && n == 0) say("All generated instructions executed at least once");
+    if (instructionCover.size() > 0 && n  > 0) say("Number of instructions generated but not executed is:", n);
    }
 
 //D1 Verilog                                                                                                            // Generate Verilog
@@ -3288,6 +3324,7 @@ Memory 2
      {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Code coverage
+      printExecutionCoverageGlobal(10);                                                                                 // Find locations in the java code that generated instructions that were never tested
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
