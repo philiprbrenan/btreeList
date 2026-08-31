@@ -397,6 +397,8 @@ class Branch extends Program implements Program.Locatable                       
 
 //D1 Tests                                                                                                              // Tests
 
+  void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
+
   static void test_branch(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
