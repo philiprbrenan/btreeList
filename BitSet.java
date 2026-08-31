@@ -638,6 +638,7 @@ final public class BitSet extends Program                                       
        {new If (getBitNC(Q))                                                                                            // Adjacent bit exists and is set so we must search
          {void Then()                                                                                                   // Found the adjacent bit to the right
            {p.set(parentZero(p));                                                                                       // Move int zeros tree
+stop();
             new For(logBitSize())                                                                                       // Traverse down through the tree to the root
              {void body(Int I, Bit C)
                {final Int q = p.Inc();                                                                                  // Next bit over
@@ -862,7 +863,8 @@ final public class BitSet extends Program                                       
    }
 
   static void test_prevNext(boolean Ex)
-   {final BitSet b = testBits(Ex, 32);
+   {sayCurrentTestName();
+    final BitSet b = testBits(Ex, 32);
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
     for (int i : s) b.set(b.new Int(i));
     b.ok(()->b, """
@@ -1729,6 +1731,8 @@ Zero:
     final int N = 8;
     final BitSet b = testBits(Ex, N);
 
+    for (int i : range(N)) b.set  (b.new Int(i));
+    for (int i : range(N)) b.clear(b.new Int(i));
     for (int i : range(N)) if (i == 2 || i == 4 || i == 5 || i == 6) b.set(b.new Int(i));
 
     //stop(b);
@@ -1774,7 +1778,7 @@ Zero:
 
   static void newTests()                                                                                                // Tests under development.
    {oldTests();
-    //test_fullEmpty( 9, false);
+    //test_b4(false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
@@ -1783,6 +1787,7 @@ Zero:
      {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Select tests.
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Optional coverage analysis.
+      printExecutionCoverageGlobal(4);                                                                                 // Find locations in the java code that generated instructions that were never tested
       testSummary();                                                                                                    // Summarize test results.
       System.exit(testsFailed);                                                                                         // Exit with status.
      }
