@@ -1791,6 +1791,7 @@ Leaf           size:   4, count:   2
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       //if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
       //say(subPrint());
+      printExecutionCoverageGlobal(4);                                                                                 // Find locations in the java code that generated instructions that were never tested
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
