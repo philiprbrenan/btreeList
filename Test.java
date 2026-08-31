@@ -417,24 +417,6 @@ public class Test                                                               
 
 //D1 Traceback                                                                                                          // Trace back so we know where we are
 
-  static Stack<String> traceNames ()                                                                                    // Containing method names
-   {final StackTraceElement[]  t = Thread.currentThread().getStackTrace();
-    final Stack<String>        T = new Stack<>();
-
-    for(StackTraceElement s : t)
-     {final String m = s.getMethodName();
-      if (m.equals("<init>")) continue;
-      T.insertElementAt(m, 0);
-     }
-    T.pop();                                                                                                            // Remove this method from the stack
-    return T;
-   }
-
-  static String traceNamesString ()                                                                                     // Containing method names as a dotted string
-   {final Stack<String> s  = traceNames(); s.pop();                                                                     // Remove our method name
-    return joinStrings(s, ".");
-   }
-
   static String fullTraceBack (Exception e)                                                                             // Get a full stack trace that we can use in Geany
    {final StackTraceElement[]  t = e.getStackTrace();
     final StringBuilder        b = new StringBuilder();
@@ -516,17 +498,32 @@ public class Test                                                               
     return null;
    }
 
+  static String traceTest ()                                                                                            // Trace back showing the current position in a test
+   {final StackTraceElement[]t = new Exception().getStackTrace();
+    final StringBuilder      S = new StringBuilder();
+    for(int i = 0; i < t.length; ++i)
+     {final String m = t[i].getMethodName();
+      if (m.matches("\\Atest_.*\\Z")) return ""+S;
+      final StackTraceElement s = t[i];
+      final String            f = s.getFileName();
+      final String            l = String.format("%04d", s.getLineNumber());
+      S.append(f+":"+l+":"+m+"\n");
+     }
+    stop("Not called in a test");
+    return null;
+   }
+
   static double elapsedTime ()                                                                                          // Elapsed time since last call or start of run
    {final double  d = elapsedTime(currentTestTime);
     currentTestTime = System.nanoTime();
     return d;
    }
 
-  static void sayCurrentTestName () {say(f("%2d %8.2f", ++currentTestNumber, elapsedTime()), testName());}       // Name of the current test
+  static void sayCurrentTestName () {say(f("%2d %8.2f", ++currentTestNumber, elapsedTime()), testName());}              // Name of the current test
 
   static String testLine()                                                                                              // Locate line associated with the current test
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
-    final String T = testName();                                                                                 // Current test name
+    final String T = testName();                                                                                        // Current test name
     for(int i = 0; i < t.length; ++i)
      {final StackTraceElement s = t[i];
       if (s.getMethodName().equals(T))
@@ -1738,6 +1735,8 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 """);
    }
 
+  static String testCallerName(int Level) {return Level > 0 ?  testCallerName(Level-1) : traceTest();}
+
   static void test_callerName()
    {ok(callerName(), "test_callerName");
     class Caller
@@ -1748,6 +1747,13 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      }
     final Caller c = new Caller();
     ok(c.name, "test_callerName");
+    ok(testCallerName(3).matches("""
+Test.java:....:traceTest
+Test.java:....:testCallerName
+Test.java:....:testCallerName
+Test.java:....:testCallerName
+Test.java:....:testCallerName
+"""));
    }
 
   static void test_trimRightAndPad()
