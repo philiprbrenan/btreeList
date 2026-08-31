@@ -511,8 +511,8 @@ public class Test                                                               
       final String f = s.getFileName();
       final String m = s.getMethodName();
       final int    l = s.getLineNumber();
-      if (f.equals(F) && l > L) {say("AAAA", S); return ""+S;}                                                          // We have reached some test code in the main file
-      S.append(f+":"+l+":"+m+"\n");
+      if (f.equals(F) && l > L) return ""+S;                                                                            // We have reached some test code in the main file
+      if (f.equals(F)) S.append(f+":"+l+":"+m+"\n");
 
      }
     stop("Not called from a test");
