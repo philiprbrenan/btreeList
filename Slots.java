@@ -2436,6 +2436,7 @@ keys     :    0   0   0   0
      {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
+      printExecutionCoverageGlobal(4);                                                                                  // Find locations in the java code that generated instructions that were never tested
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
