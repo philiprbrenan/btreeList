@@ -638,7 +638,6 @@ final public class BitSet extends Program                                       
        {new If (getBitNC(Q))                                                                                            // Adjacent bit exists and is set so we must search
          {void Then()                                                                                                   // Found the adjacent bit to the right
            {p.set(parentZero(p));                                                                                       // Move int zeros tree
-stop();
             new For(logBitSize())                                                                                       // Traverse down through the tree to the root
              {void body(Int I, Bit C)
                {final Int q = p.Inc();                                                                                  // Next bit over
@@ -852,6 +851,8 @@ stop();
    }
 
 //D1 Tests                                                                                                              // Tests
+
+  void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
 
   static BitSet testBits(boolean Ex, int N) {return testBits(Ex, N, false);}                                            // Create test bitset.
   static BitSet testBits(boolean Ex, int N, boolean Count)                                                              // Create test bitset.
