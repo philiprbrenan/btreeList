@@ -1773,8 +1773,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();
-    test_fullEmpty( 9, false);
+   {oldTests();
+    //test_fullEmpty( 9, false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
