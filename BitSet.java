@@ -152,7 +152,7 @@ final public class BitSet extends Program                                       
     subFinish();
    }
 
-  Bit      getBit (Int Index)  {if (immediate()) checkInActual(Index); return getBitNC(Index);}                         // Get a bit from the bit set
+  Bit      getBit  (Int Index)  {if (immediate()) checkInActual(Index); return getBitNC(Index);}                         // Get a bit from the bit set
   Bit     getBitNC (Int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
   boolean getBitNC (int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
 
