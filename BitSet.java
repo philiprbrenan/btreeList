@@ -165,17 +165,6 @@ final public class BitSet extends Program                                       
     subFinish();
    }
 
-  void    setBitNC22 (Int Index, boolean B)                                                                             // Set a bit to a value known at compile time
-   {subStart     ("Bitset.setBitNC_IB");
-    final String f = "%8d setBitNC_IB writeBool = %8d";
-    new I()                                                                                                             // Set target boolean directly
-     {void   a() {memoryRef.m.writeBit = B;                                 jTrace(f(f,  currentPc(), B ?  1  :  0));}
-      String v() {return memoryRef.m.vWriteBit() + " <= " + (B ? 1 : 0)+";"+vTrace(  f, "pc",         B ? "1" : "0");}
-     };
-    memoryRef.putBit(Index, null);                                                                                      // Save target boolean into memory
-    subFinish();
-   }
-
   void setOnePath (Int Index)                                                                                           // Set bits along the path from the indexed bit to the root of the ones tree
    {subStart("Bitset.setOnePath");
     final Int p = parentOne(Index);                                                                                     // Position in ones tree
@@ -1785,7 +1774,7 @@ Zero:
 
   static void newTests()                                                                                                // Tests under development.
    {//oldTests();
-    test_prevNext10(false);
+    test_fullEmpty( 9, false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
