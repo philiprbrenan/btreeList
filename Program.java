@@ -7,7 +7,8 @@
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
 // Check how often each variable is read or written to eliminate variables that are only used once
 // Use parallel loads in putBit etc as marked with Improvement:
-// pippit.ai
+// Use traceback for each instruction to do coverage analysis over the entore system, use execuition count for each instruction for each test
+// Find high use variables using printIntegerReadWriteUsage and replace them with verilog variables
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -1431,6 +1432,7 @@ endmodule
     final String      traceBack = suppressTraceBackComments ?  null : traceBack();                                      // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String       traceSub = subsTrace;                                                                            // Sub during which this instruction was created
     final boolean        noJump;                                                                                        // The instruction will handle setting the program counter  if false
+    int                executed = 0;                                                                                    // The number of times executed
 
     I (boolean NoJump)                                                                                                  // Add this instruction to the code for the process
      {ai();                                                                                                             // Prevent addition of new instructions and allocations while compiling this instruction
@@ -1547,8 +1549,9 @@ endmodule
       try
        {currentPc = pc++;                                                                                               // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
         executing = i;                                                                                                  // Currently executing instruction
-        jtrace = 0;
-        i.a();
+        jtrace    = 0;                                                                                                  // Number of java trace records produced
+        i.a();                                                                                                          // Execute the instruction
+        i.executed++;                                                                                                   // Count the executions of the instruction
         if (i.trace())                                                                                                  // Check tracing
          {if (jtrace != i.traces())                                                                                     // Wrong number of trace calls
            {stop("Wrong number of Java traces generated, got:", jtrace, "expected:", i.traces(),
@@ -1569,6 +1572,7 @@ endmodule
     else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steps unless we are going to print this in during the Verilog process
 
     printReadWriteUsage();                                                                                              // Print read write usage of integers
+    printExecutionCoverage();                                                                                           // Print details of which instructions were executed and which were not
 
     if (generateVerilog)                                                                                                // Run Verilog
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
@@ -1838,6 +1842,18 @@ cd {f}; yosys -q {y}                                                            
      }
     s.append("\n");
     say(""+s);
+   }
+
+  void printExecutionCoverage ()                                                                                        // Print the number of instructions executed and not executed by this test
+   {int e = 0, n = 0, m = 0, t = 0;                                                                                     // Executed, not executed, most executed, total executed
+
+    for (I i : program().code)                                                                                          // Each instruction
+     {final int x = i.executed;
+      t += x; if (x == 0) ++n; else ++e; m = max(m, x);
+     }
+    final int cp = 100*e/code.size();
+    final int mp = 100*m/t;
+    say(f("Instruction execution Cover: %4d, single: %4d, total: %8d", cp, mp, t));
    }
 
 //D1 Verilog                                                                                                            // Generate Verilog
