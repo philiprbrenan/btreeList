@@ -546,8 +546,8 @@ public class Program extends Test                                               
     final boolean    top = callerName() == "code";                                                                      // A declaration at the top level
           boolean     in = false;                                                                                       // An input wire: named at the top and set by the constructor to a constant
           boolean    out = false;                                                                                       // An output register named at the top and set by the constructor to the value of a variable
-    int nr0, nr1, nr2, nw, dup, reads, writes;                                                                          // Number of reads and writes via instruction processing, number of duplications, number of reads and writes outside instructions
-    final String traceBack = suppressTraceBackComments ? null : traceBack();                                            // Location of this integer
+    int nr0, nr1, nr2, nw, dup, reads, writes, bint;                                                                    // Number of reads and writes via instruction processing, number of duplications, number of reads and writes outside instructions
+    final String traceBack = supressIntegerUsageStatistics ? null : traceBack();                                        // Location of this integer
 
     int         i ()       {x();   reads++;  return i;}                                                                 // Get current value
     int         i (int I)  {i = I; writes++; return i;}                                                                 // Set current value value
@@ -586,8 +586,8 @@ public class Program extends Test                                               
     Int  abs ()       {return ie(Ops.abs    );}
     Int  del (int  I) {return ie(Ops.del , I);}
 
-    Int ie (Ops Op)       {T();        new I(){void a() {ex(Op   );} String v() {return ev(Op   );}}; W(); return this;}// Create an instruction that can either be executed immediately one by one or later en masse
-    Int ie (Ops Op, Int I){T(); I.S(); new I(){void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;}
+    Int ie (Ops Op)       {T();          new I(){void a() {ex(Op   );} String v() {return ev(Op   );}}; W(); return this;} // Create an instruction that can either be executed immediately one by one or later en masse
+    Int ie (Ops Op, Int I){T(Op); I.S(); new I(){void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;}
     Int ie (Ops Op, int I)                                                                                              // Selectively loaded target, store constant for this instruction in the constants map
      {T(Op);                                                                                                            // Instruction to load target details if needed for the operation otherwise just the index of the target as in the cases of set and del
       final I i = new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}};                                       // Perform operation
@@ -624,20 +624,20 @@ public class Program extends Test                                               
      }
 
     abstract class LoadSourceOrTarget                                                                                   // Set index and values of memory for integer variables
-     {LoadSourceOrTarget(Int I, int Register, boolean LoadValue)                                                        // The value should not be set for operations where the target already contains the value to store
+     {LoadSourceOrTarget(int Register, boolean LoadValue)                                                               // The value should not be set for operations where the target already contains the value to store
        {final String mi = pV(indexRegisterName(Register));                                                              // Index register
         final String mv = pV(     registerName(Register));                                                              // Value register
 
-        final I i = new I()                                                                                             // Load index of integer
+        final I index = new I()                                                                                             // Load index of integer
          {final String c = mi + pV(" <= arrayData_pcConstant;");
-          void   a() {loadId(id);  jTrace(f("%8d ILST1 "+mi+" = %8d",  pc(), id)                  ); if (LoadValue) incUsage(Register);}
+          void   a() {loadId(id);  jTrace(f("%8d ILST1 "+mi+" = %8d",  pc(), id)                  );}
           String v() {return c+" "+vTrace(  "%8d ILST1 "+mi+" = %8d", "pc", "arrayData_pcConstant");}
          };
-        pcConstant(i, I.id);                                                                                            // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
+        pcConstant(index, id);                                                                                          // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
 
         if (LoadValue) new I()                                                                                          // Value of integer
-         {void   a() {loadValue(I.i); jTrace(f("%8d ILST2 "+mv+" = %8d",  pc(), lui(I.i)));}
-          String v() {return          vTrace(  "%8d ILST2 "+mv+" = %8d", "pc",  intMemory().memory(mi));}             // The memory module loads the corresponding value field automatically at the end of this instruction cycle
+         {void   a() {loadValue(i()); jTrace(f("%8d ILST2 "+mv+" = %8d",  pc(), lui(i))); if (LoadValue) incUsage(Register);}
+          String v() {return          vTrace(  "%8d ILST2 "+mv+" = %8d", "pc",  intMemory().memory(mi));}               // The memory module loads the corresponding value field automatically at the end of this instruction cycle
          };
        }
 
@@ -647,14 +647,14 @@ public class Program extends Test                                               
      } // LoadSourceOrTarget
 
     void S ()                                                                                                           // Address first source integer and load its value
-     {new LoadSourceOrTarget(this, 1, true)
+     {new LoadSourceOrTarget(1, true)
        {void loadId   (int I) {sourceIntId(I);}
         void loadValue(int V) {sourceInt  (V);}
        };
      }
 
     void S2 ()                                                                                                          // Address second source integer and loads its value
-     {new LoadSourceOrTarget(this, 2, true)
+     {new LoadSourceOrTarget(2, true)
        {void loadId   (int I) {source2IntId(I);}
         void loadValue(int V) {source2Int  (V);}
        };
@@ -664,7 +664,7 @@ public class Program extends Test                                               
     void T (Ops Op) {T(Op != Ops.set && Op != Ops.del);}                                                                // Address target and load its value if needed
 
     void T (boolean LoadValue)                                                                                          // Address target optionally loading its value
-     {new LoadSourceOrTarget(this, 0, LoadValue)
+     {new LoadSourceOrTarget(0, LoadValue)
        {void loadId   (int I) {targetIntId(I);}
         void loadValue(int V) {intMemory().read0Int = V;}                                                               // targetInt(V) would have set the write file rather than the read field
        };
@@ -957,20 +957,20 @@ public class Program extends Test                                               
    {private final Bit b = new Bit(false);                                                                               // Whether the associated integer is valid or invalid
     private final Int i = new Int();                                                                                    // The integer component
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
-    Bit    b ()      {return b;}                                                                                        // Return boolean component
+    Bit    b ()      {i.bint++;          return b;   }                                                                  // Return boolean component
     Int    i ()
      {new If (b.Flip()) {void Then() {stop("Requested int component from unset Bint");}};                               // Complain if there is no integer component to return
       return new Int(i);
      }
 
-    Bit       valid () {return b;}                                                                                      // Whether the boolean integer is valid
-    Bit    notValid () {return b.Flip();}                                                                               // Whether the boolean integer is invalid
-    Bint invalidate () {b.clear(); return this;}                                                                        // Mark the integer as invalid after all
+    Bit       valid () {i.bint++;            return b;       }                                                          // Whether the boolean integer is valid
+    Bit    notValid () {i.bint++;            return b.Flip();}                                                          // Whether the boolean integer is invalid
+    Bint invalidate () {i.bint++; b.clear(); return this;    }                                                          // Mark the integer as invalid after all
 
     Bint copy (Bint Source)                                                                                             // Copy a boolean integer
      {new If (Source.b)
        {void Then() {b.set(); i.set(Source.i());}                                                                       // Set target as valid to match source and copy the source integer
-        void Else() {b.clear();};                                                                                       // Set target as invalid to match source
+        void Else() {i.bint++; b.clear();};                                                                             // Set target as invalid to match source
        };
       return this;
      }
@@ -1796,24 +1796,27 @@ cd {f}; yosys -q {y}                                                            
    }
 
   void printReadWriteUsage ()                                                                                           // Print reads and writes for each integer
-   {if (!supressIntegerUsageStatistics || ints.size() == 0) return;                                                     // No integers were used
+   {if (supressIntegerUsageStatistics || ints().size() == 0) return;                                                      // No integers were used
     final List<List<Integer>> columns = new ArrayList<>();
-    for (int j = 0; j < 9; ++j) columns.add(new ArrayList<>());                                                         // 9 columns requiring statistics
+    for (int j = 0; j < 10; ++j) columns.add(new ArrayList<>());                                                        // Count of columns requiring statistics
 
     say("Read/write statistics for integers:", ints.size());                                                            // Header
-    say(f("%5s  %5s  %5s  %5s  %5s  %5s  %5s  %5s  %5s  %5s%s\n",
-          "id", "Read", "Write", "mw+", "write", "r0+", "r1+", "r2+", "dup+", "read", "  Name"));
+    say(f("%5s  %5s  %5s  %5s  %5s  %5s  %5s  %5s  %5s  %5s  %5s%s\n",
+          "id", "Read", "Write", "mw+", "write", "r0+", "r1+", "r2+", "dup+", "read+", "bint", "  Name"));
 
     for (Int i : ints())                                                                                                // Each integer
-     {final int   r = i.nr0 + i.nr1 + i.nr2 + i.dup + i.reads;                                                          // Total reads
+     {final int   r = i.nr0 + i.nr1 + i.nr2 + i.dup + i.reads + i.bint;                                                 // Total reads
       final int   w = i.nw  + i.writes;                                                                                 // Total writes
-      final int[] v = {r, w, i.nw, i.writes, i.nr0, i.nr1, i.nr2, i.dup, i.reads};
+      final int[] v = {r, w, i.nw, i.writes, i.nr0, i.nr1, i.nr2, i.dup, i.reads, i.bint};
 
       for (int j = 0; j < v.length; ++j) columns.get(j).add(v[j]);
 
-      if (false) say(f("%5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d%s\n",
-         i.id, r, w, i.nw, i.writes, i.nr0, i.nr1, i.nr2, i.dup, i.reads,
-         i.name != null ? "  " + i.name : ""));
+      if (r == 0)                                                                                                       // These occur too often so investigate why they do
+       {say(f("%5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d%s\n",
+          i.id, r, w, i.nw, i.writes, i.nr0, i.nr1, i.nr2, i.dup, i.reads, i.bint,
+          i.name != null ? "  " + i.name : ""));
+        say(i.traceBack);
+       }
      }
 
     for (List<Integer> c : columns) c.sort(Integer::compare);                                                           // Sort each column so that median, minimum and maximum can be obtained directly.
@@ -2522,9 +2525,9 @@ endmodule
        {final Int a = new Int("a", 1);
         final Int b = new Int("b", a.Add(2));
         b.Add(1).name = "c";
-        //a.ok(1);
-        //b.ok(3);
-        //dumpProgramState("AAAA");
+        a.ok(1);
+        b.ok(3);
+        dumpProgramState("AAAA");
         scDieAreaX = 300; scDieAreaY = 400;
         execute();
        }
@@ -2717,7 +2720,7 @@ endmodule
               a.ok(0);
         a.inc().ok(1);
         a.inc().ok(2);
-        final Int A = new Int("A").set(a);
+        a.dec().ok(1);
         scDieAreaX = 300; scDieAreaY = 300;
         execute();
        }
