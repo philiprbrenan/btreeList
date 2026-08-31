@@ -300,7 +300,18 @@ final public class BitSet extends Program                                       
   int         posOne (int P)   {return 1 * bitSize + P;}                                                                // Position in the ones  tree if it exists, argument is zero based as is the result
   int        posZero (int P)   {return 2 * bitSize + P - 1;}                                                            // Position in the zeros tree if it exists, argument is zero based as is the result
 
-  Int      zeroToOne (Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Sub(bitSize1));}}; return r;} // Translate from Zeros tree to Ones tree
+  Int      zeroToOne (Int Pos)
+  {final Int r = new Int();
+    new If (Pos.lt(bitSize))
+    {void Then()
+      {r.set(Pos);
+      }
+     void Else()
+      {r.set(Pos.Sub(bitSize1));
+      }
+     };
+    return r;
+   } // Translate from Zeros tree to Ones tree
   Int      oneToZero (Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
 
   Int   childHighOne (Int Pos) {return childLowOne(Pos).inc();}                                                         // Step to the corresponding child high bit index from this parent bit index
