@@ -19,16 +19,17 @@ import java.security.*;
 //D1 Construct                                                                                                          // Test a java program describing a chip
 
 public class Test                                                                                                       // Test a java program describing a chip
- {final static boolean            github_actions = "true".equals(System.getenv("GITHUB_ACTIONS"));                      // Whether we are on a github
-  final static boolean                   aws_run = folderExists("/home/ubuntu");                                        // Whether we are running on AWS
-  final static boolean                 local_run = !github_actions && !aws_run;                                         // Whether we are running locally
-  final static long                        start = System.nanoTime();                                                   // Start time
-  final static String          github_commit_sha = System.getenv("GITHUB_SHA");                                         // Github commit sha if running as a github action
-  final static Stack<String>       sayThisOrStop = new Stack<>();                                                       // The next says should say this or else we should stop
-  final static TreeSet<String>      filesWritten = new TreeSet<>();                                                     // Files written
-  final static TreeSet<String>     testsExecuted = new TreeSet<>();                                                     // Tests executed
-  final static boolean          coverageAnalysis = false;                                                               // Enables coverage checks
-  static       boolean                     debug = false;                                                               // Global debug flag
+ {final static boolean                 github_actions = "true".equals(System.getenv("GITHUB_ACTIONS"));                 // Whether we are on a github
+  final static boolean                        aws_run = folderExists("/home/ubuntu");                                   // Whether we are running on AWS
+  final static boolean                      local_run = !github_actions && !aws_run;                                    // Whether we are running locally
+  final static long                             start = System.nanoTime();                                              // Start time
+  final static String               github_commit_sha = System.getenv("GITHUB_SHA");                                    // Github commit sha if running as a github action
+  final static Stack<String>            sayThisOrStop = new Stack<>();                                                  // The next says should say this or else we should stop
+  final static TreeSet<String>           filesWritten = new TreeSet<>();                                                // Files written
+  final static TreeSet<String>          testsExecuted = new TreeSet<>();                                                // Tests executed
+  final static TreeMap<String,Integer> testsStartHere = new TreeMap<>();                                                // The line number at which the tests start in each file so we can separate code written to test and code written to be tested
+  final static boolean               coverageAnalysis = false;                                                          // Enables coverage checks
+  static       boolean                          debug = false;                                                          // Global debug flag
 // Uncomment zz for methods not called analysis
 // Uncomment z  for blocks not called analysis
   final static String   coverageAnalysisSubStart = "zz"+"();";                                                          // A string indicating the start of a subroutine - method entries only
@@ -41,6 +42,8 @@ public class Test                                                               
 
   static double elapsedTime (Long Start) {return (System.nanoTime() - Start) / 1_000_000_000.0;}                        // Elapsed time in seconds since start
   static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
+
+  Test() {testsStartHere();}                                                                                            // Constructor
 
   Test Test() {return this;}                                                                                            // Instance
 
@@ -499,17 +502,20 @@ public class Test                                                               
    }
 
   static String traceTest ()                                                                                            // Trace back showing the current position in a test
-   {final StackTraceElement[]t = new Exception().getStackTrace();
-    final StringBuilder      S = new StringBuilder();
+   {final StackTraceElement[]t = new Exception().getStackTrace();                                                       // Trace back actual
+    final StringBuilder      S = new StringBuilder();                                                                   // Trace back recorded
+    final String             F = mainFileName();                                                                        // Main file
+    final int                L = testsStartHere.get(F);                                                                 // Boundary between test and production code in main file
     for(int i = 0; i < t.length; ++i)
-     {final String m = t[i].getMethodName();
-      if (m.matches("\\Atest_.*\\Z")) return ""+S;
-      final StackTraceElement s = t[i];
-      final String            f = s.getFileName();
-      final String            l = String.format("%04d", s.getLineNumber());
+     {final StackTraceElement s = t[i];
+      final String f = s.getFileName();
+      final String m = s.getMethodName();
+      final int    l = s.getLineNumber();
+      if (f.equals(F) && l > L) {say("AAAA", S); return ""+S;}                                                          // We have reached some test code in the main file
       S.append(f+":"+l+":"+m+"\n");
+
      }
-    stop("Not called in a test");
+    stop("Not called from a test");
     return null;
    }
 
@@ -545,7 +551,7 @@ public class Test                                                               
     return null;                                                                                                        // No method written in camel case
    }
 
-  static String callerName ()                                                                                           // Looks for the first method abovce this one that is not an initializer of a class
+  static String callerName ()                                                                                           // Looks for the first method aboce this one that is not an initializer of a class
    {final StackTraceElement[] T = Thread.currentThread().getStackTrace();                                               // Current stack trace
     for (StackTraceElement t : T)
      {final String c = t.getMethodName();
@@ -1497,6 +1503,18 @@ public class Test                                                               
    }
 
 //D1 Tests                                                                                                              // Tests
+
+  void testsStartHere()                                                                                                 // Line number in the current file where tests start - so many call made from this point onwards shopuld be assumed to be part of teh test harness rather then teh code to be tested
+   {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
+    for(int i = t.length-1; i >= 0; --i)
+     {final StackTraceElement s = t[i];
+      if (s.getMethodName().equals("testsStartHere"))
+       {testsStartHere.put(s.getFileName(), s.getLineNumber());
+        return;
+       }
+     }
+    stop("Unable to locate where tests start");
+   }
 
   static void test_log_two()
    {ok(logTwo(0), 0);
