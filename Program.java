@@ -7,7 +7,7 @@
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
 // Check how often each variable is read or written to eliminate variables that are only used once
 // Use parallel loads in putBit etc as marked with Improvement:
-// Use traceback for each instruction to do coverage analysis over the entore system, use execuition count for each instruction for each test
+// Use traceback for each instruction to do coverage analysis over the entire system, use execuition count for each instruction for each test
 // Find high use variables using printIntegerReadWriteUsage and replace them with verilog variables
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -1550,7 +1550,7 @@ endmodule
     initializeJavaMemory();                                                                                             // Initialize memory
     initializeJavaVars();                                                                                               // Initialize variables
 
-    if (!suppressInstructionCoverage) initializeInstructionCoverage();                                                    // Update instruction coverage by location in Java code where instruction was generated
+    if (!suppressInstructionCoverage) initializeInstructionCoverage();                                                  // Update instruction coverage by location in Java code where instruction was generated
 
     for(steps = 0; steps < maxSteps && pc >= 0 && pc < N; ++steps)                                                      // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
@@ -1784,7 +1784,7 @@ cd {f}; yosys -q {y}                                                            
 
   static void subStart (String Name)
    {subs.push(Name);
-    subsTrace = joinStrings(subs, "\n");                                                                                // Trace of active subs
+    subsTrace = joinStrings(subs, "\n");                                                                                // Trace of active subs to avoid recomputing the trace back each time
     if (!instructionCounts.containsKey(Name)) instructionCounts.put(Name, new Counter());                               // Initialize instruction count for this subroutine
    }
 
@@ -1798,6 +1798,7 @@ cd {f}; yosys -q {y}                                                            
   static void subFinish ()                                                                                              // Finish a subroutine definition
    {if (subs.size() == 0) stop("No matching subStart()");
     subs.pop();
+    subsTrace = subs.size() == 0 ? null : joinStrings(subs, "\n");                                                      // Trace of active subs to avoid recomputing the trace back each time
    }
 
   static String subPrint()                                                                                              // Print instruction counts
@@ -2443,7 +2444,9 @@ endmodule
      } // Array
    } // VerilogArrays
 
-//D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
+//D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
+
+  void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
 
   static void deleteAllFileInVerilogTestsFolder() {deleteAllFiles(verilogTestsFolder.folder, 9999);}                    // Delete generated Verilog files created by a prior run of the current test
 
