@@ -1779,7 +1779,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_update();
+    test_insertRandom32(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
@@ -1799,3 +1799,4 @@ Leaf           size:   4, count:   2
      }
    }
  }
+// perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Tree.java" --javaHome "/home/phil/btreeList"
