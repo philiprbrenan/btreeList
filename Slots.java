@@ -1026,7 +1026,7 @@ class Slots extends Program                                                     
 
 //D1 Tests                                                                                                              // Tests
 
-//D2 Slots                                                                                                              // Test the slots
+  void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
 
   static void test_slots (boolean Ex)
    {sayCurrentTestName();
