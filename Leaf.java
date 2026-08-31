@@ -276,6 +276,8 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D1 Tests                                                                                                              // Tests
 
+  void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
+
   static void test_leaf(boolean Ex)
    {sayCurrentTestName();
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
