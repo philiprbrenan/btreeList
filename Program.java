@@ -310,7 +310,7 @@ public class Program extends Test                                               
         Then();                                                                                                         // Then body
         final I Else = new I(false)                                                                                     // Jump over else to end
          {void     a() {program().pc  = end.offset;}
-          String   v() {return "pc <= arrayData_pcConstant;";}
+          String   v() {return   "pc <= arrayData_pcConstant;";}
           int traces() {return 0;}
          };
         lse.set();                                                                                                      // Start of else
@@ -1864,15 +1864,14 @@ cd {f}; yosys -q {y}                                                            
    }
 
   void printExecutionCoverageForTest ()                                                                                 // Print the number of instructions executed and not executed by this test
-   {int e = 0, n = 0, m = 0, t = 0;                                                                                     // Executed, not executed, most executed, total executed
+   {int e = 0, n = 0, t = 0;                                                                                            // Executed, not executed, most executed, total executed
 
     for (I i : program().code)                                                                                          // Each instruction
      {final int x = i.executed;
-      t += x; if (x == 0) ++n; else ++e; m = max(m, x);
+      t += x; if (x == 0) ++n; else ++e;
      }
-    final int cp = 100*e/code.size();
-    final int mp = 100*m/t;
-    say(f("Instruction execution cover for %s: %4d%%, single: %4d%%, total: %8d", testName(), cp, mp, t));
+    final int cp = 100*e/(e+n);
+    say(f("Instruction execution cover: %4d%%, total: %8d  %s", cp, t, testName()));
    }
 
   static void printExecutionCoverageGlobal (Integer Max)                                                                // Print the locations in the java code that produced instructions that were never tested
@@ -1890,7 +1889,10 @@ cd {f}; yosys -q {y}                                                            
        }
      }
     if (instructionCover.size() > 0 && n == 0) say("All generated instructions executed at least once");
-    if (instructionCover.size() > 0 && n  > 0) say("Number of instructions generated but not executed is:", n);
+    if (instructionCover.size() > 0 && n  > 0)
+     {final int i = instructionCover.size();
+      say(f("Number of instructions generated but not executed is: %d/%d = %d%%", n, i, 100*n/i));
+     }
    }
 
 //D1 Verilog                                                                                                            // Generate Verilog
@@ -3318,8 +3320,9 @@ Memory 2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    test_addition(false);
+   {//oldTests();
+    //test_addition(false);
+    test_ifElse();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
