@@ -638,12 +638,10 @@ public class Program extends Test                                               
          };
         pcConstant(index, id);                                                                                          // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
         if (LoadValue)
-         {dumpProgramState("AAAA");
-          new I()                                                                                                       // Value of integer
+         {new I()                                                                                                       // Value of integer
            {void   a() {m.read0Int = i();      jTrace(f("%8d ILST2"+Label+" "+mv+" = %8d",  pc(), lui(i))); incUsage(Register);}
             String v() {return                 vTrace(  "%8d ILST2"+Label+" "+mv+" = %8d", "pc",  m.memory(mi));}       // The memory module loads the corresponding value field automatically at the end of this instruction cycle
            };
-          dumpProgramState("BBBB");
          }
 
         if (LoadValue && Register > 0) new I()                                                                          // Load integer read into a source register if necessary to preserve its value after reading the target or another source operand. To preserve the value of the target it must be read last
@@ -3382,4 +3380,5 @@ writeIntEnable =        0
    }
  }
 //https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
+//https://github.com/philiprbrenan/btreeList/compare/8a4b06a28b8...1f0109e91e
 // ^.{10,119}//
