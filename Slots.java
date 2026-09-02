@@ -1812,8 +1812,8 @@ Zero:
 
             Index.S();                                                                                                  // Load index of item we want
             new I()                                                                                                     // Set the key to insert
-             {void        a() {       intMemory(). writeInt      =     keys[Index.i()];}
-              String      v() {return intMemory().vWriteInt()+" <= "+a.dataRegisterName()+";";}                         // Translate index into key
+             {void        a() {       intMemory().writeInt      =     keys[Index.i()];}
+              String      v() {return intMemory().writeInt()+" <= "+a.dataRegisterName()+";";}                          // Translate index into key
               boolean trace() {return false;}
              };
 
@@ -1906,8 +1906,8 @@ keys     :   14  13  16  15  18  17  12  11
 
             Index.S();                                                                                                  // Load index of item we want
             new I()                                                                                                     // Set the key to insert
-             {void        a() {       intMemory(). writeInt        =     keys[Index.i()];}
-              String      v() {return intMemory().vWriteInt() + " <= "+a.dataRegisterName()+";";}                       // Translate index into key
+             {void        a() {       intMemory().writeInt        =     keys[Index.i()];}
+              String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
               boolean trace() {return false;}
              };
 
