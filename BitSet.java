@@ -73,6 +73,7 @@ public class BitSet extends Program                                             
      }
    }
 
+  @SuppressWarnings("this-escape")
   public BitSet(Build Build)                                                                                            // Constructor
    {super(Build.build());
     build            = Build;
@@ -929,7 +930,7 @@ Zero:
     for (int i : range(23, 28)) b.nextZero(b.new Int( i)).ok( 29);
     for (int i : range(29, 32)) b.nextZero(b.new Int( i)).ok(false);
 
-
+//
                                 b.prevZero(b.new Int( 0)).ok(false);
     for (int i : range( 1, 14)) b.prevZero(b.new Int( i)).ok(i-1);
                                 b.prevZero(b.new Int(14)).ok( 12);
@@ -1809,7 +1810,7 @@ Zero:
 
   static void newTests()                                                                                                // Tests under development.
    {//oldTests();
-    test_fullEmpty(9, false);
+    test_prevNext(false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
