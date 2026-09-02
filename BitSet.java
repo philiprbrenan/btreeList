@@ -76,10 +76,10 @@ public class BitSet extends Program                                             
   public BitSet(Build Build)                                                                                            // Constructor
    {super(Build.build());
     build            = Build;
-    bitSize          = nextPowerOfTwo(size());                                                                          // Record size
+    bitSize          = nextPowerOfTwo(build.bitSize);                                                                   // Record size
     bitSize1         = bitSize - 1;
     bitSize2         = bitSize >>> 1;
-    powerOfTwo       = bitSize == size();
+    powerOfTwo       = bitSize == build.bitSize;
     logBitSize       = logTwo(bitSize);
     trackCount       = build.trackCount;
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
@@ -164,9 +164,7 @@ public class BitSet extends Program                                             
 
   void    setBitNC (Int Index, boolean B)                                                                               // Set a bit to a value known at compile time
    {subStart     ("Bitset.setBitNC_IB");
-    dumpProgramState("AAAA");
     memoryRef.putBit(Index, new Bit(B));                                                                                // Save target boolean into memory
-    dumpProgramState("BBBB");
     subFinish();
    }
 
@@ -328,8 +326,8 @@ public class BitSet extends Program                                             
   Int      heightOne (Int Pos) {subStart("Bitset.heightOne");      final Int r = new Int("one  height" );      Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt()]);} String v() {return vt(r, hoArray );}}; r.TW(); subFinish(); return r;} // Height of the specified position in the ones tree
   Int     heightZero (Int Pos) {subStart("Bitset.heightZero");     final Int r = new Int("zero height");       Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzArray );}}; r.TW(); subFinish(); return r;} // Height of the specified position in the zeros tree
 
-  void   jt (Int R, int I)    {err("XXXX"); targetInt(I); R.setValid(); jTrace(f("%8d "+R.name, currentPc()));}                      // Java trace of array look ups
-  String vt (Int R, String V) {err("XXXX"); return V +  "/*ZZZZ*/"+                 vTrace(  "%8d "+R.name, "pc"        );}                      // Verilog trace of array look up - cannot get the looked up value yet because of non blocking assign
+  void   jt (Int R, int I)    {targetInt(I); R.setValid(); jTrace(f("%8d "+R.name, currentPc()));}                      // Java trace of array look ups
+  String vt (Int R, String V) {return V +                  vTrace(  "%8d "+R.name, "pc"        );}                      // Verilog trace of array look up - cannot get the looked up value yet because of non blocking assign
 
   int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
    {final int p = Pos < bitSize ? Pos : Pos < base_zero() ?  0 : pos_one(Pos - base_zero() + bitSize);
@@ -1810,8 +1808,7 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();
-    test_set(false);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
