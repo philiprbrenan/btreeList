@@ -19,7 +19,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+ {final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
@@ -625,27 +625,30 @@ public class Program extends Test                                               
      }
 
     abstract class LoadSourceOrTarget                                                                                   // Set index and values of memory for integer variables
-     {LoadSourceOrTarget(int Register, boolean LoadValue)                                                               // The value should not be set for operations where the target already contains the value to store
+     {LoadSourceOrTarget(String Label, int Register, boolean LoadValue)                                                 // The value should not be set for operations where the target already contains the value to store
        {final Memory  m = intMemory();                                                                                  // Value register
         final String mi = pV(m.readWriteIndex());                                                                       // Index register
-        final String mv = pV(m.read0Int());                                                                            // Value register
+        final String mv = pV(m.read0Int());                                                                             // Value register
         final String ms = pV(registerName(Register));                                                                   // Saved value register
 
         final I index = new I()                                                                                         // Load index of integer
          {final String c = mi + pV(" <= arrayData_pcConstant;");
-          void   a() {m.readWriteIndex = id; jTrace(f("%8d ILST1 "+mi+" = %8d",  pc(), id)                  );}
-          String v() {return c+" "+         vTrace(  "%8d ILST1 "+mi+" = %8d", "pc", "arrayData_pcConstant");}
+          void   a() {m.readWriteIndex = id;   jTrace(f("%8d ILST1"+Label+" "+mi+" = %8d",  pc(), id)                  );}
+          String v() {return c+" "+            vTrace(  "%8d ILST1"+Label+" "+mi+" = %8d", "pc", "arrayData_pcConstant");}
          };
         pcConstant(index, id);                                                                                          // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
-
-        if (LoadValue) new I()                                                                                          // Value of integer
-         {void   a() {m.read0Int = i(); jTrace(f("%8d ILST2 "+mv+" = %8d",  pc(), lui(i))); incUsage(Register);}
-          String v() {return            vTrace(  "%8d ILST2 "+mv+" = %8d", "pc",  m.memory(mi));}                       // The memory module loads the corresponding value field automatically at the end of this instruction cycle
-         };
+        if (LoadValue)
+         {dumpProgramState("AAAA");
+          new I()                                                                                                       // Value of integer
+           {void   a() {m.read0Int = i();      jTrace(f("%8d ILST2"+Label+" "+mv+" = %8d",  pc(), lui(i))); incUsage(Register);}
+            String v() {return                 vTrace(  "%8d ILST2"+Label+" "+mv+" = %8d", "pc",  m.memory(mi));}       // The memory module loads the corresponding value field automatically at the end of this instruction cycle
+           };
+          dumpProgramState("BBBB");
+         }
 
         if (LoadValue && Register > 0) new I()                                                                          // Load integer read into a source register if necessary to preserve its value after reading the target or another source operand. To preserve the value of the target it must be read last
-         {void   a() {loadValue(i());          jTrace(f("%8d ILST3 "+ms+" = %8d",  pc(), lui(i)));}
-          String v() {return ms+" <= "+mv+"; "+vTrace(  "%8d ILST3 "+ms+" = %8d", "pc",  m.memory(mi));}
+         {void   a() {loadValue(i());          jTrace(f("%8d ILST3"+Label+" "+ms+" = %8d",  pc(), lui(i)));}
+          String v() {return ms+" <= "+mv+"; "+vTrace(  "%8d ILST3"+Label+" "+ms+" = %8d", "pc",  m.memory(mi));}
          };
        }
 
@@ -654,13 +657,13 @@ public class Program extends Test                                               
      } // LoadSourceOrTarget
 
     void S ()                                                                                                           // Address first source integer and load its value
-     {new LoadSourceOrTarget(1, true)
+     {new LoadSourceOrTarget("S1", 1, true)
        {void loadValue(int V) {sourceInt  (V);}
        };
      }
 
     void S2 ()                                                                                                          // Address second source integer and loads its value
-     {new LoadSourceOrTarget(2, true)
+     {new LoadSourceOrTarget("S2", 2, true)
        {void loadValue(int V) {source2Int  (V);}
        };
      }
@@ -669,7 +672,7 @@ public class Program extends Test                                               
     void T (Ops Op) {T(Op != Ops.set && Op != Ops.del);}                                                                // Address target and load its value if needed
 
     void T (boolean LoadValue)                                                                                          // Address target optionally loading its value
-     {new LoadSourceOrTarget(0, LoadValue)
+     {new LoadSourceOrTarget("T", 0, LoadValue)
        {void loadValue(int V) {intMemory().read0Int = V;}
        };
      }
