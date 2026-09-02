@@ -1817,7 +1817,7 @@ Zero:
               boolean trace() {return false;}
              };
 
-            k.W();                                                                                                      // Write target register into variable
+            k.TW();                                                                                                      // Write target register into variable
             insert(k);
             final StringBuilder p = s.print();
             new I() {void a() {t.append(p);}  boolean trace() {return false;}};
