@@ -1185,7 +1185,7 @@ Number of Keys:    0
               String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
               boolean trace() {return false;}
              };
-            k.W();                                                                                                      // Write key into variable
+            k.TW();                                                                                                      // Write key into variable
             insert(k, Index);
             dumpProgramState("AAAA");
            }
@@ -1561,7 +1561,7 @@ Number of Keys:    0
               String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
               boolean trace() {return false;}
              };
-            k.W();                                                                                                      // Write key into variable
+            k.TW();                                                                                                      // Write key into variable
             delete(k);
 
             if (Ex) s.append(print());
