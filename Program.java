@@ -19,13 +19,13 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+ {final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = true || github_actions;                                      // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage =!true || github_actions;                                      // Track instruction execution by location in Java code where the instruction was generated
@@ -633,20 +633,20 @@ public class Program extends Test                                               
 
         final I index = new I()                                                                                         // Load index of integer
          {final String c = mi + pV(" <= arrayData_pcConstant;");
-          void   a() {m.readWriteIndex = id;   jTrace(f("%8d ILST1"+Label+" "+mi+" = %8d",  pc(), id)                  );}
-          String v() {return c+" "+            vTrace(  "%8d ILST1"+Label+" "+mi+" = %8d", "pc", "arrayData_pcConstant");}
+          void   a() {m.readWriteIndex = id;   jTrace(f("%8d ILST1-"+Label+" "+mi+" = %8d",  pc(), id)                  );}
+          String v() {return c+" "+            vTrace(  "%8d ILST1-"+Label+" "+mi+" = %8d", "pc", "arrayData_pcConstant");}
          };
         pcConstant(index, id);                                                                                          // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
         if (LoadValue)
          {new I()                                                                                                       // Value of integer
-           {void   a() {m.read0Int = i();      jTrace(f("%8d ILST2"+Label+" "+mv+" = %8d",  pc(), lui(i))); incUsage(Register);}
-            String v() {return                 vTrace(  "%8d ILST2"+Label+" "+mv+" = %8d", "pc",  m.memory(mi));}       // The memory module loads the corresponding value field automatically at the end of this instruction cycle
+           {void   a() {m.read0Int = i();      jTrace(f("%8d ILST2-"+Label+" "+mv+" = %8d",  pc(), lui(i))); incUsage(Register);}
+            String v() {return                 vTrace(  "%8d ILST2-"+Label+" "+mv+" = %8d", "pc",  m.memory(mi));}       // The memory module loads the corresponding value field automatically at the end of this instruction cycle
            };
          }
 
         if (LoadValue && Register > 0) new I()                                                                          // Load integer read into a source register if necessary to preserve its value after reading the target or another source operand. To preserve the value of the target it must be read last
-         {void   a() {loadValue(i());          jTrace(f("%8d ILST3"+Label+" "+ms+" = %8d",  pc(), lui(i)));}
-          String v() {return ms+" <= "+mv+"; "+vTrace(  "%8d ILST3"+Label+" "+ms+" = %8d", "pc",  m.memory(mi));}
+         {void   a() {loadValue(i());          jTrace(f("%8d ILST3-"+Label+" "+ms+" = %8d",  pc(), lui(i)));}
+          String v() {return ms+" <= "+mv+"; "+vTrace(  "%8d ILST3-"+Label+" "+ms+" = %8d", "pc",  m.memory(mi));}
          };
        }
 
