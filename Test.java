@@ -376,7 +376,7 @@ public class Test                                                               
     return (int)Math.sqrt(Value);
    }
 
-  static long lui(int Value) {return Integer.toUnsignedLong(Value);}                                                    // Teat an integer as unsigned and convert it to long to lock in the unsignedness
+  static long lui (int Value) {return Integer.toUnsignedLong(Value);}                                                   // Treat an integer as unsigned and convert it to long to lock in the unsignedness
 
 //D1 Bit routines                                                                                                       // Routines operating on bits
 
@@ -513,7 +513,6 @@ public class Test                                                               
       final int    l = s.getLineNumber();
       if (f.equals(F) && l > L) return ""+S;                                                                            // We have reached some test code in the main file
       if (f.equals(F)) S.append(f+":"+l+":"+m+"\n");
-
      }
     stop("Not called from a test");
     return null;
