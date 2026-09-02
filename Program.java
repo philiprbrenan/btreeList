@@ -20,9 +20,9 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+ {final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
@@ -1192,16 +1192,16 @@ public class Program extends Test                                               
       K.S(); I.S(); J.S2(); i.T();                                                                                      // Retrieve the value of the bit from the bit memory and the values of the integers from the integer memory.  Improvement: these instructions should be in parallel
 
       new I()                                                                                                           // Set target index of memory to be written
-       {void   a() {        readWriteIndex        =     ints. read1Int;       jTrace(f("%8d putBit2 Index %8d.%8d",  currentPc(), lui(ints. read1Int), lui(ints.read2Int)));}
-        String v() {return vReadWriteIndex() + " <= " + ints.vRead1Int()+"; "+vTrace(  "%8d putBit2 Index %8d.%8d", "pc",         ints.vRead1Int(),       ints.vRead2Int());}
+       {void   a() {        readWriteIndex        =     ints. read1Int;       jTrace(f("%8d putBit2 Index %8d",  currentPc(), lui(ints. read1Int)));}
+        String v() {return vReadWriteIndex() + " <= " + ints.vRead1Int()+"; "+vTrace(  "%8d putBit2 Index %8d", "pc",         ints.vRead1Int()    );}
        };
       new I()                                                                                                           // Integer to write
-       {void   a() {writeInt = setBit(writeInt, ints.read2Int, bits.read1Int != 0);         writeIntEnable        = true; jTrace(f("%8d putBit3 Value %8d",  currentPc(), lui(bits.read1Int)));}
-        String v() {return vWriteInt()+"["+ints.read2Int+"]" + " <= " + bits.read1Int+"; "+vWriteIntEnable() + " <= 1;" + vTrace(  "%8d putBit3 Value %8d", "pc",            bits.vRead1Int());}
+       {void   a() {final int w = writeInt; writeInt = setBit(w, ints.read2Int, bits.read1Int != 0);              writeIntEnable        = true; jTrace(f("%8d putBit3 Value %8d %8d.%8d",  currentPc(), lui(w),      lui(ints.read2Int), lui(bits.read1Int)));}
+        String v() {return                 vWriteInt()+"["+ints.vRead2Int()+"]" + " <= " + bits.vRead1Int()+"; "+vWriteIntEnable() + " <= 1;" + vTrace(  "%8d putBit3 Value %8d %8d.%8d", "pc",         vWriteInt(), ints.vRead2Int(),   bits.vRead1Int());}
        };
       new I()                                                                                                           // Finish write
-       {void   a() {units[I.i()] = setBit(units[I.i()], J.i(), K.i);  writeIntEnable      =  false; jTrace(f("%8d putBit4 Finish",  currentPc()));}
-        String v() {return                                           vWriteIntEnable()+" <= 0;" +   vTrace(  "%8d putBit4 Finish", "pc"         );}
+       {void   a() {units[I.i()] = setBit(units[I.i()], J.i(), K.i);  writeIntEnable      =  false; jTrace(f("%8d putBit4 Finish %8d",  currentPc(), writeInt  ));}
+        String v() {return                                           vWriteIntEnable()+" <= 0;" +   vTrace(  "%8d putBit4 Finish %8d", "pc",         vWriteInt());}
        };
       return this;
      }
@@ -2800,14 +2800,16 @@ Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000         2
 """);
+        dumpProgramState("AAAA");
         m.putBit(new Int(1), new Int(0),   new Bit(true));
-//        //stop(nws(m.dumpAsDecimal()));
-//        ok(()->nws(m.dumpAsDecimal()), """
-//Memory 2
-//            0    1    2    3    4    5    6    7    8    9
-//00000000         3
-//""");
-//        m.putBit(new Int(1), new Int(1),   new Bit(false));
+        dumpProgramState("BBBB");
+        //stop(nws(m.dumpAsDecimal()));
+        ok(()->nws(m.dumpAsDecimal()), """
+Memory 2
+            0    1    2    3    4    5    6    7    8    9
+00000000         3
+""");
+        m.putBit(new Int(1), new Int(1),   new Bit(false));
 //        //stop(nws(m.dumpAsDecimal()));
 //        ok(()->nws(m.dumpAsDecimal()), """
 //Memory 2
@@ -3015,13 +3017,13 @@ Memory 2
         dumpProgramState("AAAA");
         final Int i = new Int("i").set(2);                                                                              // Input
         final Int o = new Int("o");                                                                                     // Output
-        i.S();                                                                                                          // Load the index of the array
+        i.S();                                                                                                          // Load the index of the array element required - the answer shows up in arrayData_array
         new I()
          {void        a() {targetInt(array[i.i()]); o.setValid();}                                                      // Load from array
           String      v() {return intMemory().vWriteInt()+" <= "+A.dataRegisterName()+";";}                             // Load from array data register
           boolean trace() {return false;}
          };
-        o.W();                                                                                                          // Write array element into output
+        o.TW();                                                                                                         // WAddress output variable and write rite array element into it
         o.ok(5);
         scDieAreaX = 300; scDieAreaY = 600;
         execute();
@@ -3262,8 +3264,7 @@ Memory 2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_mem(false);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
