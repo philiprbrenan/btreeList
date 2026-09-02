@@ -3,7 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Start with memory randomized
-// Write pc on memory dump title
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
 // Check how often each variable is read or written to eliminate variables that are only used once
 // Use parallel loads in putBit etc as marked with Improvement:
@@ -21,12 +20,12 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = true || github_actions;                                      // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage =!true || github_actions;                                      // Track instruction execution by location in Java code where the instruction was generated
@@ -1016,15 +1015,11 @@ public class Program extends Test                                               
    {final String name;                                                                                                  // Optional name for the memory
     private final int  id;                                                                                              // Unique identifier for this memory
     private int []  units;                                                                                              // Bytes of main memory
-    boolean       read0Bit = false;                                                                                     // Boolean read from memory via first  virtual read port
-    boolean       read1Bit = false;                                                                                     // Boolean read from memory via second virtual read port
-    boolean       read2Bit = false;                                                                                     // Boolean read from memory via third  virtual read port
-    boolean       writeBit = false;                                                                                     // Boolean to write into memory
     int           read0Int = 0;                                                                                         // Integer read from memory via first  virtual read port
     int           read1Int = 0;                                                                                         // Integer read from memory via second virtual read port
     int           read2Int = 0;                                                                                         // Integer read from memory via third  virtual read port
     int           writeInt = 0;                                                                                         // Integer to write into memory
-    int      readWriteIndex = 0;                                                                                         // Index at which to read an integer via first  virtual read port and also the index with which to write into memory
+    int     readWriteIndex = 0;                                                                                         // Index at which to read an integer via first  virtual read port and also the index with which to write into memory
     boolean writeIntEnable = false;                                                                                     // Enable write for an integer
 
     void reallocate (final int Size) {units = new int[Size];}                                                           // Resize the memory
@@ -1106,23 +1101,23 @@ public class Program extends Test                                               
       I.T();                                                                                                            // Retrieve value of the indexing integer from the memory that holds integers so it can be used to index this memory
 
       new I()                                                                                                           // Set the target index to read from this memory
-       {void   a() {        readWriteIndex        =     ints. read0Int;       jTrace(f("%8d getInt1 Get index %8d",  currentPc(), lui(ints. read0Int)));}
+       {void   a() {        readWriteIndex       =     ints. read0Int;      jTrace(f("%8d getInt1 Get index %8d",  currentPc(), lui(ints. read0Int)));}
         String v() {return readWriteIndex() + " <= " + ints.read0Int()+"; "+vTrace(  "%8d getInt1 Get index %8d", "pc",             ints.read0Int());}
        };
 
       final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold integers
-       {void   a() {       ints. readWriteIndex        =  r.id;                   jTrace(f("%8d getInt2 Set write index %8d",  currentPc(), r.id)                );}
+       {void   a() {       ints.readWriteIndex        =  r.id;                   jTrace(f("%8d getInt2 Set write index %8d",  currentPc(), r.id)                );}
         String v() {return ints.readWriteIndex() + " <= arrayData_pcConstant;" + vTrace(  "%8d getInt2 Set write index %8d", "pc",        "arrayData_pcConstant");}
        };
       pcConstant(i, r.id);
 
       new I()                                                                                                           // Write integer obtained from this memory back into the memory that holds integers
-       {void   a() {read0Int = r.i(units[I.i]); r.v = true; ints. writeInt        =      read0Int;       ints. writeIntEnable        = true; jTrace(f("%8d getInt3 save %8d = %8d",  currentPc(), ints. readWriteIndex,   read0Int));}
-        String v() {return                                  ints.writeInt() + " <= " + read0Int()+"; "+ints.writeIntEnable() + " <= 1;" + vTrace(  "%8d getInt3 save %8d = %8d", "pc",         ints.readWriteIndex(), read0Int());}
+       {void   a() {read0Int = r.i(units[I.i]); r.v = true; ints.writeInt        =     read0Int;       ints.writeIntEnable        = true; jTrace(f("%8d getInt3 save %8d = %8d",  currentPc(), ints. readWriteIndex, lui(read0Int)));}
+        String v() {return                                  ints.writeInt() + " <= " + read0Int()+"; "+ints.writeIntEnable() + " <= 1;" + vTrace(  "%8d getInt3 save %8d = %8d", "pc",         ints.readWriteIndex(),    read0Int());}
        };
 
       new I()                                                                                                           // Complete write
-       {void   a() {if (x) ints.units[r.id] = r.i(); ints. writeIntEnable        = false; jTrace(f("%8d getInt4 disable write",  currentPc()));}
+       {void   a() {if (x) ints.units[r.id] = r.i(); ints.writeIntEnable        = false; jTrace(f("%8d getInt4 disable write",  currentPc()));}
         String v() {return                           ints.writeIntEnable() + " <= 0;" +  vTrace(  "%8d getInt4 disable write", "pc"         );}
        };
       return r;
@@ -1137,19 +1132,19 @@ public class Program extends Test                                               
       J.S(); I.T();                                                                                                     // Retrieve value of the indexing integers from the memory that holds integers so it can be used to index this memory for the desired bit.  Obviously at some point these instructions should be executed in parallel as we have enough read ports to do so
 
       new I()                                                                                                           // Set the target index to read from this memory
-       {void   a() {        readWriteIndex        =     ints. read0Int;       jTrace(f("%8d getBit1 Get index %8d.%8d",  currentPc(), ints. read0Int, lui(ints.read1Int)));}
+       {void   a() {        readWriteIndex        =    ints.read0Int;       jTrace(f("%8d getBit1 Get index %8d.%8d",  currentPc(), ints. read0Int, lui(ints.read1Int)));}
         String v() {return readWriteIndex() + " <= " + ints.read0Int()+"; "+vTrace(  "%8d getBit1 Get index %8d.%8d", "pc",         ints.read0Int(),  ints.read1Int());}
        };
 
       final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold bits
-       {void   a() {       bits. readWriteIndex        =  r.id;                   jTrace(f("%8d getBit2 Set write index %8d",  currentPc(), r.id)                );}
+       {void   a() {       bits. readWriteIndex       =  r.id;                   jTrace(f("%8d getBit2 Set write index %8d",  currentPc(), r.id)                );}
         String v() {return bits.readWriteIndex() + " <= arrayData_pcConstant;" + vTrace(  "%8d getBit2 Set write index %8d", "pc",        "arrayData_pcConstant");}
        };
       pcConstant(i, r.id);
 
       new I()                                                                                                           // Write bit obtained from this memory back into the memory that holds bits
-       {void   a() {read0Int = (r.i = Test.getBit(units[I.i()], J.i())) ? 1 : 0; r.v = true; bits. writeInt        =      read0Int;                             bits. writeIntEnable        = true; jTrace(f("%8d getBit3 save %8d = %8d",  currentPc(), bits. readWriteIndex, lui(read0Int)));}
-        String v() {return                                                                   bits.writeInt() + " <= " + read0Int()+"["+ints.read1Int()+"]; "+bits.writeIntEnable() + " <= 1;" + vTrace(  "%8d getBit3 save %8d = %8d", "pc",         bits.readWriteIndex(),  read0Int()+"["+ints.read1Int()+"]");}
+       {void   a() {read0Int = (r.i = Test.getBit(units[I.i()], J.i())) ? 1 : 0; r.v = true; bits.writeInt        =     read0Int;                            bits. writeIntEnable       = true; jTrace(f("%8d getBit3 save %8d = %8d",  currentPc(), bits.readWriteIndex, lui(read0Int)));}
+        String v() {return                                                                   bits.writeInt() + " <= " + read0Int()+"["+ints.read1Int()+"]; "+bits.writeIntEnable() + " <= 1;" + vTrace(  "%8d getBit3 save %8d = %8d", "pc",         bits.readWriteIndex(),   read0Int()+"["+ints.read1Int()+"]");}
        };
 
       new I()                                                                                                           // Complete write
@@ -1168,16 +1163,16 @@ public class Program extends Test                                               
       I.S(); J.S2();                                                                                                    // Load integer values from the integers memory. Improvement: perform these operations in parallel
 
       new I()                                                                                                           // Set target index of memory to be written while waiting for last read to complete
-       {void   a() {readWriteIndex = ints.read1Int;                           jTrace(f("%8d putInt2 Index %8d",  currentPc(), lui(ints.read1Int)));}
+       {void   a() {readWriteIndex = ints.read1Int;                         jTrace(f("%8d putInt2 Index %8d",  currentPc(), lui(ints.read1Int)));}
         String v() {return readWriteIndex() + " <= " + ints.read1Int()+"; "+vTrace(  "%8d putInt2 Index %8d", "pc",            ints.read1Int());}
        };
       new I()                                                                                                           // Integer to write
-       {void   a() {        writeInt        =     ints. read2Int;        writeIntEnable        = true; jTrace(f("%8d putInt3 Value %8d",  currentPc(), lui(ints.read2Int)));}
+       {void   a() {        writeInt       =     ints.read2Int;       writeIntEnable        = true; jTrace(f("%8d putInt3 Value %8d",  currentPc(), lui(ints.read2Int)));}
         String v() {return writeInt() + " <= " + ints.read2Int()+"; "+writeIntEnable() + " <= 1;" + vTrace(  "%8d putInt3 Value %8d", "pc",            ints.read2Int());}
        };
       new I()                                                                                                           // Finish write
        {void   a() {units[I.i] = J.i(); writeIntEnable        = false; jTrace(f("%8d putInt4 Finish",  currentPc()));}
-        String v() {return             writeIntEnable() + " <= 0;" +  vTrace(  "%8d putInt4 Finish", "pc"         );}
+        String v() {return              writeIntEnable() + " <= 0;" +  vTrace(  "%8d putInt4 Finish", "pc"         );}
        };
       return this;
      }
@@ -1187,22 +1182,27 @@ public class Program extends Test                                               
       final Memory bits = bitMemory();
       final Memory ints = intMemory();
 
-      final Int i = getInt(I);                                                                                          // Get the underlying integer whiose bit is going to be updated
+      final Int i = getInt(I);                                                                                          // Get the underlying integer whose bit is going to be updated
 
       K.S(); I.S(); J.S2(); i.T();                                                                                      // Retrieve the value of the bit from the bit memory and the values of the integers from the integer memory.  Improvement: these instructions should be in parallel
 
-      new I()                                                                                                           // Set target index of memory to be written
-       {void   a() {        readWriteIndex        =     ints. read1Int;     jTrace(f("%8d putBit2 Index %8d",  currentPc(), lui(ints.read1Int)));}
-        String v() {return readWriteIndex() + " <= " + ints.read1Int()+"; "+vTrace(  "%8d putBit2 Index %8d", "pc",             ints.read1Int()    );}
+      new I()                                                                                                           // Set target index of memory to be written os it gets read
+       {void   a() {       readWriteIndex        =     ints.read1Int;                                                          jTrace(f("%8d putBit1 i=%8d I=%8d J=%8d K=%8d",  currentPc(), lui(ints.read0Int) ,  lui(ints.read1Int) , lui(ints.read2Int) , lui(bits.read1Int)));}
+        String v() {return readWriteIndex() + " <= " + ints.read1Int()+"; "+                                                   vTrace(  "%8d putBit1 i=%8d I=%8d J=%8d K=%8d", "pc",             ints.read0Int(),      ints.read1Int(),     ints.read2Int(),     bits.read1Int());}
        };
+
+      new I()                                                                                                           // Integer to update as read from memory
+       {void   a() {       writeInt      =     read0Int;      jTrace(f("%8d putBit2 %8d",  currentPc(),  lui(ints.read0Int)));}
+        String v() {return writeInt()+" <= " + read0Int()+";"+vTrace(  "%8d putBit2 %8d", "pc",              ints.read0Int());}
+       };
+
       new I()                                                                                                           // Integer to write
-       {void   a() {final int w = writeInt; writeInt = setBit(w, ints.read2Int, bits.read1Int != 0);           writeIntEnable        = true; jTrace(f("%8d putBit3 Value %8d %8d.%8d",  currentPc(), lui(w),      lui(ints.read2Int), lui(bits.read1Int)));}
-        String v() {return                  writeInt()+"["+ints.read2Int()+"]" + " <= " + bits.read1Int()+"; "+writeIntEnable() + " <= 1;" + vTrace(  "%8d putBit3 Value %8d %8d.%8d", "pc",         writeInt(), ints.read2Int(),   bits.read1Int());}
+       {void   a() {writeInt = setBit(writeInt, ints.read2Int, bits.read1Int != 0);              writeIntEnable        = true; jTrace(f("%8d putBit3 i=%8d I=%8d J=%8d K=%8d rwi=%8d",  currentPc(),  lui(ints.read0Int) ,  lui(ints.read1Int) , lui(ints.read2Int) , lui(bits.read1Int), lui(readWriteIndex)));}
+        String v() {return writeInt()+"["+ints.read2Int()+"]" + " <= " + bits.read1Int()+"[0]; "+writeIntEnable() + " <= 1;" + vTrace(  "%8d putBit3 i=%8d I=%8d J=%8d K=%8d rwi=%8d", "pc",              ints.read0Int(),      ints.read1Int(),     ints.read2Int(),     bits.read1Int(),    readWriteIndex());}
        };
       new I()                                                                                                           // Finish write
-//     {void   a() {units[I.i()] = setBit(units[I.i()], J.i(), K.i); writeIntEnable      =  false; jTrace(f("%8d putBit4 Finish %8d",  currentPc(), writeInt ));}
-       {void   a() {units[I.i()] = writeInt; writeIntEnable      =  false; jTrace(f("%8d putBit4 Finish %8d",  currentPc(), writeInt ));}
-        String v() {return                   writeIntEnable()+" <= 0;" +   vTrace(  "%8d putBit4 Finish %8d", "pc",         writeInt());}
+       {void   a() {units[I.i()] = setBit(units[I.i()], J.i(), K.i); writeIntEnable = false;                                   jTrace(f("%8d putBit4 i=%8d I=%8d J=%8d K=%8d wi=%8d,%8d",  currentPc(), lui(ints.read0Int) ,  lui(ints.read1Int) , lui(ints.read2Int) , lui(bits.read1Int),  lui(units[I.i()]), lui(writeInt)));}
+        String v() {return  writeIntEnable()+" <= 0;" +                                                                        vTrace(  "%8d putBit4 i=%8d I=%8d J=%8d K=%8d wi=%8d,%8d", "pc",             ints.read0Int(),      ints.read1Int(),     ints.read2Int(),     bits.read1Int(), writeInt(),   writeInt());}
        };
       return this;
      }
@@ -1242,7 +1242,7 @@ public class Program extends Test                                               
       return ""+s;
      }
 
-    String dumpAsDecimal ()                                                                                             // Dump memory in decimal format
+    String dumpJavaMemoryInDecimal ()                                                                                   // Dump java memory in decimal format
      {final int N = 10;
       final StringBuilder s = new StringBuilder();
 
@@ -1260,6 +1260,14 @@ public class Program extends Test                                               
         if ((i + 1) % N == 0)                    s.append("\n");
        }
       if (size() % N != 0)                       s.append("\n");
+
+    //s.append(f("      read0Int = %8d\n", read0Int));                                                                  // Different behavior in Verilog and Java.
+      s.append(f("      read1Int = %8d\n", lui(read1Int)));
+      s.append(f("      read2Int = %8d\n", lui(read2Int)));
+      s.append(f("      writeInt = %8d\n", lui(writeInt)));
+      s.append(f("readWriteIndex = %8d\n", readWriteIndex));
+      s.append(f("writeIntEnable = %8d\n", writeIntEnable ? 1 : 0));
+
       return ""+s;
      }
 
@@ -1316,12 +1324,12 @@ endmodule
     String instantiateModule ()                                                                                         // Instantiate a memory module
      {final StringBuilder s = new StringBuilder();
       s.append("\n// Memory module: "+ n() + " " + name() + "\n");                                                      // Memory module title
-      s.append("  reg[31:0] "+        read0Int() +";\n");                                                              // First integer read from memory
-      s.append("  reg[31:0] "+        read1Int() +";\n");                                                              // Second integer read from memory
-      s.append("  reg[31:0] "+        read2Int() +";\n");                                                              // First integer read from memory
-      s.append("  reg[31:0] "+        writeInt() +"; initial "+       writeInt() + "= 0;\n");                         // Integer to write into memory
-      s.append("  reg[31:0] "+  readWriteIndex() +"; initial "+  readWriteIndex() + "= 0;\n");                        // Index at which to read first integer from memory
-      s.append("  reg       "+  writeIntEnable() +"; initial "+ writeIntEnable() + "= 0;\n");                         // Write enable when writing integer data into memory
+      s.append("  reg[31:0] "+        read0Int() +";\n");                                                               // First integer read from memory
+      s.append("  reg[31:0] "+        read1Int() +"; initial "+       read1Int() + "= 0;\n");                           // Second integer read from memory
+      s.append("  reg[31:0] "+        read2Int() +"; initial "+       read2Int() + "= 0;\n");                           // First integer read from memory
+      s.append("  reg[31:0] "+        writeInt() +"; initial "+       writeInt() + "= 0;\n");                           // Integer to write into memory
+      s.append("  reg[31:0] "+  readWriteIndex() +"; initial "+ readWriteIndex() + "= 0;\n");                           // Index at which to read first integer from memory
+      s.append("  reg       "+  writeIntEnable() +"; initial "+ writeIntEnable() + "= 0;\n");                           // Write enable when writing integer data into memory
       s.append("  "+ connectMemoryModule());                                                                            // Connect to memory module
       return ""+s;
      }
@@ -1340,7 +1348,6 @@ endmodule
 
 //D2 Memory Dumps                                                                                                       // Overridable dump memory methods for Java and Verilog
 
-    String dumpJava ()          {return dumpAsDecimal();}
     String dumpVerilog ()       {return dumpVerilogMemoryInDecimalName()+"();";}
     String memory(String Index) {return substitute("{n}.memory[{i}]", "n", n(), "i", Index);}                           // Verilog to get the indexed location in memory
 
@@ -1645,7 +1652,7 @@ cd {f}; yosys -q {y}                                                            
    } //DumpLocations
 
   void initializeJavaMemory () {for(Memory m : memories()) for (int i = 0, N = m.size(); i < N;++i) m.units[i] = 0;}    // Clear all of memory to zero
-  void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpJava());}                              // Dump all the memories
+  void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpJavaMemoryInDecimal());}               // Dump all the memories
 
   void initializeJavaVars()                                                                                             // Initialize Java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the Verilog version
    {for (Int i : ints()) {i.i(0);      i.v = false;}
@@ -1655,7 +1662,7 @@ cd {f}; yosys -q {y}                                                            
   void dumpJavaVariables ()                                                                                             // Dump all memories and variables to the Java trace file
    {final StringBuilder s = new StringBuilder();
     for (Int  i  : ints())                                                                                              // Dump ints
-     {s.append(f("Int  %8d ==    %8d", i.id, i.i));                                                                     // Take underlying value regardless of whether the integer has been set because whether the integer has been set is not available on Verilog yet the traces must match
+     {s.append(f("Int  %8d ==    %8d", i.id, lui(i.i)));                                                                // Take underlying value regardless of whether the integer has been set because whether the integer has been set is not available on Verilog yet the traces must match
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
@@ -2058,7 +2065,7 @@ endmodule
       begin
         if (i % N == 0)               $fwrite(traceFile, "%08d ", i);
 
-        I = {memoryName}.memory[i];
+        I = {n}.memory[i];
 
         if (I != 0)                   $fwrite(traceFile, "%4d ", I);
         else                          $fwrite(traceFile, "     ");
@@ -2068,10 +2075,18 @@ endmodule
 
       if ({size} % N != 0) $fwrite(traceFile, "\\n");
       $fflush(traceFile);
+
+    //$fwrite(traceFile, "      read0Int = %8d\\n", {n}_read0Int);                                                      // Different behavior in Java and Verilog - in Verilog continuously assigned what ever is indexed by readWriteIndex, in Java just the last update
+      $fwrite(traceFile, "      read1Int = %8d\\n", {n}_read1Int);
+      $fwrite(traceFile, "      read2Int = %8d\\n", {n}_read2Int);
+      $fwrite(traceFile, "      writeInt = %8d\\n", {n}_writeInt);
+      $fwrite(traceFile, "readWriteIndex = %8d\\n", {n}_readWriteIndex);
+      $fwrite(traceFile, "writeIntEnable = %8d\\n", {n}_writeIntEnable ? 1 : 0);
+
 `endif
     end
   endtask
-""", "memoryName", M.n(), "size", ""+M.size());
+""", "n", M.n(), "size", ""+M.size());
 
      return h + m + t;
     }
@@ -2795,30 +2810,45 @@ endmodule
         final Int b = m.getInt(new Int(1));                      b.name = "b"; b.ok(2);
         final Bit c = m.getBit(new Int(1), new Int(1));          c.name = "c"; c.ok(true);
         final Bit d = m.getBit(new Int(1), new Int(0));          d.name = "d"; d.ok(false);
-        //stop(nws(m.dumpAsDecimal()));
-        ok(()->nws(m.dumpAsDecimal()), """
+        //stop(nws(m.dumpJavaMemoryInDecimal()));
+        ok(()->nws(m.dumpJavaMemoryInDecimal()), """
 Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000         2
+      read1Int =        0
+      read2Int =        0
+      writeInt =        2
+readWriteIndex =        1
+writeIntEnable =        0
 """);
         dumpProgramState("AAAA");
         m.putBit(new Int(1), new Int(0),   new Bit(true));
         dumpProgramState("BBBB");
-        //stop(nws(m.dumpAsDecimal()));
-        ok(()->nws(m.dumpAsDecimal()), """
+        //stop(nws(m.dumpJavaMemoryInDecimal()));
+        ok(()->nws(m.dumpJavaMemoryInDecimal()), """
 Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000         3
+      read1Int =        0
+      read2Int =        0
+      writeInt =        3
+readWriteIndex =        1
+writeIntEnable =        0
 """);
         m.putBit(new Int(1), new Int(1),   new Bit(false));
-//        //stop(nws(m.dumpAsDecimal()));
-//        ok(()->nws(m.dumpAsDecimal()), """
-//Memory 2
-//            0    1    2    3    4    5    6    7    8    9
-//00000000         1
-//""");
-//        final Int e = new Int("e"); e.set(m.getInt(new Int(1)));  e.name = "e"; e.ok(1);
-//        scDieAreaX = 500; scDieAreaY = 500;
+        //stop(nws(m.dumpJavaMemoryInDecimal()));
+        ok(()->nws(m.dumpJavaMemoryInDecimal()), """
+Memory 2
+            0    1    2    3    4    5    6    7    8    9
+00000000         1
+      read1Int =        0
+      read2Int =        0
+      writeInt =        1
+readWriteIndex =        1
+writeIntEnable =        0
+""");
+        final Int e = new Int("e"); e.set(m.getInt(new Int(1)));  e.name = "e"; e.ok(1);
+        scDieAreaX = 500; scDieAreaY = 500;
         execute();
        }
      };
@@ -2930,19 +2960,29 @@ Memory 2
 
             new If (Index.eq(0))
              {void Then()
-               {//stop(nws(M.dumpAsDecimal()));
-                ok(()->nws(M.dumpAsDecimal()), """
+               {//stop(nws(M.dumpJavaMemoryInDecimal()));
+                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
+      read1Int =        0
+      read2Int =        0
+      writeInt =        2
+readWriteIndex =        3
+writeIntEnable =        0
 """);
                }
               void Else()
-               {//stop(nws(M.dumpAsDecimal()));
-                ok(()->nws(M.dumpAsDecimal()), """
+               {//stop(nws(M.dumpJavaMemoryInDecimal()));
+                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
+      read1Int =        0
+      read2Int =        0
+      writeInt =        2
+readWriteIndex =        3
+writeIntEnable =        0
 """);
                }
              };
@@ -2956,11 +2996,16 @@ Memory 2
             dumpProgramState("AAAA1111");
             m.getInt (new Int( 1)).ok(7);
             dumpProgramState("AAAA2222");
-            //stop(nws(M.dumpAsDecimal()));
-            ok(()->nws(M.dumpAsDecimal()), """
+            //stop(nws(M.dumpJavaMemoryInDecimal()));
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              1    7
+      read1Int =        0
+      read2Int =        0
+      writeInt =        7
+readWriteIndex =        3
+writeIntEnable =        0
 """);
 
             dumpProgramState("AAAA3333");
@@ -2969,32 +3014,52 @@ Memory 2
             m.getBit(new Int(33)).ok(true );
             m.getBit(new Int(34)).ok(true);
             m.getInt (new Int( 1)).ok(6);
-            //stop(nws(M.dumpAsDecimal()));
-            ok(()->nws(M.dumpAsDecimal()), """
+            //stop(nws(M.dumpJavaMemoryInDecimal()));
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              1    6
+      read1Int =        0
+      read2Int =        0
+      writeInt =        6
+readWriteIndex =        3
+writeIntEnable =        0
 """);
             m.clear(1);
-            //stop(nws(M.dumpAsDecimal()));
-            ok(()->nws(M.dumpAsDecimal()), """
+            //stop(nws(M.dumpJavaMemoryInDecimal()));
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000                   6
+      read1Int =        0
+      read2Int =        0
+      writeInt =        0
+readWriteIndex =        2
+writeIntEnable =        0
 """);
             m.copy(n, 1);
-            //stop(nws(M.dumpAsDecimal()));
-            ok(()->nws(M.dumpAsDecimal()), """
+            //stop(nws(M.dumpJavaMemoryInDecimal()));
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000              6    6
+      read1Int =        0
+      read2Int =        0
+      writeInt =        6
+readWriteIndex =        2
+writeIntEnable =        0
 """);
             M.clear();
-            //stop(nws(M.dumpAsDecimal()));
-            ok(()->nws(M.dumpAsDecimal()), """
+            //stop(nws(M.dumpJavaMemoryInDecimal()));
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2
             0    1    2    3    4    5    6    7    8    9
 00000000
+      read1Int =        0
+      read2Int =        0
+      writeInt =        0
+readWriteIndex =        9
+writeIntEnable =        0
 """);
            }
          };
@@ -3293,8 +3358,8 @@ Memory 2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_arrayConstant();
+   {oldTests();
+    //test_mem(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
