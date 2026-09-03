@@ -16,7 +16,7 @@ public class RamBits extends Test                                               
   RamBits(int[]Array)                                                                                                   // Constructor
    {if (Array == null || Array.length < 1) {max = 0; bpw = 0; bits = hex = null; return;}                               // Nothing to convert
 
-    checkArray(Array);                                                                                                  // Only non negative integers are allowed
+    checkArray(Array);                                                                                                  // Only non negative integers are allowed and there most be at least one non zero entry otherwise there is not much need for a random access memory
     max  = max(Array);                                                                                                  // Maximum value in array
 
     if (max == 0) stop("RAM not required as all the elements of the array are zero");                                   // Must have a positive element otherwise no RAM needed - cannot be called before the check for negative number otherwise this message might be misleading
@@ -51,6 +51,29 @@ public class RamBits extends Test                                               
       x.append(Character.forDigit(n, 1 << N));                                                                          // Convert integer to nibble
      }
     return ""+x;                                                                                                        // Hex nibble representation
+   }
+
+  String writePython(FileNames Folder)                                                                                  // Write python code to drive OpenRAM to create a ROM
+   {final StringBuilder s = new StringBuilder();
+    s.append(s("""
+word_size           = {wordSize}
+
+check_lvsdrc        = True
+
+rom_data            = "include/{name}.hex"
+data_type           = "hex"
+
+output_name         = "{name}"
+output_path         = "macro/{name}"
+
+tech_name           = "sky130"
+nominal_corner_only = True
+
+route_supplies      = "ring"
+check_lvsdrc        = True
+""", "wordSize", bpw, "name", Name));
+
+
    }
 
 //D1 Tests                                                                                                              // Tests
