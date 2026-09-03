@@ -33,11 +33,11 @@ public class Program extends Test                                               
   final static String                     currentProject = "Prep for OpenRam";                                          // Project currently being worked on
 
   final static FileNames                   verilogFolder = new FileNames(fp("verilog"));                                // Verilog folder contains temporary files which hold the generated Verilog and related files
-  final static FileNames              verilogTestsFolder = verilogFolder.down("test");                                  // Verilog tests
+  final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
   final FileNames                      verilogTestFolder = verilogTestsFolder.down(testName()).same(testName());        // Verilog test
-  final FileNames              verilogTestIncludesFolder = verilogTestFolder.down("includes");                          // Verilog test includes folder containing the include files needed for running Verilog tests
-  final FileNames                       verilogLogFolder = verilogFolder.down("log");                                   // Verilog log folder
-  final FileNames                         blackBoxFolder = verilogTestFolder.down("blackboxes");                        // Verilog black boxes
+  final FileNames              verilogTestIncludesFolder = verilogTestFolder.includes();                                // Verilog test includes folder containing the include files needed for running Verilog tests
+  final FileNames                       verilogLogFolder = verilogFolder.logs();                                        // Verilog log folder
+  final FileNames                         blackBoxFolder = verilogTestFolder.blackBoxes();                              // Verilog black boxes
   final FileNames                             traceFiles = verilogTestFolder.same("traceFile");                         // Verilog trace file
   final static String          siliconCompilerImageLocal = "ghcr.io/philiprbrenan/sc_local:latest";                     // Podman container containing silicon compiler when running locally
   final static String         siliconCompilerImageGitHub = "ghcr.io/philiprbrenan/sc_github:latest";                    // Podman container containing silicon compiler when running on github
