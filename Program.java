@@ -7,6 +7,7 @@
 // Check how often each variable is read or written to eliminate variables that are only used once or perhaps put them in a slower memory
 // Use parallel loads in putBit etc as marked with Improvement:
 // Create putBit(Index, BitIndex, true|false) so we can set constants without having to create a temporary bit variable
+// Try relative jumps to reduce width of pcConstant
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -2337,10 +2338,12 @@ check
       final int          size;                                                                                          // Size of the array
       final int []      array;                                                                                          // Array to map inputs to outputs
       final boolean pcIndexed;                                                                                          // Indexed by the program counter if true else by a generated register associated with the array
+      final int           max;                                                                                          // The index of the maximum element in the array
 
       Array (String Name, int[]Array)                                                                                   // Create a new array possibly indexed by the program counter else a generated register
        {name = Name; pcIndexed = false; array = Array; size = Array.length;
         arrays.put(name, this);
+        max = max(array);
        }
 
       Array (String Name, TreeMap<Integer,Integer> map)                                                                 // Define a Verilog array from a Java tree map
@@ -2351,6 +2354,7 @@ check
         for (Integer i : map.keySet()) array[i] = map.get(i);
         arrays.put(name, this);
         pcIndexed = true;
+        max = max(array);
        }
 
       String indexRegisterName () {return pcIndexed ? "pc" : intMemory().read1Int();}                                   // Name of the integer register used to index the array.
@@ -2358,6 +2362,8 @@ check
       String          loadName () {return "load_"       +name;}                                                         // Free data associated with instruction matching as it can get quite big
       String         arrayName () {return "array_"      +name;}                                                         // Free data associated with instruction matching as it can get quite big
       String      indexVarName () {return "index_array_"+name;}                                                         // Index name for clearing this array
+
+      int max(int[]A) {int m = 0; for (int i = 1; i < A.length; i++) if (A[i] > A[m]) m = i; return m;}                 // The index of the maximum element in the array
 
       String define ()                                                                                                  // Define the array
        {return   substitute("""
