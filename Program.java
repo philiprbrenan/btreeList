@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Create a micro-coded cpu in synthesizable Verilog from a Java program coded using integers, bits, bints and memory
+// Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Start with memory randomized
@@ -25,7 +25,7 @@ public class Program extends Test                                               
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = true || github_actions;                                      // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage =!true || github_actions;                                      // Track instruction execution by location in Java code where the instruction was generated
