@@ -1911,7 +1911,7 @@ keys     :   14  13  16  15  18  17  12  11
               boolean trace() {return false;}
              };
 
-            k.W();                                                                                                      // Write key into variable
+            k.TW();                                                                                                      // Write key into variable
             insert(k);
            }
          };
