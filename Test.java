@@ -1032,7 +1032,12 @@ public class Test                                                               
 
     FileNames down (String Folder) {return new FileNames(fn(folder, Folder), file);}                                    // Create a set of file names for a sub folder of the original fileset
     FileNames same (String File)   {return new FileNames(           folder,  File);}                                    // Same folder but different default file
-    FileNames goUp ()              {return new FileNames(fpx(folder),        file);}                                     // Parent folder
+    FileNames goUp ()              {return new FileNames(fpx(folder),        file);}                                    // Parent folder
+
+    FileNames blackBoxes ()        {return down("blackboxes");}                                                         // Black boxes folder
+    FileNames includes ()          {return down("includes");}                                                           // Includes folder
+    FileNames logs ()              {return down("logs");}                                                               // Logs folder
+    FileNames tests ()             {return down("tests");}                                                              // Tests folder
 
     FileNames minus(FileNames X)
      {final String f = folder, F = X.folder;
@@ -1042,6 +1047,7 @@ public class Test                                                               
 
     String    c$ () {return fe(folder, file, "c"   );}  String    c () {return fe(file, "c"   );}                       // Long name and short name of file with extension indicated
     String  gds$ () {return fe(folder, file, "gds" );}  String  gds () {return fe(file, "gds" );}
+    String  hex$ () {return fe(folder, file, "hex" );}  String  hex () {return fe(file, "hex" );}
     String java$ () {return fe(folder, file, "java");}  String java () {return fe(file, "java");}
     String json$ () {return fe(folder, file, "json");}  String json () {return fe(file, "json");}
     String  lef$ () {return fe(folder, file, "lef" );}  String  lef () {return fe(file, "lef" );}
@@ -1503,6 +1509,8 @@ public class Test                                                               
 
 //D1 Tests                                                                                                              // Tests
 
+  static String testCallerName(int Level) {return Level > 0 ?  testCallerName(Level-1) : traceTest();}                  // Has to go before the start of tests
+
   void testsStartHere()                                                                                                 // Line number in the current file where tests start - so many call made from this point onwards shopuld be assumed to be part of teh test harness rather then teh code to be tested
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
     for(int i = t.length-1; i >= 0; --i)
@@ -1752,8 +1760,6 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 """);
    }
 
-  static String testCallerName(int Level) {return Level > 0 ?  testCallerName(Level-1) : traceTest();}
-
   static void test_callerName()
    {ok(callerName(), "test_callerName");
     class Caller
@@ -1764,12 +1770,14 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      }
     final Caller c = new Caller();
     ok(c.name, "test_callerName");
+    new Test().testsStartHere();
+    //stop(testCallerName(3));
     ok(testCallerName(3).matches("""
-Test.java:....:traceTest
-Test.java:....:testCallerName
-Test.java:....:testCallerName
-Test.java:....:testCallerName
-Test.java:....:testCallerName
+Test.java:.*?:traceTest
+Test.java:.*?:testCallerName
+Test.java:.*?:testCallerName
+Test.java:.*?:testCallerName
+Test.java:.*?:testCallerName
 """));
    }
 
