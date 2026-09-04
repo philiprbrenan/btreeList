@@ -7,23 +7,31 @@ package com.AppaApps.Silicon;                                                   
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class RamBits extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static int BITS_PER_NIBBLE = 4;                                                                                 // Number of bits per nibble
+ {final static int BITS_PER_BYTE = 8, BITS_PER_NIBBLE = BITS_PER_BYTE >>> 1;                                            // Number of bits per byte and nibble
   final int     max;                                                                                                    // Maximum value in array
   final int     bpw;                                                                                                    // Bits per word
+  final int     wpr;                                                                                                    // Words per row
   final String bits;                                                                                                    // Bit representation
   final String  hex;                                                                                                    // Hex representation
+  final int[] array;                                                                                                    // Array being converted
+  final int  trails;                                                                                                    // Number of trailing words so finish the final row
+
+  final static FileNames verilogTestsFolder = new FileNames(fp(pwd(), "verilog")).tests();                              // Verilog tests folder
 
   RamBits(int[]Array)                                                                                                   // Constructor
-   {if (Array == null || Array.length < 1) {max = 0; bpw = 0; bits = hex = null; return;}                               // Nothing to convert
+   {array = Array;
+    if (array == null || array.length < 1) {max = wpr = bpw = trails = 0; bits = hex = null; return;}                   // Nothing to convert
 
-    checkArray(Array);                                                                                                  // Only non negative integers are allowed and there most be at least one non zero entry otherwise there is not much need for a random access memory
-    max  = max(Array);                                                                                                  // Maximum value in array
+    checkArray(array);                                                                                                  // Only non negative integers are allowed and there most be at least one non zero entry otherwise there is not much need for a random access memory
+    max  = max(array);                                                                                                  // Maximum value in array
 
     if (max == 0) stop("RAM not required as all the elements of the array are zero");                                   // Must have a positive element otherwise no RAM needed - cannot be called before the check for negative number otherwise this message might be misleading
 
-    bpw  = logTwo(max + 1);                                                                                             // Bits per word needed to accommodate maximum value
-    bits = convertIntsToBits(Array, bpw);                                                                               // Convert input integers into bits
-    hex  = convertBitsToNibbles(bits, BITS_PER_NIBBLE);                                                                 // Convert bits to nibbles
+    bpw     = roundUp(logTwo(max + 1), BITS_PER_BYTE);           wpr = wordsPerRow();                                   // Bits per word needed to accommodate maximum value rounded up to nearest byte as OpenRAM measures word size in bytes
+    trails  = array.length % wpr == 0 ? 0 : wpr - array.length % wpr;                                                   // Trailing words on final row
+
+    bits    = convertIntsToBits(array, bpw);                                                                            // Convert input integers into bits
+    hex     = convertBitsToNibbles(bits, BITS_PER_NIBBLE) + "F".repeat(trails * bpw / BITS_PER_NIBBLE);                 // Convert bits to nibbles and add trailing zeroes to fill out the final row
    }
 
   private int max(int[]A) {int m = 0; for (int i = 1; i < A.length; i++) if (A[i] > m) m = A[i]; return m;}             // The maximum element in an array
@@ -40,27 +48,32 @@ public class RamBits extends Test                                               
     return ""+b;                                                                                                        // Bit representation
    }
 
-  private String convertBitsToNibbles(String B, int N)                                                                  // Convert a string of  bits into nibbles
+  private String convertBitsToNibbles(String B, int W)                                                                  // Convert a string of  bits into nibbles of specified width
    {final StringBuilder b = new StringBuilder(B);                                                                       // Bits to convert allowing for padding of necessary
-    final StringBuilder x = new StringBuilder(B.length() / N + 1);                                                      // Nibbles
+    final StringBuilder x = new StringBuilder(B.length() / W + 1);                                                      // Nibbles
 
-    while(b.length() % N != 0) b.append('0');                                                                           // Pad out bit presentation to full nibble
+    while(b.length() % W != 0) b.append('0');                                                                           // Pad out bit presentation to full nibble
 
-    for   (int i = 0, n = 0; i < b.length(); i += N, n = 0)                                                             // Convert blocks of bits to hex nibbles
-     {for (int j = 0; j < N; ++j) if (b.charAt(i + j) == '1') n |= 1 << (N - j - 1);                                    // Convert block  of bits to integer bh shifting each 1 bit into position
-      x.append(Character.forDigit(n, 1 << N));                                                                          // Convert integer to nibble
+    for   (int i = 0, n = 0; i < b.length(); i += W, n = 0)                                                             // Convert blocks of bits to hex nibbles
+     {for (int j = 0; j < W; ++j) if (b.charAt(i + j) == '1') n |= 1 << (W - j - 1);                                    // Convert block  of bits to integer by shifting each 1 bit into position
+      x.append(Character.forDigit(n, 1 << W));                                                                          // Convert integer to nibble
      }
     return ""+x;                                                                                                        // Hex nibble representation
    }
 
-  String writePython(FileNames Folder)                                                                                  // Write python code to drive OpenRAM to create a ROM
+  int bytesPerWord () {return bpw / BITS_PER_BYTE;}                                                                     // Bytes per word
+  int wordsPerRow ()  {return (int)Math.ceil(Math.sqrt((double)array.length / bytesPerWord() / BITS_PER_BYTE));}        // Words per row assuming bits occupy squares
+
+  String writePython(String Name, FileNames Folder)                                                                     // Write python code to drive OpenRAM to create a ROM
    {final StringBuilder s = new StringBuilder();
+    final FileNames     f = Folder.down(Name);
     s.append(s("""
 word_size           = {wordSize}
+#@words_per_row     = {rowSize}
 
 check_lvsdrc        = True
 
-rom_data            = "include/{name}.hex"
+rom_data            = "includes/{name}.hex"
 data_type           = "hex"
 
 output_name         = "{name}"
@@ -71,9 +84,25 @@ nominal_corner_only = True
 
 route_supplies      = "ring"
 check_lvsdrc        = True
-""", "wordSize", bpw, "name", Name));
+""",
+"wordSize", ""+bytesPerWord(),
+"rowSize",  ""+wordsPerRow (),
+"name",     Name));
+    final String p = writeFile(f.same(Name).py$(),               s);
+    final String d = writeFile(f.includes().same(Name).hex$(), hex+"\n");
 
+    final String c = s(
+"docker run -it --rm  -v{dir}:{dir} -w{dir} ghcr.io/philiprbrenan/or_local:latest python3 /opt/OpenRAM/rom_compiler.py {name}",
+"dir",  f.folder,
+"name", f.same(Name).py());
 
+say("AAAA", verilogTestsFolder.folder);
+say("PPPP", p);
+say("DDDD", d);
+say("CCCC", c);
+say("PWD ", pwd());
+
+    return ""+s;
    }
 
 //D1 Tests                                                                                                              // Tests
@@ -108,45 +137,57 @@ check_lvsdrc        = True
    {sayCurrentTestName();
     final int [] A = {1, 0, 0, 1, 1};
     final RamBits a = new RamBits(A);
-    ok(a.bpw  , 1);
-    ok(a.bits , "10011");
-    ok(a.hex  , "98");
+    ok(a.bpw  , 8);
+    ok(a.bits , "0000000100000000000000000000000100000001");
+    ok(a.hex  , "0100000101");
    }
 
   private static void test_w2()
    {sayCurrentTestName();
     final int [] A = {3,1,2,0,1};
     final RamBits a = new RamBits(A);
-    ok(a.bpw  , 2);
-    ok(a.bits , "1101100001");
-    ok(a.hex  , "d84");
+    ok(a.bpw  , 8);
+    ok(a.bits , "0000001100000001000000100000000000000001");
+    ok(a.hex  , "0301020001");
+   }
+
+  private static void test_w3()
+   {sayCurrentTestName();
+    final int [] A = {1,2,3,4,5,6,7};
+    final RamBits a = new RamBits(A);
+    ok(a.bpw  , 8);
+    ok(a.bits , "00000001000000100000001100000100000001010000011000000111");
+    ok(a.hex  , "01020304050607");
    }
 
   private static void test_w4()
    {sayCurrentTestName();
     final int [] A = {2,5,1,7,9,3};
     final RamBits a = new RamBits(A);
-    ok(a.bpw  , 4);
-    ok(a.bits , "001001010001011110010011");
-    ok(a.hex  , "251793");
+    ok(a.bpw  , 8);
+    ok(a.bits , "000000100000010100000001000001110000100100000011");
+    ok(a.hex  , "020501070903");
    }
 
-  private static void test_w3_7()
+  private static void test_w9()
    {sayCurrentTestName();
-    final int [] A = {1,2,3,4,5,6,7};
+    final int [] A = {257, 258, 259, 260};
     final RamBits a = new RamBits(A);
-    ok(a.bpw  , 3);
-    ok(a.bits , "001010011100101110111");
-    ok(a.hex  , "29cbb8");
+    ok(a.bpw  , 16);
+    ok(a.wpr  , 1);
+    ok(a.bits , "0000000100000001000000010000001000000001000000110000000100000100");
+    ok(a.hex  , "0101010201030104");
+//trails  = array.length % wpr == 0 ? 0 : wpr - array.length % wpr;                                                   // Trailing words on final row
+//int wordsPerRow ()  {return sqrt(bytesPerWord() * BITS_PER_BYTE * array.length);}                                     // Words per row assuming bits occupy squares
    }
 
-  private static void test_w3_8()
+  private static void test_python()
    {sayCurrentTestName();
-    final int [] A = {1,2,3,4,5,6,8};
+    final int [] A = {1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31};
     final RamBits a = new RamBits(A);
-    ok(a.bpw  , 4);
-    ok(a.bits , "0001001000110100010101101000");
-    ok(a.hex  , "1234568");
+    //ok(a.bits , "00000001000000100000001100000101000001110000101100001101");
+    //ok(a.hex  , "01020305070b0d");
+    a.writePython("RomPrimes", verilogTestsFolder);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -157,9 +198,11 @@ check_lvsdrc        = True
 
     test_w1();
     test_w2();
-    test_w3_7();
-    test_w3_8();
+    test_w3();
     test_w4();
+    test_w9();
+
+    test_python();
    }
 
   static void newTests()                                                                                                // Tests being worked on
