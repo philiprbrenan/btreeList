@@ -1,4 +1,4 @@
-# 2026-09-05 at 00:03:49
+# 2026-09-05 at 00:05:05
 # Install java and silicon compiler tools in two containers to create identical environments locally and on github
 
 name: Docker Silicon Compiler
@@ -399,11 +399,11 @@ jobs:
 
     - name: local - Build Docker image
       run: |
-        docker build -t ghcr.io/${{ github.repository_owner }}/scOr_local:latest .
+        docker build -t ghcr.io/${{ github.repository_owner }}/scor_local:latest .
 
     - name: local - push Docker image to GHCR
       run: |
-        docker push ghcr.io/${{ github.repository_owner }}/scOr_local:latest
+        docker push ghcr.io/${{ github.repository_owner }}/scor_local:latest
 
     - name: github - Install base packages
       run: |
@@ -783,18 +783,18 @@ jobs:
 
     - name: github - Build Docker image
       run: |
-        docker build -t ghcr.io/${{ github.repository_owner }}/scOr_github:latest .
+        docker build -t ghcr.io/${{ github.repository_owner }}/scor_github:latest .
 
     - name: github - push Docker image to GHCR
       run: |
-        docker push ghcr.io/${{ github.repository_owner }}/scOr_github:latest
+        docker push ghcr.io/${{ github.repository_owner }}/scor_github:latest
   test:
     needs: build
     if: github.event_name == 'push' && needs.build.result == 'success'
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/${{ github.repository_owner }}/scOr_github:latest
+      image: ghcr.io/${{ github.repository_owner }}/scor_github:latest
       options: --privileged --user=phil
 
     permissions:
