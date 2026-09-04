@@ -376,7 +376,8 @@ public class Test                                                               
     return (int)Math.sqrt(Value);
    }
 
-  static long lui (int Value) {return Integer.toUnsignedLong(Value);}                                                   // Treat an integer as unsigned and convert it to long to lock in the unsignedness
+  static long    lui (int Value)    {return Integer.toUnsignedLong(Value);}                                             // Treat an integer as unsigned and convert it to long to lock in the unsignedness
+  static int roundUp (int X, int M) {return ((X + M - 1) / M) * M;}                                                     // Round an integer up to the next multiple if it is not already a multiple
 
 //D1 Bit routines                                                                                                       // Routines operating on bits
 
@@ -1038,6 +1039,7 @@ public class Test                                                               
     FileNames includes ()          {return down("includes");}                                                           // Includes folder
     FileNames logs ()              {return down("logs");}                                                               // Logs folder
     FileNames tests ()             {return down("tests");}                                                              // Tests folder
+    FileNames verilog ()           {return down("verilog");}                                                            // Verilog folder
 
     FileNames minus(FileNames X)
      {final String f = folder, F = X.folder;
@@ -1790,6 +1792,12 @@ Test.java:.*?:testCallerName
     trimRightAndPad(s, 3); ok(""+s, "A  ");
    }
 
+  static void test_roundUp()
+   {ok(roundUp(5, 3), 6);
+    ok(roundUp(6, 3), 6);
+    ok(roundUp(7, 3), 9);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_log_two();
     test_power_two();
@@ -1809,6 +1817,7 @@ Test.java:.*?:testCallerName
     test_formatComments();
     test_callerName();
     test_trimRightAndPad();
+    test_roundUp();
    }
 
   static void newTests()                                                                                                // Tests being worked on
