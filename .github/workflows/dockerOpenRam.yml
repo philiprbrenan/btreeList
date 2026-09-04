@@ -1,4 +1,4 @@
-# 2026-09-04 at 23:44:08
+# 2026-09-04 at 23:49:59
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -27,10 +27,10 @@ jobs:
         LABEL org.opencontainers.image.source = "https://github.com/philiprbrenan/btreeList"
 
         ENV DEBIAN_FRONTEND=noninteractive
-        ENV TZ=America/Los_Angeles
+        #ENV TZ=America/Los_Angeles                                                                                     # Already set by silicon compiler
 
-        RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime
-        RUN echo "${TZ}" > /etc/timezone
+        #RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime
+        #RUN echo "${TZ}" > /etc/timezone
 
         RUN apt-get update
         RUN apt-get --no-install-recommends -y upgrade
