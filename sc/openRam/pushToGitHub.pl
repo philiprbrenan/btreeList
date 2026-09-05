@@ -1,6 +1,6 @@
 #!/usr/bin/perl -I/home/phil/perl/cpan/DataTableText/lib/ -I/home/phil/perl/cpan/GitHubCrud/lib/
 #-----------------------------------------------------------------------------------------------------------------------
-# Install java and silicon compiler tools in two containers to create identical environments locally and on github
+# Install OpenRam in two containers to create identical environments locally and on github
 # Philip R Brenan at gmail dot com, Appa Apps Ltd Inc., 2026
 #-----------------------------------------------------------------------------------------------------------------------
 use v5.38;
