@@ -30,7 +30,7 @@ public class Program extends Test                                               
   final static boolean    suppressIntegerUsageStatistics = true || github_actions;                                      // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage =!true || github_actions;                                      // Track instruction execution by location in Java code where the instruction was generated
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final static String                     currentProject = "Prep for OpenRam";                                          // Project currently being worked on
+  final static String                     currentProject = "Prep for OpenRam/ read only memory";                        // Project currently being worked on
 
   final static FileNames                   verilogFolder = new FileNames(fp("verilog"));                                // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
@@ -91,19 +91,19 @@ public class Program extends Test                                               
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
-    code            = p ? new Stack<>()         : program().code;                                                       // Machine code instructions
-    labels          = p ? new Stack<>()         : program().labels;                                                     // Labels for instructions in this process
-    blackBoxes      = p ? new Stack<>()         : program().blackBoxes;                                                 // Black box files created
-    memories        = p ? new Stack<>()         : program().memories;                                                   // Memories used by this program and its dependent programs
-    ints            = p ? new Stack<>()         : program().ints;                                                       // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
-    bits            = p ? new Stack<>()         : program().bits;                                                       // Bit variables processed in the same way as ints.
-    dumpLocations   = p ? new DumpLocations()   : program().dumpLocations;                                              // Locations in the code at which dumps have been requested
-    verilogArrays   = p ? new VerilogArrays()   : program().verilogArrays;                                              // Verilog read only array definitions tat are maoed to Read Only Memory to prevent Yosys from expanding them.
-    pcConstant      = p ? new TreeMap<>()       : program().pcConstant;                                                 // Instruction equivalence set identified by program counter
-    intMemory       = p ? new Memory(0, "Ints") : program().intMemory;                                                  // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
-    bitMemory       = p ? new Memory(0, "Bits") : program().bitMemory;                                                  // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    code            = p ? new Stack<>()                : program().code;                                                // Machine code instructions
+    labels          = p ? new Stack<>()                : program().labels;                                              // Labels for instructions in this process
+    blackBoxes      = p ? new Stack<>()                : program().blackBoxes;                                          // Black box files created
+    memories        = p ? new Stack<>()                : program().memories;                                            // Memories used by this program and its dependent programs
+    ints            = p ? new Stack<>()                : program().ints;                                                // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
+    bits            = p ? new Stack<>()                : program().bits;                                                // Bit variables processed in the same way as ints.
+    dumpLocations   = p ? new DumpLocations()          : program().dumpLocations;                                       // Locations in the code at which dumps have been requested
+    verilogArrays   = p ? new VerilogArrays()          : program().verilogArrays;                                       // Verilog read only array definitions tat are maoed to Read Only Memory to prevent Yosys from expanding them.
+    pcConstant      = p ? new TreeMap<>()              : program().pcConstant;                                          // Instruction equivalence set identified by program counter
+    intMemory       = p ? new Memory(0, "Ints", false) : program().intMemory;                                           // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    bitMemory       = p ? new Memory(0, "Bits", false) : program().bitMemory;                                           // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
 
-    unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                             // Memory associated with program if any
+    unitMemory      = Build.size != null ? new Memory(Build.size, "program", false) : null;                             // Memory associated with program if any
     initializeRegisters();                                                                                              // Start registers in known state
     code();                                                                                                             // Load or execute the code associated with this program
    }
@@ -1020,27 +1020,28 @@ public class Program extends Test                                               
 
   class Memory                                                                                                          // Memory made of units
    {final String name;                                                                                                  // Optional name for the memory
-    private final int  id;                                                                                              // Unique identifier for this memory
-    private int []  units;                                                                                              // Bytes of main memory
-    int           read0Int = 0;                                                                                         // Integer read from memory via first  virtual read port
-    int           read1Int = 0;                                                                                         // Integer read from memory via second virtual read port
-    int           read2Int = 0;                                                                                         // Integer read from memory via third  virtual read port
-    int           writeInt = 0;                                                                                         // Integer to write into memory
-    int     readWriteIndex = 0;                                                                                         // Index at which to read an integer via first  virtual read port and also the index with which to write into memory
-    boolean writeIntEnable = false;                                                                                     // Enable write for an integer
+    private final int     id;                                                                                           // Unique identifier for this memory
+    private boolean readOnly;                                                                                            // Read only memory if true
+    private int []     units;                                                                                           // Bytes of main memory
+    int              read0Int = 0;                                                                                      // Integer read from memory via first  virtual read port
+    int              read1Int = 0;                                                                                      // Integer read from memory via second virtual read port
+    int              read2Int = 0;                                                                                      // Integer read from memory via third  virtual read port
+    int              writeInt = 0;                                                                                      // Integer to write into memory
+    int        readWriteIndex = 0;                                                                                      // Index at which to read an integer via first  virtual read port and also the index with which to write into memory
+    boolean    writeIntEnable = false;                                                                                  // Enable write for an integer
 
     void reallocate (final int Size) {units = new int[Size];}                                                           // Resize the memory
 
     static int bitsPerUnit() {return Integer.SIZE;}                                                                     // Bits per memory unit
 
-    Memory (int Length, String Name)                                                                                    // Create and clear some memory
-     {name = Name;
+    Memory (int Length, String Name, boolean ReadOnly)                                                                  // Create and clear some memory
+     {name = Name; readOnly = ReadOnly;
       units = new int[Length];
       for(int i = 0; i < Length; ++i) units[i] = 0;                                                                     // Clear memory. In Verilog this is done using readmemh in an initial block. For a real chip perhaps an instruction to do this?
       final Stack<Memory> m = memories(); id = m.size(); m.push(this);                                                  // Give the memory a unique identifier and save it in the main program
      }
 
-    Memory (int Length) {this(Length, null);}                                                                           // Create and clear some unnamed memory
+    //Memory (int Length) {this(Length, null);}                                                                           // Create and clear some unnamed memory
 
     int size ()                    {return units.length;}                                                               // Size of memory
     String i ()                    {return ""+id;}                                                                      // Number of memory a string for use in writing Verilog
@@ -2824,7 +2825,7 @@ endmodule
         final Bit d = m.getBit(new Int(1), new Int(0));          d.name = "d"; d.ok(false);
         //stop(nws(m.dumpJavaMemoryInDecimal()));
         ok(()->nws(m.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000         2
       read1Int =        0
@@ -2838,7 +2839,7 @@ writeIntEnable =        0
         dumpProgramState("BBBB");
         //stop(nws(m.dumpJavaMemoryInDecimal()));
         ok(()->nws(m.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000         3
       read1Int =        0
@@ -2850,7 +2851,7 @@ writeIntEnable =        0
         m.putBit(new Int(1), new Int(1),   new Bit(false));
         //stop(nws(m.dumpJavaMemoryInDecimal()));
         ok(()->nws(m.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000         1
       read1Int =        0
@@ -2875,7 +2876,7 @@ writeIntEnable =        0
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Memory m = new Memory(2, "test memory name");
+       {final Memory m = new Memory(2, "test memory name", false);
         final Int a = new Int("a"); a.set(2); m.putInt(new Int(1), a);
         dumpProgramState("aaaa");
         scDieAreaX = 500; scDieAreaY = 500;
@@ -2974,7 +2975,7 @@ writeIntEnable =        0
              {void Then()
                {//stop(nws(M.dumpJavaMemoryInDecimal()));
                 ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
       read1Int =        0
@@ -2987,7 +2988,7 @@ writeIntEnable =        0
               void Else()
                {//stop(nws(M.dumpJavaMemoryInDecimal()));
                 ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
       read1Int =        0
@@ -3010,7 +3011,7 @@ writeIntEnable =        0
             dumpProgramState("AAAA2222");
             //stop(nws(M.dumpJavaMemoryInDecimal()));
             ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              1    7
       read1Int =        0
@@ -3028,7 +3029,7 @@ writeIntEnable =        0
             m.getInt (new Int( 1)).ok(6);
             //stop(nws(M.dumpJavaMemoryInDecimal()));
             ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              1    6
       read1Int =        0
@@ -3040,7 +3041,7 @@ writeIntEnable =        0
             m.clear(1);
             //stop(nws(M.dumpJavaMemoryInDecimal()));
             ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000                   6
       read1Int =        0
@@ -3052,7 +3053,7 @@ writeIntEnable =        0
             m.copy(n, 1);
             //stop(nws(M.dumpJavaMemoryInDecimal()));
             ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              6    6
       read1Int =        0
@@ -3064,7 +3065,7 @@ writeIntEnable =        0
             M.clear();
             //stop(nws(M.dumpJavaMemoryInDecimal()));
             ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-Memory 2
+Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000
       read1Int =        0
