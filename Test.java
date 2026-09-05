@@ -1486,27 +1486,27 @@ public class Test                                                               
 
         exitCode = p.waitFor();
 
-        o.join();
-        e.join();
+        o.join(); e.join();
+
         final StringBuilder m = new StringBuilder();
-        if (exitCode == 124) saySb(m, "Timed out after:", timer.seconds(), "seconds");                                  // Check for time out
-        if (exitCode != 0)
-         {stop(
-          "Command:", command,  "\n",
-          "code   :", exitCode, "\n",
-          "stdout :", O,        "\n",
-          "stderr :", E,        "\n",
-        f("time   : %7.2f seconds", timer.seconds()),
-           m);
-         }
+        if (exitCode != 0) stop(this);
        }
       catch (Exception e) {e.printStackTrace();}
-
-      final double deltaTime = timer.seconds();
-      if (deltaTime > 120) say(f("%7.2f seconds for: %s", deltaTime, command));
-      out = ""+O; err = ""+E;
+      out = ""+O; err = ""+E;                                                                                           // Results of command execution
      }
+
     ExecCommand(StringBuilder Command) {this(""+Command);}
+
+    public String toString()                                                                                            // Print execution results
+     {final StringBuilder s = new StringBuilder();
+      s.append(f("Command: %s\n", command ));
+      s.append(f("code   : %d\n", exitCode));
+      s.append(f("stdout : %s\n", out     ));
+      s.append(f("stderr : %s\n", err     ));
+      s.append(f("time   : %7.2f seconds\n", timer.seconds()));
+      if (exitCode == 124) s.append("Timed out\n");
+      return ""+s;
+     }
    }
 
 //D1 Tests                                                                                                              // Tests
