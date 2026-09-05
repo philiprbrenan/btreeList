@@ -64,7 +64,7 @@ public class RamBits extends Test                                               
   int bytesPerWord () {return bpw / BITS_PER_BYTE;}                                                                     // Bytes per word
   int wordsPerRow ()  {return (int)Math.ceil(Math.sqrt((double)array.length / bytesPerWord() / BITS_PER_BYTE));}        // Words per row assuming bits occupy squares
 
-  String writePython(String Name, FileNames Folder)                                                                     // Write python code to drive OpenRAM to create a ROM
+  void generate(String Name, FileNames Folder)                                                                          // Generate the memory
    {final StringBuilder s = new StringBuilder();
     final FileNames     f = Folder.down(Name);
     s.append(s("""
@@ -92,17 +92,12 @@ check_lvsdrc        = True
     final String d = writeFile(f.includes().same(Name).hex$(), hex+"\n");
 
     final String c = s(
-"docker run -it --rm  -v{dir}:{dir} -w{dir} ghcr.io/philiprbrenan/or_local:latest python3 /opt/OpenRAM/rom_compiler.py {name}",
+"docker run --rm  -v{dir}:{dir} -w{dir} ghcr.io/philiprbrenan/or_local:latest python3 /opt/OpenRAM/rom_compiler.py {name}",
 "dir",  f.folder,
 "name", f.same(Name).py());
 
-say("AAAA", verilogTestsFolder.folder);
-say("PPPP", p);
-say("DDDD", d);
-say("CCCC", c);
-say("PWD ", pwd());
-
-    return ""+s;
+    final ExecCommand x = new ExecCommand(c);
+    say("AAAA", x);
    }
 
 //D1 Tests                                                                                                              // Tests
@@ -187,7 +182,7 @@ say("PWD ", pwd());
     final RamBits a = new RamBits(A);
     //ok(a.bits , "00000001000000100000001100000101000001110000101100001101");
     //ok(a.hex  , "01020305070b0d");
-    a.writePython("RomPrimes", verilogTestsFolder);
+    a.generate("RomPrimes", verilogTestsFolder);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
