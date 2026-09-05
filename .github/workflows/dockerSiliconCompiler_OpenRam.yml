@@ -1,4 +1,4 @@
-# 2026-09-05 at 02:28:00
+# 2026-09-05 at 04:05:59
 # Install java and silicon compiler tools in two containers to create identical environments locally and on github
 
 name: Docker Silicon Compiler
@@ -149,6 +149,7 @@ jobs:
             -DCMAKE_Fortran_FLAGS="-O3 -fPIC" \
             -DCMAKE_INSTALL_PREFIX=/usr/local/XyceLibs/Parallel \
             -DCMAKE_MAKE_PROGRAM="make" \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DTrilinos_ENABLE_NOX=ON \
             -DNOX_ENABLE_LOCA=ON \
             -DTrilinos_ENABLE_EpetraExt=ON \
@@ -533,6 +534,7 @@ jobs:
             -DCMAKE_Fortran_FLAGS="-O3 -fPIC" \
             -DCMAKE_INSTALL_PREFIX=/usr/local/XyceLibs/Parallel \
             -DCMAKE_MAKE_PROGRAM="make" \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DTrilinos_ENABLE_NOX=ON \
             -DNOX_ENABLE_LOCA=ON \
             -DTrilinos_ENABLE_EpetraExt=ON \
