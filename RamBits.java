@@ -96,8 +96,10 @@ check_lvsdrc        = True
 "dir",  f.folder,
 "name", f.same(Name).py());
 
-    final ExecCommand x = new ExecCommand(c);
-    say("AAAA", x);
+    if (!github_actions)                                                                                                // Run openRam if local, cannot get a container working yet from within a container
+     {final ExecCommand x = new ExecCommand(c);
+      say("AAAA", x);
+     }
    }
 
 //D1 Tests                                                                                                              // Tests
