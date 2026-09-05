@@ -1,4 +1,4 @@
-# 2026-09-05 at 02:25:06
+# 2026-09-05 at 02:28:00
 # Install java and silicon compiler tools in two containers to create identical environments locally and on github
 
 name: Docker Silicon Compiler
@@ -78,43 +78,43 @@ jobs:
             libreadline8 \
             libreadline-dev
 
-#        ### X11 ###
-#
-#        RUN apt-get update -qq && apt-get install --no-install-recommends -y \
-#            libx11-dev \
-#            libcairo2-dev
-#
-#        ### KLayout ###
-#
-#        RUN apt-get update -qq && apt-get install --no-install-recommends -y \
-#            qt5-qmake \
-#            qtbase5-dev \
-#            qtcreator \
-#            ruby-full \
-#            ruby-dev \
-#            python3-dev \
-#            qtmultimedia5-dev \
-#            libqt5multimediawidgets5 \
-#            libqt5multimedia5-plugins \
-#            libqt5multimedia5 \
-#            libqt5svg5-dev \
-#            libqt5designer5 \
-#            libqt5designercomponents5 \
-#            libqt5xmlpatterns5-dev \
-#            qttools5-dev
-#
-#        ### KLayout ###
-#
-#        ARG KLAYOUT_COMMIT=ea1bf40a1ee1c1c934e47a0020417503ab3d7e7e
-#
-#        WORKDIR /root
-#
-#        RUN git clone https://github.com/KLayout/klayout
-#        WORKDIR /root/klayout
-#        RUN git checkout ${KLAYOUT_COMMIT} \
-#        && ./build.sh -qt5 -j$(nproc) \
-#        && cp -r bin-release /usr/local/klayout \
-#        && rm -rf /root/klayout
+        ### X11 ###
+        #
+        #RUN apt-get update -qq && apt-get install --no-install-recommends -y \
+        #    libx11-dev \
+        #    libcairo2-dev
+        #
+        #### KLayout ###
+        #
+        #RUN apt-get update -qq && apt-get install --no-install-recommends -y \
+        #    qt5-qmake \
+        #    qtbase5-dev \
+        #    qtcreator \
+        #    ruby-full \
+        #    ruby-dev \
+        #    python3-dev \
+        #    qtmultimedia5-dev \
+        #    libqt5multimediawidgets5 \
+        #    libqt5multimedia5-plugins \
+        #    libqt5multimedia5 \
+        #    libqt5svg5-dev \
+        #    libqt5designer5 \
+        #    libqt5designercomponents5 \
+        #    libqt5xmlpatterns5-dev \
+        #    qttools5-dev
+        #
+        #### KLayout ###
+        #
+        #ARG KLAYOUT_COMMIT=ea1bf40a1ee1c1c934e47a0020417503ab3d7e7e
+        #
+        #WORKDIR /root
+        #
+        #RUN git clone https://github.com/KLayout/klayout
+        #WORKDIR /root/klayout
+        #RUN git checkout ${KLAYOUT_COMMIT} \
+        #&& ./build.sh -qt5 -j$(nproc) \
+        #&& cp -r bin-release /usr/local/klayout \
+        #&& rm -rf /root/klayout
 
         ### Trilinos ###
 
@@ -462,43 +462,43 @@ jobs:
             libreadline8 \
             libreadline-dev
 
-#        ### X11 ###
-#
-#        RUN apt-get update -qq && apt-get install --no-install-recommends -y \
-#            libx11-dev \
-#            libcairo2-dev
-#
-#        ### KLayout ###
-#
-#        RUN apt-get update -qq && apt-get install --no-install-recommends -y \
-#            qt5-qmake \
-#            qtbase5-dev \
-#            qtcreator \
-#            ruby-full \
-#            ruby-dev \
-#            python3-dev \
-#            qtmultimedia5-dev \
-#            libqt5multimediawidgets5 \
-#            libqt5multimedia5-plugins \
-#            libqt5multimedia5 \
-#            libqt5svg5-dev \
-#            libqt5designer5 \
-#            libqt5designercomponents5 \
-#            libqt5xmlpatterns5-dev \
-#            qttools5-dev
-#
-#        ### KLayout ###
-#
-#        ARG KLAYOUT_COMMIT=ea1bf40a1ee1c1c934e47a0020417503ab3d7e7e
-#
-#        WORKDIR /root
-#
-#        RUN git clone https://github.com/KLayout/klayout
-#        WORKDIR /root/klayout
-#        RUN git checkout ${KLAYOUT_COMMIT} \
-#        && ./build.sh -qt5 -j$(nproc) \
-#        && cp -r bin-release /usr/local/klayout \
-#        && rm -rf /root/klayout
+        ### X11 ###
+        #
+        #RUN apt-get update -qq && apt-get install --no-install-recommends -y \
+        #    libx11-dev \
+        #    libcairo2-dev
+        #
+        #### KLayout ###
+        #
+        #RUN apt-get update -qq && apt-get install --no-install-recommends -y \
+        #    qt5-qmake \
+        #    qtbase5-dev \
+        #    qtcreator \
+        #    ruby-full \
+        #    ruby-dev \
+        #    python3-dev \
+        #    qtmultimedia5-dev \
+        #    libqt5multimediawidgets5 \
+        #    libqt5multimedia5-plugins \
+        #    libqt5multimedia5 \
+        #    libqt5svg5-dev \
+        #    libqt5designer5 \
+        #    libqt5designercomponents5 \
+        #    libqt5xmlpatterns5-dev \
+        #    qttools5-dev
+        #
+        #### KLayout ###
+        #
+        #ARG KLAYOUT_COMMIT=ea1bf40a1ee1c1c934e47a0020417503ab3d7e7e
+        #
+        #WORKDIR /root
+        #
+        #RUN git clone https://github.com/KLayout/klayout
+        #WORKDIR /root/klayout
+        #RUN git checkout ${KLAYOUT_COMMIT} \
+        #&& ./build.sh -qt5 -j$(nproc) \
+        #&& cp -r bin-release /usr/local/klayout \
+        #&& rm -rf /root/klayout
 
         ### Trilinos ###
 
