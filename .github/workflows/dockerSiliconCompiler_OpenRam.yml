@@ -1,4 +1,4 @@
-# 2026-09-05 at 00:05:05
+# 2026-09-05 at 01:10:51
 # Install java and silicon compiler tools in two containers to create identical environments locally and on github
 
 name: Docker Silicon Compiler
@@ -24,7 +24,7 @@ jobs:
     - name: local - Install base packages
       run: |
         cat << 'EOF' > Dockerfile
-        FROM ubuntu:20.04
+        FROM ubuntu:latest
 
         ENV DEBIAN_FRONTEND=noninteractive
         ENV PIP_NO_CACHE_DIR=1
@@ -408,7 +408,7 @@ jobs:
     - name: github - Install base packages
       run: |
         cat << 'EOF' > Dockerfile
-        FROM ubuntu:20.04
+        FROM ubuntu:latest
 
         ENV DEBIAN_FRONTEND=noninteractive
         ENV PIP_NO_CACHE_DIR=1
