@@ -1,4 +1,4 @@
-# 2026-09-07 at 00:42:37
+# 2026-09-07 at 00:45:33
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -9,6 +9,7 @@ on:
       - '**/dockerOpenRam.yml'
 
 jobs:
+
   build_github:
     permissions:
       contents: read
@@ -399,8 +400,7 @@ jobs:
     - name: github - push Docker image to GHCR
       run: |
         docker push ghcr.io/${{ github.repository_owner }}/or_github:latest
-
-   test_github:
+   test-github:
     needs: build_github
     if: github.event_name == 'push' && needs.build_github.result == 'success'
     runs-on: ubuntu-latest
