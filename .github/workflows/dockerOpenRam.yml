@@ -1,4 +1,4 @@
-# 2026-09-04 at 23:49:59
+# 2026-09-07 at 00:37:17
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -9,7 +9,7 @@ on:
       - '**/dockerOpenRam.yml'
 
 jobs:
-  build:
+  build-github:
     permissions:
       contents: read
       packages: write                                                                                                   # Needed for GHCR push
@@ -20,17 +20,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: local - Create Docker file
+    - name: github - Create Docker file
       run: |
         cat << 'EOF' > Dockerfile
-        FROM ghcr.io/${{ github.repository_owner }}/sc_local:latest
+        FROM ubuntu:20.04
         LABEL org.opencontainers.image.source = "https://github.com/philiprbrenan/btreeList"
 
         ENV DEBIAN_FRONTEND=noninteractive
-        #ENV TZ=America/Los_Angeles                                                                                     # Already set by silicon compiler
+        ENV TZ=America/Los_Angeles
 
-        #RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime
-        #RUN echo "${TZ}" > /etc/timezone
+        RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime
+        RUN echo "${TZ}" > /etc/timezone
 
         RUN apt-get update
         RUN apt-get --no-install-recommends -y upgrade
@@ -385,28 +385,27 @@ jobs:
         && du -sh /usr/local/* 2>/dev/null | sort -h
         EOF
 
-    - name: local - log in to GitHub Container Registry
+    - name: github - log in to GitHub Container Registry
       uses: docker/login-action@v2
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: local - Build Docker image
+    - name: github - Build Docker image
       run: |
-        docker build -t ghcr.io/${{ github.repository_owner }}/os_local:latest .
+        docker build -t ghcr.io/${{ github.repository_owner }}/or_github:latest .
 
-    - name: local - push Docker image to GHCR
+    - name: github - push Docker image to GHCR
       run: |
-        docker push ghcr.io/${{ github.repository_owner }}/os_local:latest
-
-  test:
-    needs: build
-    if: github.event_name == 'push' && needs.build.result == 'success'
+        docker push ghcr.io/${{ github.repository_owner }}/or_github:latest
+   test-github:
+    needs: build-github
+    if: github.event_name == 'push' && needs.build-github.result == 'success'
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/${{ github.repository_owner }}/os_local:latest
+      image: ghcr.io/${{ github.repository_owner }}/or_local:latest
       options: --privileged --user=root
 
     permissions:
