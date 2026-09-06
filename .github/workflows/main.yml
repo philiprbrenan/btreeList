@@ -1,4 +1,4 @@
-# Test 2026-09-06 at 18:51:51
+# Test 2026-09-06 at 19:00:28
 
 name: btreeList
 run-name: runVerilog = 1, runSiliconCompiler = 0, runYosys = 1, Prep for OpenRam/ read only memory
@@ -1075,7 +1075,8 @@ jobs:
         path: verilog/*
         if-no-files-found: ignore
 
-  sc:    if: github.event_name == 'push' && needs.sc.result == 'success'
+  sc:
+    if: github.event_name == 'push' && needs.or.result == 'success'
 
     permissions: write-all
     runs-on: ubuntu-latest
@@ -2141,7 +2142,7 @@ jobs:
         path: verilog/*
         if-no-files-found: ignore
   release:
-    needs: 2
+    needs: sc
     if: github.event_name == 'push' && needs.test.result == 'success'
     runs-on: ubuntu-latest
 
