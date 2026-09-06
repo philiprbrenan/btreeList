@@ -11,23 +11,22 @@ use Data::Dump qw(dump);
 use Data::Table::Text qw(:all);
 use GitHub::Crud qw(:all);
 
-my $home              = q(/home/phil/);                                                                                 # Home
-my $repo              = q(btreeList);                                                                                   # Repo
-my $user              = q(philiprbrenan);                                                                               # User
-my $folder            = fpd $home, $repo;                                                                               # Home folder
-my $shaFile           = fpe $folder, q(sha);                                                                            # Sh256 file sums for each known file to detect changes
-my $wf                = q(.github/workflows/main.yml);                                                                  # Work flow on Ubuntu - compile and test
-my $wfcpd             = q(.github/workflows/cpd.yml);                                                                   # Work flow on Ubuntu - copy paste detection
-my @ext               = qw(c java pl md);                                                                               # Extensions of files to upload to github
-my @containers        = (                                                                                               # Containers to use to run the java code once through each set of EDA tools as it is difficult to combine them in one image
+my $home        = q(/home/phil/);                                                                                       # Home
+my $repo        = q(btreeList);                                                                                         # Repo
+my $user        = q(philiprbrenan);                                                                                     # User
+my $folder      = fpd $home, $repo;                                                                                     # Home folder
+my $shaFile     = fpe $folder, q(sha);                                                                                  # Sh256 file sums for each known file to detect changes
+my $wf          = q(.github/workflows/main.yml);                                                                        # Work flow on Ubuntu - compile and test
+my $wfcpd       = q(.github/workflows/cpd.yml);                                                                         # Work flow on Ubuntu - copy paste detection
+my @ext         = qw(c java pl md);                                                                                     # Extensions of files to upload to github
+my @containers  = (                                                                                                     # Containers to use to run the java code once through each set of EDA tools as it is difficult to combine them in one image
 [qw(or ghcr.io/philiprbrenan/or_github:latest)],
 [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);
-my %tasks             = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                        # Number of tasks for each component - default is one
+my %tasks       = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                              # Number of tasks for each component - default is one
 
-my $include           = q(.);                                                                                           # Java files to include in testing as they are not yet ready
-#   $include          = q(Program);                                                                                     # Java files to include in testing as they are not yet ready
-my $upload            = 0;                                                                                              # Upload to github for execution if true
-my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
+my $include     = q(.);                                                                                                 # Java files to include in testing as they are not yet ready
+#   $include    = q(Program);                                                                                           # Java files to include in testing as they are not yet ready
+my $upload      = 0;                                                                                                    # Upload to github for execution if true
 
 say STDERR timeStamp,  " push to github $repo";
 
@@ -40,7 +39,7 @@ sub getRunParameters()                                                          
       $v =~ s/true/1/; $v =~ s/false/0/; $v =~ s/\!0/1/; $v =~ s/\!1/0/;
       push @p, "$k = $v";
      }
-    elsif ($l =~ m((currentProject)\s*=\s*"(.*?)"))                                                                       # Project name from Java
+    elsif ($l =~ m((currentProject)\s*=\s*"(.*?)"))                                                                     # Project name from Java
      {push @p, "$2";
      }
    }
@@ -219,68 +218,14 @@ END
           git config --global --add safe.directory "\$GITHUB_WORKSPACE"
           gh release create "v\${{ github.run_number }}" Silicon.jar --title "Silicon v\${{ github.run_number }}" --generate-notes
 END
-  my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
-  lll "$f  Ubuntu work flow for $repo";
- }
-else
- {say STDERR "No Java files changed";
- }
-
-if ($copyAndPasteCheck)                                                                                                 # Write workflow to check copy and pastes in java code
- {my $d = dateTimeStamp;
-  my $y = <<"END";
-# Test $d
-
-name: Copy Paste Detection
-
-on:
-  push:
-    paths:
-      - '**/cpd.yml'
-
-jobs:
-  cpd:
-    name: Run Copy/Paste Detection
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout\@v4
-
-      - name: 'JDK'
-        uses: oracle-actions/setup-java\@v1
-
-      - name: Install PMD
-        run: |
-          PMD_VERSION=7.24.0
-          wget -q https://github.com/pmd/pmd/releases/download/pmd_releases%2F\${PMD_VERSION}/pmd-dist-\${PMD_VERSION}-bin.zip
-          unzip pmd-dist-\${PMD_VERSION}-bin.zip
-          mv pmd-bin-\$PMD_VERSION pmd
-          echo "\$PWD/pmd-bin-\${PMD_VERSION}/bin" >> \$GITHUB_PATH
-
-      - name: Run CPD (Copy/Paste Detector)
-        run: |
-          tree --prune -I '*.class'
-
-      - name: Run CPD (Copy/Paste Detector)
-        run: |
-          ./pmd/bin/pmd cpd --minimum-tokens 50  --language java --dir . --format text --no-fail-on-error --no-fail-on-violation --report-file cpd-report.txt
-
-      - name: Show CPD Report
-        run: cat cpd-report.txt
-
-      - name: Upload CPD Report
-        uses: actions/upload-artifact\@v7
-        with:
-          name: cpd-report
-          path: cpd-report.txt
-END
-
   if ($upload)
-   {my $f = writeFileUsingSavedToken $user, $repo, $wfcpd, $y;                                                            # Upload workflow
-    lll "$f  Ubuntu copy paste detection work flow for $repo";
+   {my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
+    lll "$f  Ubuntu work flow for $repo";
    }
   else
    {say STDERR $y;
    }
+ }
+else
+ {say STDERR "No Java files changed";
  }
