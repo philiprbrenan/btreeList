@@ -185,7 +185,7 @@ END
      }
    }
 
-  my $lastJob = $containers[-1]->@*;
+  my ($lastJob) = $containers[-1]->@*;
   $y .= <<END;                                                                                                          # Release jar file if all tests pass
   release:
     needs: $lastJob
