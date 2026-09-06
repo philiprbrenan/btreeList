@@ -11,17 +11,22 @@ use Data::Dump qw(dump);
 use Data::Table::Text qw(:all);
 use GitHub::Crud qw(:all);
 
-my $home    = q(/home/phil/);                                                                                           # Home
-my $repo    = q(btreeList);                                                                                             # Repo
-my $user    = q(philiprbrenan);                                                                                         # User
-my $folder  = fpd $home, $repo;                                                                                         # Home folder
-my $shaFile = fpe $folder, q(sha);                                                                                      # Sh256 file sums for each known file to detect changes
-my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu - compile and test
-my $wfcpd   = q(.github/workflows/cpd.yml);                                                                             # Work flow on Ubuntu - copy paste detection
-my @ext     = qw(c java pl md);                                                                                         # Extensions of files to upload to github
-my %tasks   = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
-my $include = q(.);                                                                                                     # Java files to include in testing as they are not yet ready
-#   $include = q(Program);                                                                                              # Java files to include in testing as they are not yet ready
+my $home              = q(/home/phil/);                                                                                 # Home
+my $repo              = q(btreeList);                                                                                   # Repo
+my $user              = q(philiprbrenan);                                                                               # User
+my $folder            = fpd $home, $repo;                                                                               # Home folder
+my $shaFile           = fpe $folder, q(sha);                                                                            # Sh256 file sums for each known file to detect changes
+my $wf                = q(.github/workflows/main.yml);                                                                  # Work flow on Ubuntu - compile and test
+my $wfcpd             = q(.github/workflows/cpd.yml);                                                                   # Work flow on Ubuntu - copy paste detection
+my @ext               = qw(c java pl md);                                                                               # Extensions of files to upload to github
+my @containers        = (                                                                                               # Containers to use to run the java code once through each set of EDA tools as it is difficult to combine them in one image
+[qw(or ghcr.io/philiprbrenan/or_github:latest)],
+[qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);
+my %tasks             = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                        # Number of tasks for each component - default is one
+
+my $include           = q(.);                                                                                           # Java files to include in testing as they are not yet ready
+#   $include          = q(Program);                                                                                     # Java files to include in testing as they are not yet ready
+my $upload            = 0;                                                                                              # Upload to github for execution if true
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
@@ -111,13 +116,20 @@ on:
       - '**/main.yml'
 
 jobs:
+END
+  for my $C(keys @containers)                                                                                            # Owing to the difficulty of combing the EDA tools in a single container we make a pass per container
+   {my ($job, $container) =          $containers[$C]->@*;
+    my ($prev)            = $C > 0 ? $containers[$C]->@* : undef;
+    my $needs = $prev ? <<END : "";
+    if: github.event_name == 'push' && needs.$prev.result == 'success'
+END
+    $y .= <<END;
 
-  test:
+  $job:$needs
     permissions: write-all
     runs-on: ubuntu-latest
-
     container:
-      image: ghcr.io/philiprbrenan/sc_github:latest
+      image: $container
       options: --privileged  --user=phil
 
     strategy:
@@ -149,12 +161,12 @@ END
 #        iverilog-vpi wall_time.c
 #        ls -la
 
-  for my $t(@t)                                                                                                         # Tasks
-   {my $C  = $$t{class};
-    my $G  = $$t{group};
-    my $N  = $$t{name};
+    for my $t(@t)                                                                                                       # Tasks
+     {my $C  = $$t{class};
+      my $G  = $$t{group};
+      my $N  = $$t{name};
 
-    $y .= <<END;
+      $y .= <<END;
 
     - name: $N
       if: \${{             matrix.task == '$N' }}
@@ -170,11 +182,13 @@ END
         path: verilog/*
         if-no-files-found: ignore
 END
+     }
    }
 
+  my $lastJob = $containers[-1]->@*;
   $y .= <<END;                                                                                                          # Release jar file if all tests pass
   release:
-    needs: test
+    needs: $lastJob
     if: github.event_name == 'push' && needs.test.result == 'success'
     runs-on: ubuntu-latest
 
@@ -262,6 +276,11 @@ jobs:
           path: cpd-report.txt
 END
 
-  my $f = writeFileUsingSavedToken $user, $repo, $wfcpd, $y;                                                            # Upload workflow
-  lll "$f  Ubuntu copy paste detection work flow for $repo";
+  if ($upload)
+   {my $f = writeFileUsingSavedToken $user, $repo, $wfcpd, $y;                                                            # Upload workflow
+    lll "$f  Ubuntu copy paste detection work flow for $repo";
+   }
+  else
+   {say STDERR $y;
+   }
  }
