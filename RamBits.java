@@ -59,7 +59,7 @@ public class RamBits extends Test                                               
       x.append(Character.forDigit(n, 1 << W));                                                                          // Convert integer to nibble
      }
     return ""+x;                                                                                                        // Hex nibble representation
-    }
+   }
 
   int bytesPerWord () {return bpw / BITS_PER_BYTE;}                                                                     // Bytes per word
   int wordsPerRow ()  {return (int)Math.ceil(Math.sqrt((double)array.length / bytesPerWord() / BITS_PER_BYTE));}        // Words per row assuming bits occupy squares
