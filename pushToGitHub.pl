@@ -119,10 +119,8 @@ END
   for my $C(keys @containers)                                                                                            # Owing to the difficulty of combing the EDA tools in a single container we make a pass per container
    {my ($job, $container) =          $containers[$C  ]->@*;
     my ($prev)            = $C > 0 ? $containers[$C-1]->@* : undef;
-    my $needs = $prev ? <<END : "";
+    my $needs = $prev ? "\n    if: github.event_name == 'push' && needs.$prev.result == 'success'" : "";
 
-    if: github.event_name == 'push' && needs.$prev.result == 'success'
-END
     $y .= <<END;
 
   $job:$needs
