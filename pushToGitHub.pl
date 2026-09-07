@@ -26,7 +26,7 @@ my %tasks       = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);      
 
 my $include     = q(.);                                                                                                 # Java files to include in testing as they are not yet ready
 #   $include    = q(Program);                                                                                           # Java files to include in testing as they are not yet ready
-my $upload      = 0;                                                                                                    # Upload to github for execution if true
+my $upload      = 1;                                                                                                    # Upload to github for execution if true
 
 say STDERR timeStamp,  " push to github $repo";
 
