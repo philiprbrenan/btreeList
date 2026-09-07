@@ -1071,6 +1071,7 @@ public class Program extends Test                                               
 
     Memory copy (Memory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                                    // Copy from the specified memory into the current one
      {subStart("Program.Memory.copy");
+      if (readOnly) stop("Target memory is read only and so can not be copied into");
       final Memory S = SourceMemory;
 
       new ForCount(Width)
@@ -1087,6 +1088,7 @@ public class Program extends Test                                               
 
     Memory clear ()                                                                                                     // Clear memory in Java
      {subStart("Program.Memory.clear(I)");
+      if (readOnly) stop("Target memory is read only and so can not be cleared");
       final Int z = new Int(0);
       new ForCount(size()) {void  body(Int Index) {putInt(Index, z);}};
       subFinish();
@@ -1095,6 +1097,7 @@ public class Program extends Test                                               
 
     Memory clear (Int Start, int Width)                                                                                 // Clear memory range in Java
      {subStart("Program.Memory.clear(II)");
+      if (readOnly) stop("Target memory is read only and so can not be cleared even in part");
       final Int z = new Int(0);
       new ForCount (Start, Start.Add(Width)) {void body(Int Index) {putInt(Index, z);}};
       subFinish();
@@ -1167,6 +1170,7 @@ public class Program extends Test                                               
     Memory putInt (Int Index, Int Value)                                                                                // Write to the indexed memory location the value of the specified source integer
      {final Int I = Index, J = Value;                                                                                   // Load the index and the value
       final Memory ints = intMemory();
+      if (readOnly) stop("Target memory is read only and so can not have an integer written into it");
 
       I.S(); J.S2();                                                                                                    // Load integer values from the integers memory. Improvement: perform these operations in parallel
 
@@ -1189,6 +1193,7 @@ public class Program extends Test                                               
      {final Int I = Index, J = Bit; final Bit K = Value;
       final Memory bits = bitMemory();
       final Memory ints = intMemory();
+      if (readOnly) stop("Target memory is read only and so can not have a bit written into it");
 
       final Int i = getInt(I);                                                                                          // Get the underlying integer whose bit is going to be updated
 
@@ -1300,8 +1305,23 @@ public class Program extends Test                                               
     String sizeParameter () {return "MEMORY_"+id;}                                                                      // Amount of memory
 
     String memoryModule ()                                                                                              // Verilog module representing memory
-     {final StringBuilder s = new StringBuilder(substitute("""
+     {final StringBuilder s = readOnly ? new StringBuilder(substitute("""
+                                                                                                                        // Read only memory
+(* blackbox *) module {name}                                                                                            // Memory module
+ (input  wire               clock,                                                                                      // Clock
+  input  reg[31:0] readWriteIndex,                                                                                      // Index in memory of integer to be read or written
+  output reg[31:0]       read0Int);                                                                                     // Integer read from memory
+`ifdef __ICARUS__
+  reg[31:0] memory [0:{size}-1];                                                                                        // Memory
+  reg[31:0] i;                                                                                                          // Index
 
+  always @(posedge clock) begin                                                                                         // Synchronous memory access
+    read0Int <= memory[readWriteIndex];                                                                                 // Read an integer from memory
+  end
+`endif
+endmodule
+""", "name", m(), "size", ""+size())) : new StringBuilder(substitute("""
+                                                                                                                        // Read write memory
 (* blackbox *) module {name}                                                                                            // Memory module
  (input  wire               clock,                                                                                      // Clock
   input  wire      writeIntEnable,                                                                                      // Enable write of an integer
@@ -1335,15 +1355,23 @@ endmodule
       s.append("  reg[31:0] "+        read0Int() +";\n");                                                               // First integer read from memory
       s.append("  reg[31:0] "+        read1Int() +"; initial "+       read1Int() + "= 0;\n");                           // Second integer read from memory
       s.append("  reg[31:0] "+        read2Int() +"; initial "+       read2Int() + "= 0;\n");                           // First integer read from memory
-      s.append("  reg[31:0] "+        writeInt() +"; initial "+       writeInt() + "= 0;\n");                           // Integer to write into memory
       s.append("  reg[31:0] "+  readWriteIndex() +"; initial "+ readWriteIndex() + "= 0;\n");                           // Index at which to read first integer from memory
-      s.append("  reg       "+  writeIntEnable() +"; initial "+ writeIntEnable() + "= 0;\n");                           // Write enable when writing integer data into memory
+      if (!readOnly)                                                                                                    // Write port for writable memory
+       {s.append("  reg[31:0] "+        writeInt() +"; initial "+       writeInt() + "= 0;\n");                         // Integer to write into memory
+        s.append("  reg       "+  writeIntEnable() +"; initial "+ writeIntEnable() + "= 0;\n");                         // Write enable when writing integer data into memory
+       }
       s.append("  "+ connectMemoryModule());                                                                            // Connect to memory module
       return ""+s;
      }
 
     String connectMemoryModule ()                                                                                       // Connect main process to memory module
-     {return substitute("""
+     {return readOnly ? substitute("""
+
+  {moduleName} {n}                                                                                                      // Memory module {name}
+   (.clock           (clock),                                                                                           // Clock
+    .readWriteIndex  ({n}_readWriteIndex),                                                                              // Read first integer address
+    .read0Int        ({n}_read0Int      ));                                                                             // First integer data read
+""", "moduleName", m(), "n", n()) : substitute("""
 
   {moduleName} {n}                                                                                                      // Memory module {name}
    (.clock           (clock),                                                                                           // Clock
@@ -1351,7 +1379,7 @@ endmodule
     .read0Int        ({n}_read0Int      ),                                                                              // First integer data read
     .writeIntEnable  ({n}_writeIntEnable),                                                                              // Write enabled for an integer
     .writeInt        ({n}_writeInt      ));                                                                             // Write data
-""", "moduleName", m(), "n", n(), "name", name());
+""", "moduleName", m(), "n", n());
      }
 
 //D2 Memory Dumps                                                                                                       // Overridable dump memory methods for Java and Verilog
