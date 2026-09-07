@@ -1,4 +1,4 @@
-# Test 2026-09-07 at 00:02:14
+# Test 2026-09-07 at 01:54:20
 
 name: btreeList
 run-name: runVerilog = 1, runSiliconCompiler = 0, runYosys = 1, Prep for OpenRam/ read only memory
@@ -14,7 +14,7 @@ jobs:
     permissions: write-all
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/philiprbrenan/or_local:latest
+      image: ghcr.io/philiprbrenan/or_github:latest
       options: --privileged  --user=phil
 
     strategy:
