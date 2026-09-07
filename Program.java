@@ -39,8 +39,8 @@ public class Program extends Test                                               
   final FileNames                       verilogLogFolder = verilogFolder.logs();                                        // Verilog log folder
   final FileNames                         blackBoxFolder = verilogTestFolder.blackBoxes();                              // Verilog black boxes
   final FileNames                             traceFiles = verilogTestFolder.same("traceFile");                         // Verilog trace file
-  final static String          siliconCompilerImageLocal = "ghcr.io/philiprbrenan/sc_local:latest";                     // Podman container containing silicon compiler when running locally
-  final static String         siliconCompilerImageGitHub = "ghcr.io/philiprbrenan/sc_github:latest";                    // Podman container containing silicon compiler when running on github
+  final static String          siliconCompilerImageLocal = "ghcr.io/philiprbrenan/sc_local:latest";                     // Docker container containing silicon compiler when running locally
+  final static String         siliconCompilerImageGitHub = "ghcr.io/philiprbrenan/sc_github:latest";                    // Docker container containing silicon compiler when running on github
   final static int                            padVerilog = 32;                                                          // Padding for components of the generated Verilog code
 
   final Program                            parentProgram;                                                               // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
@@ -1570,7 +1570,7 @@ endmodule
     printReadWriteUsage();                                                                                              // Print read write usage of integers
     printExecutionCoverageForTest();                                                                                    // Print details of which instructions were executed and which were not
 
-    if (generateVerilog)                                                                                                // Run Verilog
+    if (generateVerilog && (onSc || !github_actions))                                                                   // Run Verilog if local or in the Silicon Compiler container.  OpenRAM runs on an Ubuntu 20 which uses an incompatible version of iverilog
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
       final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
@@ -1599,7 +1599,7 @@ cd {f}; yosys -q {y}                                                            
       g.lef();                                                                                                          // Generate LEF files
       g.gds();                                                                                                          // Generate gds files to match lef files
 
-      if ((onSc || !github_actions) && runVerilog)                                                                      // Run Verilog if we are
+      if (runVerilog)                                                                                                   // Run Verilog
        {traceFiles.delete_v();                                                                                          // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
         final boolean       r = github_actions || aws_run;                                                              // Running remotely
@@ -1618,7 +1618,7 @@ cd {f}; yosys -q {y}                                                            
 
         ok(readFileAsString(traceFiles.v$()).equals(readFileAsString(traceFiles.java$())));                             // Compare corresponding Java and Verilog trace files -  says failed if it fails and provides a traceback
 
-        if (github_actions && onSc && runSiliconCompiler)                                                               // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
+        if (onSc && runSiliconCompiler)                                                                                 // Run synthesis in a docker container containing silicon compiler and the associated tools needed for ASIC
          {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
