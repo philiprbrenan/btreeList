@@ -20,7 +20,7 @@ my $wf          = q(.github/workflows/main.yml);                                
 my $wfcpd       = q(.github/workflows/cpd.yml);                                                                         # Work flow on Ubuntu - copy paste detection
 my @ext         = qw(c java pl md);                                                                                     # Extensions of files to upload to github
 my @containers  = (                                                                                                     # Containers to use to run the java code once through each set of EDA tools as it is difficult to combine them in one image
-[qw(or ghcr.io/philiprbrenan/or_github:latest)],
+[qw(or ghcr.io/philiprbrenan/or_github:u1001)],
 [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);
 my %tasks       = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                              # Number of tasks for each component - default is one
 
