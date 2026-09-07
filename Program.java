@@ -1521,6 +1521,7 @@ endmodule
 
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
+    final boolean onSc = github_job.equals("onSc");                                                                     // Whether we are in the Silicon compiler container
 
     if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
     else if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                      // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
@@ -1601,7 +1602,7 @@ cd {f}; yosys -q {y}                                                            
       g.lef();                                                                                                          // Generate LEF files
       g.gds();                                                                                                          // Generate gds files to match lef files
 
-      if (runVerilog)                                                                                                   // Run Verilog
+      if (onSc && runVerilog)                                                                                           // Run Verilog if we are
        {traceFiles.delete_v();                                                                                          // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
         final boolean       r = github_actions || aws_run;                                                              // Running remotely
@@ -1620,7 +1621,7 @@ cd {f}; yosys -q {y}                                                            
 
         ok(readFileAsString(traceFiles.v$()).equals(readFileAsString(traceFiles.java$())));                             // Compare corresponding Java and Verilog trace files -  says failed if it fails and provides a traceback
 
-        if (github_actions && runSiliconCompiler)                                                                       // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
+        if (github_actions && onSc && runSiliconCompiler)                                                               // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
          {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
