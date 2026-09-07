@@ -1521,7 +1521,7 @@ endmodule
 
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
-    final boolean onSc = github_job.equals("onSc");                                                                     // Whether we are in the Silicon compiler container
+    final boolean onSc = "onSc".equals(github_job);                                                                     // Whether we are in the Silicon compiler container
 
     if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
     else if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                      // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
@@ -1574,10 +1574,7 @@ endmodule
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
       final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
-//podman run {c} --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                             # Silicon compiler command
-//podman run {c} --rm --network host --user=phil      -v {f}:{f} -w {f} "{image}" python3 {p}                             # Silicon compiler command
-
-      final String scCmd = github_actions                                                                               // Silicon compiler command to perform ASIC flow
+      final String           scCmd = github_actions                                                                     // Silicon compiler command to perform ASIC flow
         ? substitute("""
 cd {f}; python3 {p}                                                                                                     # Silicon compiler command already inside container
 """,
@@ -1602,7 +1599,7 @@ cd {f}; yosys -q {y}                                                            
       g.lef();                                                                                                          // Generate LEF files
       g.gds();                                                                                                          // Generate gds files to match lef files
 
-      if (onSc && runVerilog)                                                                                           // Run Verilog if we are
+      if ((onSc || !github_actions) && runVerilog)                                                                      // Run Verilog if we are
        {traceFiles.delete_v();                                                                                          // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
         final boolean       r = github_actions || aws_run;                                                              // Running remotely
