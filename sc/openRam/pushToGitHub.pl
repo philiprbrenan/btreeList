@@ -16,13 +16,14 @@ my $user     = q(philiprbrenan);                                                
 my $repo     = q(btreeList);                                                                                            # Repository on github
 my $workFlow = q(dockerOpenRam);                                                                                        # Work flow name
 my $uGitHub  = q(1001);                                                                                                 # Desired numeric userid on github.
+my $optBase  = q(iverilog openjdk-21-jdk-headless tree yosys sudo);                                                     # Optional base packages to be added to containers, assumed to be installable via apt install
 my $wf       = fpe q(.github/workflows/), $workFlow, q(yml);                                                            # Work flow file on Ubuntu
 my $upload   = 1;                                                                                                       # Upload the generated work flow otherwise print it
 
 sub Local()            {"local" ;}                                                                                      # Choose container to build - local version
 sub GitHub()           {"github";}                                                                                      # Choose container to build - github version
 sub imageName($Target) {"ghcr.io/\${{ github.repository_owner }}/or_$Target:latest";}                                   # Name of container to build
-my @builds   = (GitHub());                                                                                              # Images to build
+my @builds   =         (GitHub());                                                                                      # Images to build
 
 sub createImage($Target)                                                                                                # Install base packages and silicon compiler for local use with the correct userid number so that the docker container can write back into the local file system without running into file permission problems
  {my $G = $Target||'' eq GitHub();
@@ -31,12 +32,13 @@ sub createImage($Target)                                                        
 
   my $imageName  = imageName $Target;                                                                                   # Image name
 
-  my $createUser = $L ? <<END : <<END2;                                                                                 # How we create the user depends on whether it exists or not in the base operating system image. If the userid ubuntu exists we rename it to the requested user id, else if it is not present, as in the case of the ubuntu presented by github  we create a userid with the requested name. This make it possible for the container to write files back into the users workspace when running locally without file permission problems, allowing the build results to be seen outside the local container.
-        RUN usermod -l ${userId} ubuntu \\
-        && groupmod -n ${userId} ubuntu \\
-        && usermod -d /home/${userId} -m ${userId}   \\
-        && echo "${userId} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${userId}
-END
+#  my $createUser = $L ? <<END : <<END2;                                                                                 # How we create the user depends on whether it exists or not in the base operating system image. If the userid ubuntu exists we rename it to the requested user id, else if it is not present, as in the case of the ubuntu presented by github  we create a userid with the requested name. This make it possible for the container to write files back into the users workspace when running locally without file permission problems, allowing the build results to be seen outside the local container.
+#        RUN usermod -l ${userId} ubuntu \\
+#        && groupmod -n ${userId} ubuntu \\
+#        && usermod -d /home/${userId} -m ${userId}   \\
+#        && echo "${userId} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${userId}
+#END
+  my $createUser = <<END2;
         RUN groupadd --gid $uGitHub ${userId} \\
         && useradd --uid $uGitHub --gid $uGitHub --create-home --shell /bin/bash ${userId} \\
         && echo "${userId} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${userId}
@@ -71,7 +73,8 @@ END2
             automake \\
             libtool \\
             bison \\
-            flex
+            flex \\
+            $optBase
 
         # Use bash instead of dash
         RUN rm /bin/sh \\
