@@ -16,13 +16,13 @@ my $user     = q(philiprbrenan);                                                
 my $repo     = q(btreeList);                                                                                            # Repository on github
 my $workFlow = q(dockerOpenRam);                                                                                        # Work flow name
 my $uGitHub  = q(1001);                                                                                                 # Desired numeric userid on github.
-my $upload   = 1;                                                                                                       # Upload teh generated work flow otherwise print it
-
 my $wf       = fpe q(.github/workflows/), $workFlow, q(yml);                                                            # Work flow file on Ubuntu
+my $upload   = 1;                                                                                                       # Upload the generated work flow otherwise print it
 
 sub Local()            {"local" ;}                                                                                      # Choose container to build - local version
 sub GitHub()           {"github";}                                                                                      # Choose container to build - github version
 sub imageName($Target) {"ghcr.io/\${{ github.repository_owner }}/or_$Target:latest";}                                   # Name of container to build
+my @builds   = (GitHub());                                                                                              # Images to build
 
 sub createImage($Target)                                                                                                # Install base packages and silicon compiler for local use with the correct userid number so that the docker container can write back into the local file system without running into file permission problems
  {my $G = $Target||'' eq GitHub();
@@ -443,7 +443,11 @@ on:
       - '**/$workFlow.yml'
 
 jobs:
-  build:
+
+END
+for my $build(@builds)                                                                                                  # Each build
+ {$y .= <<"END";                                                                                                        # Workflow
+  build_$build:
     permissions:
       contents: read
       packages: write                                                                                                   # Needed for GHCR push
@@ -454,13 +458,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout\@v4
 END
-$y .= createImage Local();
-#$y .= createImage GitHub();
-$y .= <<END;
 
-  test:
-    needs: build
-    if: github.event_name == 'push' && needs.build.result == 'success'
+  $y .= createImage($build);
+
+  $y .= <<"END";                                                                                                        # Workflow
+  test-$build:
+    needs: build_$build
+    if: github.event_name == 'push' && needs.build_$build.result == 'success'
     runs-on: ubuntu-latest
 
     container:
@@ -478,6 +482,8 @@ $y .= <<END;
       run: |
         pip3 show openram
 END
+ }
+
 if (!$upload)                                                                                                           # Show generated workflow if dry run
  {say STDOUT $y; exit;
  }
