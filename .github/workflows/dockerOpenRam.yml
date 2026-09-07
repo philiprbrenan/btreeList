@@ -1,4 +1,4 @@
-# 2026-09-07 at 00:49:53
+# 2026-09-07 at 02:14:01
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -351,10 +351,10 @@ jobs:
         # Generic user
         ########################################################################
 
-        RUN useradd phil
-        RUN mkdir /home/phil
-        RUN chown -R phil /home/phil
-        RUN chgrp -R phil /home/phil
+        #RUN useradd phil
+        #RUN mkdir /home/phil
+        #RUN chown -R phil /home/phil
+        #RUN chgrp -R phil /home/phil
 
         ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 
@@ -368,6 +368,11 @@ jobs:
         ENV XYCE_LIB=${XYCE_HOME}/lib
 
         ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${KLAYOUT_HOME}:${XYCE_LIB}
+
+        RUN usermod -l phil ubuntu \
+        && groupmod -n phil ubuntu \
+        && usermod -d /home/phil -m phil   \
+        && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
 
         USER phil
         WORKDIR /home/phil
