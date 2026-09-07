@@ -1,4 +1,4 @@
-# 2026-09-07 at 04:50:15
+# 2026-09-07 at 16:11:56
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -370,9 +370,8 @@ jobs:
 
         ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${KLAYOUT_HOME}:${XYCE_LIB}
 
-        RUN usermod -l phil ubuntu \
-        && groupmod -n phil ubuntu \
-        && usermod -d /home/phil -m phil   \
+        RUN groupadd --gid 1001 phil \
+        && useradd --uid 1001 --gid 1001 --create-home --shell /bin/bash phil \
         && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
 
         USER phil
