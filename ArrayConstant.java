@@ -238,6 +238,12 @@ if (i[4-:5] == 5'b10011) v <= 5;
 
     final String file = "/tmp/aaaa.v";
     a.verilogModule(file);
+    final ExecCommand C1 = new ExecCommand("tree");                                                                     // Execute Verilog commands
+    final ExecCommand C2 = new ExecCommand("rm -f aaaa");                                                               // Execute Verilog commands
+    final ExecCommand C3 = new ExecCommand("iverilog -I/tmp/includes/ -g2012 -o aaaa /tmp/aaaa.v");                     // Execute Verilog commands
+    final ExecCommand C4 = new ExecCommand("tree");                                                                     // Execute Verilog commands
+    final ExecCommand C5 = new ExecCommand("timeout 1m ./aaaa");                                                        // Execute Verilog commands
+
     final String cmd = "rm -f aaaa; iverilog -I/tmp/includes/ -g2012 -o aaaa /tmp/aaaa.v  && timeout 1m ./aaaa";
     final ExecCommand x = new ExecCommand(cmd);                                                                         // Execute Verilog commands
     ok(x.exitCode, 0);
