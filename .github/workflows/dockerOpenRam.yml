@@ -23,6 +23,5 @@ jobs:
 
     - name: github - Create Docker file
       run: |
-        useradd --uid 1001  --gid 1001  --non-unique  --create-home  --home-dir /home/phil  --shell /bin/bash  phil
         whoami
         id
