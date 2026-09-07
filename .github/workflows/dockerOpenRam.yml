@@ -1,4 +1,4 @@
-# 2026-09-07 at 02:14:01
+# 2026-09-07 at 04:41:42
 # Install OpenRam in two containers to create identical environments locally and on github
 
 run-name: Docker Open Ram
@@ -48,7 +48,8 @@ jobs:
             automake \
             libtool \
             bison \
-            flex
+            flex \
+            iverilog openjdk-25-jdk-headless tree yosys gh
 
         # Use bash instead of dash
         RUN rm /bin/sh \
