@@ -374,10 +374,10 @@ END2
         # Generic user
         ########################################################################
 
-        RUN useradd $userId
-        RUN mkdir /home/$userId
-        RUN chown -R $userId /home/$userId
-        RUN chgrp -R $userId /home/$userId
+        #RUN useradd $userId
+        #RUN mkdir /home/$userId
+        #RUN chown -R $userId /home/$userId
+        #RUN chgrp -R $userId /home/$userId
 
         ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 
@@ -392,6 +392,7 @@ END2
 
         ENV LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${KLAYOUT_HOME}:\${XYCE_LIB}
 
+$createUser
         USER $userId
         WORKDIR /home/$userId
 
