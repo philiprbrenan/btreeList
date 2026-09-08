@@ -27,8 +27,8 @@ public class Program extends Test                                               
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final static boolean    suppressIntegerUsageStatistics = true || github_actions;                                      // Print read/write usage of integers
-  final static boolean       suppressInstructionCoverage =!true || github_actions;                                      // Track instruction execution by location in Java code where the instruction was generated
+  final static boolean    suppressIntegerUsageStatistics = true || github_action;                                      // Print read/write usage of integers
+  final static boolean       suppressInstructionCoverage =!true || github_action;                                      // Track instruction execution by location in Java code where the instruction was generated
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
   final static String                     currentProject = "Prep for OpenRam/ read only memory";                        // Project currently being worked on
 
@@ -1570,11 +1570,11 @@ endmodule
     printReadWriteUsage();                                                                                              // Print read write usage of integers
     printExecutionCoverageForTest();                                                                                    // Print details of which instructions were executed and which were not
 
-    if (generateVerilog && (onSc || !github_actions))                                                                   // Run Verilog if local or in the Silicon Compiler container.  OpenRAM runs on an Ubuntu 20 which uses an incompatible version of iverilog
+    if (generateVerilog && (onSc || !github_action))                                                                   // Run Verilog if local or in the Silicon Compiler container.  OpenRAM runs on an Ubuntu 20 which uses an incompatible version of iverilog
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
       final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
-      final String           scCmd = github_actions                                                                     // Silicon compiler command to perform ASIC flow
+      final String           scCmd = github_action                                                                     // Silicon compiler command to perform ASIC flow
         ? substitute("""
 cd {f}; python3 {p}                                                                                                     # Silicon compiler command already inside container
 """,
@@ -1602,7 +1602,7 @@ cd {f}; yosys -q {y}                                                            
       if (runVerilog)                                                                                                   // Run Verilog
        {traceFiles.delete_v();                                                                                          // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
-        final boolean       r = github_actions || aws_run;                                                              // Running remotely
+        final boolean       r = github_action || aws_run;                                                              // Running remotely
       //final String        v = "vvp -M../../vpi -mwall_time " +testName();                                             // Command to run Verilog simulation
         final String        v = "vvp " +testName();                                                                     // Command to run Verilog simulation
 
@@ -1610,7 +1610,7 @@ cd {f}; yosys -q {y}                                                            
                             "f", verilogTestFolder.folder,
                             "n", testName(),
                             "v", verilogTestFolder.v(),
-                            "t", github_actions || aws_run ? "" : f("timeout %ds ", verilogTimeOut)));                  // Time out if running locally.  The program will return a code of 124 if it times out
+                            "t", github_action || aws_run ? "" : f("timeout %ds ", verilogTimeOut)));                  // Time out if running locally.  The program will return a code of 124 if it times out
 
         final ExecCommand x = new ExecCommand(s);                                                                       // Execute Verilog commands
         message.append(f(" %11.2f seconds for: %s",                    x.timer.seconds(), x.command));                  // Execution time of command in message
@@ -3404,7 +3404,7 @@ writeIntEnable =        0
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
-      if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
+      if (github_action) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Code coverage
       printExecutionCoverageGlobal(10);                                                                                 // Find locations in the java code that generated instructions that were never tested
       testSummary();                                                                                                    // Summarize test results
