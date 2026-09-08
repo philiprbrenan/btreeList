@@ -19,9 +19,9 @@ import java.security.*;
 //D1 Construct                                                                                                          // Test a java program describing a chip
 
 public class Test                                                                                                       // Test a java program describing a chip
- {final static boolean                 github_action = "true".equals(System.getenv("GITHUB_ACTIONS"));                 // Whether we are on a github
+ {final static boolean                  github_action = "true".equals(System.getenv("GITHUB_ACTIONS"));                 // Whether we are on a github
   final static boolean                        aws_run = folderExists("/home/ubuntu");                                   // Whether we are running on AWS
-  final static boolean                      local_run = !github_action && !aws_run;                                    // Whether we are running locally
+  final static boolean                      local_run = !github_action && !aws_run;                                     // Whether we are running locally
   final static long                             start = System.nanoTime();                                              // Start time
   final static String                      github_job = System.getenv("GITHUB_JOB");                                    // The job being run on github
   final static String               github_commit_sha = System.getenv("GITHUB_SHA");                                    // Github commit sha if running as a github action
