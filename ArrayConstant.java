@@ -236,7 +236,7 @@ if (i[4-:5] == 5'b10010) v <= 4;
 if (i[4-:5] == 5'b10011) v <= 5;
 """);
 
-    if ("sc".equals(github_job) || !github_action)                                                                     // Run verilog version if we are in teh silicon compiler container or local
+    if ("sc".equals(github_job) || !github_action)                                                                      // Run verilog version if we are in teh silicon compiler container or local
      {final String cmd = "rm -f aaaa; iverilog -I/tmp/includes/ -g2012 -o aaaa /tmp/aaaa.v  && timeout 1m ./aaaa";
       final ExecCommand x = new ExecCommand(cmd);                                                                       // Execute Verilog commands
       ok(x.exitCode, 0);
@@ -259,7 +259,7 @@ if (i[4-:5] == 5'b10011) v <= 5;
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {if (github_action) oldTests(); else newTests();                                                                  // Tests to run
+     {if (github_action) oldTests(); else newTests();                                                                   // Tests to run
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
