@@ -187,7 +187,7 @@ END
   $y .= <<END;                                                                                                          # Release jar file if all tests pass
   release:
     needs: $lastJob
-    if: github.event_name == 'push' && needs.test.result == 'success'
+    if: github.event_name == 'push' && needs.$lastJob.result == 'success'
     runs-on: ubuntu-latest
 
     container:
