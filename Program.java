@@ -1304,8 +1304,6 @@ public class Program extends Test                                               
     String index ()         {return "index_memory_"+id;}                                                                // Integer to index this memory
     String sizeParameter () {return "MEMORY_"+id;}                                                                      // Amount of memory
 
-//  output [DATA_WIDTH-1:0] dout0;
-
     String memoryModule ()                                                                                              // Verilog module representing memory
      {final StringBuilder s = readOnly ? new StringBuilder(substitute("""
                                                                                                                         // Read only memory
@@ -1313,13 +1311,13 @@ public class Program extends Test                                               
  (input  wire                clk0,                                                                                      // Clock
   input  wire                 cs0,                                                                                      // Memory selected when high
   input  reg[31:0]          addr0,                                                                                      // Index in memory of integer to be read or written
-  output reg[31:0]       dout0);                                                                                     // Integer read from memory
+  output reg[31:0]          dout0);                                                                                     // Integer read from memory
 `ifdef __ICARUS__
   reg[31:0] memory [0:{size}-1];                                                                                        // Memory
   reg[31:0] i;                                                                                                          // Index
 
-  always @(posedge clk0) begin                                                                                         // Synchronous memory access
-    if (cs0) dout0 <= memory[addr0];                                                                                 // Read an integer from memory
+  always @(posedge clk0) begin                                                                                          // Synchronous memory access
+    if (cs0) dout0 <= memory[addr0];                                                                                    // Read an integer from memory
   end
 `endif
 endmodule
@@ -1331,7 +1329,7 @@ endmodule
   input  wire      writeIntEnable,                                                                                      // Enable write of an integer
   input  reg[31:0]       writeInt,                                                                                      // Integer to be written
   input  reg[31:0]          addr0,                                                                                      // Index in memory of integer to be read or written
-  output reg[31:0]       dout0);                                                                                     // Integer read from memory
+  output reg[31:0]          dout0);                                                                                     // Integer read from memory
 `ifdef __ICARUS__
   reg[31:0] memory [0:{size}-1];                                                                                        // Memory
   reg[31:0] i;                                                                                                          // Index
@@ -1341,7 +1339,7 @@ endmodule
   always @(posedge clk0) begin                                                                                          // Synchronous memory access
     if (cs0) begin                                                                                                      // Select chip - enable memory when high
       if (writeIntEnable) memory[addr0] <= writeInt;                                                                    // Write an integer using the read index as the write address
-      else    dout0 <= memory[addr0];                                                                                // Read an integer from memory
+      else dout0 <= memory[addr0];                                                                                      // Read an integer from memory
     end
   end
 `endif
