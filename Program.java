@@ -1304,18 +1304,23 @@ public class Program extends Test                                               
     String index ()         {return "index_memory_"+id;}                                                                // Integer to index this memory
     String sizeParameter () {return "MEMORY_"+id;}                                                                      // Amount of memory
 
+//  input  clk0; // clock
+//  input   cs0; // active high chip select
+//  input [ADDR_WIDTH-1:0]  addr0;
+//  output [DATA_WIDTH-1:0] dout0;
+
     String memoryModule ()                                                                                              // Verilog module representing memory
      {final StringBuilder s = readOnly ? new StringBuilder(substitute("""
                                                                                                                         // Read only memory
 (* blackbox *) module {name}                                                                                            // Memory module
- (input  wire               clock,                                                                                      // Clock
+ (input  wire               clk0,                                                                                       // Clock
   input  reg[31:0] readWriteIndex,                                                                                      // Index in memory of integer to be read or written
   output reg[31:0]       read0Int);                                                                                     // Integer read from memory
 `ifdef __ICARUS__
   reg[31:0] memory [0:{size}-1];                                                                                        // Memory
   reg[31:0] i;                                                                                                          // Index
 
-  always @(posedge clock) begin                                                                                         // Synchronous memory access
+  always @(posedge clk0) begin                                                                                         // Synchronous memory access
     read0Int <= memory[readWriteIndex];                                                                                 // Read an integer from memory
   end
 `endif
@@ -1323,7 +1328,7 @@ endmodule
 """, "name", m(), "size", ""+size())) : new StringBuilder(substitute("""
                                                                                                                         // Read write memory
 (* blackbox *) module {name}                                                                                            // Memory module
- (input  wire               clock,                                                                                      // Clock
+ (input  wire               clk0,                                                                                      // Clock
   input  wire      writeIntEnable,                                                                                      // Enable write of an integer
   input  reg[31:0]       writeInt,                                                                                      // Integer to be written
   input  reg[31:0] readWriteIndex,                                                                                      // Index in memory of integer to be read or written
@@ -1334,7 +1339,7 @@ endmodule
 
   initial for (i = 0; i < {size}; i = i + 1) memory[i] = 0;                                                             // Clear memory to zeros at start
 
-  always @(posedge clock) begin                                                                                         // Synchronous memory access
+  always @(posedge clk0) begin                                                                                         // Synchronous memory access
     if (writeIntEnable) memory[readWriteIndex] <= writeInt;                                                             // Write an integer using the read index as the write address
     else    read0Int <= memory[readWriteIndex];                                                                         // Read an integer from memory
   end
@@ -1368,13 +1373,13 @@ endmodule
      {return readOnly ? substitute("""
 
   {moduleName} {n}                                                                                                      // Memory module {name}
-   (.clock           (clock),                                                                                           // Clock
+   (.clk0           (clock),                                                                                           // Clock
     .readWriteIndex  ({n}_readWriteIndex),                                                                              // Read first integer address
     .read0Int        ({n}_read0Int      ));                                                                             // First integer data read
 """, "moduleName", m(), "n", n()) : substitute("""
 
   {moduleName} {n}                                                                                                      // Memory module {name}
-   (.clock           (clock),                                                                                           // Clock
+   (.clk0           (clock),                                                                                           // Clock
     .readWriteIndex  ({n}_readWriteIndex),                                                                              // Read first integer address
     .read0Int        ({n}_read0Int      ),                                                                              // First integer data read
     .writeIntEnable  ({n}_writeIntEnable),                                                                              // Write enabled for an integer
