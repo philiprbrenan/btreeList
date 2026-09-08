@@ -96,7 +96,7 @@ check_lvsdrc        = True
 "dir",  f.folder,
 "name", f.same(Name).py());
 
-    if (!github_action)                                                                                                // Run openRam if local, cannot get a container working yet from within a container
+    if (!github_action)                                                                                                 // Run openRam if local, cannot get a container working yet from within a container
      {final ExecCommand x = new ExecCommand(c);
       say("AAAA", x);
      }
@@ -174,7 +174,7 @@ check_lvsdrc        = True
     ok(a.wpr  , 1);
     ok(a.bits , "0000000100000001000000010000001000000001000000110000000100000100");
     ok(a.hex  , "0101010201030104");
-//trails  = array.length % wpr == 0 ? 0 : wpr - array.length % wpr;                                                   // Trailing words on final row
+//trails  = array.length % wpr == 0 ? 0 : wpr - array.length % wpr;                                                     // Trailing words on final row
 //int wordsPerRow ()  {return sqrt(bytesPerWord() * BITS_PER_BYTE * array.length);}                                     // Words per row assuming bits occupy squares
    }
 
@@ -208,7 +208,7 @@ check_lvsdrc        = True
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {if (github_action) oldTests(); else newTests();                                                                  // Tests to run
+     {if (github_action) oldTests(); else newTests();                                                                   // Tests to run
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
