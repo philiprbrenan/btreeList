@@ -237,10 +237,15 @@ if (i[4-:5] == 5'b10011) v <= 5;
 """);
 
     if ("sc".equals(github_job) || !github_action)                                                                      // Run verilog version if we are in teh silicon compiler container or local
-     {final ExecCommand x1 = new ExecCommand("rm -f /tmp/aaaa");
-      final ExecCommand x2 = new ExecCommand("iverilog -v -I/tmp/includes/ -g2012 -o /tmp/aaaa /tmp/aaaa.v");
-      final ExecCommand x3 = new ExecCommand("timeout 1m /tmp//aaaa");
-      final String cmd = "rm -f /tmp/aaaa; iverilog -I/tmp/includes/ -g2012 -o /tmp/aaaa /tmp/aaaa.v  && timeout 1m /tmp/aaaa";
+     {final String t = "/tmp/aaaa";
+      final String f = fpe(T, "/tmp/aaaa.v";
+      a.verilogModule(f);
+      final ExecCommand x1 = new ExecCommand("rm -f "+f);
+      final ExecCommand x2 = new ExecCommand("la -la "+f);
+      final ExecCommand x3 = new ExecCommand("cat "+f);
+      final ExecCommand x4 = new ExecCommand("iverilog -v -I/tmp/includes/ -g2012 -o /tmp/aaaa "+f);
+      final ExecCommand x5 = new ExecCommand("timeout 1m /tmp/aaaa");
+      final String cmd = s("rm -f "{f}; iverilog -I/tmp/includes/ -g2012 -o /tmp/aaaa /tmp/aaaa.v  && timeout 1m /tmp/aaaa";
       final ExecCommand x = new ExecCommand(cmd);                                                                       // Execute Verilog commands
       ok(x.exitCode, 0);
      }
