@@ -236,7 +236,7 @@ if (i[4-:5] == 5'b10010) v <= 4;
 if (i[4-:5] == 5'b10011) v <= 5;
 """);
 
-    if ("sc".equals(github_job) || !github_action)                                                                      // Run verilog version if we are in teh silicon compiler container or local
+    if ("sc".equals(github_job) || !github_action)                                                                      // Run verilog version if we are in the silicon compiler container or local
      {final FileNames   f = new FileNames("/tmp", "aaaa");                                                              // Verilog folder
       a.verilogModule  (f.v$());                                                                                        // Write the verilog
       final String      c = s("rm -f {x}; iverilog -I/tmp/includes/ -g2012 -o {x} {v} && timeout 1m {x}", "x", f.x$(), "v", f.v$());
