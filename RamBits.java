@@ -92,9 +92,9 @@ check_lvsdrc        = True
     final String d = writeFile(f.includes().same(Name).hex$(), hex+"\n");
 
     final String c = s(
-"docker run --rm  -v{dir}:{dir} -w{dir} ghcr.io/philiprbrenan/or_local:latest python3 /opt/OpenRAM/rom_compiler.py {name}",
-"dir",  f.folder,
-"name", f.same(Name).py());
+"docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest python3 /opt/OpenRAM/rom_compiler.py {n}",
+"f", f.folder,
+"n", f.same(Name).py());
 
     if (!github_action)                                                                                                 // Run openRam if local, cannot get a container working yet from within a container
      {final ExecCommand x = new ExecCommand(c);
