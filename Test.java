@@ -1827,7 +1827,7 @@ Test.java:.*?:testCallerName
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {if (github_action) oldTests(); else newTests();                                                                  // Tests to run
+     {if (github_action) oldTests(); else newTests();                                                                   // Tests to run
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
