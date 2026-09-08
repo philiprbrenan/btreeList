@@ -1576,7 +1576,7 @@ endmodule
     printReadWriteUsage();                                                                                              // Print read write usage of integers
     printExecutionCoverageForTest();                                                                                    // Print details of which instructions were executed and which were not
 
-    if (generateVerilog && (onSc || !github_action))                                                                    // Run Verilog if local or in the Silicon Compiler container.  OpenRAM runs on an Ubuntu 20 which uses an incompatible version of iverilog
+    if (generateVerilog && (onSc || !github_action))                                                                    // Run Verilog if local or in the Silicon Compiler container. OpenRAM runs on an Ubuntu 20 which uses an incompatible version of iverilog
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
       final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
