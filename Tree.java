@@ -759,7 +759,7 @@ class Tree extends Program                                                      
       return rootType == BranchOrLeaf.leaf.value;
      }
 
-    void traverse (int Index, int Parent, int Depth)                                                                 // Traverse the branch at the indicated index
+    void traverse (int Index, int Parent, int Depth)                                                                    // Traverse the branch at the indicated index
      {final Slots          s = slots(Index, maxBranchSize);                                                             // Slots for branch
       final Memory.Ref nodes = refNodes.step(Index*build.nodeSize + 1 + s.build.size());                                // Array of child nodes
       final int            t = nodes.getInt(maxBranchSize);
@@ -874,7 +874,7 @@ class Tree extends Program                                                      
          {if (Context)
            {final int d = Depth * linesToPrintABranch;
             pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
-            trimRight(P.elementAt(d+1)).append(""+Index);                                                         // Add index of top to slot second line
+            trimRight(P.elementAt(d+1)).append(""+Index);                                                               // Add index of top to slot second line
            }
          }
        };
@@ -1788,10 +1788,10 @@ Leaf           size:   4, count:   2
    {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
-      if (github_action) oldTests(); else newTests();                                                                  // Tests to run
-      //if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
+      if (github_action) oldTests(); else newTests();                                                                   // Tests to run
+      //if (coverageAnalysis) coverageAnalysis(12);                                                                     // Coverage analysis
       //say(subPrint());
-      printExecutionCoverageGlobal(4);                                                                                 // Find locations in the java code that generated instructions that were never tested
+      printExecutionCoverageGlobal(4);                                                                                  // Find locations in the java code that generated instructions that were never tested
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
