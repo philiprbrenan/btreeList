@@ -1712,7 +1712,6 @@ BBBB
     final FileNames x = s.minus(u);
     ok(x.pl$(), "includes/bbb.pl");
     ok(x.pl(),           "bbb.pl");
-    say("AAAA", x.none$());
     ok(x.none$(),  "includes/bbb");
     ok(x.none(),            "bbb");
    }
