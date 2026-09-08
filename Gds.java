@@ -231,7 +231,7 @@ public final class Gds extends Test                                             
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
+     {if (github_action) oldTests(); else newTests();                                                                   // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Code coverage
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
