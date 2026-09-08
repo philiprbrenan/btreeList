@@ -96,7 +96,7 @@ check_lvsdrc        = True
 "dir",  f.folder,
 "name", f.same(Name).py());
 
-    if (!github_actions)                                                                                                // Run openRam if local, cannot get a container working yet from within a container
+    if (!github_action)                                                                                                // Run openRam if local, cannot get a container working yet from within a container
      {final ExecCommand x = new ExecCommand(c);
       say("AAAA", x);
      }
@@ -208,7 +208,7 @@ check_lvsdrc        = True
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
+     {if (github_action) oldTests(); else newTests();                                                                  // Tests to run
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
