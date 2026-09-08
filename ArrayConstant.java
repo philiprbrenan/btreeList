@@ -237,7 +237,7 @@ if (i[4-:5] == 5'b10011) v <= 5;
 """);
 
     if ("sc".equals(github_job) || !github_action)                                                                      // Run verilog version if we are in teh silicon compiler container or local
-     {final String cmd = "rm -f aaaa; iverilog -I/tmp/includes/ -g2012 -o aaaa /tmp/aaaa.v  && timeout 1m ./aaaa";
+     {final String cmd = "rm -f /tmp/aaaa; iverilog -I/tmp/includes/ -g2012 -o /tmp/aaaa /tmp/aaaa.v  && timeout 1m /tmp//aaaa";
       final ExecCommand x = new ExecCommand(cmd);                                                                       // Execute Verilog commands
       ok(x.exitCode, 0);
      }
