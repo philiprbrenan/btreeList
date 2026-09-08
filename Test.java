@@ -1056,12 +1056,12 @@ public class Test                                                               
     String  lef$ () {return fe(folder, file, "lef" );}  String  lef () {return fe(file, "lef" );}
     String  log$ () {return fe(folder, file, "log" );}  String  log () {return fe(file, "log" );}
     String   md$ () {return fe(folder, file, "md"  );}  String   md () {return fe(file, "md"  );}
-    String none$ () {return fn(folder, file        );}  String none () {return file;            }
     String   pl$ () {return fe(folder, file, "pl"  );}  String   pl () {return fe(file, "pl"  );}
     String   py$ () {return fe(folder, file, "py"  );}  String   py () {return fe(file, "py"  );}
     String  txt$ () {return fe(folder, file, "txt" );}  String  txt () {return fe(file, "txt" );}
     String    v$ () {return fe(folder, file, "v"   );}  String    v () {return fe(file, "v"   );}
     String   ys$ () {return fe(folder, file, "ys"  );}  String   ys () {return fe(file, "ys"  );}
+    String    x$ () {return fe(folder, file, "x"   );}  String    x () {return fe(file, "x"   );}
 
     void    delete_c () {deleteFile(   c$());}
     void delete_java () {deleteFile(java$());}
@@ -1712,8 +1712,8 @@ BBBB
     final FileNames x = s.minus(u);
     ok(x.pl$(), "includes/bbb.pl");
     ok(x.pl(),           "bbb.pl");
-    ok(x.none$(),  "includes/bbb");
-    ok(x.none(),            "bbb");
+    ok(x.x$(),  "includes/bbb.x");
+    ok(x.x(),            "bbb.x");
    }
 
   static void test_replaceAll()
