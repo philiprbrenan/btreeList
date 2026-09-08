@@ -1817,9 +1817,9 @@ Zero:
    {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
     try                                                                                                                 // Protected execution block.
      {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
-      if (github_action) oldTests(); else newTests();                                                                  // Select tests.
+      if (github_action) oldTests(); else newTests();                                                                   // Select tests.
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Optional coverage analysis.
-      //printExecutionCoverageGlobal(4);                                                                                 // Find locations in the java code that generated instructions that were never tested
+      //printExecutionCoverageGlobal(4);                                                                                // Find locations in the java code that generated instructions that were never tested
       testSummary();                                                                                                    // Summarize test results.
       System.exit(testsFailed);                                                                                         // Exit with status.
      }
