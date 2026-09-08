@@ -1056,6 +1056,7 @@ public class Test                                                               
     String  lef$ () {return fe(folder, file, "lef" );}  String  lef () {return fe(file, "lef" );}
     String  log$ () {return fe(folder, file, "log" );}  String  log () {return fe(file, "log" );}
     String   md$ () {return fe(folder, file, "md"  );}  String   md () {return fe(file, "md"  );}
+    String none$ () {return fn(folder, file        );}  String none () {return file;            }
     String   pl$ () {return fe(folder, file, "pl"  );}  String   pl () {return fe(file, "pl"  );}
     String   py$ () {return fe(folder, file, "py"  );}  String   py () {return fe(file, "py"  );}
     String  txt$ () {return fe(folder, file, "txt" );}  String  txt () {return fe(file, "txt" );}
@@ -1711,6 +1712,9 @@ BBBB
     final FileNames x = s.minus(u);
     ok(x.pl$(), "includes/bbb.pl");
     ok(x.pl(),           "bbb.pl");
+    say("AAAA", x.none$());
+    ok(x.none$(),  "includes/bbb");
+    ok(x.none(),            "bbb");
    }
 
   static void test_replaceAll()
