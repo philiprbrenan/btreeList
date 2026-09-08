@@ -237,15 +237,10 @@ if (i[4-:5] == 5'b10011) v <= 5;
 """);
 
     if ("sc".equals(github_job) || !github_action)                                                                      // Run verilog version if we are in teh silicon compiler container or local
-     {final FileNames f = new FileNames("/tmp", "aaaa");
-      a.verilogModule(f.v$());
-      final ExecCommand x1 = new ExecCommand("rm -f  "+f.x$());
-      final ExecCommand x2 = new ExecCommand("ls -la "+f.v$());
-      final ExecCommand x3 = new ExecCommand("cat    "+f.v$());
-      final ExecCommand x4 = new ExecCommand(s("iverilog -v -I/tmp/includes/ -g2012 -o {x} {v}", "x", f.x$(), "v", f.v$()));
-      final ExecCommand x5 = new ExecCommand(s("timeout 1m {x}", "x", f.x$()));
-      final String cmd = s("rm -f {x}; iverilog -I/tmp/includes/ -g2012 -o {x} {v} && timeout 1m {x}", "x", f.x$(), "v", f.v$());
-      final ExecCommand x = new ExecCommand(cmd);                                                                       // Execute Verilog commands
+     {final FileNames   f = new FileNames("/tmp", "aaaa");                                                              // Verilog folder
+      a.verilogModule  (f.v$());                                                                                        // Write the verilog
+      final String      c = s("rm -f {x}; iverilog -I/tmp/includes/ -g2012 -o {x} {v} && timeout 1m {x}", "x", f.x$(), "v", f.v$());
+      final ExecCommand x = new ExecCommand(c);                                                                         // Execute Verilog commands
       ok(x.exitCode, 0);
      }
    }
