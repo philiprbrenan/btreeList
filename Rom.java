@@ -85,17 +85,14 @@ check_lvsdrc        = True
 "wordSize", ""+bytesPerWord(),
 "rowSize",  ""+wordsPerRow (),
 "name",     Name));
-    final String p = writeFile(f.same(Name).py$(),               s);
-    final String d = writeFile(f.includes().same(Name).hex$(), hex+"\n");
 
-    final String c = s(
-"docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest python3 /opt/OpenRAM/rom_compiler.py {n}",
-"f", f.folder,
-"n", f.same(Name).py());
+    final String p = writeFile(f.same(Name).py$(),               s);                                                    // Write python
+    final String d = writeFile(f.includes().same(Name).hex$(), hex+"\n");                                               // Write data to initialize memory
 
-    if ("or".equals(github_job) || !github_action)                                                                      // Run OpenRam if local or in the OpenRAM container
-     {final ExecCommand x = new ExecCommand(c);
-     }
+    final String P = "python3 /opt/OpenRAM/rom_compiler.py "+p;                                                         // Execute python via appropriate compiler
+    final String D = s("docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest", "f", f.folder);        // Docker command
+    final String c = inJob("or") ? P : D + " " + P;                                                                     // Run in existing container if on github or start a container if local
+    final ExecCommand x = new ExecCommand(c);
    }
 
 //D1 Tests                                                                                                              // Tests
