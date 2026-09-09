@@ -1381,11 +1381,11 @@ endmodule
   {moduleName} {n}                                                                                                      // Memory module {name}
    (.clk0            (clock),                                                                                           // Clock
     .csb0            (!{n}_writeIntEnable),                                                                             // Enable memory for write on low
-    .csb1            (0),                                                                                               // Enable memory for read on low
-    .addr0           ({n}_readWriteIndex),                                                                              // Read address
-    .addr1           ({n}_readWriteIndex),                                                                              // Write address
-    .din0            ({n}_writeInt      ),                                                                              // Integer to write
-    .dout1           ({n}_read0Int      ));                                                                             // Integer data read
+    .csb1            ( {n}_writeIntEnable),                                                                             // Enable memory for read on low
+    .addr0           ( {n}_readWriteIndex),                                                                             // Read address
+    .addr1           ( {n}_readWriteIndex),                                                                             // Write address
+    .din0            ( {n}_writeInt      ),                                                                             // Integer to write
+    .dout1           ( {n}_read0Int      ));                                                                            // Integer data read
 """, "moduleName", m(), "n", n());
      }
 
