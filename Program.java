@@ -1326,11 +1326,12 @@ endmodule
 (* blackbox *) module {name}                                                                                            // Memory module
  (input  wire                clk0,                                                                                      // Clock for reads
   input  wire                clk1,                                                                                      // Clock for writes
-  input  wire                 cs0,                                                                                      // Chip select - selects memory for read when low
-  input  wire                 cs1,                                                                                      // Chip select - selects memory for write when low
-  input  reg[31:0]          addr0,                                                                                      // Index in memory of integer to be read or written
+  input  wire                csb0,                                                                                      // Chip select - selects memory for write when low
+  input  wire                csb1,                                                                                      // Chip select - selects memory for read when low
+  input  reg[31:0]          addr0,                                                                                      // Index in memory of integer to be written
+  input  reg[31:0]          addr1,                                                                                      // Index in memory of integer to be read
   input  reg[31:0]           din0,                                                                                      // Integer to write into memory
-  output reg[31:0]          dout0);                                                                                     // Integer read from memory
+  output reg[31:0]          dout1);                                                                                     // Integer read from memory
 `ifdef __ICARUS__
   reg[31:0] memory [0:{size}-1];                                                                                        // Memory
   reg[31:0] i;                                                                                                          // Index
@@ -1338,8 +1339,8 @@ endmodule
   initial for (i = 0; i < {size}; i = i + 1) memory[i] = 0;                                                             // Clear memory to zeros at start
 
   always @(posedge clk0) begin                                                                                          // Synchronous memory access
-    if (cs0) dout0 <= memory[addr0];                                                                                    // Read
-    if (cs1) memory[addr0] <= din0;                                                                                     // Write
+    if (!csb0) memory[addr0] <= din0;                                                                                   // Write on low to match OpenRAM
+    if (!csb1) dout1 <= memory[addr1];                                                                                  // Read on low to match OpenRAM
   end
 `endif
 endmodule
@@ -1372,18 +1373,19 @@ endmodule
 
   {moduleName} {n}                                                                                                      // Memory module {name}
    (.clk0            (clock),                                                                                           // Clock
-    .cs0             (1),                                                                                               // Enable memory
-    .addr0           ({n}_readWriteIndex),                                                                              // Read first integer address
+    .cs0             (1),                                                                                               // Enable memory for read on high
+    .addr0           ({n}_readWriteIndex),                                                                              // Read and write address
     .dout0        ({n}_read0Int      ));                                                                                // Integer data read
 """, "moduleName", m(), "n", n()) : substitute("""
 
   {moduleName} {n}                                                                                                      // Memory module {name}
    (.clk0            (clock),                                                                                           // Clock
-    .cs0             (1),                                                                                               // Enable memory
-    .cs1             ({n}_writeIntEnable),                                                                              // Write enabled for an integer
-    .addr0           ({n}_readWriteIndex),                                                                              // Read first integer address
-    .dout0           ({n}_read0Int      ),                                                                              // Integer data read
-    .din0            ({n}_writeInt      ));                                                                             // Write data
+    .csb0            (!{n}_writeIntEnable),                                                                             // Enable memory for write on low
+    .csb1            (0),                                                                                               // Enable memory for read on low
+    .addr0           ({n}_readWriteIndex),                                                                              // Read address
+    .addr1           ({n}_readWriteIndex),                                                                              // Write address
+    .din0            ({n}_writeInt      ),                                                                              // Integer to write
+    .dout1           ({n}_read0Int      ));                                                                             // Integer data read
 """, "moduleName", m(), "n", n());
      }
 
