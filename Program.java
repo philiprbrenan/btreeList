@@ -2370,7 +2370,7 @@ check
      {final String       name;                                                                                          // Name of the array
       final int          size;                                                                                          // Size of the array
       final int []      array;                                                                                          // Array to map inputs to outputs
-      final boolean pcIndexed;                                                                                          // Indexed by the program counter if true else by a generated register associated with the array
+      final boolean pcIndexed;                                                                                          // Indexed by the program counter if true else by a generated register associated with the array. Non pc indexed arrays are only used in tests
       final int           max;                                                                                          // The index of the maximum element in the array
 
       Array (String Name, int[]Array)                                                                                   // Create a new array possibly indexed by the program counter else a generated register
@@ -2392,28 +2392,20 @@ check
 
       String indexRegisterName () {return pcIndexed ? "pc" : intMemory().read1Int();}                                   // Name of the integer register used to index the array.
       String  dataRegisterName () {return "arrayData_" + name;}                                                         // Name of the register to contain the result from the indexed location in the array
-      String          loadName () {return "load_"       +name;}                                                         // Free data associated with instruction matching as it can get quite big
-      String         arrayName () {return "array_"      +name;}                                                         // Free data associated with instruction matching as it can get quite big
+      String         arrayName () {return "array_"      +name;}                                                         // Name of this array
       String      indexVarName () {return "index_array_"+name;}                                                         // Index name for clearing this array
 
       int max(int[]A) {int m = 0; for (int i = 1; i < A.length; i++) if (A[i] > A[m]) m = i; return m;}                 // The index of the maximum element in the array
 
-      String define ()                                                                                                  // Define the array
-       {return   substitute("""
-  reg[31:0] {name}[{size}-1:0];
-  reg[31:0] {index};
-""", "name", arrayName(), "index", indexVarName(), "size", ""+size);
-       }
-
       String connectModule ()                                                                                           // Connect the main module to the array module
        {if (!pcIndexed) return substitute("""
   reg[31:0] {dr};                                                                                                       // Array data register
-  {name} {name} (.address({ir}), .data({dr}));                                                                          // Connect to array
+  {name} {name} (.clk0(clock), .addr0({ir}), .dout0({dr}));                                                             // Connect to array
 """, "dr", dataRegisterName(), "ir", indexRegisterName(), "name", arrayName());
 
         else return substitute("""
   reg[31:0] {dr};                                                                                                       // Define array data register
-  {name} {name} (.address(pc), .data({dr}));                                                                            // Connect to module providing array
+  {name} {name} (.clk0(clock), .addr0(pc), .dout0({dr}));                                                               // Connect to module providing array
 """, "dr", dataRegisterName(),  "name", arrayName());
        }
 
@@ -2428,12 +2420,13 @@ check
         final StringBuilder s = new StringBuilder();
         s.append(substitute("""
 (* blackbox *) module {array}                                                                                           // Memory module definitions for asynchronous read only memory
- (input  reg[31:0] address,
-  output reg[31:0] data);
+ (input  wire      clk0,
+  input  reg[31:0] addr0,
+  output reg[31:0] dout0);
 `ifdef __ICARUS__
   reg[31:0] memory [0:{size}];
   initial $readmemh("{file}", memory, 0, {size});
-  assign data = memory[address];
+  assign dout0 = memory[addr0];
 `endif
 endmodule
 """,
