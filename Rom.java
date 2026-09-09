@@ -67,6 +67,7 @@ public class Rom extends Test                                                   
     final FileNames     f = Folder.down(Name);
 
     s.append(s("""
+print_banner        = False
 word_size           = {w}
 
 check_lvsdrc        = True
@@ -93,7 +94,7 @@ check_lvsdrc        = True
     final String D = s("docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest", "f", f.folder);        // Docker command
 
     if (inJob("or"))
-     {final ExecCommand x = new ExecCommand(P); say("XXXX", x);
+     {final ExecCommand x = new ExecCommand(P); say(x);
      }
     else if (!github_action)
      {final ExecCommand y = new ExecCommand(D + " " + P); say("YYYY", y);
