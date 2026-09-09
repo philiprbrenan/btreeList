@@ -47,9 +47,10 @@ print_banner        = False
 "f", f.folder,
 "n", f.same(name).py());
 
+    say("AAAA\n", c);
     if (!github_action)                                                                                                 // Run openRam if local, cannot get a container working yet from within a container
-     {final ExecCommand x = new ExecCommand(c);
-      say("AAAA", x);
+     {//final ExecCommand x = new ExecCommand(c);
+      //say("AAAA", x);
      }
    }
 
@@ -57,13 +58,13 @@ print_banner        = False
 
   void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
 
-  private static void test_python()
+  private static void test_ram()
    {sayCurrentTestName();
     final Ram a = new Ram(32, 32, verilogTestsFolder, "Ram");
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {test_python();
+   {test_ram();
    }
 
   static void newTests()                                                                                                // Tests being worked on
