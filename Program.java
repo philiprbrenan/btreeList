@@ -26,13 +26,14 @@ public class Program extends Test                                               
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = true || github_action;                                       // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage =!true || github_action;                                       // Track instruction execution by location in Java code where the instruction was generated
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
   final static String                     currentProject = "Prep for OpenRam/ change names";                            // Project currently being worked on
 
-  final static FileNames                   verilogFolder = new FileNames(fp("verilog"));                                // Verilog folder contains temporary files which hold the generated Verilog and related files
+  final static FileNames                   verilogFolder = new FileNames(fp(pwd(), "verilog"));                         // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
   final FileNames                      verilogTestFolder = verilogTestsFolder.down(testName()).same(testName());        // Verilog test
   final FileNames              verilogTestIncludesFolder = verilogTestFolder.includes();                                // Verilog test includes folder containing the include files needed for running Verilog tests
@@ -1393,6 +1394,13 @@ endmodule
 
     String dumpVerilog ()       {return dumpVerilogMemoryInDecimalName()+"();";}
     String memory(String Index) {return substitute("{n}.memory[{i}]", "n", n(), "i", Index);}                           // Verilog to get the indexed location in memory
+
+//D2 OpenRAM                                                                                                            // Generate OpenRAM versions of each memory
+
+    void openRam()                                                                                                      // Generate OpenRAM modules
+     {new Ram(units.length, Integer.SIZE, verilogTestFolder, name);
+     }
+
    } // Memory
 
   interface Locatable {Bint getLocation();}                                                                             // The location of an object in memory
@@ -1527,7 +1535,8 @@ endmodule
 
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
-    final boolean onSc = "onSc".equals(github_job);                                                                     // Whether we are in the Silicon compiler container
+    final boolean onSc = "sc".equals(github_job);                                                                       // Whether we are in the Silicon compiler container
+    final boolean onOr = "or".equals(github_job);                                                                       // Whether we are in the OpenRAM container
 
     if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
     else if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                      // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
@@ -1577,7 +1586,7 @@ endmodule
     printExecutionCoverageForTest();                                                                                    // Print details of which instructions were executed and which were not
 
     if (generateVerilog && (onSc || !github_action))                                                                    // Run Verilog if local or in the Silicon Compiler container. OpenRAM runs on an Ubuntu 20 which uses an incompatible version of iverilog
-     {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
+     {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code
       final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
       final String           scCmd = github_action                                                                      // Silicon compiler command to perform ASIC flow
@@ -1593,12 +1602,12 @@ cd {f} && docker run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}
 "c", "", //"--userns=keep-id",                                                                                          // Use the same userid inside the container to avoid file permission problems
 "f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
 "i", siliconCompilerImageLocal,                                                                                         // Python to run in which image
-"n", fp("/home/phil/btreeList/verilog/test", verilogTestFolder.folder),                                                 // Folder name in container - which we control
+"n", fp(verilogTestFolder.folder),                                                                                      // Folder name in container - which we control
 "p", verilogTestFolder.py());
 
       final String ysCmd = substitute("""
 cd {f}; yosys -q {y}                                                                                                    # Yosys command
-""", "f", verilogTestFolder.folderWithCwd(), "y", verilogTestFolder.ys());
+""", "f", verilogTestFolder.folder, "y", verilogTestFolder.ys());
                                                                                                                         // Yosys command
       g.generateSiliconCompiler(); if (runSiliconCompiler) say("C=sc; " + scCmd);                                       // Generate python to drive silicon compiler
       g.generateYosys();           if (runYosys)           say("C=ys; " + ysCmd);                                       // Generate tcl to drive Yosys
@@ -1881,7 +1890,7 @@ cd {f}; yosys -q {y}                                                            
     if (instructionCover.size() > 0 && n == 0) say("All generated instructions executed at least once");
     if (instructionCover.size() > 0 && n  > 0)
      {final int i = instructionCover.size();
-      say(f("Number of instructions generated but not executed is: %d/%d = %d%%", n, i, 100*n/i));
+      say(f("Number of instructions generated but not executed is: %d/%d = %d%%", n, i, 100*n/i));                      // Conflicts with instruction execution cover for test ifThen
      }
    }
 
@@ -2072,8 +2081,12 @@ module {name};                                                                  
       /*End*/put("""
 endmodule
 """);
+
       for(VerilogArrays.Array    a : verilogArrays.arrays())    put(a.module());                                        // Write memory module definitions for read only arrays
       for(Memory                 m : memories())                put(m.memoryModule());                                  // Memory modules
+
+      for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRam();                            // Generate OpenRam matching memory
+      for(Memory                 m : memories())                if (runOpenRAM) m.openRam();                            // Memory modules
 
       try (out) {} catch(Exception e) {stop(e, fullTraceBack(e));}                                                      // Close output file
       instructionSets = countInstructionSets;                                                                           // Finalize instruction set size
@@ -2438,6 +2451,12 @@ endmodule
         blackBoxes.push(f);
 
         return "\n`ifndef SYNTHESIS\n"+s+"`endif\n";
+       }
+
+//D2 OpenRAM                                                                                                            // Generate OpenRAM versions of each array
+
+      void openRam()                                                                                                    // Generate OpenRAM read only memory representing array
+       {new Rom(array).generateRom(name, verilogTestFolder);
        }
      } // Array
    } // VerilogArrays
@@ -3396,8 +3415,8 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_ifThen(false);
+   {//oldTests();
+    test_ifThen(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
