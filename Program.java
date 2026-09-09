@@ -1324,11 +1324,12 @@ endmodule
 """, "name", m(), "size", ""+size())) : new StringBuilder(substitute("""
                                                                                                                         // Read write memory
 (* blackbox *) module {name}                                                                                            // Memory module
- (input  wire                clk0,                                                                                      // Clock
-  input  wire                 cs0,                                                                                      // Chip select - selects memory when high
-  input  wire      writeIntEnable,                                                                                      // Enable write of an integer
-  input  reg[31:0]       writeInt,                                                                                      // Integer to be written
+ (input  wire                clk0,                                                                                      // Clock for reads
+  input  wire                clk1,                                                                                      // Clock for writes
+  input  wire                 cs0,                                                                                      // Chip select - selects memory for read when low
+  input  wire                 cs1,                                                                                      // Chip select - selects memory for write when low
   input  reg[31:0]          addr0,                                                                                      // Index in memory of integer to be read or written
+  input  reg[31:0]           din0,                                                                                      // Integer to write into memory
   output reg[31:0]          dout0);                                                                                     // Integer read from memory
 `ifdef __ICARUS__
   reg[31:0] memory [0:{size}-1];                                                                                        // Memory
@@ -1337,16 +1338,14 @@ endmodule
   initial for (i = 0; i < {size}; i = i + 1) memory[i] = 0;                                                             // Clear memory to zeros at start
 
   always @(posedge clk0) begin                                                                                          // Synchronous memory access
-    if (cs0) begin                                                                                                      // Select chip - enable memory when high
-      if (writeIntEnable) memory[addr0] <= writeInt;                                                                    // Write an integer using the read index as the write address
-      else dout0 <= memory[addr0];                                                                                      // Read an integer from memory
-    end
+    if (cs0) dout0 <= memory[addr0];                                                                                    // Read
+    if (cs1) memory[addr0] <= din0;                                                                                     // Write
   end
 `endif
 endmodule
 """, "name", m(), "size", ""+size()));
 
-      final FileNames f = blackBoxFolder.same(m());
+      final FileNames f = blackBoxFolder.same(m());                                                                     // Write black box descripition for memory so that Silicon compiler can incorporate it
       writeFile(f.v$(), ""+s);
       blackBoxes.push(f);
 
@@ -1375,16 +1374,16 @@ endmodule
    (.clk0            (clock),                                                                                           // Clock
     .cs0             (1),                                                                                               // Enable memory
     .addr0           ({n}_readWriteIndex),                                                                              // Read first integer address
-    .dout0        ({n}_read0Int      ));                                                                             // First integer data read
+    .dout0        ({n}_read0Int      ));                                                                                // Integer data read
 """, "moduleName", m(), "n", n()) : substitute("""
 
   {moduleName} {n}                                                                                                      // Memory module {name}
    (.clk0            (clock),                                                                                           // Clock
     .cs0             (1),                                                                                               // Enable memory
+    .cs1             ({n}_writeIntEnable),                                                                              // Write enabled for an integer
     .addr0           ({n}_readWriteIndex),                                                                              // Read first integer address
-    .dout0        ({n}_read0Int      ),                                                                              // First integer data read
-    .writeIntEnable  ({n}_writeIntEnable),                                                                              // Write enabled for an integer
-    .writeInt        ({n}_writeInt      ));                                                                             // Write data
+    .dout0           ({n}_read0Int      ),                                                                              // Integer data read
+    .din0            ({n}_writeInt      ));                                                                             // Write data
 """, "moduleName", m(), "n", n());
      }
 
@@ -1392,7 +1391,6 @@ endmodule
 
     String dumpVerilog ()       {return dumpVerilogMemoryInDecimalName()+"();";}
     String memory(String Index) {return substitute("{n}.memory[{i}]", "n", n(), "i", Index);}                           // Verilog to get the indexed location in memory
-
    } // Memory
 
   interface Locatable {Bint getLocation();}                                                                             // The location of an object in memory
