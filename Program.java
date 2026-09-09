@@ -1649,6 +1649,11 @@ cd {f}; yosys -q {y}                                                            
       appendFile(verilogLogFolder.log$(),  message+ "\n");                                                              // Log in text format
       appendFile(verilogLogFolder.json$(), "{"+json+"}\n");                                                             // Log in json format
      }
+
+    if (inJob("or") || !github_action)                                                                                  // OpenRAM if in container or local
+     {for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRam();                            // Generate OpenRam matching memory
+      //for(Memory                 m : memories())                if (runOpenRAM) m.openRam();                            // Memory modules
+     }
    }
 
   void initializeInstructionCoverage()                                                                                  // Initialize instruction coverage by location in Java code of each new instruction encountered
@@ -2082,9 +2087,6 @@ endmodule
 
       for(VerilogArrays.Array    a : verilogArrays.arrays())    put(a.module());                                        // Write memory module definitions for read only arrays
       for(Memory                 m : memories())                put(m.memoryModule());                                  // Memory modules
-
-      for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRam();                            // Generate OpenRam matching memory
-      for(Memory                 m : memories())                if (runOpenRAM) m.openRam();                            // Memory modules
 
       try (out) {} catch(Exception e) {stop(e, fullTraceBack(e));}                                                      // Close output file
       instructionSets = countInstructionSets;                                                                           // Finalize instruction set size
