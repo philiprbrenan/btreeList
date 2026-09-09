@@ -85,7 +85,8 @@ nominal_corner_only = True
 route_supplies      = "ring"
 check_lvsdrc        = True
 """,
-"i", f.includes().file(Name).minus(f).hex$(),
+//"i", f.includes().file(Name).minus(f).hex$(),
+"i", f.includes().file(Name).hex$(),
 "w", ""+bytesPerWord(),
 "n", Name));
 
