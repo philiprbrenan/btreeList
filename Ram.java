@@ -19,6 +19,7 @@ public class Ram extends Test                                                   
     final StringBuilder s = new StringBuilder();
     final FileNames     f = folder.down(Name);
     s.append(s("""
+print_banner        = False
 word_size           = {size}
 num_words           = {words}
 
@@ -36,18 +37,21 @@ nominal_corner_only = True
 
 route_supplies      = "ring"
 check_lvsdrc        = True
-print_banner        = False
 """,
 "size",  ""+size,
 "words", ""+words,
 "name",  name));
 
-
-    final String p = writeFile(f.file(name).py$(), s);                                                                  // Write python code specifying memory
-    final String P ="python3 /opt/OpenRAM/sram_compiler.py "+p;                                                         // Execute python via appropriate compiler
+    final String p = writeFile(f.file(Name).py$(), s);                                                                  // Write python
+    final String P = "python3 /opt/OpenRAM/sram_compiler.py "+p;                                                        // Execute python via appropriate compiler
     final String D = s("docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest", "f", f.folder);        // Docker command
-    final String c = inJob("or") ? P : D + " " + P;                                                                     // Run in existing container if on github or start a container if local
-    final ExecCommand x = new ExecCommand(c);
+
+    if (inJob("or"))
+     {final ExecCommand x = new ExecCommand(P); say(x);
+     }
+    else if (!github_action)
+     {final ExecCommand y = new ExecCommand(D + " " + P); say(y);
+     }
    }
 
 //D1 Tests                                                                                                              // Tests
