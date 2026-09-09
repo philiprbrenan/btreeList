@@ -43,7 +43,7 @@ print_banner        = False
 "name",  name));
 
 
-    final String p = writeFile(f.same(name).py$(), s);                                                                  // Write python code specifying memory
+    final String p = writeFile(f.file(name).py$(), s);                                                                  // Write python code specifying memory
     final String P ="python3 /opt/OpenRAM/sram_compiler.py "+p;                                                         // Execute python via appropriate compiler
     final String D = s("docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest", "f", f.folder);        // Docker command
     final String c = inJob("or") ? P : D + " " + P;                                                                     // Run in existing container if on github or start a container if local
