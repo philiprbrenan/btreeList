@@ -1462,12 +1462,14 @@ public class Test                                                               
     final String     out;                                                                                               // Normal output
     final String     err;                                                                                               // Error output
     final Timer    timer = new Timer();                                                                                 // Time taken to execute command in seconds
-    int exitCode;
+    final int  exitCode;
 
     ExecCommand (String Command)
      {command = Command;
       final StringBuilder O = new StringBuilder();                                                                      // Standard output
       final StringBuilder E = new StringBuilder();                                                                      // Standard input
+      int                rc = 0;                                                                                        // Return code from command
+
       try
        {final ProcessBuilder b = new ProcessBuilder("bash", "-c", command);
         final Process        p = b.start();
@@ -1486,15 +1488,13 @@ public class Test                                                               
           catch (IOException x) {x.printStackTrace();}
          }); e.start();
 
-        exitCode = p.waitFor();
+        rc = p.waitFor();
 
         o.join(); e.join();
-
-        final StringBuilder m = new StringBuilder();
-        if (exitCode != 0) stop(this);
        }
       catch (Exception e) {e.printStackTrace();}
-      out = ""+O; err = ""+E;                                                                                           // Results of command execution
+      out = ""+O; err = ""+E; exitCode = rc;                                                                            // Results of command execution
+      if (rc != 0) stop(this);
      }
 
     ExecCommand(StringBuilder Command) {this(""+Command);}
@@ -1639,7 +1639,7 @@ CCCCC
    }
 
   static void test_command()
-   {final ExecCommand e = new ExecCommand("echo AAAA; echo BBBB 1>&2");
+   {final ExecCommand e = new ExecCommand("echo AAAA && echo BBBB 1>&2");
     ok(e.out, """
 AAAA
 """);
