@@ -1,7 +1,7 @@
-# Test 2026-09-09 at 03:10:42
+# Test 2026-09-09 at 04:55:52
 
 name: btreeList
-run-name: runVerilog = 1, runSiliconCompiler = 0, runYosys = 1, Prep for OpenRam/ change names
+run-name: runVerilog = 1, runSiliconCompiler = 0, runYosys = 1, runOpenRAM = 1, Prep for OpenRam/ change names
 
 on:
   push:
