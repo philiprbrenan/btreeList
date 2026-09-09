@@ -18,7 +18,6 @@ public class Rom extends Test                                                   
 
   Rom(int[]Array)                                                                                                       // Constructor
    {array = Array;
-say("AAAA1111 create Rom");
     if (array == null || array.length < 1) {max = wpr = bpw = trails = 0; bits = hex = null; return;}                   // Nothing to convert
 
     checkArray(array);                                                                                                  // Only non negative integers are allowed and there most be at least one non zero entry otherwise there is not much need for a random access memory
@@ -66,7 +65,6 @@ say("AAAA1111 create Rom");
   void generateRom(String Name, FileNames Folder)                                                                       // Generate a read only memory
    {final StringBuilder s = new StringBuilder();
     final FileNames     f = Folder.down(Name);
-say("AAAA2222 create Rom");
 
     s.append(s("""
 word_size           = {w}
@@ -85,24 +83,21 @@ nominal_corner_only = True
 route_supplies      = "ring"
 check_lvsdrc        = True
 """,
-//"i", f.includes().file(Name).minus(f).hex$(),
 "i", f.includes().file(Name).hex$(),
 "w", ""+bytesPerWord(),
 "n", Name));
 
     final String p = writeFile(f.file(Name).py$(),               s);                                                    // Write python
     final String d = writeFile(f.includes().file(Name).hex$(), hex+"\n");                                               // Write data to initialize memory
-
-say("AAAA3333", f.includes().file(Name).hex$());
-say("AAAA4444", f.includes().file(Name).minus(f).hex$());
-
     final String P = "python3 /opt/OpenRAM/rom_compiler.py "+p;                                                         // Execute python via appropriate compiler
     final String D = s("docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest", "f", f.folder);        // Docker command
-    final String c = inJob("or") ? P : D + " " + P;                                                                     // Run in existing container if on github or start a container if local
-    final ExecCommand x = new ExecCommand("cd "+Folder.folder+"; pwd; tree"); say("XXXX", x);
-say("AAAA5555", c);
-    final ExecCommand y = new ExecCommand(c);
-say("AAA6666", y);
+
+    if (inJob("or"))
+     {final ExecCommand x = new ExecCommand(P); say("XXXX", x);
+     }
+    else if (!github_action)
+     {final ExecCommand y = new ExecCommand(D + " " + P); say("YYYY", y);
+     }
    }
 
 //D1 Tests                                                                                                              // Tests
