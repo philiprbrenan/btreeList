@@ -2083,7 +2083,7 @@ endmodule
       for(VerilogArrays.Array    a : verilogArrays.arrays())    put(a.module());                                        // Write memory module definitions for read only arrays
       for(Memory                 m : memories())                put(m.memoryModule());                                  // Memory modules
 
-      for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRam();                            // Generate OpenRam matching memory
+      for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRom();                            // Generate OpenRam matching memory
       for(Memory                 m : memories())                if (runOpenRAM) m.openRam();                            // Memory modules
 
       try (out) {} catch(Exception e) {stop(e, fullTraceBack(e));}                                                      // Close output file
@@ -2454,7 +2454,8 @@ endmodule
 //D2 OpenRAM                                                                                                            // Generate OpenRAM versions of each array
 
       void openRam ()                                                                                                   // Generate OpenRAM read only memory representing array
-       {new Rom(array).generateRom(name, verilogTestFolder);
+       {say("YYYY");
+         new Rom(array).generateRom(name, verilogTestFolder);
        }
      } // Array
    } // VerilogArrays
