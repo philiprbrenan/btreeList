@@ -24,7 +24,7 @@ my @containers  = (                                                             
 [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);
 my %tasks       = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                              # Number of tasks for each component - default is one
 
-my $include     = q(Rom);                                                                                               # Java files to include in testing as they are not yet ready
+my $include     = q(Rom|Ram);                                                                                               # Java files to include in testing as they are not yet ready
 #   $include    = q(Program);                                                                                           # Java files to include in testing as they are not yet ready
 my $upload      = 1;                                                                                                    # Upload to github for execution if true
 
@@ -116,7 +116,7 @@ on:
 
 jobs:
 END
-  for my $C(keys @containers)                                                                                            # Owing to the difficulty of combing the EDA tools in a single container we make a pass per container
+  for my $C(keys @containers)                                                                                           # Owing to the difficulty of combing the EDA tools in a single container we make a pass per container
    {my ($job, $container) =          $containers[$C  ]->@*;
     my ($prev)            = $C > 0 ? $containers[$C-1]->@* : undef;
     my $needs = $prev ? "\n    needs: $prev\n    if: github.event_name == 'push' && needs.$prev.result == 'success'" : "";
@@ -176,7 +176,7 @@ END
       if: \${{ always() && matrix.task == '$N' }}
       uses: actions/upload-artifact\@v7
       with:
-        name: $N
+        name: ${job}_$N
         path: verilog/*
         if-no-files-found: ignore
 END
