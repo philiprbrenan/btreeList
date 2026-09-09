@@ -66,7 +66,7 @@ say("AAAA1111 create Rom");
   void generateRom(String Name, FileNames Folder)                                                                       // Generate a read only memory
    {final StringBuilder s = new StringBuilder();
     final FileNames     f = Folder.down(Name);
-say("AAAA2222 create Rom");
+say("AAAA222 2 create Rom");
 
     s.append(s("""
 word_size           = {w}
