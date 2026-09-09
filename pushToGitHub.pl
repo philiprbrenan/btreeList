@@ -24,7 +24,7 @@ my @containers  = (                                                             
 [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);
 my %tasks       = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                              # Number of tasks for each component - default is one
 
-my $include     = q(.);                                                                                                 # Java files to include in testing as they are not yet ready
+my $include     = q(Rom);                                                                                               # Java files to include in testing as they are not yet ready
 #   $include    = q(Program);                                                                                           # Java files to include in testing as they are not yet ready
 my $upload      = 1;                                                                                                    # Upload to github for execution if true
 
