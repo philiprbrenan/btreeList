@@ -1,4 +1,4 @@
-# Test 2026-09-09 at 22:14:28
+# Test 2026-09-09 at 22:41:54
 
 name: btreeList
 run-name: Verilog = 1, SiliconCompiler = 0, Yosys = 1, OpenRAM = 1, Generate OpenRAM memories
@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [Rom_1]
+        task: [Program_1, Ram_1, Rom_1]
 
     steps:
     - uses: actions/checkout@v6
@@ -39,6 +39,34 @@ jobs:
         javac --version
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
 
+    - name: Program_1
+      if: ${{             matrix.task == 'Program_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 1
+        tree --prune -I '*.class'
+
+    - name: Upload Program_1
+      if: ${{ always() && matrix.task == 'Program_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: or_Program_1
+        path: verilog/*
+        if-no-files-found: ignore
+
+    - name: Ram_1
+      if: ${{             matrix.task == 'Ram_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Ram 1
+        tree --prune -I '*.class'
+
+    - name: Upload Ram_1
+      if: ${{ always() && matrix.task == 'Ram_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: or_Ram_1
+        path: verilog/*
+        if-no-files-found: ignore
+
     - name: Rom_1
       if: ${{             matrix.task == 'Rom_1' }}
       run: |
@@ -49,7 +77,7 @@ jobs:
       if: ${{ always() && matrix.task == 'Rom_1' }}
       uses: actions/upload-artifact@v7
       with:
-        name: Rom_1
+        name: or_Rom_1
         path: verilog/*
         if-no-files-found: ignore
 
@@ -65,7 +93,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [Rom_1]
+        task: [Program_1, Ram_1, Rom_1]
 
     steps:
     - uses: actions/checkout@v6
@@ -84,6 +112,34 @@ jobs:
         javac --version
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
 
+    - name: Program_1
+      if: ${{             matrix.task == 'Program_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 1
+        tree --prune -I '*.class'
+
+    - name: Upload Program_1
+      if: ${{ always() && matrix.task == 'Program_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_1
+        path: verilog/*
+        if-no-files-found: ignore
+
+    - name: Ram_1
+      if: ${{             matrix.task == 'Ram_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Ram 1
+        tree --prune -I '*.class'
+
+    - name: Upload Ram_1
+      if: ${{ always() && matrix.task == 'Ram_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Ram_1
+        path: verilog/*
+        if-no-files-found: ignore
+
     - name: Rom_1
       if: ${{             matrix.task == 'Rom_1' }}
       run: |
@@ -94,7 +150,7 @@ jobs:
       if: ${{ always() && matrix.task == 'Rom_1' }}
       uses: actions/upload-artifact@v7
       with:
-        name: Rom_1
+        name: sc_Rom_1
         path: verilog/*
         if-no-files-found: ignore
   release:
