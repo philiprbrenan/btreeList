@@ -1036,7 +1036,7 @@ public class Test                                                               
     FileNames (String Folder, String File) {folder = Folder; file = fnx(File);}                                         // Describe a file name without an extension, variants of which can be made by adding an extension
 
     FileNames down (String Folder) {return new FileNames(fn(folder, Folder), file);}                                    // Create a set of file names for a sub folder of the original fileset
-    FileNames same (String File)   {return new FileNames(           folder,  File);}                                    // Same folder but different default file
+    FileNames file (String File)   {return new FileNames(           folder,  File);}                                    // Same folder but different default file
     FileNames goUp ()              {return new FileNames(fpx(folder),        file);}                                    // Parent folder
 
     FileNames blackBoxes ()        {return down("blackboxes");}                                                         // Black boxes folder
@@ -1045,7 +1045,7 @@ public class Test                                                               
     FileNames tests ()             {return down("tests");}                                                              // Tests folder
     FileNames verilog ()           {return down("verilog");}                                                            // Verilog folder
 
-    FileNames minus(FileNames X)
+    FileNames minus(FileNames X)                                                                                        // Partial file name from specified point. Useful for specifying included files in programs
      {final String f = folder, F = X.folder;
       if (!f.startsWith(F)) stop("Folder does not start with other folder, folder:", f, "other:", F);
       return new FileNames(f.substring(F.length()).replaceFirst("^/*", ""), file);
@@ -1704,7 +1704,7 @@ BBBB
     ok(d.pl$(), "aaa/includes/fileNames.pl");
     ok(d.pl(),               "fileNames.pl");
 
-    final FileNames s = d.same("bbb");
+    final FileNames s = d.file("bbb");
     ok(s.pl$(), "aaa/includes/bbb.pl");
     ok(s.pl(),               "bbb.pl");
 
