@@ -34,7 +34,7 @@ sub getRunParameters()                                                          
  {my @p;
   my @l = readFile fpe $folder, qw(Program java);
   for my $l(@l)
-   {if ($l =~ m(boolean\s+(run\w+)\s+=\s*(\!?(true|false))))                                                            # Flags from Java
+   {if ($l =~ m(boolean\s+run(\w+)\s+=\s*(\!?(true|false))))                                                            # Flags from Java
      {my $k = $1; my $v = $2;
       $v =~ s/true/1/; $v =~ s/false/0/; $v =~ s/\!0/1/; $v =~ s/\!1/0/;
       push @p, "$k = $v";
