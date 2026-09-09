@@ -65,16 +65,17 @@ public class Rom extends Test                                                   
   void generateRom(String Name, FileNames Folder)                                                                       // Generate a read only memory
    {final StringBuilder s = new StringBuilder();
     final FileNames     f = Folder.down(Name);
+
     s.append(s("""
-word_size           = {wordSize}
+word_size           = {w}
 
 check_lvsdrc        = True
 
-rom_data            = "includes/{name}.hex"
+rom_data            = "{i}"
 data_type           = "hex"
 
-output_name         = "{name}"
-output_path         = "macro/{name}"
+output_name         = "{n}"
+output_path         = "macro/{n}"
 
 tech_name           = "sky130"
 nominal_corner_only = True
@@ -82,12 +83,12 @@ nominal_corner_only = True
 route_supplies      = "ring"
 check_lvsdrc        = True
 """,
-"wordSize", ""+bytesPerWord(),
-"rowSize",  ""+wordsPerRow (),
-"name",     Name));
+"i", f.includes().file(Name).minus(f).hex$(),
+"w", ""+bytesPerWord(),
+"n", Name));
 
-    final String p = writeFile(f.same(Name).py$(),               s);                                                    // Write python
-    final String d = writeFile(f.includes().same(Name).hex$(), hex+"\n");                                               // Write data to initialize memory
+    final String p = writeFile(f.file(Name).py$(),               s);                                                    // Write python
+    final String d = writeFile(f.includes().file(Name).hex$(), hex+"\n");                                               // Write data to initialize memory
 
     final String P = "python3 /opt/OpenRAM/rom_compiler.py "+p;                                                         // Execute python via appropriate compiler
     final String D = s("docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest", "f", f.folder);        // Docker command
@@ -173,7 +174,7 @@ check_lvsdrc        = True
 //int wordsPerRow ()  {return sqrt(bytesPerWord() * BITS_PER_BYTE * array.length);}                                     // Words per row assuming bits occupy squares
    }
 
-  private static void test_python()
+  private static void test_genRom()
    {sayCurrentTestName();
     final int [] A = {1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31};
     final Rom a = new Rom(A);
@@ -194,7 +195,7 @@ check_lvsdrc        = True
     test_w4();
     test_w9();
 
-    test_python();
+    test_genRom();
    }
 
   static void newTests()                                                                                                // Tests being worked on
