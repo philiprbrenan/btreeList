@@ -18,6 +18,7 @@ public class Rom extends Test                                                   
 
   Rom(int[]Array)                                                                                                       // Constructor
    {array = Array;
+say("AAAA1111 create Rom");
     if (array == null || array.length < 1) {max = wpr = bpw = trails = 0; bits = hex = null; return;}                   // Nothing to convert
 
     checkArray(array);                                                                                                  // Only non negative integers are allowed and there most be at least one non zero entry otherwise there is not much need for a random access memory
@@ -65,6 +66,7 @@ public class Rom extends Test                                                   
   void generateRom(String Name, FileNames Folder)                                                                       // Generate a read only memory
    {final StringBuilder s = new StringBuilder();
     final FileNames     f = Folder.down(Name);
+say("AAAA2222 create Rom");
 
     s.append(s("""
 word_size           = {w}
@@ -90,10 +92,14 @@ check_lvsdrc        = True
     final String p = writeFile(f.file(Name).py$(),               s);                                                    // Write python
     final String d = writeFile(f.includes().file(Name).hex$(), hex+"\n");                                               // Write data to initialize memory
 
+say("AAAA", f.includes().file(Name).hex$());
+say("BBBB", f.includes().file(Name).minus(f).hex$());
+
     final String P = "python3 /opt/OpenRAM/rom_compiler.py "+p;                                                         // Execute python via appropriate compiler
     final String D = s("docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest", "f", f.folder);        // Docker command
     final String c = inJob("or") ? P : D + " " + P;                                                                     // Run in existing container if on github or start a container if local
-    final ExecCommand x = new ExecCommand(c);
+    final ExecCommand x = new ExecCommand("cd "+Folder.folder+"; pwd; tree"); say("XXXX", x);
+    //final ExecCommand x = new ExecCommand(c);
    }
 
 //D1 Tests                                                                                                              // Tests
