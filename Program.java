@@ -35,11 +35,11 @@ public class Program extends Test                                               
 
   final static FileNames                   verilogFolder = new FileNames(fp(pwd(), "verilog"));                         // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
-  final FileNames                      verilogTestFolder = verilogTestsFolder.down(testName()).same(testName());        // Verilog test
+  final FileNames                      verilogTestFolder = verilogTestsFolder.down(testName()).file(testName());        // Verilog test
   final FileNames              verilogTestIncludesFolder = verilogTestFolder.includes();                                // Verilog test includes folder containing the include files needed for running Verilog tests
   final FileNames                       verilogLogFolder = verilogFolder.logs();                                        // Verilog log folder
   final FileNames                         blackBoxFolder = verilogTestFolder.blackBoxes();                              // Verilog black boxes
-  final FileNames                             traceFiles = verilogTestFolder.same("traceFile");                         // Verilog trace file
+  final FileNames                             traceFiles = verilogTestFolder.file("traceFile");                         // Verilog trace file
   final static String          siliconCompilerImageLocal = "ghcr.io/philiprbrenan/sc_local:latest";                     // Docker container containing silicon compiler when running locally
   final static String         siliconCompilerImageGitHub = "ghcr.io/philiprbrenan/sc_github:latest";                    // Docker container containing silicon compiler when running on github
   final static int                            padVerilog = 32;                                                          // Padding for components of the generated Verilog code
@@ -1347,7 +1347,7 @@ endmodule
 endmodule
 """, "name", m(), "size", ""+size()));
 
-      final FileNames f = blackBoxFolder.same(m());                                                                     // Write black box descripition for memory so that Silicon compiler can incorporate it
+      final FileNames f = blackBoxFolder.file(m());                                                                     // Write black box descripition for memory so that Silicon compiler can incorporate it
       writeFile(f.v$(), ""+s);
       blackBoxes.push(f);
 
@@ -2194,7 +2194,7 @@ endmodule
      } // InstructionMatches
 
     void printInstructionLocations()                                                                                    // Print the location of each instruction
-     {final String f = verilogTestFolder.same("InstructionLocations").txt$();                                           // Instruction to location listing file
+     {final String f = verilogTestFolder.file("InstructionLocations").txt$();                                           // Instruction to location listing file
       final StringBuilder s = new StringBuilder();
 
       for(I i: code) s.append("-"+i.instructionNumber+"\n"+i.traceBack+"\n");                                           // Each instruction
@@ -2315,7 +2315,7 @@ check
 
   String dumpVerilogVariablesName () {return "dumpVerilogVariables";}                                                   // Name of the Verilog method to dump all the variables to the trace file
   String dumpVerilogVariables ()                                                                                        // Dump the value of the integer and boolean variables to the Verilog trace file
-   {final FileNames includeFile = verilogTestIncludesFolder.same("variables");                                          // Put the dump code into a file that can be switched in and out by the preprocessor.  ifdef preprocessor statements fail if there are too many intervening statements before the closing endif
+   {final FileNames includeFile = verilogTestIncludesFolder.file("variables");                                          // Put the dump code into a file that can be switched in and out by the preprocessor.  ifdef preprocessor statements fail if there are too many intervening statements before the closing endif
     final StringBuilder       s = new StringBuilder();
     s.append(substitute("""
 
@@ -2423,7 +2423,7 @@ check
       void writeInHex ()                                                                                                // Write the array to a file in hexadecimal
        {final StringBuilder s = new StringBuilder();
         for(int i = 0; i < array.length; ++i) s.append(f("%8x\n", array[i]));
-        writeFile(verilogTestIncludesFolder.same(name).v$(), s);
+        writeFile(verilogTestIncludesFolder.file(name).v$(), s);
        }
 
       String module()                                                                                                   // Create a Verilog module to represent a memory
@@ -2441,10 +2441,10 @@ check
 `endif
 endmodule
 """,
-"name",  name,        "file", verilogTestIncludesFolder.same(name).minus(verilogTestFolder).v$(),
+"name",  name,        "file", verilogTestIncludesFolder.file(name).minus(verilogTestFolder).v$(),
 "array", arrayName(), "size", ""+(array.length-1)));
 
-        final FileNames f = blackBoxFolder.same(name);
+        final FileNames f = blackBoxFolder.file(name);
         writeFile(f.v$(), ""+s);
         blackBoxes.push(f);
 
