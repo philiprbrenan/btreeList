@@ -2456,7 +2456,7 @@ endmodule
 //D2 OpenRAM                                                                                                            // Generate OpenRAM versions of each array
 
       void openRam ()                                                                                                   // Generate OpenRAM read only memory representing array
-       {say("YYYY");
+       {say("YYYY", array.length);
         new Rom(array).generateRom(name, verilogTestFolder);
        }
      } // Array
@@ -3136,8 +3136,8 @@ writeIntEnable =        0
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
-       {final int[]array = {1, 3, 5, 2, 4, 6};                                                                          // Array
-        final VerilogArrays.Array A = verilogArrays().new Array("array", array);                                        // Verilog versoin of array
+       {final int[]array = {1, 3, 5, 2, 4, 6, 7, 8};                                                                    // Array
+        final VerilogArrays.Array A = verilogArrays().new Array("verilogArray", array);                                 // Verilog versoin of array
         dumpProgramState("AAAA");
         final Int i = new Int("i").set(2);                                                                              // Input
         final Int o = new Int("o");                                                                                     // Output
@@ -3417,7 +3417,7 @@ writeIntEnable =        0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_ifThen(false);
+    test_verilogArray(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
