@@ -16,8 +16,6 @@ public class Rom extends Test                                                   
   final int[] array;                                                                                                    // Array being converted
   final int  trails;                                                                                                    // Number of trailing words so finish the final row
 
-  final static FileNames verilogTestsFolder = new FileNames(pwd()).verilog().tests();                                   // Verilog tests folder
-
   Rom(int[]Array)                                                                                                       // Constructor
    {array = Array;
     if (array == null || array.length < 1) {max = wpr = bpw = trails = 0; bits = hex = null; return;}                   // Nothing to convert
@@ -95,15 +93,16 @@ check_lvsdrc        = True
 "f", f.folder,
 "n", f.same(Name).py());
 
-    if (!github_action)                                                                                                 // Run openRam if local, cannot get a container working yet from within a container
+    if ("or".equals(github_job) || !github_action)                                                                      // Run OpenRam if local or in the OpenRAM container
      {final ExecCommand x = new ExecCommand(c);
-      say("AAAA", x);
      }
    }
 
 //D1 Tests                                                                                                              // Tests
 
   void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
+
+  final static FileNames verilogTestsFolder = new FileNames(pwd()).verilog().tests();                                   // Verilog tests folder
 
   private static void test_max()
    {sayCurrentTestName();
