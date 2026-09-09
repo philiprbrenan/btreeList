@@ -268,7 +268,10 @@ public class Test                                                               
         .replace("\t", "\\t")
         + "\"";
     }
+
   static String q(StringBuilder S) {return q(""+S);}                                                                    // Quote a string builder
+
+  static boolean inJob(String Job) {return Job.equals(github_job);}                                                     // Whether we are running in the specified job in a github action
 
 //D1 Numeric routines                                                                                                   // Numeric routines
 
