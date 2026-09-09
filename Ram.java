@@ -41,17 +41,13 @@ print_banner        = False
 "size",  ""+size,
 "words", ""+words,
 "name",  name));
-    final String p = writeFile(f.same(name).py$(),               s);
-     final String c = s(
-"docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest python3 /opt/OpenRAM/sram_compiler.py {n}",
-"f", f.folder,
-"n", f.same(name).py());
 
-    say("AAAA\n", c);
-    if (!github_action)                                                                                                 // Run openRam if local, cannot get a container working yet from within a container
-     {//final ExecCommand x = new ExecCommand(c);
-      //say("AAAA", x);
-     }
+
+    final String p = writeFile(f.same(name).py$(), s);                                                                  // Write python code specifying memory
+    final String P ="python3 /opt/OpenRAM/sram_compiler.py "+p;                                                         // Execute python via appropriate compiler
+    final String D = s("docker run --rm  -v{f}:{f} -w{f} ghcr.io/philiprbrenan/or_local:latest", "f", f.folder);        // Docker command
+    final String c = inJob("or") ? P : D + " " + P;                                                                     // Run in existing container if on github or start a container if local
+    final ExecCommand x = new ExecCommand(c);
    }
 
 //D1 Tests                                                                                                              // Tests
