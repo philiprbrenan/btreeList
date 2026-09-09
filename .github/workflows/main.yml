@@ -1,7 +1,7 @@
-# Test 2026-09-09 at 15:33:06
+# Test 2026-09-09 at 16:30:49
 
 name: btreeList
-run-name: runVerilog = 1, runSiliconCompiler = 0, runYosys = 1, runOpenRAM = 1, Generate OpenRAM memories
+run-name: Verilog = 1, SiliconCompiler = 0, Yosys = 1, OpenRAM = 1, Generate OpenRAM memories
 
 on:
   push:
