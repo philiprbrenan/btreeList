@@ -1612,7 +1612,7 @@ cd {f}; yosys -q {y}                                                            
       g.lef();                                                                                                          // Generate LEF files
       g.gds();                                                                                                          // Generate gds files to match lef files
 
-      if (runVerilog)                                                                                                   // Run Verilog
+      if (runVerilog && !inJob("or"))                                                                                   // Run Verilog unless in OpenRam container
        {traceFiles.delete_v();                                                                                          // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
         final boolean       r = github_action || aws_run;                                                               // Running remotely
@@ -1631,7 +1631,7 @@ cd {f}; yosys -q {y}                                                            
 
         ok(readFileAsString(traceFiles.v$()).equals(readFileAsString(traceFiles.java$())));                             // Compare corresponding Java and Verilog trace files -  says failed if it fails and provides a traceback
 
-        if (inJob("sc"))                                                                                                // Run synthesis in a docker container containing silicon compiler and the associated tools needed for ASIC
+        if (runSiliconCompiler && inJob("sc"))                                                                          // Run synthesis in a docker container containing silicon compiler and the associated tools needed for ASIC
          {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
@@ -1650,9 +1650,9 @@ cd {f}; yosys -q {y}                                                            
       appendFile(verilogLogFolder.json$(), "{"+json+"}\n");                                                             // Log in json format
      }
 
-    if (inJob("or") || !github_action)                                                                                  // OpenRAM if in container or local
+    if (inJob("or") || !github_action)                                                                                  // OpenRAM if in OpenRAM container or on local machine
      {for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRam();                            // Generate OpenRam matching memory
-      //for(Memory                 m : memories())                if (runOpenRAM) m.openRam();                            // Memory modules
+      for(Memory                 m : memories())                if (runOpenRAM) m.openRam();                            // Memory modules
      }
    }
 
