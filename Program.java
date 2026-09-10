@@ -1583,9 +1583,10 @@ endmodule
     printReadWriteUsage();                                                                                              // Print read write usage of integers
     printExecutionCoverageForTest();                                                                                    // Print details of which instructions were executed and which were not
 
+    final GenerateVerilog g = new GenerateVerilog();                                                                    // Generate corresponding Verilog code
+
     if (generateVerilog && (inJob("sc") || !github_action))                                                             // Run Verilog if local or in the Silicon Compiler container. OpenRAM runs on an Ubuntu 20 which uses an incompatible version of iverilog
-     {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code
-      final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
+     {final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
       final String           scCmd = github_action                                                                      // Silicon compiler command to perform ASIC flow
         ? substitute("""
@@ -3137,7 +3138,7 @@ writeIntEnable =        0
     final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
        {final int[]array = {1, 3, 5, 2, 4, 6, 7, 8};                                                                    // Array
-        final VerilogArrays.Array A = verilogArrays().new Array("verilogArray", array);                                 // Verilog versoin of array
+        final VerilogArrays.Array A = verilogArrays().new Array("verilogArrayData", array);                                 // Verilog version of array
         dumpProgramState("AAAA");
         final Int i = new Int("i").set(2);                                                                              // Input
         final Int o = new Int("o");                                                                                     // Output
