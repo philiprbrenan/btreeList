@@ -1651,8 +1651,8 @@ cd {f}; yosys -q {y}                                                            
      }
 
     if (inJob("or") || !github_action)                                                                                  // OpenRAM if in OpenRAM container or on local machine
-     {for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRam();                            // Generate OpenRam matching memory
-      for(Memory                 m : memories())                if (runOpenRAM) m.openRam();                            // Memory modules
+     {for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRam();                            // Read only memory
+      //for(Memory                 m : memories())                if (runOpenRAM) m.openRam();                          // Random access memory - OpenRAM maxes out at 4K
      }
    }
 
