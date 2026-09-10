@@ -24,7 +24,7 @@ my @containers  = (                                                             
 [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);
 my %tasks       = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                              # Number of tasks for each component - default is one
 
-my $include     = q(Rom|Ram);                                                                                               # Java files to include in testing as they are not yet ready
+my $include     = q(.);                                                                                                 # Java files to include in testing as they are not yet ready
 #   $include    = q(Program);                                                                                           # Java files to include in testing as they are not yet ready
 my $upload      = 1;                                                                                                    # Upload to github for execution if true
 
@@ -177,7 +177,9 @@ END
       uses: actions/upload-artifact\@v7
       with:
         name: ${job}_$N
-        path: verilog/*
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
         if-no-files-found: ignore
 END
      }
