@@ -31,7 +31,7 @@ public class Program extends Test                                               
   final static boolean    suppressIntegerUsageStatistics = true || github_action;                                       // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage =!true || github_action;                                       // Track instruction execution by location in Java code where the instruction was generated
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final static String                     currentProject = "Generate OpenRAM memories";                                 // Project currently being worked on
+  final static String                     currentProject = "Cache memory accesses";                                     // Project currently being worked on
 
   final static FileNames                   verilogFolder = new FileNames(fp(pwd(), "verilog"));                         // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
