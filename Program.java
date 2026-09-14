@@ -19,9 +19,9 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+ {final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
@@ -1381,8 +1381,8 @@ endmodule
 
   {moduleName} {n}                                                                                                      // Memory module {name}
    (.clk0            (clock),                                                                                           // Clock
-    .csb0            (!{n}_writeIntEnable),                                                                              // Enable memory for write on high
-    .csb1            ( {n}_writeIntEnable),                                                                              // Enable memory for read on high
+    .csb0            ( {n}_writeIntEnable),                                                                              // Enable memory for write on high
+    .csb1            (!{n}_writeIntEnable),                                                                              // Enable memory for read on high
     .addr0           ( {n}_readWriteIndex),                                                                              // Read address
     .addr1           ( {n}_readWriteIndex),                                                                              // Write address
     .din0            ( {n}_writeInt      ),                                                                              // Integer to write
@@ -3416,8 +3416,9 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
     //test_verilogArray(false);
+    test_ForCount(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
