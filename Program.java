@@ -24,8 +24,8 @@ public class Program extends Test                                               
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
-  final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = true || github_action;                                       // Print read/write usage of integers
@@ -1376,17 +1376,17 @@ endmodule
    (.clk0            (clock),                                                                                           // Clock
     .cs0             (1),                                                                                               // Enable memory for read on high
     .addr0           ({n}_readWriteIndex),                                                                              // Read and write address
-    .dout0        ({n}_read0Int      ));                                                                                // Integer data read
+    .dout0           ({n}_read0Int      ));                                                                             // Integer data read
 """, "moduleName", m(), "n", n()) : substitute("""
 
   {moduleName} {n}                                                                                                      // Memory module {name}
    (.clk0            (clock),                                                                                           // Clock
-    .csb0            ({n}_writeIntEnable),                                                                              // Enable memory for write on low
-    .csb1            ({n}_writeIntEnable),                                                                              // Enable memory for read on low
-    .addr0           ({n}_readWriteIndex),                                                                              // Read address
-    .addr1           ({n}_readWriteIndex),                                                                              // Write address
-    .din0            ({n}_writeInt      ),                                                                              // Integer to write
-    .dout1           ({n}_read0Int      ));                                                                             // Integer data read
+    .csb0            (!{n}_writeIntEnable),                                                                              // Enable memory for write on high
+    .csb1            ( {n}_writeIntEnable),                                                                              // Enable memory for read on high
+    .addr0           ( {n}_readWriteIndex),                                                                              // Read address
+    .addr1           ( {n}_readWriteIndex),                                                                              // Write address
+    .din0            ( {n}_writeInt      ),                                                                              // Integer to write
+    .dout1           ( {n}_read0Int      ));                                                                             // Integer data read
 """, "moduleName", m(), "n", n());
      }
 
@@ -3416,8 +3416,8 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_verilogArray(false);
+   {oldTests();
+    //test_verilogArray(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
