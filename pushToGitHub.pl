@@ -20,12 +20,11 @@ my $wf          = q(.github/workflows/main.yml);                                
 my $wfcpd       = q(.github/workflows/cpd.yml);                                                                         # Work flow on Ubuntu - copy paste detection
 my @ext         = qw(c java pl md);                                                                                     # Extensions of files to upload to github
 my @containers  = (                                                                                                     # Containers to use to run the java code once through each set of EDA tools as it is difficult to combine them in one image
-[qw(or ghcr.io/philiprbrenan/or_github:latest)],
-[qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);
+#[qw(or ghcr.io/philiprbrenan/or_github:latest)],                                                                       # Open ram container - but not in use as OpenRam can only produce small memories
+ [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);                                                                      # Silicon compiler
 my %tasks       = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                              # Number of tasks for each component - default is one
 
 my $include     = q(.);                                                                                                 # Java files to include in testing as they are not yet ready
-#   $include    = q(Program);                                                                                           # Java files to include in testing as they are not yet ready
 my $upload      = 1;                                                                                                    # Upload to github for execution if true
 
 say STDERR timeStamp,  " push to github $repo";
