@@ -1327,8 +1327,8 @@ endmodule
 (* blackbox *) module {name}                                                                                            // Memory module
  (input  wire                clk0,                                                                                      // Clock for reads
   input  wire                clk1,                                                                                      // Clock for writes
-  input  wire                csb0,                                                                                      // Chip select - selects memory for write when low
-  input  wire                csb1,                                                                                      // Chip select - selects memory for read when low
+  input  wire                csb0,                                                                                      // Chip select - selects memory for write
+  input  wire                csb1,                                                                                      // Chip select - selects memory for read
   input  reg[31:0]          addr0,                                                                                      // Index in memory of integer to be written
   input  reg[31:0]          addr1,                                                                                      // Index in memory of integer to be read
   input  reg[31:0]           din0,                                                                                      // Integer to write into memory
@@ -1340,8 +1340,8 @@ endmodule
   initial for (i = 0; i < {size}; i = i + 1) memory[i] = 0;                                                             // Clear memory to zeros at start
 
   always @(posedge clk0) begin                                                                                          // Synchronous memory access
-    if (!csb0) memory[addr0] <= din0;                                                                                   // Write on low to match OpenRAM
-    if (!csb1) dout1 <= memory[addr1];                                                                                  // Read on low to match OpenRAM
+    if (csb0) memory[addr0] <= din0;                                                                                    // Write
+    if (csb1) dout1 <= memory[addr1];                                                                                   // Read
   end
 `endif
 endmodule
@@ -1381,12 +1381,12 @@ endmodule
 
   {moduleName} {n}                                                                                                      // Memory module {name}
    (.clk0            (clock),                                                                                           // Clock
-    .csb0            (!{n}_writeIntEnable),                                                                             // Enable memory for write on low
-    .csb1            ( {n}_writeIntEnable),                                                                             // Enable memory for read on low
-    .addr0           ( {n}_readWriteIndex),                                                                             // Read address
-    .addr1           ( {n}_readWriteIndex),                                                                             // Write address
-    .din0            ( {n}_writeInt      ),                                                                             // Integer to write
-    .dout1           ( {n}_read0Int      ));                                                                            // Integer data read
+    .csb0            ({n}_writeIntEnable),                                                                              // Enable memory for write on low
+    .csb1            ({n}_writeIntEnable),                                                                              // Enable memory for read on low
+    .addr0           ({n}_readWriteIndex),                                                                              // Read address
+    .addr1           ({n}_readWriteIndex),                                                                              // Write address
+    .din0            ({n}_writeInt      ),                                                                              // Integer to write
+    .dout1           ({n}_read0Int      ));                                                                             // Integer data read
 """, "moduleName", m(), "n", n());
      }
 
@@ -1400,7 +1400,6 @@ endmodule
     void openRam ()                                                                                                     // Generate OpenRAM modules
      {new Ram(units.length, Integer.SIZE, verilogTestFolder, name);
      }
-
    } // Memory
 
   interface Locatable {Bint getLocation();}                                                                             // The location of an object in memory
@@ -1613,7 +1612,7 @@ cd {f}; yosys -q {y}                                                            
       g.lef();                                                                                                          // Generate LEF files
       g.gds();                                                                                                          // Generate gds files to match lef files
 
-      if (runVerilog && !inJob("or"))                                                                                   // Run Verilog unless in OpenRam container
+      if (runVerilog)                                                                                                   // Run Verilog
        {traceFiles.delete_v();                                                                                          // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
         final boolean       r = github_action || aws_run;                                                               // Running remotely
@@ -1652,7 +1651,7 @@ cd {f}; yosys -q {y}                                                            
      }
 
     if (inJob("or") || !github_action)                                                                                  // OpenRAM if in OpenRAM container or on local machine
-     {for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRam();                            // Read only memory
+     {//for(VerilogArrays.Array    a : verilogArrays.arrays())    if (runOpenRAM) a.openRam()                           // Read only memory
       //for(Memory                 m : memories())                if (runOpenRAM) m.openRam();                          // Random access memory - OpenRAM maxes out at 4K
      }
    }
