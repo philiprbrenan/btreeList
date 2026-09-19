@@ -31,7 +31,7 @@ public class Program extends Test                                               
   final static boolean    suppressIntegerUsageStatistics = true || github_action;                                       // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage =!true || github_action;                                       // Track instruction execution by location in Java code where the instruction was generated
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final static String                     currentProject = "Cache memory accesses";                                     // Project currently being worked on
+  final static String                     currentProject = "Step counter";                                              // Project currently being worked on
 
   final static FileNames                   verilogFolder = new FileNames(fp(pwd(), "verilog"));                         // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
@@ -1694,7 +1694,8 @@ cd {f}; yosys -q {y}                                                            
   task automatic {name}                                                                                                 // Write dump title
     begin
 `ifndef SYNTHESIS
-      $fwrite(traceFile, "{title}\\n"); $fflush(traceFile);
+      $fwrite(traceFile, "{title} %8d steps, %8d pc\\n", steps, pc);                                                    // Write location in program
+      $fflush(traceFile);
 `endif
     end
   endtask
@@ -1739,9 +1740,11 @@ cd {f}; yosys -q {y}                                                            
     dumpJavaRegisters();
    }
 
+  String dumpProgramLocation () {return f("%8d steps, %8d pc", steps, pc-1);}                                           // Current location in program
+
   void dumpProgramState (String Title)                                                                                  // Dump program memories and variables
    {new I()
-     {void    a()     {appendJavaTrace(Title+"\n");                                         dumpJava();}
+     {void    a()     {appendJavaTrace(Title+" "+dumpProgramLocation()+"\n");                                         dumpJava();}
       String  v()     {return dumpLocations.new Location(instructionNumber, Title).called()+dumpVerilog();}             // Dump entire state of program: memories, variables, registers
       boolean trace() {return false;}
      };
@@ -1749,7 +1752,7 @@ cd {f}; yosys -q {y}                                                            
 
   void dumpProgramMemories (String Title)                                                                               // Dump program memories
    {new I()
-     {void    a()     {appendJavaTrace(Title+"\n");                                         dumpJavaMemories();}
+     {void    a()     {appendJavaTrace(Title+" "+dumpProgramLocation()+"\n");               dumpJavaMemories()   ;}
       String  v()     {return dumpLocations.new Location(instructionNumber, Title).called()+dumpVerilogMemories();}
       boolean trace() {return false;}
      };
@@ -1758,7 +1761,7 @@ cd {f}; yosys -q {y}                                                            
   void dumpProgramVariables (String Title)                                                                              // Dump program variable
    {new I()
      {final int location = codeSize()-2;                                                                                // Record instruction location
-      void    a()     {appendJavaTrace(Title+"\n");                                         dumpJavaVariables();}
+      void    a()     {appendJavaTrace(Title+" "+dumpProgramLocation()+"\n");               dumpJavaVariables()   ;}
       String  v()     {return dumpLocations.new Location(instructionNumber, Title).called()+dumpVerilogVariables();}
       boolean trace() {return false;}
      };
@@ -1767,7 +1770,7 @@ cd {f}; yosys -q {y}                                                            
   void dumpProgramRegisters (String Title)                                                                              // Dump program registers
    {new I()
      {final int location = codeSize();                                                                                  // Record instruction location
-      void    a()     {appendJavaTrace(Title+"\n");                                         dumpJavaRegisters();}
+      void    a()     {appendJavaTrace(Title+" "+dumpProgramLocation()+"\n");               dumpJavaRegisters()   ;}
       String  v()     {return dumpLocations.new Location(instructionNumber, Title).called()+dumpVerilogRegisters();}
       boolean trace() {return false;}
      };
@@ -1987,6 +1990,7 @@ module {name};                                                                  
   wire                reset;                                                                                            // Program reset
 `endif
   integer                pc;                                                                                            // Program counter for stepping through user code
+  integer             steps;                                                                                            // Counter for number of steps executed
   integer         traceFile;                                                                                            // Write Verilog trace records to this file
 `ifdef SYNTHESIS
   assign o_pc = pc[31:0];                                                                                               // Prevent Yosys collapsing the chip to nothing
@@ -2001,8 +2005,11 @@ module {name};                                                                  
 `ifndef SYNTHESIS
   initial begin
     #10;                                                                                                                // Let all the initialization complete
-    clock = 0;                                                                                                          // Initialize the clock - failure to do this will result in an infinite loop as the clock cannot transition on an undefined value
-    forever #1 clock = ~clock;                                                                                          // Execute instructions
+    clock = 0; steps = 0;                                                                                               // Initialize the clock - failure to do this will result in an infinite loop as the clock cannot transition on an undefined value
+    forever #1 begin                                                                                                    // Let the clock run
+      clock = ~clock;                                                                                                   // Execute instructions
+      if (clock % 2 == 0) steps = steps + 1;                                                                            // Number of steps executed - one per clock cycle
+    end
   end                                                                                                                   // Execute instructions
   always @(posedge clock) begin                                                                                         // Decode and execute instructions by iterating a case statement
 `else                                                                                                                   // Clock - only needed during icarus Verilog simulation not during synthesis
@@ -2079,8 +2086,8 @@ module {name};                                                                  
       for(Memory                 m : memories())                put(dumpVerilogMemoryInDecimal(m));                     // Dump memories in Verilog
       for(DumpLocations.Location d : dumpLocations().locations) put(d.define());                                        // Locations in program that have requested dumps
 
-      put(dumpVerilogVariables());                                                                                      // Dump Verilog variables task
-      put(dumpVerilogRegisters());                                                                                      // Dump Verilog variables task
+      put(dumpVerilogVariables());                                                                                      // Task to write all the variables in the program
+      put(dumpVerilogRegisters());                                                                                      // Task to write all the registers in the program
       /*End*/put("""
 endmodule
 """);
@@ -2298,9 +2305,9 @@ check
 
   String dumpVerilog ()                                                                                                 // Dump Verilog memory and variables
    {final StringBuilder s = new StringBuilder();
-    s.append(dumpVerilogMemories());
-    s.append(dumpVerilogVariablesName()+"(); ");
-    s.append(dumpVerilogRegistersName()+"(); ");
+    s.append(dumpVerilogMemories());                                                                                    // Dump memories
+    s.append(dumpVerilogVariablesName()+"(); ");                                                                        // Dump variables
+    s.append(dumpVerilogRegistersName()+"(); ");                                                                        // Dump registers
     return ""+s;
    }
 
@@ -3416,9 +3423,8 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    //test_verilogArray(false);
-    test_ForCount(false);
+   {oldTests();
+    //test_ifThen(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
