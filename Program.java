@@ -24,8 +24,8 @@ public class Program extends Test                                               
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
-  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = true || github_action;                                       // Print read/write usage of integers
@@ -211,7 +211,7 @@ public class Program extends Test                                               
       //index.T();                                                                                                      // Load index from memory
         final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >= End.i()) program().pc = end.offset;}                                           // Index out of range. Program counter has already been incremented so we do not need to do it again
-          String v()   {return "if ("+bitMemory().writeInt()+") pc <= arrayData_pcConstant; else pc <= pc + 1;";}       // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
+          String v()   {return "if ("+bitMemory().writeInt()+" != 0) pc <= arrayData_pcConstant; else pc <= pc + 1;";}  // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
           int traces() {return 0;}
          };
         body(index, cont.clear());                                                                                      // Execute the loop body
@@ -219,7 +219,7 @@ public class Program extends Test                                               
         cont.T();                                                                                                       // Load continue
         final I E = new I(false)
          {void   a()   {program().pc = cont.b() ? start.offset : end.offset;}                                           // Continue execution of the loop as long as requested
-          String v()   {return "if ("+bitMemory().read0Int()+") pc <= arrayData_pcConstant; else pc <= pc + 1;";}
+          String v()   {return "if ("+bitMemory().read0Int()+" != 0) pc <= arrayData_pcConstant; else pc <= pc + 1;";}
           int traces() {return 0;}
          };
         end.set();                                                                                                      // End of the loop
@@ -252,7 +252,7 @@ public class Program extends Test                                               
       //index.T();                                                                                                      // Load index
         final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >=  End.i()) program().pc = end.offset;}                                          // Index out of range
-          String v()   {return "if ("+bitMemory().writeInt()+") pc <= arrayData_pcConstant; else pc <= pc + 1;";}       // Terminate the loop when the index is out of range. The if statement relies on the side effect of the previous instruction having set the target boolean value
+          String v()   {return "if ("+bitMemory().writeInt()+" != 0) pc <= arrayData_pcConstant; else pc <= pc + 1;";}  // Terminate the loop when the index is out of range. The if statement relies on the side effect of the previous instruction having set the target boolean value
           int traces() {return 0;}
          };
         body(index);                                                                                                    // Execute the loop
@@ -295,7 +295,7 @@ public class Program extends Test                                               
         final I Then = new I(false)                                                                                     // Jump to else if condition is false
          {void   a() {if (!Condition.b()) program().pc = lse.offset;}
           String v()
-           {return "if (!"+bitMemory().read0Int()+") pc <= arrayData_pcConstant; else pc <= pc + 1;";
+           {return "if ("+bitMemory().read0Int()+" == 0) pc <= arrayData_pcConstant; else pc <= pc + 1;";
            }
           int traces() {return 0;}
          };
@@ -482,9 +482,10 @@ public class Program extends Test                                               
     String ev (Ops Op)                                                                                                  // Execute a monadic boolean operation
      {final StringBuilder s = new StringBuilder();
       switch(Op)
-       {case flip -> {s.append("!"+bitMemory().writeInt());}
+       {case flip -> {s.append("("+bitMemory().writeInt() + ") == 0 ? 1 : 0");}
         default   -> Test.stop("Op not implemented:", Op);
        }
+      s.append("/*AAAA*/");
       return vtrace(""+Op, s);                                                                                          // Trace the operation
      }
 
@@ -496,14 +497,15 @@ public class Program extends Test                                               
       final String S = Source;
       final String T = bitMemory().writeInt();
       switch (Op)
-       {case set -> {s.append(         S);}
-        case del -> {s.append(         S);}
-        case eq  -> {s.append(T+" == "+S);}
-        case ne  -> {s.append(T+" != "+S);}
-        case and -> {s.append(T+" && "+S);}
-        case or  -> {s.append(T+" || "+S);}
+       {case set -> {s.append(              S              );}
+        case del -> {s.append(              S              );}
+        case eq  -> {s.append("("+T+" == "+ S + ") ? 1 : 0");}
+        case ne  -> {s.append("("+T+" != "+ S + ") ? 1 : 0");}
+        case and -> {s.append("("+T+" && "+ S + ") ? 1 : 0");}
+        case or  -> {s.append("("+T+" || "+ S + ") ? 1 : 0");}
         default  -> Test.stop("Op not implemented:", Op);
        }
+      s.append("/*BBBB*/");
       return vtrace(""+Op, s);                                                                                          // Trace the operation
      }
 
@@ -748,7 +750,7 @@ public class Program extends Test                                               
        {case inc  -> {s.append(n+" + 1");}
         case dec  -> {s.append(n+" - 1");}
         case up   -> {s.append(n+"<< 1");}
-        case down -> {s.append(n+">>>1");}
+        case down -> {s.append(n+">> 1");}                                                                              // Integers are non negative to simplify silicon compiler
         case sqrt -> {s.append("sqrt("+n+")");}
         case neg  -> {s.append("-"    +n);}
         case abs  -> {s.append("(("   +n+" < 0) ? -"+n+" : "+n+")");}
@@ -877,14 +879,15 @@ public class Program extends Test                                               
      {final StringBuilder s = new StringBuilder();
       final String a = intMemory().read1Int(), b = intMemory().read2Int();
       switch(Op)
-       {case eq -> s.append(a + " == " + b);
-        case ne -> s.append(a + " != " + b);
-        case le -> s.append(a + " <= " + b);
-        case lt -> s.append(a + " <  " + b);
-        case ge -> s.append(a + " >= " + b);
-        case gt -> s.append(a + " >  " + b);
+       {case eq -> s.append("("+a + " == " + b+") ? 1 : 0");
+        case ne -> s.append("("+a + " != " + b+") ? 1 : 0");
+        case le -> s.append("("+a + " <= " + b+") ? 1 : 0");
+        case lt -> s.append("("+a + " <  " + b+") ? 1 : 0");
+        case ge -> s.append("("+a + " >= " + b+") ? 1 : 0");
+        case gt -> s.append("("+a + " >  " + b+") ? 1 : 0");
         default -> stop("Op not implemented:", Op);
        }
+      s.append("/*CCCC*/");
       return B.vtrace(""+Op, s);
      }
 
@@ -892,14 +895,15 @@ public class Program extends Test                                               
      {final StringBuilder s = new StringBuilder();
       final String a = intMemory().read1Int(), b = pV("arrayData_pcConstant");
       switch(Op)
-       {case eq -> s.append(a + " == " + b);
-        case ne -> s.append(a + " != " + b);
-        case le -> s.append(a + " <= " + b);
-        case lt -> s.append(a + " <  " + b);
-        case ge -> s.append(a + " >= " + b);
-        case gt -> s.append(a + " >  " + b);
+       {case eq -> s.append("("+a + " == " + b+") ? 1 : 0");
+        case ne -> s.append("("+a + " != " + b+") ? 1 : 0");
+        case le -> s.append("("+a + " <= " + b+") ? 1 : 0");
+        case lt -> s.append("("+a + " <  " + b+") ? 1 : 0");
+        case ge -> s.append("("+a + " >= " + b+") ? 1 : 0");
+        case gt -> s.append("("+a + " >  " + b+") ? 1 : 0");
         default -> stop("Op not implemented:", Op);
        }
+      s.append("/*DDDDD*/");
       return B.vtrace(""+Op, s);
      }
 
@@ -1155,8 +1159,8 @@ public class Program extends Test                                               
       pcConstant(i, r.id);
 
       new I()                                                                                                           // Write bit obtained from this memory back into the memory that holds bits
-       {void   a() {read0Int = (r.i = Test.getBit(units[I.i()], J.i())) ? 1 : 0; r.v = true; bits.writeInt        =     read0Int;                            bits.writeIntEnable       = true; jTrace(f("%8d getBit3 save %8d = %8d",  currentPc(), bits.readWriteIndex, lui(read0Int)));}
-        String v() {return                                                                   bits.writeInt() + " <= " + read0Int()+"["+ints.read1Int()+"]; "+bits.writeIntEnable() + " <= 1;" + vTrace(  "%8d getBit3 save %8d = %8d", "pc",         bits.readWriteIndex(),   read0Int()+"["+ints.read1Int()+"]");}
+       {void   a() {read0Int = (r.i = Test.getBit(units[I.i()], J.i())) ? 1 : 0; r.v = true; bits.writeInt        =     read0Int;                                    bits.writeIntEnable       = true; jTrace(f("%8d getBit3 save %8d = %8d",  currentPc(), bits.readWriteIndex, lui(read0Int)));}
+        String v() {return                                                                   bits.writeInt() + " <= " + read0Int()+"["+ints.read1Int()+"] ? 1 : 0; "+bits.writeIntEnable() + " <= 1;" + vTrace(  "%8d getBit3 save %8d = %8d", "pc",         bits.readWriteIndex(),   read0Int()+"["+ints.read1Int()+"]");}
        };
 
       new I()                                                                                                           // Complete write
@@ -1989,8 +1993,8 @@ module {name};                                                                  
   reg                 clock;                                                                                            // Program clock to drive instruction execution
   wire                reset;                                                                                            // Program reset
 `endif
-  integer                pc;                                                                                            // Program counter for stepping through user code
-  integer             steps;                                                                                            // Counter for number of steps executed
+  reg[31:0]              pc;                                                                                            // Program counter for stepping through user code
+  reg[31:0]           steps;                                                                                            // Counter for number of steps executed
   integer         traceFile;                                                                                            // Write Verilog trace records to this file
 `ifdef SYNTHESIS
   assign o_pc = pc[31:0];                                                                                               // Prevent Yosys collapsing the chip to nothing
