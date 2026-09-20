@@ -1048,31 +1048,31 @@ public class Program extends Test                                               
 
     //Memory (int Length) {this(Length, null);}                                                                           // Create and clear some unnamed memory
 
-    int size ()                    {return units.length;}                                                               // Size of memory
-    String i ()                    {return ""+id;}                                                                      // Number of memory a string for use in writing Verilog
-    String n ()                    {return this == intMemory() ? "ints" : this == bitMemory() ? "bits" : "m_"+id;}      // Name of memory
-    String m ()                    {return "memory_"+n();}                                                              // Name of memory module used to externalize memory for Yosys
-    String n (String Index)        {return n() + "["+Index+"]";}                                                        // Name of indexed memory
-    String n (String I, String J)  {return n() + "["+I+"]["+J+"]";}                                                     // Name of indexed memory
-    String name ()                 {return name == null ? "" :     name;}                                               // Name of the Verilog routine to dump this memory in decimal
-    String nameSp ()               {return name == null ? "" : " "+name;}                                               // Simplifies code that would otherwise leave a trailing blank when a name was not supplied by the caller
-    String dumpVerilogMemoryInDecimalName () {return "dumpDecimal_"+id;}                                                // Name of the Verilog routine to dump this memory in decimal
+    int              size ()         {return units.length;}                                                             // Size of memory
+    String              i ()         {return ""+id;}                                                                    // Number of memory a string for use in writing Verilog
+    String              n ()         {return this == intMemory() ? "ints" : this == bitMemory() ? "bits" : "m_"+id;}    // Name of memory
+    String              m ()         {return "memory_"+n();}                                                            // Name of memory module used to externalize memory for Yosys
+    String              n (String I) {return n() + "["+I+"]";}                                                          // Name of indexed memory
+    String              n (String I, String J) {return n() + "["+I+"]["+J+"]";}                                         // Name of indexed memory
+    String           name ()         {return name == null ? "" :     name;}                                             // Name of the Verilog routine to dump this memory in decimal
+    String         nameSp ()         {return name == null ? "" : " "+name;}                                             // Simplifies code that would otherwise leave a trailing blank when a name was not supplied by the caller
+    String dumpVerilogMemoryInDecimalName ()   {return "dumpDecimal_"+id;}                                              // Name of the Verilog routine to dump this memory in decimal
 
-    void               im (Int I) {pcConstant(compiling(), I.id);}                                                      // Save the integer variable used for this memory access at this instruction
-    void               im (Bit B) {pcConstant(compiling(), B.id);}                                                      // Save the boolean variable used for this memory access at this instruction
+    void               im (Int I)    {pcConstant(compiling(), I.id);}                                                   // Save the integer variable used for this memory access at this instruction
+    void               im (Bit B)    {pcConstant(compiling(), B.id);}                                                   // Save the boolean variable used for this memory access at this instruction
 
-    String            wdi ()      {return writeIntEnable() + " <= 0; ";}                                                // Write disable integer
-    String            wei ()      {return writeIntEnable() + " <= 1; ";}                                                // Write enable integer
+    String            wdi ()         {return writeIntEnable() + " <= 0; ";}                                             // Write disable integer
+    String            wei ()         {return writeIntEnable() + " <= 1; ";}                                             // Write enable integer
 
-    String       read0Int ()      {return n() + "_read0Int      ";}                                                     // Integer read from memory via first  virtual port
-    String       read1Int ()      {return n() + "_read1Int      ";}                                                     // Integer read from memory via second virtual port
-    String       read2Int ()      {return n() + "_read2Int      ";}                                                     // Integer read from memory via third  virtual port
-    String readWriteIndex ()      {return n() + "_readWriteIndex";}                                                     // Index at which to read integer via first  virtual memory port
-    String       writeInt ()      {return n() + "_writeInt      ";}                                                     // Integer to write into memory
-    String writeIntEnable ()      {return n() + "_writeIntEnable";}                                                     // Write enable flag
-    String         memory (int I) {return n() + ".memory["+I+"]" ;}                                                     // Memory reference
+    String       read0Int ()         {return n() + "_read0Int      ";}                                                  // Integer read from memory via first  virtual port
+    String       read1Int ()         {return n() + "_read1Int      ";}                                                  // Integer read from memory via second virtual port
+    String       read2Int ()         {return n() + "_read2Int      ";}                                                  // Integer read from memory via third  virtual port
+    String readWriteIndex ()         {return n() + "_readWriteIndex";}                                                  // Index at which to read integer via first  virtual memory port
+    String       writeInt ()         {return n() + "_writeInt      ";}                                                  // Integer to write into memory
+    String writeIntEnable ()         {return n() + "_writeIntEnable";}                                                  // Write enable flag
+    String         memory (int I)    {return n() + ".memory["+I+"]" ;}                                                  // Memory reference
 
-    int pc() {return currentPc();}
+    int pc22() {return currentPc();}
 
     Memory copy (Memory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                                    // Copy from the specified memory into the current one
      {subStart("Program.Memory.copy");
