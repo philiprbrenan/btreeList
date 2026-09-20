@@ -24,8 +24,8 @@ public class Program extends Test                                               
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
-  final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = true || github_action;                                       // Print read/write usage of integers
@@ -1598,7 +1598,7 @@ cd {f}; python3 {p}                                                             
 cd {f} && docker run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}                                        # Silicon compiler command running a new container
 """,
 "c", "", //"--userns=keep-id",                                                                                          // Use the same userid inside the container to avoid file permission problems
-"f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
+"f", verilogTestFolder.folder,                                                                                          // Work folder
 "i", siliconCompilerImageLocal,                                                                                         // Python to run in which image
 "n", fp(verilogTestFolder.folder),                                                                                      // Folder name in container - which we control
 "p", verilogTestFolder.py());
@@ -2008,7 +2008,7 @@ module {name};                                                                  
     clock = 0; steps = 0;                                                                                               // Initialize the clock - failure to do this will result in an infinite loop as the clock cannot transition on an undefined value
     forever #1 begin                                                                                                    // Let the clock run
       clock = ~clock;                                                                                                   // Execute instructions
-      if (clock % 2 == 0) steps = steps + 1;                                                                            // Number of steps executed - one per clock cycle
+      if (!clock) steps = steps + 1;                                                                                    // Number of steps executed - one per clock cycle
     end
   end                                                                                                                   // Execute instructions
   always @(posedge clock) begin                                                                                         // Decode and execute instructions by iterating a case statement
