@@ -2426,7 +2426,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert(!true);
+    test_alloc(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
