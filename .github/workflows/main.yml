@@ -1,7 +1,7 @@
-# Test 2026-09-20 at 07:17:35
+# Test 2026-09-20 at 07:23:16
 
 name: btreeList
-run-name: Verilog = 1, SiliconCompiler = 1, Yosys = 0, Step counter is reg
+run-name: Verilog, SiliconCompiler, Step counter is reg
 
 on:
   push:
