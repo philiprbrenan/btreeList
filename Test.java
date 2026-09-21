@@ -2,7 +2,6 @@
 // Test a java program.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Versions of writeFile etc that accept a FileNames and return same
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.io.*;
@@ -1033,7 +1032,7 @@ public class Test                                                               
     final String file;                                                                                                  // Default file name
 
     FileNames (String Folder)              {this(Folder, "");}                                                          // Describe a folder in which to create files
-    FileNames ()                           {this(".",    "");}                                                          // Create files in this folderDescribe a file name without an extension, variants of which can be made by adding an extension
+    FileNames ()                           {this(pwd(),  "");}                                                          // Create files in this folderDescribe a file name without an extension, variants of which can be made by adding an extension
     FileNames (String Folder, String File) {folder = Folder; file = fnx(File);}                                         // Describe a file name without an extension, variants of which can be made by adding an extension
 
     FileNames down (String Folder) {return new FileNames(fn(folder, Folder), file);}                                    // Create a set of file names for a sub folder of the original fileset
@@ -1041,10 +1040,12 @@ public class Test                                                               
     FileNames goUp ()              {return new FileNames(fpx(folder),        file);}                                    // Parent folder
 
     FileNames blackBoxes ()        {return down("blackboxes");}                                                         // Black boxes folder
-    FileNames includes ()          {return down("includes");}                                                           // Includes folder
-    FileNames logs ()              {return down("logs");}                                                               // Logs folder
-    FileNames tests ()             {return down("tests");}                                                              // Tests folder
-    FileNames verilog ()           {return down("verilog");}                                                            // Verilog folder
+    FileNames   includes ()          {return down("includes");}                                                         // Includes folder
+    FileNames       logs ()              {return down("logs");}                                                         // Logs folder
+    FileNames      tests ()             {return down("tests");}                                                         // Tests folder
+    FileNames    verilog ()           {return down("verilog");}                                                         // Verilog folder
+
+    FileNames  traceFile ()           {return file("traceFile");}                                                       // Trace file ready for suffixes
 
     FileNames minus(FileNames X)                                                                                        // Partial file name from specified point. Useful for specifying included files in programs
      {final String f = folder, F = X.folder;
