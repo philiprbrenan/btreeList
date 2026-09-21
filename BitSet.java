@@ -1809,8 +1809,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();
-    test_prevNext(false);
+   {oldTests();
+    //test_prevNext(false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
@@ -1820,6 +1820,7 @@ Zero:
       if (github_action) oldTests(); else newTests();                                                                   // Select tests.
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Optional coverage analysis.
       //printExecutionCoverageGlobal(4);                                                                                // Find locations in the java code that generated instructions that were never tested
+      executionStatistics();
       testSummary();                                                                                                    // Summarize test results.
       System.exit(testsFailed);                                                                                         // Exit with status.
      }
