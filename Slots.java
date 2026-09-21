@@ -2437,6 +2437,7 @@ keys     :    0   0   0   0
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
       printExecutionCoverageGlobal(4);                                                                                  // Find locations in the java code that generated instructions that were never tested
       testSummary();                                                                                                    // Summarize test results
+      executionStatistics();                                                                                            // Program execution statistics
       System.exit(testsFailed);
      }
     catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
