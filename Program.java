@@ -20,9 +20,9 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+ {final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
@@ -33,7 +33,7 @@ public class Program extends Test                                               
   final static boolean       suppressInstructionCoverage =!true || github_action;                                       // Track instruction execution by location in Java code where the instruction was generated
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final static String                     currentProject = "BIt offset";                                                // Project currently being worked on
+  final static String                     currentProject = "Fast Ints";                                                // Project currently being worked on
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
@@ -74,7 +74,8 @@ public class Program extends Test                                               
   int                                          currentPc = 0;                                                           // Current program counter
   int                                             jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
   int                                             vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
-  int                                          nextIntId = 0;                                                           // Unique id for each Int
+  int                                          nextIntId = 0;                                                           // Unique id for each Int held in memory
+  int                                      nextFastIntId = 0;                                                           // Unique id for each Int held in registers to make access faster
   int                                          nextBitId = 0;                                                           // Unique id for each Bit
   int                                         scDieAreaX = 1_000;                                                       // Default size of x dimension for chip
   int                                         scDieAreaY = 1_000;                                                       // Default size of y dimension for chip
@@ -109,7 +110,7 @@ public class Program extends Test                                               
     bitMemory       = p ? new Memory(0, "Bits", false) : program().bitMemory;                                           // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
 
     unitMemory      = Build.size != null ? new Memory(Build.size, "program", false) : null;                             // Memory associated with program if any
-    initializeRegisters();                                                                                              // Start registers in known state
+//  initializeRegisters();                                                                                              // Start registers in known state
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -152,32 +153,26 @@ public class Program extends Test                                               
   Stack<Memory> memories ()      {return memories;}
 
   int      currentPc ()          {return program().currentPc;}
-  int      targetInt ()          {return intMemory.read0Int;}
-  int      sourceInt ()          {return intMemory.read1Int;}
-  int     source2Int ()          {return intMemory.read2Int;}
   boolean  targetBit ()          {return bitMemory.read0Int != 0;}
   boolean  sourceBit ()          {return bitMemory.read1Int != 0;}
 
-  void    currentPc (int V)      {ngv(); program().currentPc     = V;}
-  void    targetInt (int V)      {ngv(); intMemory.writeInt      = V;}                                                  // Currently bits are stored wastefully as integers hoping that Yosys will remove unused paths
-  void    sourceInt (int V)      {ngv(); intMemory.read1Int      = V;}
-  void   source2Int (int V)      {ngv(); intMemory.read2Int      = V;}
-  void    targetBit (boolean V)  {ngv(); bitMemory.writeInt      = V ? 1 : 0;}
-  void    sourceBit (boolean V)  {ngv(); bitMemory.read1Int      = V ? 1 : 0;}
+  void    currentPc (int V)      {ngv(); program().currentPc = V;}
+  void    targetBit (boolean V)  {ngv(); bitMemory.writeInt  = V ? 1 : 0;}                                              // Currently bits are stored wastefully as integers hoping that Yosys will remove unused paths
+  void    sourceBit (boolean V)  {ngv(); bitMemory.read1Int  = V ? 1 : 0;}
 
   void  ngv() {if (generatingVerilog) stop("Cannot call this function while generating Verilog");}                      // The variable is owned by the associated Verilog memory module and so cannot be written to by the main module although the main module can read the value
 
   Memory   intMemory ()          {return intMemory;}
   Memory   bitMemory ()          {return bitMemory;}
 
-  void initializeRegisters ()                                                                                           // Initialize registers
-   {currentPc(0);
-    sourceInt(0);
-    source2Int(0);
-    sourceBit(false);
-    targetInt(0);
-    targetBit(false);
-   }
+//  void initializeRegisters ()                                                                                           // Initialize registers
+//   {currentPc(0);
+//    sourceInt(0);
+//    source2Int(0);
+//    sourceBit(false);
+//    targetInt(0);
+//    targetBit(false);
+//   }
 
   TreeMap<Integer,Integer> pcConstant () {return pcConstant;}                                                           // Instruction number to variable or memory
   VerilogArrays         verilogArrays () {return verilogArrays;}                                                        // Verilog array definitions
@@ -363,6 +358,7 @@ public class Program extends Test                                               
     final boolean    top = callerName() == "code";                                                                      // A declaration at the top level
           boolean     in = false;                                                                                       // An input wire if true and named and at the top
           boolean    out = false;                                                                                       // An output register if true and named and at the top
+    boolean         fast = false;                                                                                       // Make this bit into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
     String  name = null;                                                                                                // The name of the variable
 
     enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
@@ -424,8 +420,7 @@ public class Program extends Test                                               
          {final String c = pV("arrayData_pcConstant");
           void   a() {m.readWriteIndex = id;      jTrace(f("%8d BST1-"+Label+" "+mi+" = %8d",  pc(), id));}
           String v() {return mi+" <= "+c+";"+     vTrace(  "%8d BST1-"+Label+" "+mi+" = %8d", "pc",  c  );}
-         };
-        pcConstant(i, id);                                                                                              // Id of variable being addressed by these instructions
+         }.c(id);                                                                                                       // Id of variable being addressed by these instructions
 
         if (LoadValue)                                                                                                  // Load value if requested
          {new I()                                                                                                       // Load source value
@@ -602,20 +597,33 @@ public class Program extends Test                                               
           boolean      out = false;                                                                                     // An output register named at the top and set by the constructor to the value of a variable
     final String traceBack = suppressIntegerUsageStatistics ? null : traceBack();                                       // Location of this integer
     int nr0, nr1, nr2, nw, dup, reads, writes, bint;                                                                    // Number of reads and writes via instruction processing, number of duplications, number of reads and writes outside instructions
+    final boolean     fast;                                                                                             // Make this integer into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
+    final int       fastId;                                                                                             // Unique id for fast integer
 
-    int         i ()       {x();   reads++;  return i;}                                                                 // Get current value
-    int         i (int I)  {i = I; writes++; return i;}                                                                 // Set current value value
-    void        x ()       {if (!v) variableNotSet("Int", name);}                                                       // Check a value has been set for the integer
+    Int ()           {ai(); fast = false; fastId = -1; del(0);         ints().push(this);}                              // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for Java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has been already been established by successfully executing the tests associated with the Java version . The integers used in the Java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
+    Int (int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this);}                              // Set the new integer to a known value at this point in the code
+    Int (Int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this);}                              // Set the new integer to a specified value at this point in the code
 
     Int (String Name)        {this();  name = Name; out = top;}                                                         // Constructor with name supplied. Output register if it is at the top
     Int (String Name, int I) {this(I); name = Name; in  = top;}                                                         // Input wire if we know its value at the start and it is at the top
     Int (String Name, Int I) {this(I); name = Name; out = top;}                                                         // Output register if its value is unknown at the start and is at the top
 
-    Int ()           {ai(); del(0);         ints().push(this);}                                                         // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for Java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has been already been established by successfully executing the tests associated with the Java version . The integers used in the Java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
-    Int (int I)      {ai(); ie(Ops.set, I); ints().push(this);}
-    Int (Int I)      {ai(); ie(Ops.set, I); ints().push(this);}
-                                                                                                                        // Possible integer operations
-    enum Ops {abs, add, add2, dec, del, div, down, eq, ge, gt, inc, le, lt, mod, mul, neg, ne, set, sqrt, sub, up};
+    Int (String Name, boolean Fast)                                                                                     // Output register if its value is unknown at the start and is at the top
+     {ai(); fast = Fast; fastId = program().nextFastIntId++;
+      ie(Ops.zero);
+      ints().push(this);
+     }
+
+    int      i ()       {x();   reads++;  return i;}                                                                    // Get current value
+    int      i (int I)  {i = I; writes++; return i;}                                                                    // Set current value value
+    void     x ()       {if (!v) variableNotSet("Int", name);}                                                          // Check a value has been set for the integer
+    String nin ()       {if (fast) stop("Fast integer not allowed here"); return intMemory().read0Int();}               // Fast integer not allowed for this instruction only a conventional integer from the memory used to hold integers
+    String  in ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read0Int();}                      // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String  on ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().writeInt();}                      // Verilog name of integer to be written into memeory or into the fast integers array
+
+    enum Ops                                                                                                            // Possible integer operations
+     {abs, add, add2, dec, del, div, down, eq, ge, gt, inc, le, lt, mod, mul, neg, ne, set, sqrt, sub, up, zero
+     };
 
     Int  set (int  I) {return ie(Ops.set , I);}
     Int  set (Int  I) {return ie(Ops.set , I);}
@@ -638,15 +646,28 @@ public class Program extends Test                                               
     Int  sqrt()       {return ie(Ops.sqrt   );}                                                                         //N
     Int  neg ()       {return ie(Ops.neg    );}                                                                         //N
     Int  abs ()       {return ie(Ops.abs    );}
+    Int zero ()       {return ie(Ops.zero   );}
     Int  del (int  I) {return ie(Ops.del , I);}
 
-    Int ie (Ops Op)       {      T();   new I(){void a() {ex(Op  );} String v() {return ev(Op   );}}; W(); return this;}// Create an instruction that can either be executed immediately one by one or later en masse
-    Int ie (Ops Op, Int I){I.S();T(Op); new I(){void a() {ex(Op,I);} String v() {return ev(Op, I);}}; W(); return this;}
+    Int ie (Ops Op)                                                                                                     // Create an instruction that can either be executed immediately one by one or later en masse
+     {T();                                                                                                              // Load target
+      new I(){void a() {ex(Op  );} String v() {return ev(Op   );}}.c(fastId);                                           // Instruction embodying the operation
+      W();                                                                                                              // Write result of operation
+      return this;
+     }
+
+    Int ie (Ops Op, Int I)                                                                                              // Create an instruction that can either be executed immediately one by one or later en masse
+     {I.S();                                                                                                            // Load source
+      T(Op);                                                                                                            // Load target if necessary
+      new I(){void a() {ex(Op,I);} String v() {return ev(Op, I);}}.c(fastId);                                           // Instruction embodying the operation
+      W();                                                                                                              // Write result of operation
+      return this;
+     }
+
     Int ie (Ops Op, int I)                                                                                              // Selectively loaded target, store constant for this instruction in the constants map
      {T(Op);                                                                                                            // Instruction to load target details if needed for the operation otherwise just the index of the target as in the cases of set and del
-      final I i = new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}};                                       // Perform operation
+      final I i = new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}.c(I);                                  // Perform operation using integer stored in constants array indexed by program counter
       W();                                                                                                              // Write results back into a variable
-      pcConstant(i, I);                                                                                                 // Record the constant used in this operation in the map from instructions to constants used
       return this;                                                                                                      // The current integer
      }
 
@@ -670,7 +691,8 @@ public class Program extends Test                                               
 
     abstract class LoadSourceOrTarget                                                                                   // Set index and values of memory for integer variables
      {LoadSourceOrTarget(String Label, int Register, boolean LoadValue)                                                 // The value should not be set for operations where the target already contains the value to store
-       {final Memory  m = intMemory();                                                                                  // Value register
+       {if (fast) return;                                                                                               // Bypass for inetgers held in registers
+        final Memory  m = intMemory();                                                                                  // Value register
         final String mi = pV(m.readWriteIndex());                                                                       // Index register
         final String mv = pV(m.read0Int());                                                                             // Value register
         final String ms = pV(registerName(Register));                                                                   // Saved value register
@@ -679,8 +701,7 @@ public class Program extends Test                                               
          {final String c = mi + pV(" <= arrayData_pcConstant;");
           void   a() {m.readWriteIndex = id;   jTrace(f("%8d ILST1-"+Label+" "+mi+" = %8d",  pc(), id)                  );}
           String v() {return c+" "+            vTrace(  "%8d ILST1-"+Label+" "+mi+" = %8d", "pc", "arrayData_pcConstant");}
-         };
-        pcConstant(index, id);                                                                                          // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
+         }.c(id);                                                                                                       // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
 
         if (LoadValue)
          {new I()                                                                                                       // Value of integer
@@ -722,7 +743,8 @@ public class Program extends Test                                               
      }
 
     void W ()                                                                                                           // Write result back into an integer variable whose index has been loaded by T ()
-     {final Int     w = this;                                                                                           // Set index locating the integer to be written to
+     {if (fast) return;                                                                                               // Bypass for inetgers held in registers
+      final Int     w = this;                                                                                           // Set index locating the integer to be written to
       final Memory  M = intMemory();
       final boolean x = immediate();
       new I()                                                                                                           // Load value into integer or memory
@@ -739,9 +761,16 @@ public class Program extends Test                                               
 
     void TW() {T(false); W();}                                                                                          // Load the target index of an integer value and write its value assuming that the value to be written has already been loaded into the write integer register
 
+    int      targetInt () {return fast ? i() : intMemory.read0Int;}                                                     // Load integer value either directly or indirectly from memory
+    int      sourceInt () {return fast ? i() : intMemory.read1Int;}
+    int     source2Int () {return fast ? i() : intMemory.read2Int;}
+    void     targetInt (int V) {ngv(); if (fast) i(V); else intMemory.writeInt  = V;}
+    void     sourceInt (int V) {ngv(); if (fast) i(V); else intMemory.read1Int  = V;}
+    void    source2Int (int V) {ngv(); if (fast) i(V); else intMemory.read2Int  = V;}
+
     Int ex (Ops Op)                                                                                                     // Execute a monadic integer operation
      {executingCheck();
-      x();
+      if (Op != Ops.zero) x();                                                                                          // Check that the source of the operation exists if there is a source
       v = true;
       switch(Op)
        {case inc  -> {targetInt(targetInt()   + 1);}
@@ -751,6 +780,7 @@ public class Program extends Test                                               
         case sqrt -> {targetInt((int)Math.sqrt(targetInt()));}
         case neg  -> {targetInt(- targetInt());}
         case abs  -> {targetInt(targetInt() < 0 ? -targetInt() : targetInt());}
+        case zero -> {targetInt(0);}
         default   -> stop("Op not implemented:", Op);
        }
 
@@ -783,7 +813,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op)                                                                                                  // Execute a monadic integer operation in Verilog
-     {final String        n = intMemory().read0Int();                                                                   // Name of the variable in Verilog
+     {final String        n = in();                                                                                     // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
        {case inc  -> {s.append(n+" + 1");}
@@ -793,13 +823,14 @@ public class Program extends Test                                               
         case sqrt -> {s.append("sqrt("+n+")");}
         case neg  -> {s.append("-"    +n);}
         case abs  -> {s.append("(("   +n+" < 0) ? -"+n+" : "+n+")");}
+        case zero -> {s.append("0");}
         default   -> stop("Op not implemented:", Op);
        }
       return vExecuteAndTrace(""+s);
      }
 
     String ev (Ops Op, int I)                                                                                           // Execute a monadic integer operation on a constant
-     {final String        n = intMemory().read0Int(), c = pV("arrayData_pcConstant");                                   // The constant will be stored in the instruction to constant map
+     {final String        n = nin(), c = pV("arrayData_pcConstant");                                                    // The constant will be stored in the instruction to constant map so it cannot be used to address a fast integer target
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        c);}
@@ -816,7 +847,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op, Int I)                                                                                           // Execute a monadic integer operation on a variable
-     {final String        n = intMemory().read0Int(), i = intMemory().read1Int();                                       // Memory fields for target and source integers
+     {final String        n = in(), i = intMemory().read1Int();                                                         // Memory fields for target and source integers
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        i);}
@@ -834,12 +865,12 @@ public class Program extends Test                                               
     final String atf = "%8d assign writeInt = %8d";                                                                     // Trace format for an assign statement
 
     String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
-     {final String t = intMemory().writeInt();
+     {final String t = on(); //intMemory().writeInt();
       final String s = pV(Value+";");
       final String v = vTrace(  atf, "pc",         Value);
       return t + " <= " + s + v;
      }
-    void jtrace ()    {jTrace(f(atf,  currentPc(), lui(intMemory().writeInt)));}                                        // Trace the integer operation in Java
+    void jtrace ()    {jTrace(f(atf,  currentPc(), lui(fast ? i() : intMemory().writeInt)));}                           // Trace the integer operation in Java
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -880,8 +911,7 @@ public class Program extends Test                                               
       final I i = new I()
        {void   a() {       bex(Op, b, I);}
         String v() {return bev(Op, b, I);}
-       };
-      pcConstant(i, I);
+       }.c(I);
       b.W();
       return b;
      }
@@ -979,7 +1009,7 @@ public class Program extends Test                                               
     Int ok (int Value)                                                                                                  // Check the integer. There is no corresponding check in Verilog other than the execution logs matching so there will be an empty instruction generated in the Verilog to "regulate the service"
      {final Int got = this;
       new I()
-       {void        a()
+       {void a()
          {if (!got.v) stop("Invalid Int being tested at:", executing().instructionLocation());
           Test.ok(i(), Value);
          }
@@ -1164,8 +1194,7 @@ public class Program extends Test                                               
       final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold integers
        {void   a() {       ints.readWriteIndex        =  r.id;                   jTrace(f("%8d getInt2 Set write index %8d",  currentPc(), r.id)                );}
         String v() {return ints.readWriteIndex() + " <= arrayData_pcConstant;" + vTrace(  "%8d getInt2 Set write index %8d", "pc",        "arrayData_pcConstant");}
-       };
-      pcConstant(i, r.id);
+       }.c(r.id);
 
       new I()                                                                                                           // Write integer obtained from this memory back into the memory that holds integers
        {void   a() {read0Int = r.i(units[I.i]); r.v = true; ints.writeInt        =     read0Int;       ints.writeIntEnable        = true; jTrace(f("%8d getInt3 save %8d = %8d",  currentPc(), ints.readWriteIndex, lui(read0Int)));}
@@ -1197,8 +1226,7 @@ public class Program extends Test                                               
       final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold bits
        {void   a() {       bits.readWriteIndex        =  r.id;                   jTrace(f("%8d getBit2 Set write index %8d",  currentPc(), r.id)                );}
         String v() {return bits.readWriteIndex() + " <= arrayData_pcConstant;" + vTrace(  "%8d getBit2 Set write index %8d", "pc",        "arrayData_pcConstant");}
-       };
-      pcConstant(i, r.id);
+       }.c(r.id);
 
       new I()                                                                                                           // Write bit obtained from this memory back into the memory that holds bits
        {void   a() {read0Int = (r.i = Test.getBit(units[I.i()], J.i())) ? 1 : 0; r.v = true; bits.writeInt        =     read0Int;                                    bits.writeIntEnable       = true; jTrace(f("%8d getBit3 save %8d = %8d",  currentPc(), bits.readWriteIndex, lui(read0Int)));}
@@ -1483,7 +1511,7 @@ endmodule
     final String      traceBack = suppressTraceBackComments   ? null : traceBack();                                     // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String      traceTest = suppressInstructionCoverage ? null : traceTest();                                     // Line at which this instruction was created up to the enclosing test - suppressible because it imposes a lot of extra processing
     final String       traceSub = subsTrace;                                                                            // Sub during which this instruction was created
-    final boolean        noJump;                                                                                        // The instruction will handle setting the program counter  if false
+    final boolean        noJump;                                                                                        // The instruction will handle setting the program counter if false
     int                executed = 0;                                                                                    // The number of times executed
 
     I (boolean NoJump)                                                                                                  // Add this instruction to the code for the process
@@ -1507,10 +1535,12 @@ endmodule
 
 //D3 Overrides                                                                                                          // Methods that modify the behaviour of an instruction
 
-    abstract void a ();                                                                                                 // The action to be performed by the instruction
-    String        v () {return "";};                                                                                    // Verilog code
-    int      traces () {return 1;}                                                                                      // Number of trace records expected
+    abstract void a ();                                                                                                 // Override to specify the action to be performed in Java by the instruction
+    String        v () {return "";};                                                                                    // Override to specify the Verilog code to be generated for this instruction
+    int      traces () {return 1;}                                                                                      // Number of trace records expected - currently this is an override to avoid teh difficulty of specifying it via a constructor without keyword parameters
     boolean   trace () {return true;}                                                                                   // Enable tracing
+
+    I c (int I) {pcConstant(this, I); return this;}                                                                     // Save an integer constant associated with this instructions in the pcConstant array which is decoded ahead of each instruction execution to provide this information during instruction execution in Verilog without having to decode it from the instruction format
 
     String instructionLocation () {return traceBack != null ? traceBack : traceSub  != null ? traceSub : "";}           // Trace the location at which the instruction was generated
     String instructionLocationAsComment ()                                                                              // Trace the location at which the instruction was generated as a comment
@@ -2052,6 +2082,8 @@ module {name};                                                                  
 `endif
 """);
 
+      if (nextFastIntId > 0) createFastInts();                                                                          // Create array of fast integers if any have been used
+
       for(VerilogArrays.Array a : verilogArrays.arrays()) put(a.connectModule());                                       // Connect to Verilog array modules
       for(Memory m              : memories              ) put(m.instantiateModule());                                   // Instantiate each memory
 
@@ -2203,8 +2235,15 @@ endmodule
   endtask
 """, "n", M.n(), "size", ""+M.size());
 
-     return h + m + t;
-    }
+      return h + m + t;
+     }
+
+    void createFastInts()                                                                                               // Create an array of integers to represent any fast integers used by the program
+     {put(s("""
+  reg[31:0] fastInts[{n}];                                                                                              // Declare fast integers
+""",
+"n", ""+nextFastIntId));
+     }
 
 //D2 Instruction Matching                                                                                               // Classify instructions into blocks of identical instructions and then compressing out the duplicates to reduce code size
 
@@ -2397,10 +2436,10 @@ check
     for(Int i : ints)                                                                                                   // Dump integers
      {if (i.name != null) v.append(substitute("""
       $fdisplay(traceFile, "Int  %8d ==    %8d {name}", {id}, {v});
-""", "name", i.name, "id", ""+i.id, "v", intMemory().memory(i.id)));
+""", "name", i.name, "id", ""+i.id, "v", intMemory(i)));
       else v.append(substitute("""
       $fdisplay(traceFile, "Int  %8d ==    %8d",        {id}, {v});
-""",                 "id", ""+i.id, "v", intMemory().memory(i.id)));
+""",                 "id", ""+i.id, "v", intMemory(i)));
      }
 
     for(Bit b : bits)                                                                                                   // Dump booleans
@@ -2416,6 +2455,8 @@ check
     writeFile(includeFile.v$(), "`ifndef SYNTHESIS\n"+v+"`endif\n");
     return ""+s;
    }
+
+  String intMemory(Int I) {return I.fast ? "fastInts["+I.fastId+"]" : intMemory().memory(I.id);}                        // Name of a memory location holding an integer
 
   String dumpVerilogRegistersName () {return "dumpVerilogRegisters";}                                                   // Name of the Verilog method to dump all the registers to the trace file
   String dumpVerilogRegisters ()                                                                                        // Dump all Verilog registers except those of the memory modules because there are no corresponding entries in the Java version - to match the Verilog we would have to emulate a continuous assign in Java or provide a read enable flag to synchronize the execution of the Java and Verilog versions. As the memory results show up very quickly in the other control registers it should be possible to proceed without dumping these extra variables
@@ -3199,17 +3240,17 @@ writeIntEnable =        0
     final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
        {final int[]array = {1, 3, 5, 2, 4, 6, 7, 8};                                                                    // Array
-        final VerilogArrays.Array A = verilogArrays().new Array("verilogArrayData", array);                                 // Verilog version of array
+        final VerilogArrays.Array A = verilogArrays().new Array("verilogArrayData", array);                             // Verilog version of array
         dumpProgramState("AAAA");
         final Int i = new Int("i").set(2);                                                                              // Input
         final Int o = new Int("o");                                                                                     // Output
         i.S();                                                                                                          // Load the index of the array element required - the answer shows up in arrayData_array
         new I()
-         {void        a() {targetInt(array[i.i()]); o.setValid();}                                                      // Load from array
+         {void        a() {o.targetInt(array[i.i()]); o.setValid();}                                                    // Load from array
           String      v() {return intMemory().writeInt()+" <= "+A.dataRegisterName()+";";}                              // Load from array data register
           boolean trace() {return false;}
          };
-        o.TW();                                                                                                         // WAddress output variable and write rite array element into it
+        o.TW();                                                                                                         // Address output variable and write array element into it
         o.ok(5);
         scDieAreaX = 300; scDieAreaY = 600;
         execute();
@@ -3232,7 +3273,7 @@ writeIntEnable =        0
         final String v = new ArrayConstant(a).verilog(intMemory().read1Int(), intMemory().writeInt());
         final Int j = new Int("j");
         new I()
-         {void        a() {targetInt(a[i.i()]); j.setValid();}
+         {void        a() {j.targetInt(a[i.i()]); j.setValid();}
           String      v() {return v;}
           boolean trace() {return false;}
          };
@@ -3449,6 +3490,24 @@ writeIntEnable =        0
               test_forLoops(false);
    }
 
+  static void test_fastInt(Boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Int a = new Int("a", true);                                                                               // Fast integere
+        a.inc();
+        a.inc();
+        a.ok(2);
+        execute();
+       }
+     };
+   }
+
+  static void test_fastInt()
+   {          test_fastInt(true);
+              test_fastInt(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_ifThen();
     test_ifElse();
@@ -3475,11 +3534,12 @@ writeIntEnable =        0
     test_boolean();
     test_ifInc();
     test_forLoops();
+    test_fastInt();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_ifThen(false);
+    //test_fastInt();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
