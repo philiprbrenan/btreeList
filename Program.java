@@ -20,20 +20,20 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+ {final static String                     currentProject = "Fast Ints";                                                 // Project currently being worked on
+  final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
-  final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = true || github_action;                                       // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage =!true || github_action;                                       // Track instruction execution by location in Java code where the instruction was generated
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final static String                     currentProject = "Fast Ints";                                                // Project currently being worked on
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
@@ -761,12 +761,12 @@ public class Program extends Test                                               
 
     void TW() {T(false); W();}                                                                                          // Load the target index of an integer value and write its value assuming that the value to be written has already been loaded into the write integer register
 
-    int      targetInt () {return fast ? i() : intMemory.read0Int;}                                                     // Load integer value either directly or indirectly from memory
-    int      sourceInt () {return fast ? i() : intMemory.read1Int;}
-    int     source2Int () {return fast ? i() : intMemory.read2Int;}
-    void     targetInt (int V) {ngv(); if (fast) i(V); else intMemory.writeInt  = V;}
-    void     sourceInt (int V) {ngv(); if (fast) i(V); else intMemory.read1Int  = V;}
-    void    source2Int (int V) {ngv(); if (fast) i(V); else intMemory.read2Int  = V;}
+    int      targetInt () {return fast ? i() : intMemory().read0Int;}                                                     // Load integer value either directly or indirectly from memory
+    int      sourceInt () {return fast ? i() : intMemory().read1Int;}
+    int     source2Int () {return fast ? i() : intMemory().read2Int;}
+    void     targetInt (int V) {ngv(); if (fast) i(V); else intMemory().writeInt  = V;}
+    void     sourceInt (int V) {ngv(); if (fast) i(V); else intMemory().read1Int  = V;}
+    void    source2Int (int V) {ngv(); if (fast) i(V); else intMemory().read2Int  = V;}
 
     Int ex (Ops Op)                                                                                                     // Execute a monadic integer operation
      {executingCheck();
