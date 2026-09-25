@@ -318,17 +318,17 @@ public class BitSet extends Program                                             
   int       base_one ()        {return posOne (0);}                                                                     // Start of the ones tree
 
   final boolean F = false;                                                                                              // No need to load the target value as we are going to over write it so we only need to address it
-  Int       pos_zero (Int Pos) {subStart("Bitset.pos_zero");       final Int r = new Int("pos_zero" );         Pos.S(); new I() {void a() {jt(r, posZero        [sourceInt()]);} String v() {return vt(r, pzArray );}}; r.TW(); subFinish(); return r;} // Position in the current row in the zeros tree
-  Int        pos_one (Int Pos) {subStart("Bitset.pos_one");        final Int r = new Int("pos_one"  );         Pos.S(); new I() {void a() {jt(r, posOne         [sourceInt()]);} String v() {return vt(r, poArray );}}; r.TW(); subFinish(); return r;} //N Position in the current row in the ones tree
-  Int  limitUpperOne (Int Pos) {subStart("Bitset.limitUpperOne");  final Int r = new Int("one  upper limit" ); Pos.S(); new I() {void a() {jt(r, limitsUpperOne [sourceInt()]);} String v() {return vt(r, luoArray);}}; r.TW(); subFinish(); return r;} // Upper limit of the current row in the ones tree
-  Int limitUpperZero (Int Pos) {subStart("Bitset.limitUpperZero"); final Int r = new Int("zero upper limit");  Pos.S(); new I() {void a() {jt(r, limitsUpperZero[sourceInt()]);} String v() {return vt(r, luzArray);}}; r.TW(); subFinish(); return r;} // Upper limit of the current row in the zeros tree
-  Int  limitLowerOne (Int Pos) {subStart("Bitset.limitLowerOne");  final Int r = new Int("one  lower limit" ); Pos.S(); new I() {void a() {jt(r, limitsLowerOne [sourceInt()]);} String v() {return vt(r, lloArray);}}; r.TW(); subFinish(); return r;} // Lower limit of the current row in the ones tree
-  Int limitLowerZero (Int Pos) {subStart("Bitset.limitLowerZero"); final Int r = new Int("zero lower limit");  Pos.S(); new I() {void a() {jt(r, limitsLowerZero[sourceInt()]);} String v() {return vt(r, llzArray);}}; r.TW(); subFinish(); return r;} //N Lower limit of the current row in the zeros tree
-  Int      heightOne (Int Pos) {subStart("Bitset.heightOne");      final Int r = new Int("one  height" );      Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt()]);} String v() {return vt(r, hoArray );}}; r.TW(); subFinish(); return r;} // Height of the specified position in the ones tree
-  Int     heightZero (Int Pos) {subStart("Bitset.heightZero");     final Int r = new Int("zero height");       Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzArray );}}; r.TW(); subFinish(); return r;} // Height of the specified position in the zeros tree
+  Int       pos_zero (Int P) {subStart("Bitset.pos_zero");       final Int r = new Int("pos_zero" );         P.S(); new I() {void a() {jt(r, posZero        [P.sourceInt()]);} String v() {return vt(r, pzArray );}}; r.TW(); subFinish(); return r;} // Position in the current row in the zeros tree
+  Int        pos_one (Int P) {subStart("Bitset.pos_one");        final Int r = new Int("pos_one"  );         P.S(); new I() {void a() {jt(r, posOne         [P.sourceInt()]);} String v() {return vt(r, poArray );}}; r.TW(); subFinish(); return r;} //N Position in the current row in the ones tree
+  Int  limitUpperOne (Int P) {subStart("Bitset.limitUpperOne");  final Int r = new Int("one  upper limit" ); P.S(); new I() {void a() {jt(r, limitsUpperOne [P.sourceInt()]);} String v() {return vt(r, luoArray);}}; r.TW(); subFinish(); return r;} // Upper limit of the current row in the ones tree
+  Int limitUpperZero (Int P) {subStart("Bitset.limitUpperZero"); final Int r = new Int("zero upper limit");  P.S(); new I() {void a() {jt(r, limitsUpperZero[P.sourceInt()]);} String v() {return vt(r, luzArray);}}; r.TW(); subFinish(); return r;} // Upper limit of the current row in the zeros tree
+  Int  limitLowerOne (Int P) {subStart("Bitset.limitLowerOne");  final Int r = new Int("one  lower limit" ); P.S(); new I() {void a() {jt(r, limitsLowerOne [P.sourceInt()]);} String v() {return vt(r, lloArray);}}; r.TW(); subFinish(); return r;} // Lower limit of the current row in the ones tree
+  Int limitLowerZero (Int P) {subStart("Bitset.limitLowerZero"); final Int r = new Int("zero lower limit");  P.S(); new I() {void a() {jt(r, limitsLowerZero[P.sourceInt()]);} String v() {return vt(r, llzArray);}}; r.TW(); subFinish(); return r;} //N Lower limit of the current row in the zeros tree
+  Int      heightOne (Int P) {subStart("Bitset.heightOne");      final Int r = new Int("one  height" );      P.S(); new I() {void a() {jt(r, heightOne      [P.sourceInt()]);} String v() {return vt(r, hoArray );}}; r.TW(); subFinish(); return r;} // Height of the specified position in the ones tree
+  Int     heightZero (Int P) {subStart("Bitset.heightZero");     final Int r = new Int("zero height");       P.S(); new I() {void a() {jt(r, heightZero     [P.sourceInt()]);} String v() {return vt(r, hzArray );}}; r.TW(); subFinish(); return r;} // Height of the specified position in the zeros tree
 
-  void   jt (Int R, int I)    {targetInt(I); R.setValid(); jTrace(f("%8d "+R.name, currentPc()));}                      // Java trace of array look ups
-  String vt (Int R, String V) {return V +                  vTrace(  "%8d "+R.name, "pc"        );}                      // Verilog trace of array look up - cannot get the looked up value yet because of non blocking assign
+  void   jt (Int R, int I)    {R.targetInt(I); R.setValid(); jTrace(f("%8d "+R.name, currentPc()));}                    // Java trace of array look ups
+  String vt (Int R, String V) {return V +                    vTrace(  "%8d "+R.name, "pc"        );}                    // Verilog trace of array look up - cannot get the looked up value yet because of non blocking assign
 
   int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
    {final int p = Pos < bitSize ? Pos : Pos < base_zero() ?  0 : pos_one(Pos - base_zero() + bitSize);
@@ -510,12 +510,12 @@ public class BitSet extends Program                                             
 
   public Bint firstOne()                                                                                                // Find the index of the first set bit
    {subStart("Bitset.firstOne");
-    final Int  p = new Int(0); p.name = "p";                                                                            // Offset of first bit
+    final Int  p = new Int("p", 0);                                                                                     // Offset of first bit
     final Bint r = new Bint();                                                                                          // Result
 
-    new If (getBit(p))
-     {void Then() {r.set(p);          }
-      void Else() {r.copy(nextOne(p));}                                                                                 // Use copy because the result might be invalid showing that there is no first one
+    new If (getBit(p))                                                                                                  // Try the first bit of the bitset
+     {void Then() {r.set(p);          }                                                                                 // First bit of bitset is set
+      void Else() {r.copy(nextOne(p));}                                                                                 // Find then next set bit if there is one. Use copy because the result might be invalid showing that there is no first one
      };
     subFinish();
     return r;                                                                                                           // Result is valid if found
