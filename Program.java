@@ -30,8 +30,8 @@ public class Program extends Test                                               
   final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final static boolean    suppressIntegerUsageStatistics = true || github_action;                                       // Print read/write usage of integers
-  final static boolean       suppressInstructionCoverage =!true || github_action;                                       // Track instruction execution by location in Java code where the instruction was generated
+  final static boolean    suppressIntegerUsageStatistics = false || !github_action;                                     // Print read/write usage of integers
+  final static boolean       suppressInstructionCoverage =!true  ||  github_action;                                     // Track instruction execution by location in Java code where the instruction was generated
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
