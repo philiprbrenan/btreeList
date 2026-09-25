@@ -253,12 +253,6 @@ Even partial translations are useful.
 
 ---
 
-# Related Direction
-
-The broader ecosystem around B Tree acceleration and [hardware](https://en.wikipedia.org/wiki/Digital_electronics) data structures continues to grow, including experimental Verilog B Tree implementations and [hardware](https://en.wikipedia.org/wiki/Digital_electronics) assisted indexing research. ([repos.ecosyste.ms](https://repos.ecosyste.ms/hosts/GitHub/topics/btree?utm_source=chatgpt.com))
-
----
-
 # Final Thought
 
 Most [software](https://en.wikipedia.org/wiki/Software) eventually hits the limits of general purpose CPUs.
@@ -268,3 +262,19 @@ This project asks a more radical question:
 > What if the database [algorithm](https://en.wikipedia.org/wiki/Algorithm) itself became hardware?
 
 If that question interests you, contributions are welcome.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
