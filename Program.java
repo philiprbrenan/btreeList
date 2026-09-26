@@ -27,12 +27,12 @@ public class Program extends Test                                               
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final static boolean    suppressIntegerUsageStatistics = false || !github_action;                                     // Print read/write usage of integers
-  final static boolean       suppressInstructionCoverage =!true  ||  github_action;                                     // Track instruction execution by location in Java code where the instruction was generated
-  final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
+  final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
+  final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
+  final static boolean       suppressExecutionStatistics = !github_action;                                              // Print wasted read and write operations and other execution statistics
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
@@ -587,7 +587,7 @@ public class Program extends Test                                               
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
-  final class Int                                                                                                       // An integer value
+  class Int                                                                                                       // An integer value
    {private int          i = 0;                                                                                         // Value of the integer
     private boolean      v = false;                                                                                     // Whether the current value of the integer is valid or not
             String    name = null;                                                                                      // The name of the variable
@@ -608,8 +608,8 @@ public class Program extends Test                                               
     Int (String Name, int I) {this(I); name = Name; in  = top;}                                                         // Input wire if we know its value at the start and it is at the top
     Int (String Name, Int I) {this(I); name = Name; out = top;}                                                         // Output register if its value is unknown at the start and is at the top
 
-    Int (String Name, boolean Fast)                                                                                     // Output register if its value is unknown at the start and is at the top
-     {ai(); fast = Fast; fastId = program().nextFastIntId++;
+    Int (String Name, boolean Fast)                                                                                     // Create a fast integer.  A fast integer is held in a register rather than memory
+     {ai(); name = Name; fast = Fast; fastId = program().nextFastIntId++;
       ie(Ops.zero);
       ints().push(this);
      }
@@ -617,8 +617,9 @@ public class Program extends Test                                               
     int      i ()       {x();   reads++;  return i;}                                                                    // Get current value
     int      i (int I)  {i = I; writes++; return i;}                                                                    // Set current value value
     void     x ()       {if (!v) variableNotSet("Int", name);}                                                          // Check a value has been set for the integer
-    String nin ()       {if (fast) stop("Fast integer not allowed here"); return intMemory().read0Int();}               // Fast integer not allowed for this instruction only a conventional integer from the memory used to hold integers
-    String  in ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read0Int();}                      // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String in0 ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read0Int();}                      // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String in1 ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read1Int();}                      // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String in2 ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read2Int();}                      // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String  on ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().writeInt();}                      // Verilog name of integer to be written into memeory or into the fast integers array
 
     enum Ops                                                                                                            // Possible integer operations
@@ -657,15 +658,19 @@ public class Program extends Test                                               
      }
 
     Int ie (Ops Op, Int I)                                                                                              // Create an instruction that can either be executed immediately one by one or later en masse
-     {I.S();                                                                                                            // Load source
+     {if (fast && I.fast) stop("Only one fast integer allowed, Cannot process two fast integers in this operation");    // There is only one variable component per instruction which can be used to hold the index of the target or the source  but not both. Variables have to be indexed else place and route becomes impossible.  Fast integer registers have to be few in number to avoid the same problem.
+      I.S();                                                                                                            // Load source
       T(Op);                                                                                                            // Load target if necessary
-      new I(){void a() {ex(Op,I);} String v() {return ev(Op, I);}}.c(fastId);                                           // Instruction embodying the operation
+      final I i = new I(){void a() {ex(Op, I);} String v() {return ev(Op, I);}};                                        // Instruction embodying the operation
+      if (  fast) i.c(fastId);                                                                                          // Target might be a fast integer register
+      if (I.fast) i.c(I.fastId);                                                                                        // Source might be a fast integer register
       W();                                                                                                              // Write result of operation
       return this;
      }
 
     Int ie (Ops Op, int I)                                                                                              // Selectively loaded target, store constant for this instruction in the constants map
-     {T(Op);                                                                                                            // Instruction to load target details if needed for the operation otherwise just the index of the target as in the cases of set and del
+     {if (fast) stop("Fast integer not allowed in this operation");                                                     // There is only one variable component per instruction and it is being used to hold the immediate value
+      T(Op);                                                                                                            // Instruction to load target details if needed for the operation otherwise just the index of the target as in the cases of set and del
       final I i = new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}.c(I);                                  // Perform operation using integer stored in constants array indexed by program counter
       W();                                                                                                              // Write results back into a variable
       return this;                                                                                                      // The current integer
@@ -761,7 +766,7 @@ public class Program extends Test                                               
 
     void TW() {T(false); W();}                                                                                          // Load the target index of an integer value and write its value assuming that the value to be written has already been loaded into the write integer register
 
-    int      targetInt () {return fast ? i() : intMemory().read0Int;}                                                     // Load integer value either directly or indirectly from memory
+    int      targetInt () {return fast ? i() : intMemory().read0Int;}                                                   // Load integer value either directly or indirectly from memory
     int      sourceInt () {return fast ? i() : intMemory().read1Int;}
     int     source2Int () {return fast ? i() : intMemory().read2Int;}
     void     targetInt (int V) {ngv(); if (fast) i(V); else intMemory().writeInt  = V;}
@@ -813,7 +818,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op)                                                                                                  // Execute a monadic integer operation in Verilog
-     {final String        n = in();                                                                                     // Name of the variable in Verilog
+     {final String        n = in0();                                                                                    // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
        {case inc  -> {s.append(n+" + 1");}
@@ -830,7 +835,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op, int I)                                                                                           // Execute a monadic integer operation on a constant
-     {final String        n = nin(), c = pV("arrayData_pcConstant");                                                    // The constant will be stored in the instruction to constant map so it cannot be used to address a fast integer target
+     {final String        n = in0(), c = pV("arrayData_pcConstant");                                                    // The constant will be stored in the instruction to constant map so it cannot be used to address a fast integer target
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        c);}
@@ -847,7 +852,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op, Int I)                                                                                           // Execute a monadic integer operation on a variable
-     {final String        n = in(), i = intMemory().read1Int();                                                         // Memory fields for target and source integers
+     {final String        n = in0(), i = I.in1();                                                                       // Memory fields for target and source integers
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        i);}
@@ -906,7 +911,8 @@ public class Program extends Test                                               
     Bit gt ( Int I) {return bie(Ops.gt, I);}
 
     Bit bie (Ops Op, int I)                                                                                             // Instruction to perform a boolean comparison between an integer variable and an integer constant
-     {final Bit b = new Bit();
+     {if (fast) stop("Source cannot be a fast integer");
+      final Bit b = new Bit();
       S(); b.T();
       final I i = new I()
        {void   a() {       bex(Op, b, I);}
@@ -917,7 +923,8 @@ public class Program extends Test                                               
      }
 
     Bit bie (Ops Op, Int I)                                                                                             // Instruction to perform a boolean comparison between two integer variables
-     {final Bit b = new Bit();
+     {if (fast && I.fast) stop("Only one fast integer allowed, Cannot process two fast integers in this operation");    // There is only one variable component per instruction which can be used to hold the index of the target or the source  but not both. Variables have to be indexed else place and route becomes impossible.  Fast integer registers have to be few in number to avoid the same problem.
+      final Bit b = new Bit();
       S(); I.S2(); b.T();
       new I()
        {void   a() {I.x(); bex(Op, b, I);}
@@ -946,7 +953,7 @@ public class Program extends Test                                               
 
     String bev (Ops Op, Bit B)                                                                                          // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
-      final String a = intMemory().read1Int(), b = intMemory().read2Int();
+      final String a = in1(), b = in2();
       switch(Op)
        {case eq -> s.append("("+a + " == " + b+") ? 1 : 0");
         case ne -> s.append("("+a + " != " + b+") ? 1 : 0");
@@ -1035,6 +1042,8 @@ public class Program extends Test                                               
 
     boolean nio () {return !in && !out;}                                                                                // Not an input wire or an output register
    } // Int                                                                                                             // Int
+
+  class FastInt extends Int {FastInt (String Name) {super(Name, true);}}                                                // Create a fast integer.  A fast integer is held in a Verilog register rather than a separate memory
 
 //D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the Verilog representationOperations on integer values
 
@@ -1902,7 +1911,37 @@ cd {f}; yosys -q {y}                                                            
     return ""+s;
    }
 
-  void printReadWriteUsage ()                                                                                           // Print reads and writes for each integer
+  void printReadWriteUsage ()                                                                                           // Print integers with most reads and writes
+   {if (suppressIntegerUsageStatistics || ints().size() == 0) return;                                                   // No integers were used
+
+    class RW                                                                                                            // Total read write activity for each integer
+     {final Int i;
+      final int n;
+      RW(Int I, int N) {i = I; n = N;}
+     }
+
+    final Stack<RW> sorted = new Stack<RW>();
+    for (Int i: ints()) sorted.push(new RW(i, i.nr0 + i.nr1 + i.nr2 + i.nw + i.dup + i.reads + i.writes));              // Number of reads and writes via instruction processing, number of duplications, number of reads and writes outside instructions
+
+    sorted.sort((a, b) -> Integer.compare(b.n, a.n));
+    while (sorted.size() > 10) sorted.pop();                                                                            // Keep at most this entries
+
+    say("Read/write statistics for integers:", ints.size());                                                            // Header
+    say(f("%5s  "+"%5s  "+"%5s  "+"%5s  "+"%5s  "+ "%5s  "+"%5s  "+"%5s  "+"%5s  "+"%5s%s\n",
+          "#",    "id",   "N",    "mw+",  "write", "r0+",  "r1+",  "r2+",  "dup+", "read+", "  Name"));
+
+    for (int I = 0; I < sorted.size(); ++I)                                                                             // Each integer
+     {final RW  j = sorted.elementAt(I);
+      final int n = j.n;
+      final Int i = j.i;
+      say(f("%5d  "+"%5d  "+"%5d  "+"%5d  "+"%5d  "+   "%5d  "+"%5d  "+"%5d  "+"%5d  "+"%5d%s\n",
+             I,      i.id,   n,      i.nw,   i.writes, i.nr0,   i.nr1,  i.nr2,  i.dup,  i.reads,
+          i.name != null ? "  " + i.name : ""));
+      say(i.traceBack);
+     }
+   }
+
+/*void printReadWriteUsage ()                                                                                           // Print reads and writes for each integer
    {if (suppressIntegerUsageStatistics || ints().size() == 0) return;                                                   // No integers were used
     final List<List<Integer>> columns = new ArrayList<>();
     for (int j = 0; j < 10; ++j) columns.add(new ArrayList<>());                                                        // Count of columns requiring statistics
@@ -1918,7 +1957,7 @@ cd {f}; yosys -q {y}                                                            
 
       for (int j = 0; j < v.length; ++j) columns.get(j).add(v[j]);
 
-      if (r == 0)                                                                                                       // These occur too often so investigate why they do
+      if (false && r == 0)                                                                                              // These occur too often so investigate why they do
        {say(f("%5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d  %5d%s\n",
           i.id, r, w, i.nw, i.writes, i.nr0, i.nr1, i.nr2, i.dup, i.reads, i.bint,
           i.name != null ? "  " + i.name : ""));
@@ -1946,7 +1985,7 @@ cd {f}; yosys -q {y}                                                            
     s.append("\n");
     say(""+s);
    }
-
+*/
   void printExecutionCoverageForTest ()                                                                                 // Print the number of instructions executed and not executed by this test
    {int e = 0, n = 0, t = 0;                                                                                            // Executed, not executed, most executed, total executed
 
@@ -2781,8 +2820,8 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int("a").set(1);
-        final Int b = new Int(0);
-        final Int N = new Int(10);
+        final Int b = new Int("b",  0);
+        final Int N = new Int("N", 10);
         final StringBuilder s = new StringBuilder();
         new For(N)
          {void body(Int Index, Bit Continue)
@@ -2825,7 +2864,7 @@ endmodule
      {void code()
        {final Int a = new Int("a").set(0);
         final Int b = new Int("b", 1);
-        final Int c = new Int("c");
+        final Int c = new Int("c", true);
         final Int N = new Int("N", 10);
         final StringBuilder s = new StringBuilder();
         new For(N)
@@ -3490,14 +3529,19 @@ writeIntEnable =        0
               test_forLoops(false);
    }
 
-  static void test_fastInt(Boolean Ex)
+  static void test_fastInt (Boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int("a", true);                                                                               // Fast integere
+       {final Int a = new FastInt("a");
+        final Int b = new FastInt("b");
+        final Int c = new     Int("c");
         a.inc();
         a.inc();
         a.ok(2);
+        c.set(a);
+        b.set(c);
+        b.ok(2);
         execute();
        }
      };
@@ -3540,6 +3584,7 @@ writeIntEnable =        0
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
     //test_fastInt();
+    //test_fibonacci(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
