@@ -271,7 +271,7 @@ class Slots extends Program                                                     
      {void Then() {}                                                                                                    // Nothing to compact as empty
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
          {void body(Int Index, Bit Continue)
-           {final Bint s = usedSlotsToKeys.firstZero();                                                                 // First empty slot
+           {final Bint s = usedSlotsToKeys.firstZero();                                                                 // First empty slot which will be different each time
             final Bint S = usedSlotsToKeys.nextOne(s.i());                                                              // Next used slot beyond first empty slot
             moveSlot(s, S, Continue);
            }
