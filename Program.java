@@ -21,9 +21,9 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "Fast Ints";                                                 // Project currently being worked on
-  final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+  final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
@@ -263,8 +263,8 @@ public class Program extends Test                                               
 
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
    {ForCount (Int Start, Int End)                                                                                       // Execute the loop the specified number of times
-     {final Int index = new Int("Index");
-      if (Start == null) index.set(0); else index.set(Start);                                                           // Start index
+     {final Int index = new Int("Index", Start == null);                                                                // Make the index a fast integer rather than a normal integer as it tends to be accessed a lot
+      if (Start != null) index.set(Start);                                                                              // Start index
 
       if (immediate())                                                                                                  // Immediate execution
        {for(int i : range(index.i(), End.i()))                                                                          // Iterate over the specified range
@@ -928,7 +928,7 @@ public class Program extends Test                                               
       S(); I.S2(); b.T();
       new I()
        {void   a() {I.x(); bex(Op, b, I);}
-        String v() {return bev(Op, b);}
+        String v() {return bev(Op, b, I);}
        };
       b.W();
       return b;
@@ -951,9 +951,9 @@ public class Program extends Test                                               
 
     void bex (Ops Op, Bit B, Int I) {I.x(); bex(Op, B, I.i());}                                                         // Boolean comparison between two integer variables
 
-    String bev (Ops Op, Bit B)                                                                                          // Boolean comparison between two integers
+    String bev (Ops Op, Bit B, Int I)                                                                                   // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
-      final String a = in1(), b = in2();
+      final String a = in1(), b = I.in2();
       switch(Op)
        {case eq -> s.append("("+a + " == " + b+") ? 1 : 0");
         case ne -> s.append("("+a + " != " + b+") ? 1 : 0");
@@ -3542,6 +3542,12 @@ writeIntEnable =        0
         c.set(a);
         b.set(c);
         b.ok(2);
+        a.eq(c).ok(true);
+        a.ne(c).ok(false);
+        a.lt(c).ok(false);
+        a.le(c).ok(true);
+        a.ge(c).ok(true);
+        a.gt(c).ok(false);
         execute();
        }
      };
@@ -3582,7 +3588,8 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_ForCount(!true);
     //test_fastInt();
     //test_fibonacci(false);
    }
