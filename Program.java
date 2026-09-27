@@ -21,9 +21,9 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "Fast Ints";                                                 // Project currently being worked on
-  final static boolean        suppressInstructionTracing =!true || github_action;                                       // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments =!true || github_action;                                       // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions =!true || github_action;                                       // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+  final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
@@ -263,12 +263,9 @@ public class Program extends Test                                               
 
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
    {ForCount (Int Start, Int End)                                                                                       // Execute the loop the specified number of times
-     {
-
-new I() {void a() {say("BBBB", Start);} boolean trace() {return false;}};
-      final Int index = new Int("Index", Start == null);                                                                // Make the index a fast integer rather than a normal integer as it tends to be accessed a lot
-new I() {void a() {say("CCCC", Start, index);} boolean trace() {return false;}};
+     {final Int index = new Int("Index", Start == null);                                                                // Make the index a fast integer rather than a normal integer as it tends to be accessed a lot
       if (Start == null) index.zero(); else index.set(Start);                                                           // Start index
+
       if (immediate())                                                                                                  // Immediate execution
        {for(int i : range(index.i(), End.i()))                                                                          // Iterate over the specified range
          {body(index);                                                                                                  // Execute the loop
@@ -1187,12 +1184,9 @@ new I() {void a() {say("CCCC", Start, index);} boolean trace() {return false;}};
       if (readOnly) stop("Target memory is read only and so can not be cleared even in part");
       final Int z = new Int(0);
 
-new I() {void a() {say("AAAA", Start);} boolean trace() {return false;}};
-
       new ForCount (Start, Start.Add(Width))
        {void body(Int Index)
-         {new I() {void a() {say("CCCC", Index);} boolean trace() {return false;}};
-           putInt(Index, z);
+         {putInt(Index, z);
          }
        };
       subFinish();
@@ -2673,25 +2667,28 @@ endmodule
               test_ifElse(false);
    }
 
-  static void test_ForCount(boolean Ex)
+  static void test_forCount(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int N = new Int("N", 2);
+       {final Int a = new FastInt("a");
+        final Int N = new Int("N", 2);
         new ForCount(N)
          {void body(Int Index)
            {dumpProgramState("AAAA");
+            a.inc();
            }
          };
+        a.ok(N);
         scDieAreaX = 500; scDieAreaY = 400;
         execute();
        }
      };
    }
 
-  static void test_ForCount()
-   {          test_ForCount(true);
-              test_ForCount(false);
+  static void test_forCount()
+   {          test_forCount(true);
+              test_forCount(false);
    }
 
   static void test_For(boolean Ex)
@@ -3162,41 +3159,41 @@ writeIntEnable =        0
        {final Memory     M = unitMemory;
         final Memory.Ref m = M.new Ref(2);
         final Memory.Ref n = M.new Ref(3);
-//      new ForCount(2)
-//       {void body(Int Index)
+        new ForCount(2)
+         {void body(Int Index)
            {m.putInt(new Int(0), new Int(1));
 
             m.putInt(new Int(1), new Int(0));
             m.putInt(new Int(1), new Int(2));
 
-//            new If (Index.eq(new Int(0)))
-//             {void Then()
-//               {//stop(nws(M.dumpJavaMemoryInDecimal()));
-//                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-//Memory 2 program
-//            0    1    2    3    4    5    6    7    8    9
-//00000000              1    2
-//      read1Int =        0
-//      read2Int =        0
-//      writeInt =        2
-//readWriteIndex =        3
-//writeIntEnable =        0
-//""");
-//               }
-//              void Else()
-//               {//stop(nws(M.dumpJavaMemoryInDecimal()));
-//                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-//Memory 2 program
-//            0    1    2    3    4    5    6    7    8    9
-//00000000              1    2
-//      read1Int =        0
-//      read2Int =        0
-//      writeInt =        2
-//readWriteIndex =        3
-//writeIntEnable =        0
-//""");
-//               }
-//             };
+            new If (Index.eq(new Int(0)))
+             {void Then()
+               {//stop(nws(M.dumpJavaMemoryInDecimal()));
+                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
+Memory 2 program
+            0    1    2    3    4    5    6    7    8    9
+00000000              1    2
+      read1Int =        0
+      read2Int =        0
+      writeInt =        2
+readWriteIndex =        3
+writeIntEnable =        0
+""");
+               }
+              void Else()
+               {//stop(nws(M.dumpJavaMemoryInDecimal()));
+                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
+Memory 2 program
+            0    1    2    3    4    5    6    7    8    9
+00000000              1    2
+      read1Int =        0
+      read2Int =        0
+      writeInt =        2
+readWriteIndex =        3
+writeIntEnable =        0
+""");
+               }
+             };
             m.getInt(new Int(0)).ok(1);
             m.getInt(new Int(1)).ok(2);
 
@@ -3236,8 +3233,6 @@ Memory 2 program
 readWriteIndex =        3
 writeIntEnable =        0
 """);
-new I() {void a() {say("AAAA just before clear");} boolean trace() {return false;}};
-
             m.clear(1);
             //stop(nws(M.dumpJavaMemoryInDecimal()));
             ok(()->nws(M.dumpJavaMemoryInDecimal()), """
@@ -3271,11 +3266,11 @@ Memory 2 program
       read1Int =        0
       read2Int =        0
       writeInt =        0
-readWriteIndex =        9
+readWriteIndex =        2
 writeIntEnable =        0
 """);
            }
-//       };
+         };
         maxSteps(9_999);
         execute();
        }
@@ -3574,7 +3569,7 @@ writeIntEnable =        0
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_ifThen();
     test_ifElse();
-    test_ForCount();
+    test_forCount();
     test_For();
     test_addition();
     test_programming();
@@ -3602,10 +3597,11 @@ writeIntEnable =        0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_ForCount(!true);
+    //test_forCount(!true);
     //test_fastInt();
     //test_fibonacci(false);
-    test_memoryRef(false);
+    //test_memoryRef(false);
+    test_forCount();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
