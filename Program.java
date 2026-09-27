@@ -263,9 +263,12 @@ public class Program extends Test                                               
 
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
    {ForCount (Int Start, Int End)                                                                                       // Execute the loop the specified number of times
-     {final Int index = new Int("Index", Start == null);                                                                // Make the index a fast integer rather than a normal integer as it tends to be accessed a lot
-      if (Start != null) index.set(Start);                                                                              // Start index
+     {
 
+new I() {void a() {say("BBBB", Start);} boolean trace() {return false;}};
+      final Int index = new Int("Index", Start == null);                                                                // Make the index a fast integer rather than a normal integer as it tends to be accessed a lot
+new I() {void a() {say("CCCC", Start, index);} boolean trace() {return false;}};
+      if (Start == null) index.zero(); else index.set(Start);                                                           // Start index
       if (immediate())                                                                                                  // Immediate execution
        {for(int i : range(index.i(), End.i()))                                                                          // Iterate over the specified range
          {body(index);                                                                                                  // Execute the loop
@@ -651,8 +654,8 @@ public class Program extends Test                                               
     Int  del (int  I) {return ie(Ops.del , I);}
 
     Int ie (Ops Op)                                                                                                     // Create an instruction that can either be executed immediately one by one or later en masse
-     {T();                                                                                                              // Load target
-      new I(){void a() {ex(Op  );} String v() {return ev(Op   );}}.c(fastId);                                           // Instruction embodying the operation
+     {T(Op);                                                                                                            // Load target if necessary
+      new I(){void a() {ex(Op);} String v() {return ev(Op);}}.c(fastId);                                                // Instruction embodying the operation
       W();                                                                                                              // Write result of operation
       return this;
      }
@@ -739,7 +742,7 @@ public class Program extends Test                                               
      }
 
     void T () {T(true);}                                                                                                // Address target and load its value
-    void T (Ops Op) {T(Op != Ops.set && Op != Ops.del);}                                                                // Address target and load its value if needed
+    void T (Ops Op) {T(Op != Ops.set && Op != Ops.del && Op != Ops.zero);}                                              // These targets do not need the target value to be preloaded before the instruction starts
 
     void T (boolean LoadValue)                                                                                          // Address target optionally loading its value
      {new LoadSourceOrTarget("T", 0, LoadValue)
@@ -748,7 +751,7 @@ public class Program extends Test                                               
      }
 
     void W ()                                                                                                           // Write result back into an integer variable whose index has been loaded by T ()
-     {if (fast) return;                                                                                               // Bypass for inetgers held in registers
+     {if (fast) return;                                                                                                 // Bypass for inetgers held in registers
       final Int     w = this;                                                                                           // Set index locating the integer to be written to
       final Memory  M = intMemory();
       final boolean x = immediate();
@@ -1183,7 +1186,15 @@ public class Program extends Test                                               
      {subStart("Program.Memory.clear(II)");
       if (readOnly) stop("Target memory is read only and so can not be cleared even in part");
       final Int z = new Int(0);
-      new ForCount (Start, Start.Add(Width)) {void body(Int Index) {putInt(Index, z);}};
+
+new I() {void a() {say("AAAA", Start);} boolean trace() {return false;}};
+
+      new ForCount (Start, Start.Add(Width))
+       {void body(Int Index)
+         {new I() {void a() {say("CCCC", Index);} boolean trace() {return false;}};
+           putInt(Index, z);
+         }
+       };
       subFinish();
       return this;
      }
@@ -3151,41 +3162,41 @@ writeIntEnable =        0
        {final Memory     M = unitMemory;
         final Memory.Ref m = M.new Ref(2);
         final Memory.Ref n = M.new Ref(3);
-        new ForCount(2)
-         {void body(Int Index)
+//      new ForCount(2)
+//       {void body(Int Index)
            {m.putInt(new Int(0), new Int(1));
 
             m.putInt(new Int(1), new Int(0));
             m.putInt(new Int(1), new Int(2));
 
-            new If (Index.eq(0))
-             {void Then()
-               {//stop(nws(M.dumpJavaMemoryInDecimal()));
-                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-Memory 2 program
-            0    1    2    3    4    5    6    7    8    9
-00000000              1    2
-      read1Int =        0
-      read2Int =        0
-      writeInt =        2
-readWriteIndex =        3
-writeIntEnable =        0
-""");
-               }
-              void Else()
-               {//stop(nws(M.dumpJavaMemoryInDecimal()));
-                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
-Memory 2 program
-            0    1    2    3    4    5    6    7    8    9
-00000000              1    2
-      read1Int =        0
-      read2Int =        0
-      writeInt =        2
-readWriteIndex =        3
-writeIntEnable =        0
-""");
-               }
-             };
+//            new If (Index.eq(new Int(0)))
+//             {void Then()
+//               {//stop(nws(M.dumpJavaMemoryInDecimal()));
+//                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
+//Memory 2 program
+//            0    1    2    3    4    5    6    7    8    9
+//00000000              1    2
+//      read1Int =        0
+//      read2Int =        0
+//      writeInt =        2
+//readWriteIndex =        3
+//writeIntEnable =        0
+//""");
+//               }
+//              void Else()
+//               {//stop(nws(M.dumpJavaMemoryInDecimal()));
+//                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
+//Memory 2 program
+//            0    1    2    3    4    5    6    7    8    9
+//00000000              1    2
+//      read1Int =        0
+//      read2Int =        0
+//      writeInt =        2
+//readWriteIndex =        3
+//writeIntEnable =        0
+//""");
+//               }
+//             };
             m.getInt(new Int(0)).ok(1);
             m.getInt(new Int(1)).ok(2);
 
@@ -3225,6 +3236,8 @@ Memory 2 program
 readWriteIndex =        3
 writeIntEnable =        0
 """);
+new I() {void a() {say("AAAA just before clear");} boolean trace() {return false;}};
+
             m.clear(1);
             //stop(nws(M.dumpJavaMemoryInDecimal()));
             ok(()->nws(M.dumpJavaMemoryInDecimal()), """
@@ -3262,7 +3275,7 @@ readWriteIndex =        9
 writeIntEnable =        0
 """);
            }
-         };
+//       };
         maxSteps(9_999);
         execute();
        }
@@ -3589,9 +3602,10 @@ writeIntEnable =        0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_ForCount(!true);
+    //test_ForCount(!true);
     //test_fastInt();
     //test_fibonacci(false);
+    test_memoryRef(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
