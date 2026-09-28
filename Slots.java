@@ -1808,16 +1808,16 @@ Zero:
 
         new ForCount(keys.length)                                                                                       // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
-           {final Int  k = new Int(0);
+           {final   Int k = new Int(Index);                                                                             // Convert fast index to non fast key to make array look up work with just one constant from the program counter indexed constant array
 
-            Index.S();                                                                                                  // Load index of item we want
+            k.S();                                                                                                      // Load index of item we want using a non fast integer
             new I()                                                                                                     // Set the key to insert
              {void        a() {       intMemory().writeInt      =     keys[Index.i()];}
               String      v() {return intMemory().writeInt()+" <= "+a.dataRegisterName()+";";}                          // Translate index into key
               boolean trace() {return false;}
              };
 
-            k.TW();                                                                                                      // Write target register into variable
+            k.TW();                                                                                                     // Write target register into variable
             insert(k);
             final StringBuilder p = s.print();
             new I() {void a() {t.append(p);}  boolean trace() {return false;}};
@@ -1902,16 +1902,16 @@ keys     :   14  13  16  15  18  17  12  11
 
         new ForCount(keys.length)                                                                                       // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
-           {final   Int k = new Int(0);
+           {final   Int k = new Int(Index);                                                                             // Non fast integer from fast integer
 
-            Index.S();                                                                                                  // Load index of item we want
+            k.S();                                                                                                      // Load index of item we want using a non  fast integer index
             new I()                                                                                                     // Set the key to insert
              {void        a() {       intMemory().writeInt        =     keys[Index.i()];}
               String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
               boolean trace() {return false;}
              };
 
-            k.TW();                                                                                                      // Write key into variable
+            k.TW();                                                                                                     // Write key into variable
             insert(k);
            }
          };
@@ -2426,10 +2426,9 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert();
-    //test_insert2();
+    test_insert2();
    }
-
+// perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList"
   public static void main(String[] args)                                                                                // Test if called as a program
    {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
