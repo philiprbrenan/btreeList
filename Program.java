@@ -28,8 +28,8 @@ public class Program extends Test                                               
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
-  final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
@@ -516,7 +516,6 @@ public class Program extends Test                                               
        {case flip -> {s.append("("+bitMemory().writeInt() + ") == 0 ? 1 : 0");}
         default   -> Test.stop("Op not implemented:", Op);
        }
-      s.append("/*AAAA*/");
       return vtrace(""+Op, s);                                                                                          // Trace the operation
      }
 
@@ -536,7 +535,6 @@ public class Program extends Test                                               
         case or  -> {s.append("("+T+" || "+ S + ") ? 1 : 0");}
         default  -> Test.stop("Op not implemented:", Op);
        }
-      s.append("/*BBBB*/");
       return vtrace(""+Op, s);                                                                                          // Trace the operation
      }
 
@@ -629,7 +627,7 @@ public class Program extends Test                                               
     Int constant ()       {constant = true; return this;}                                                               // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
     enum Ops                                                                                                            // Possible integer operations
-     {abs, add, add2, dec, del, div, down, eq, ge, gt, inc, le, lt, mod, mul, neg, ne, set, sqrt, sub, up, zero
+     {abs, add, add2, dec, del, div, down, eq, ez, ge, gt, inc, le, lt, mod, mul, neg, ne, nz, set, sqrt, sub, up, zero
      };
 
     Int  set (int  I) {return ie(Ops.set , I);}
@@ -917,6 +915,21 @@ public class Program extends Test                                               
     Bit ge ( Int I) {return bie(Ops.ge, I);}                                                                            //N
     Bit gt ( Int I) {return bie(Ops.gt, I);}
 
+    Bit ez ()       {return bie(Ops.ez);}
+    Bit nz ()       {return bie(Ops.nz);}
+
+    Bit bie (Ops Op)                                                                                                    // Instruction to perform a boolean comparison between an integer variable and a known constant
+     {final Bit b = new Bit();
+      S(); b.T();
+      final I i = new I()
+       {void   a() {       bex(Op, b);}
+        String v() {return bev(Op, b);}
+       };
+      if (fast) i.c(fastId);                                                                                            // Target might be a fast integer register
+      b.W();
+      return b;
+     }
+
     Bit bie (Ops Op, int I)                                                                                             // Instruction to perform a boolean comparison between an integer variable and an integer constant
      {if (fast) stop("Source cannot be a fast integer");
       final Bit b = new Bit();
@@ -943,6 +956,17 @@ public class Program extends Test                                               
       return b;
      }
 
+    void bex (Ops Op, Bit B)                                                                                            // Boolean comparison between an integer variable and a known constant
+     {x();
+      B.v = true;
+      switch(Op)
+       {case ez -> targetBit(sourceInt() == 0);
+        case nz -> targetBit(sourceInt() != 0);
+        default -> stop("Op not implemented:", Op);
+       }
+      B.jtrace(""+Op);
+     }
+
     void bex (Ops Op, Bit B, int I)                                                                                     // Boolean comparison between an integer variable and an integer constant
      {x();
       B.v = true;
@@ -960,6 +984,17 @@ public class Program extends Test                                               
 
     void bex (Ops Op, Bit B, Int I) {I.x(); bex(Op, B, I.i());}                                                         // Boolean comparison between two integer variables
 
+    String bev (Ops Op, Bit B)                                                                                          // Boolean comparison between an integer and a known constant
+     {final StringBuilder s = new StringBuilder();
+      final String a = in1v();
+      switch(Op)
+       {case ez -> s.append("("+a + " == 0) ? 1 : 0");
+        case nz -> s.append("("+a + " != 0) ? 1 : 0");
+        default -> stop("Op not implemented:", Op);
+       }
+      return B.vtrace(""+Op, s);
+     }
+
     String bev (Ops Op, Bit B, Int I)                                                                                   // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
       final String a = in1v(), b = I.in2v();
@@ -972,7 +1007,6 @@ public class Program extends Test                                               
         case gt -> s.append("("+a + " >  " + b+") ? 1 : 0");
         default -> stop("Op not implemented:", Op);
        }
-      s.append("/*CCCC*/");
       return B.vtrace(""+Op, s);
      }
 
@@ -988,7 +1022,6 @@ public class Program extends Test                                               
         case gt -> s.append("("+a + " >  " + b+") ? 1 : 0");
         default -> stop("Op not implemented:", Op);
        }
-      s.append("/*DDDDD*/");
       return B.vtrace(""+Op, s);
      }
 
@@ -1950,7 +1983,7 @@ cd {f}; yosys -q {y}                                                            
 
     say("Read/write statistics for integers:", ints.size());                                                            // Header
     say(f("%5s  "+"%5s  "+"%5s  "+"%5s  "+"%5s  "+ "%5s  "+"%5s  "+"%5s  "+"%5s  "+"%5s%s\n",
-          "#",    "id",   "N",    "mw+",  "write", "r0+",  "r1+",  "r2+",  "dup+", "read+", "  Name"));
+          "#",    "id",   "N",    "mw",  "write", "r0",  "r1",  "r2",  "dup", "read", "  Name"));
 
     for (int I = 0; I < sorted.size(); ++I)                                                                             // Each integer
      {final RW  j = sorted.elementAt(I);
@@ -3138,7 +3171,7 @@ writeIntEnable =        0
         m.putBit(n1, n3, new Bit(true));
         m.getInt(n1).ok(11);
 
-        scDieAreaX = 500; scDieAreaY = 500;
+        scDieAreaX = 1000; scDieAreaY = 1000;
         execute();
        }
      };
@@ -3248,7 +3281,7 @@ writeIntEnable =        0
             m.putInt(new Int(1), new Int(0));
             m.putInt(new Int(1), new Int(2));
 
-            new If (Index.eq(new Int(0)))
+            new If (Index.ez())
              {void Then()
                {//stop(nws(M.dumpJavaMemoryInDecimal()));
                 ok(()->nws(M.dumpJavaMemoryInDecimal()), """
@@ -3669,6 +3702,34 @@ writeIntEnable =        0
               test_pcConstant(false);
    }
 
+  static void test_compareZero (Boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Int a = new FastInt("a");
+        final Int b = new     Int("b", 0);
+        a.ez().ok(true);
+        a.nz().ok(false);
+        b.ez().ok(true);
+        b.nz().ok(false);
+        a.inc();
+        b.inc();
+        a.ok(1);
+        a.ez().ok(!true);
+        a.nz().ok(!false);
+        b.ok(1);
+        b.ez().ok(!true);
+        b.nz().ok(!false);
+        execute();
+       }
+     };
+   }
+
+  static void test_compareZero()
+   {          test_compareZero(true);
+              test_compareZero(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_ifThen();
     test_ifElse();
@@ -3697,12 +3758,11 @@ writeIntEnable =        0
     test_forLoops();
     test_fastInt();
     test_pcConstant();
+    test_compareZero();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_memoryRef();
-    //test_mem();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
