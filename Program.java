@@ -78,8 +78,8 @@ public class Program extends Test                                               
   int                                          nextIntId = 0;                                                           // Unique id for each Int held in memory
   int                                      nextFastIntId = 0;                                                           // Unique id for each Int held in registers to make access faster
   int                                          nextBitId = 0;                                                           // Unique id for each Bit
-  int                                         scDieAreaX = 1_000;                                                       // Default size of x dimension for chip
-  int                                         scDieAreaY = 1_000;                                                       // Default size of y dimension for chip
+  int                                         scDieAreaX = 2_000;                                                       // Default size of x dimension for chip. Was 1000x1000 before fast integers for "forCount" made this too small for tree delete
+  int                                         scDieAreaY = 2_000;                                                       // Default size of y dimension for chip
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
 
   final static class Build                                                                                              // Builder for this program
