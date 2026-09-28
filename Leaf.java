@@ -159,9 +159,9 @@ class Leaf extends Program implements Program.Locatable                         
 
   Bit mergeRight(Leaf Right)                                                                                            // Merge the specified leaf into the right of this leaf
    {final Leaf left = this;
-    final Int  lc   = left .count();
-    final Int  rc   = Right.count();
-    final Bit r    = new Bit().clear();
+    final Int    lc = left .count();
+    final Int    rc = Right.count();
+    final Bit     r = new Bit().clear();
 
     new If (lc.Add(rc).le(maxSize()))
      {void Then()
@@ -179,9 +179,9 @@ class Leaf extends Program implements Program.Locatable                         
 
   Bit mergeLeft(Leaf Left)                                                                                              // Merge the leaf into the right of this leaf
    {final Leaf right = this;
-    final Int  lc    = Left .count();
-    final Int  rc    = right.count();
-    final Bit r     = new Bit().clear();
+    final Int    lc  = Left .count();
+    final Int    rc  = right.count();
+    final Bit     r  = new Bit().clear();
 
     new If (lc.Add(rc).le(maxSize()))
      {void Then()
