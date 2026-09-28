@@ -23,9 +23,9 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "Fast Ints";                                                 // Project currently being worked on
-  final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+  final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
@@ -587,7 +587,7 @@ public class Program extends Test                                               
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
-  class Int                                                                                                       // An integer value
+  class Int                                                                                                             // An integer value
    {private int          i = 0;                                                                                         // Value of the integer
     private boolean      v = false;                                                                                     // Whether the current value of the integer is valid or not
             String    name = null;                                                                                      // The name of the variable
@@ -595,6 +595,7 @@ public class Program extends Test                                               
     final boolean      top = callerName() == "code";                                                                    // A declaration at the top level
           boolean       in = false;                                                                                     // An input wire: named at the top and set by the constructor to a constant
           boolean      out = false;                                                                                     // An output register named at the top and set by the constructor to the value of a variable
+          boolean constant = false;                                                                                     // A  constant if true and this should not be modified
     final String traceBack = suppressIntegerUsageStatistics ? null : traceBack();                                       // Location of this integer
     int nr0, nr1, nr2, nw, dup, reads, writes, bint;                                                                    // Number of reads and writes via instruction processing, number of duplications, number of reads and writes outside instructions
     final boolean     fast;                                                                                             // Make this integer into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
@@ -614,17 +615,18 @@ public class Program extends Test                                               
       ints().push(this);
      }
 
-    int       i ()       {x();   reads++;  return i;}                                                                   // Get current value
-    int       i (int I)  {i = I; writes++; return i;}                                                                   // Set current value value
-    void      x ()       {if (!v) variableNotSet("Int", name);}                                                         // Check a value has been set for the integer
-    int    in0j ()       {return fast ? i()                              : intMemory().read0Int;}                       // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
-    int    in1j ()       {return fast ? i()                              : intMemory().read1Int;}                       // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
-    int    in2j ()       {return fast ? i()                              : intMemory().read2Int;}                       // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
-    int     onj ()       {return fast ? i()                              : intMemory().writeInt;}                       // Java value of integer to be written into memeory or into the fast integers array
-    String in0v ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read0Int();}                     // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
-    String in1v ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read1Int();}                     // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
-    String in2v ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read2Int();}                     // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
-    String  onv ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().writeInt();}                     // Verilog name of integer to be written into memeory or into the fast integers array
+    int        i ()       {x();   reads++;  return i;}                                                                  // Get current value
+    int        i (int I)  {i = I; writes++; return i;}                                                                  // Set current value value
+    void       x ()       {if (!v) variableNotSet("Int", name);}                                                        // Check a value has been set for the integer
+    int     in0j ()       {return fast ? i()                              : intMemory().read0Int;}                      // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
+    int     in1j ()       {return fast ? i()                              : intMemory().read1Int;}                      // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
+    int     in2j ()       {return fast ? i()                              : intMemory().read2Int;}                      // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
+    int      onj ()       {return fast ? i()                              : intMemory().writeInt;}                      // Java value of integer to be written into memeory or into the fast integers array
+    String  in0v ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read0Int();}                    // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String  in1v ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read1Int();}                    // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String  in2v ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read2Int();}                    // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String   onv ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().writeInt();}                    // Verilog name of integer to be written into memeory or into the fast integers array
+    Int constant ()       {constant = true; return this;}                                                               // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
     enum Ops                                                                                                            // Possible integer operations
      {abs, add, add2, dec, del, div, down, eq, ge, gt, inc, le, lt, mod, mul, neg, ne, set, sqrt, sub, up, zero
@@ -752,7 +754,8 @@ public class Program extends Test                                               
      }
 
     void W ()                                                                                                           // Write result back into an integer variable whose index has been loaded by T ()
-     {if (fast) return;                                                                                                 // Bypass for inetgers held in registers
+     {if (constant) stop("Attempting to modify a constant integer");                                                    // Check that we are not about to update a constant
+      if (fast) return;                                                                                                 // Bypass for integers held in registers
       final Int     w = this;                                                                                           // Set index locating the integer to be written to
       final Memory  M = intMemory();
       final boolean x = immediate();
