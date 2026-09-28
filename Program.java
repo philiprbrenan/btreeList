@@ -8,9 +8,8 @@
 // Use parallel loads in putBit etc as marked with Improvement:
 // Create putBit(Index, BitIndex, true|false) so we can set constants without having to create a temporary bit variable
 // Try relative jumps to reduce width of pcConstant
-// Fast registers for for-loop indices instead of a cache
 // Start write cycle using a write array indexed by pc so that the write enable can be set correctly on each instruction without having to encode it in the instruction
-// Instruction should have a version of c() that accepts an Int and if it is fast adds it to the pcConstant array
+// Fast registers for for-loop indices instead of a cache
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -28,8 +27,8 @@ public class Program extends Test                                               
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
-  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
-  final static boolean                          runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
+  final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
