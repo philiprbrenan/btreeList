@@ -10,9 +10,10 @@ import java.util.*;                                                             
 
 public class BitSet extends Program                                                                                     // Fixed-size bit set using byte-level storage.
  {final int bitSize, bitSize1, bitSize2, logBitSize;                                                                    // Number of bits in the bit set.
-  final int              unitsSize;                                                                                     // Number of bytes in the bit set.
+  final int             unitsSize;                                                                                      // Number of bytes in the bit set.
   final boolean        powerOfTwo;                                                                                      // Some operations can be optimized if the bitset has a number of elements that is a power of two
   final boolean        trackCount;                                                                                      // Track the count of number of bits set to one
+  final Int            bitSizeInt;                                                                                      // Bitsize as an Int to avoid overloading the program counter indexed constant array
   final Build               build;                                                                                      // Memory to use
   final Memory.Ref      memoryRef;                                                                                      // Build used to create bitset
   final Memory.Ref    memoryCount;                                                                                      // Memory for count field of present
@@ -80,6 +81,7 @@ public class BitSet extends Program                                             
     bitSize          = nextPowerOfTwo(build.bitSize);                                                                   // Record size
     bitSize1         = bitSize - 1;
     bitSize2         = bitSize >>> 1;
+    bitSizeInt       = new Int("BitSize", bitSize).constant();                                                          // Bit size as a constant Int to avoid overloading the program counter constant array
     powerOfTwo       = bitSize == build.bitSize;
     logBitSize       = logTwo(bitSize);
     trackCount       = build.trackCount;
@@ -294,7 +296,7 @@ public class BitSet extends Program                                             
 
   Int      zeroToOne (Int Pos)
   {final Int r = new Int();
-    new If (Pos.lt(bitSize))
+    new If (Pos.lt(bitSizeInt))
     {void Then()
       {r.set(Pos);
       }
