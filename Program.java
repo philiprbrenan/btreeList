@@ -21,7 +21,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static String                     currentProject = "Fast Ints";                                                 // Project currently being worked on
+ {final static String                     currentProject = "Fast Ints - For";                                           // Project currently being worked on
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
@@ -220,11 +220,12 @@ public class Program extends Test                                               
 
   abstract class For                                                                                                    // For loop: executed a specified number of times as long as the iterated code requests continuation
    {For (Int Start, Int End)                                                                                            // Execute the loop the specified number of times
-     {final Int index = new Int("Index");
+     {final Int index = new Int("Index", Start == null);
       final Bit cont  = new Bit("Continue");
+      if (Start == null) index.zero(); else index.set(Start);                                                           // Start index
 
       if (immediate())                                                                                                  // Immediate execution
-       {index.set(Start);                                                                                               // Start index
+       {//index.set(Start);                                                                                               // Start index
         for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
          {body(index, cont.clear());                                                                                    // Execute the loop body
           index.inc();                                                                                                  // Set the index to each element of the specified range
@@ -232,7 +233,7 @@ public class Program extends Test                                               
          }
        }
       else                                                                                                              // Machine code
-       {index.set(Start);                                                                                               // Start index
+       {//index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         final Bit    done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
