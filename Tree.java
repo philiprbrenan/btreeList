@@ -131,7 +131,7 @@ class Tree extends Program                                                      
 
   Int nodeAddress  (Int Node)                                                                                           // Convert an index to a byte address of node in memory
    {if (immediate())
-     {if (Node.gt(numberOfNodes).b()) stop("Node too big:",                                              Node);         // Check in range
+     {if (Node.gt(new Int(numberOfNodes)).b()) stop("Node too big:",                                     Node);         // Check in range
       if (freeChain.getBit(Node).b()) stop("Attempting to access a branch or leaf that has been freed:", Node);         // Complain if the node has been freed and not reallocated
      }
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
@@ -1785,7 +1785,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteRandom32(false);
+    test_update();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
