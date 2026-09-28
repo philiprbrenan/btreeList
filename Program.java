@@ -8,7 +8,9 @@
 // Use parallel loads in putBit etc as marked with Improvement:
 // Create putBit(Index, BitIndex, true|false) so we can set constants without having to create a temporary bit variable
 // Try relative jumps to reduce width of pcConstant
-// Special registers for for-loop indices instead of a cache
+// Fast registers for for-loop indices instead of a cache
+// Start write cycle using a write array indexed by pc so that the write enable can be set correctly on each instruction without having to encode it in the instruction
+// Instruction should have a version of c() that accepts an Int and if it is fast adds it to the pcConstant array
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -21,9 +23,9 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "Fast Ints";                                                 // Project currently being worked on
-  final static boolean        suppressInstructionTracing =!true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
-  final static boolean              compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+  final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
@@ -235,8 +237,7 @@ public class Program extends Test                                               
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         final Bit    done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
-      //index.T();                                                                                                      // Load index from memory
-        final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
+        final I         S = new I(false)                                                                                // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >= End.i()) program().pc = end.offset;}                                           // Index out of range. Program counter has already been incremented so we do not need to do it again
           String v()   {return "if ("+bitMemory().writeInt()+" != 0) pc <= arrayData_pcConstant; else pc <= pc + 1;";}  // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
           int traces() {return 0;}
@@ -276,8 +277,7 @@ public class Program extends Test                                               
        {final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         final Bit    done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
-      //index.T();                                                                                                      // Load index
-        final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
+        final I         S = new I(false)                                                                                // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >=  End.i()) program().pc = end.offset;}                                          // Index out of range
           String v()   {return "if ("+bitMemory().writeInt()+" != 0) pc <= arrayData_pcConstant; else pc <= pc + 1;";}  // Terminate the loop when the index is out of range. The if statement relies on the side effect of the previous instruction having set the target boolean value
           int traces() {return 0;}
@@ -614,13 +614,17 @@ public class Program extends Test                                               
       ints().push(this);
      }
 
-    int      i ()       {x();   reads++;  return i;}                                                                    // Get current value
-    int      i (int I)  {i = I; writes++; return i;}                                                                    // Set current value value
-    void     x ()       {if (!v) variableNotSet("Int", name);}                                                          // Check a value has been set for the integer
-    String in0 ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read0Int();}                      // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
-    String in1 ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read1Int();}                      // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
-    String in2 ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read2Int();}                      // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
-    String  on ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().writeInt();}                      // Verilog name of integer to be written into memeory or into the fast integers array
+    int       i ()       {x();   reads++;  return i;}                                                                   // Get current value
+    int       i (int I)  {i = I; writes++; return i;}                                                                   // Set current value value
+    void      x ()       {if (!v) variableNotSet("Int", name);}                                                         // Check a value has been set for the integer
+    int    in0j ()       {return fast ? i()                              : intMemory().read0Int;}                       // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
+    int    in1j ()       {return fast ? i()                              : intMemory().read1Int;}                       // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
+    int    in2j ()       {return fast ? i()                              : intMemory().read2Int;}                       // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
+    int     onj ()       {return fast ? i()                              : intMemory().writeInt;}                       // Java value of integer to be written into memeory or into the fast integers array
+    String in0v ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read0Int();}                     // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String in1v ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read1Int();}                     // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String in2v ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().read2Int();}                     // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
+    String  onv ()       {return fast ? "fastInts[arrayData_pcConstant]" : intMemory().writeInt();}                     // Verilog name of integer to be written into memeory or into the fast integers array
 
     enum Ops                                                                                                            // Possible integer operations
      {abs, add, add2, dec, del, div, down, eq, ge, gt, inc, le, lt, mod, mul, neg, ne, set, sqrt, sub, up, zero
@@ -759,12 +763,12 @@ public class Program extends Test                                               
        };
       new I()                                                                                                           // Lower  right enable - which could be merged with the next instruction
        {void   a() {if (!x && M.units[M.readWriteIndex] == M.writeInt) wastedWrites.inc(traceBack);
-                    if (!x) M.units[M.readWriteIndex] = M.writeInt; M.writeIntEnable = false; jTrace(f("%8d Disable write", currentPc()));}
-        String v() {return M.writeIntEnable() + " <= 0; "+                                    vTrace(  "%8d Disable write", "pc");}
+                    if (!x)   M.units[M.readWriteIndex] =  M.writeInt; M.writeIntEnable = false; jTrace(f("%8d Disable write", currentPc()));}
+        String v() {return M.writeIntEnable() + " <= 0; "+                                       vTrace(  "%8d Disable write", "pc");}
        };
      }
 
-    void TW() {T(false); W();}                                                                                          // Load the target index of an integer value and write its value assuming that the value to be written has already been loaded into the write integer register
+    void TW () {T(false); W();}                                                                                         // Load the target index of an integer value and write its value assuming that the value to be written has already been loaded into the write integer register
 
     int      targetInt () {return fast ? i() : intMemory().read0Int;}                                                   // Load integer value either directly or indirectly from memory
     int      sourceInt () {return fast ? i() : intMemory().read1Int;}
@@ -818,7 +822,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op)                                                                                                  // Execute a monadic integer operation in Verilog
-     {final String        n = in0();                                                                                    // Name of the variable in Verilog
+     {final String        n = in0v();                                                                                   // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
        {case inc  -> {s.append(n+" + 1");}
@@ -835,7 +839,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op, int I)                                                                                           // Execute a monadic integer operation on a constant
-     {final String        n = in0(), c = pV("arrayData_pcConstant");                                                    // The constant will be stored in the instruction to constant map so it cannot be used to address a fast integer target
+     {final String        n = in0v(), c = pV("arrayData_pcConstant");                                                   // The constant will be stored in the instruction to constant map so it cannot be used to address a fast integer target
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        c);}
@@ -852,7 +856,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op, Int I)                                                                                           // Execute a monadic integer operation on a variable
-     {final String        n = in0(), i = I.in1();                                                                       // Memory fields for target and source integers
+     {final String        n = in0v(), i = I.in1v();                                                                     // Memory fields for target and source integers
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        i);}
@@ -870,7 +874,7 @@ public class Program extends Test                                               
     final String atf = "%8d assign writeInt = %8d";                                                                     // Trace format for an assign statement
 
     String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
-     {final String t = on(); //intMemory().writeInt();
+     {final String t = onv();
       final String s = pV(Value+";");
       final String v = vTrace(  atf, "pc",         Value);
       return t + " <= " + s + v;
@@ -926,10 +930,12 @@ public class Program extends Test                                               
      {if (fast && I.fast) stop("Only one fast integer allowed, Cannot process two fast integers in this operation");    // There is only one variable component per instruction which can be used to hold the index of the target or the source  but not both. Variables have to be indexed else place and route becomes impossible.  Fast integer registers have to be few in number to avoid the same problem.
       final Bit b = new Bit();
       S(); I.S2(); b.T();
-      new I()
+      final I i = new I()
        {void   a() {I.x(); bex(Op, b, I);}
         String v() {return bev(Op, b, I);}
        };
+      if (  fast) i.c(fastId);                                                                                          // Target might be a fast integer register
+      if (I.fast) i.c(I.fastId);                                                                                        // Source might be a fast integer register
       b.W();
       return b;
      }
@@ -953,7 +959,7 @@ public class Program extends Test                                               
 
     String bev (Ops Op, Bit B, Int I)                                                                                   // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
-      final String a = in1(), b = I.in2();
+      final String a = in1v(), b = I.in2v();
       switch(Op)
        {case eq -> s.append("("+a + " == " + b+") ? 1 : 0");
         case ne -> s.append("("+a + " != " + b+") ? 1 : 0");
@@ -997,14 +1003,6 @@ public class Program extends Test                                               
      {final Bit b = new Bit(); b.nd = true;                                                                             // Do not dump this boolean variable because it holds a value that has no analog in the Verilog code
       new I() {void a() {b.i = !v; b.v = true;} int traces() {return 0;}};
       return b;
-     }
-
-    Int copy (Int I)                                                                                                    // Copy the state of an integer without regard as to whether it is valid or not
-     {new I()
-       {void   a() {ex(Ops.set, I.i()); v = I.v;}
-        String v() {return ev(Ops.set, I);}
-       };
-      return this;
      }
 
     public String toString ()                                                                                           // Print the integer
@@ -1151,8 +1149,6 @@ public class Program extends Test                                               
 
     String dumpVerilogMemoryInDecimalName () {return "dumpDecimal_"+id;}                                                // Name of the Verilog routine to dump this memory in decimal
 
-    int pc22() {return currentPc();}
-
     Memory copy (Memory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                                    // Copy from the specified memory into the current one
      {subStart("Program.Memory.copy");
       if (readOnly) stop("Target memory is read only and so can not be copied into");
@@ -1200,22 +1196,23 @@ public class Program extends Test                                               
 
       I.T();                                                                                                            // Retrieve value of the indexing integer from the memory that holds integers so it can be used to index this memory
 
-      new I()                                                                                                           // Set the target index to read from this memory
-       {void   a() {        readWriteIndex       =     ints.read0Int;       jTrace(f("%8d getInt1 Get index %8d",  currentPc(), lui(ints.read0Int)));}
-        String v() {return readWriteIndex() + " <= " + ints.read0Int()+"; "+vTrace(  "%8d getInt1 Get index %8d", "pc",             ints.read0Int());}
+      final I i = new I()                                                                                               // Set the target index to read from this memory
+       {void   a() {        readWriteIndex       =     I.in0j();     jTrace(f("%8d getInt1 Get index %8d",  currentPc(), lui(I.in0j())));}
+        String v() {return readWriteIndex() + " <= " + I.in0v()+"; "+vTrace(  "%8d getInt1 Get index %8d", "pc",             I.in0v());}
        };
+      if (I.fast) i.c(I.fastId);
 
-      final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold integers
+      new I()                                                                                                           // Prepare to write the result read from this memory back into the memory used to hold integers
        {void   a() {       ints.readWriteIndex        =  r.id;                   jTrace(f("%8d getInt2 Set write index %8d",  currentPc(), r.id)                );}
         String v() {return ints.readWriteIndex() + " <= arrayData_pcConstant;" + vTrace(  "%8d getInt2 Set write index %8d", "pc",        "arrayData_pcConstant");}
        }.c(r.id);
 
-      new I()                                                                                                           // Write integer obtained from this memory back into the memory that holds integers
+      new I()                                                                                                           // Write integer obtained from this memory back into the memory that holds integers ans start the write to memory process.  If we had used W () we would have to use another clock cycle.  Perhaos another table that tells us whether to assert or clear wriote enable for each memory would be helpful in automating this action and running it in parallel with other instructions
        {void   a() {read0Int = r.i(units[I.i]); r.v = true; ints.writeInt        =     read0Int;       ints.writeIntEnable        = true; jTrace(f("%8d getInt3 save %8d = %8d",  currentPc(), ints.readWriteIndex, lui(read0Int)));}
         String v() {return                                  ints.writeInt() + " <= " + read0Int()+"; "+ints.writeIntEnable() + " <= 1;" + vTrace(  "%8d getInt3 save %8d = %8d", "pc",         ints.readWriteIndex(),   read0Int());}
        };
 
-      new I()                                                                                                           // Complete write
+      new I()                                                                                                           // Complete write.
        {void   a() {
          if (x && ints.units[r.id] == r.i()) wastedReads.inc(traceBack);
          if (x) ints.units[r.id] = r.i(); ints.writeIntEnable        = false; jTrace(f("%8d getInt4 disable write",  currentPc()));}
@@ -1224,28 +1221,34 @@ public class Program extends Test                                               
       return r;
      }
 
+// i = fast 1, J = slow 1, selecting from 11, value = 1  fails on save where the value to be saved 1 in Java and 0 in verilog
+
     Bit getBit (Int I, Int J)                                                                                           // Get the indicated bit in indicated memory location in this memory and store it into the bit memory
-     {final Bit       r = new Bit();                                                                                    // Location at which the bit will be stored in the bit memory
+     {if (I.fast && J.fast) stop("Index and bit index must not both be fast integer registers");
+      final Bit       r = new Bit();                                                                                    // Location at which the bit will be stored in the bit memory
       final Memory ints = intMemory();                                                                                  // Integer memory
       final Memory bits = bitMemory();                                                                                  // Integer memory
       final boolean   x = !immediate();                                                                                 // The integer and bit memories are not created during immediate execution
 
       J.S(); I.T();                                                                                                     // Retrieve value of the indexing integers from the memory that holds integers so it can be used to index this memory for the desired bit.  Obviously at some point these instructions should be executed in parallel as we have enough read ports to do so
 
-      new I()                                                                                                           // Set the target index to read from this memory
-       {void   a() {        readWriteIndex        =    ints.read0Int;       jTrace(f("%8d getBit1 Get index %8d.%8d",  currentPc(), ints.read0Int, lui(ints.read1Int)));}
-        String v() {return readWriteIndex() + " <= " + ints.read0Int()+"; "+vTrace(  "%8d getBit1 Get index %8d.%8d", "pc",         ints.read0Int(),   ints.read1Int());}
+      final I i = new I()                                                                                               // Set the target index to read from this memory
+       {void   a() {       readWriteIndex        =     I.in0j();     jTrace(f("%8d getBit1 Get index %8d.%8d",  currentPc(), ints.read0Int, lui(I.in0j())));}
+        String v() {return readWriteIndex() + " <= " + I.in0v()+"; "+vTrace(  "%8d getBit1 Get index %8d.%8d", "pc",         ints.read0Int(),   I.in0v());}
        };
+      if (I.fast) i.c(I.fastId);
 
-      final I i = new I()                                                                                               // Prepare to write the result read from this memory back into the memory used to hold bits
+      new I()                                                                                                           // Prepare to write the result read from this memory back into the memory used to hold bits
        {void   a() {       bits.readWriteIndex        =  r.id;                   jTrace(f("%8d getBit2 Set write index %8d",  currentPc(), r.id)                );}
         String v() {return bits.readWriteIndex() + " <= arrayData_pcConstant;" + vTrace(  "%8d getBit2 Set write index %8d", "pc",        "arrayData_pcConstant");}
        }.c(r.id);
 
-      new I()                                                                                                           // Write bit obtained from this memory back into the memory that holds bits
-       {void   a() {read0Int = (r.i = Test.getBit(units[I.i()], J.i())) ? 1 : 0; r.v = true; bits.writeInt        =     read0Int;                                    bits.writeIntEnable       = true; jTrace(f("%8d getBit3 save %8d = %8d",  currentPc(), bits.readWriteIndex, lui(read0Int)));}
-        String v() {return                                                                   bits.writeInt() + " <= " + read0Int()+"["+ints.read1Int()+"] ? 1 : 0; "+bits.writeIntEnable() + " <= 1;" + vTrace(  "%8d getBit3 save %8d = %8d", "pc",         bits.readWriteIndex(),   read0Int()+"["+ints.read1Int()+"]");}
+      final I j = new I()                                                                                                           // Write bit obtained from this memory back into the memory that holds bits
+       {void   a() {read0Int = (r.i = Test.getBit(units[I.i()], J.i())) ? 1 : 0; r.v = true; bits.writeInt        =     read0Int;                             bits.writeIntEnable        = true; jTrace(f("%8d getBit3 save %8d = %8d",  currentPc(), bits.readWriteIndex, lui(read0Int)));}
+        String v() {return                                                                   bits.writeInt() + " <= " + read0Int()+"["+J.in1v()+"] ? 1 : 0; "+bits.writeIntEnable() + " <= 1;" + vTrace(  "%8d getBit3 save %8d = %8d", "pc",         bits.readWriteIndex(),   read0Int()+"["+J.in1v()+"]");}
        };
+      if (I.fast) j.c(I.fastId);
+      if (J.fast) j.c(J.fastId);
 
       new I()                                                                                                           // Complete write
        {void   a() {if (x) bits.units[r.id] = r.i ? 1 : 0; bits.writeIntEnable        = false; jTrace(f("%8d getBit4 disable write",  currentPc()));}
@@ -1263,14 +1266,18 @@ public class Program extends Test                                               
 
       I.S(); J.S2();                                                                                                    // Load integer values from the integers memory. Improvement: perform these operations in parallel
 
-      new I()                                                                                                           // Set target index of memory to be written while waiting for last read to complete
-       {void   a() {readWriteIndex = ints.read1Int;                         jTrace(f("%8d putInt2 Index %8d",  currentPc(), lui(ints.read1Int)));}
-        String v() {return readWriteIndex() + " <= " + ints.read1Int()+"; "+vTrace(  "%8d putInt2 Index %8d", "pc",            ints.read1Int());}
+      final I i2 = new I()                                                                                              // Set target index of memory to be written while waiting for last read to complete
+       {void   a() {        readWriteIndex       =     I.in1j();     jTrace(f("%8d putInt2 Index %8d",  currentPc(), lui(I.in1j())));}
+        String v() {return readWriteIndex() + " <= " + I.in1v()+"; "+vTrace(  "%8d putInt2 Index %8d", "pc",             I.in1v());}
        };
-      new I()                                                                                                           // Integer to write
-       {void   a() {        writeInt       =     ints.read2Int;       writeIntEnable        = true; jTrace(f("%8d putInt3 Value %8d",  currentPc(), lui(ints.read2Int)));}
-        String v() {return writeInt() + " <= " + ints.read2Int()+"; "+writeIntEnable() + " <= 1;" + vTrace(  "%8d putInt3 Value %8d", "pc",            ints.read2Int());}
+      if (I.fast) i2.c(I.fastId);
+
+      final I i3 = new I()                                                                                              // Integer to write
+       {void   a() {        writeInt       =     J.in2j();     writeIntEnable        = true; jTrace(f("%8d putInt3 Value %8d",  currentPc(), lui(J.in2j())));}
+        String v() {return writeInt() + " <= " + J.in2v()+"; "+writeIntEnable() + " <= 1;" + vTrace(  "%8d putInt3 Value %8d", "pc",             J.in2v());}
        };
+      if (J.fast) i3.c(J.fastId);
+
       new I()                                                                                                           // Finish write
        {void   a() {if (units[I.i] == J.i()) wastedWrites.inc(traceBack);
                     units[I.i] = J.i(); writeIntEnable        = false; jTrace(f("%8d putInt4 Finish",  currentPc()));}
@@ -1278,6 +1285,8 @@ public class Program extends Test                                               
        };
       return this;
      }
+
+//  m.putBit(N1, n0, new Bit(true)); Java says n0 is 1, v says its 0 in putbit4   the underlying memory is 1
 
     Memory putBit (Int Index, Int Bit, Bit Value)                                                                       // Set the bit at the indicated position at the indexed location in this memory to the specified value
      {final Int I = Index, J = Bit; final Bit K = Value;
@@ -1289,25 +1298,30 @@ public class Program extends Test                                               
 
       K.S(); I.S(); J.S2(); i.T();                                                                                      // Retrieve the value of the bit from the bit memory and the values of the integers from the integer memory.  Improvement: these instructions should be in parallel
 
-      new I()                                                                                                           // Set target index of memory to be written os it gets read
-       {void   a() {       readWriteIndex        =     ints.read1Int;                                                          jTrace(f("%8d putBit1 i=%8d I=%8d J=%8d K=%8d",  currentPc(), lui(ints.read0Int) ,  lui(ints.read1Int) , lui(ints.read2Int) , lui(bits.read1Int)));}
-        String v() {return readWriteIndex() + " <= " + ints.read1Int()+"; "+                                                   vTrace(  "%8d putBit1 i=%8d I=%8d J=%8d K=%8d", "pc",             ints.read0Int(),      ints.read1Int(),     ints.read2Int(),     bits.read1Int());}
+      final I i1 = new I()                                                                                              // Set target index of integer in memory containing the bit so it gets read
+       {void   a() {       readWriteIndex        =     I.in1j();      jTrace(f("%8d putBit1 i=%8d I=%8d",  currentPc(), lui(i.in0j()),  lui(I.in1j())));}
+        String v() {return readWriteIndex() + " <= " + I.in1v()+"; "+ vTrace(  "%8d putBit1 i=%8d I=%8d", "pc",             i.in0v(),       I.in1v());}
        };
+      if (I.fast) i1.c(I.fastId);
 
       new I()                                                                                                           // Integer to update as read from memory
-       {void   a() {       writeInt      =     read0Int;      jTrace(f("%8d putBit2 %8d",  currentPc(),  lui(ints.read0Int)));}
-        String v() {return writeInt()+" <= " + read0Int()+";"+vTrace(  "%8d putBit2 %8d", "pc",              ints.read0Int());}
+       {void   a() {       writeInt      =     read0Int;      jTrace(f("%8d putBit2 %8d",  currentPc(),  lui(read0Int)));}
+        String v() {return writeInt()+" <= " + read0Int()+";"+vTrace(  "%8d putBit2 %8d", "pc",              read0Int());}
        };
 
-      new I()                                                                                                           // Integer to write
-       {void   a() {writeInt = setBit(writeInt, ints.read2Int, bits.read1Int != 0);              writeIntEnable        = true; jTrace(f("%8d putBit3 i=%8d I=%8d J=%8d K=%8d rwi=%8d",  currentPc(),  lui(ints.read0Int) ,  lui(ints.read1Int) , lui(ints.read2Int) , lui(bits.read1Int), lui(readWriteIndex)));}
-        String v() {return writeInt()+"["+ints.read2Int()+"]" + " <= " + bits.read1Int()+"[0]; "+writeIntEnable() + " <= 1;" + vTrace(  "%8d putBit3 i=%8d I=%8d J=%8d K=%8d rwi=%8d", "pc",              ints.read0Int(),      ints.read1Int(),     ints.read2Int(),     bits.read1Int(),    readWriteIndex());}
+      final I i3 = new I()                                                                                              // Integer to write with bit replaced and wrote enabled
+       {void   a() {writeInt = setBit(writeInt, J.in2j(),               bits.read1Int != 0);    writeIntEnable        = true; jTrace(f("%8d putBit3 i=%8d J=%8d K=%8d rwi=%8d",  currentPc(),  lui(i.in0j()),  lui(J.in2j()), lui(bits.read1Int), lui(readWriteIndex)));}
+        String v() {return writeInt()+"["+      J.in2v()+"]" + " <= " + bits.read1Int()+"[0]; "+writeIntEnable() + " <= 1;" + vTrace(  "%8d putBit3 i=%8d J=%8d K=%8d rwi=%8d", "pc",              i.in0v(),       J.in2v(),      bits.read1Int(),    readWriteIndex());}
        };
+      if (J.fast) i3.c(J.fastId);
+
       new I()                                                                                                           // Finish write
        {void   a() {if (units[I.i()] == setBit(units[I.i()], J.i(), K.i)) wastedWrites.inc(traceBack);
-                    units[I.i()] = setBit(units[I.i()], J.i(), K.i); writeIntEnable = false;                                   jTrace(f("%8d putBit4 i=%8d I=%8d J=%8d K=%8d wi=%8d,%8d",  currentPc(), lui(ints.read0Int) ,  lui(ints.read1Int) , lui(ints.read2Int) , lui(bits.read1Int),  lui(units[I.i()]), lui(writeInt)));}
-        String v() {return  writeIntEnable()+" <= 0;" +                                                                        vTrace(  "%8d putBit4 i=%8d I=%8d J=%8d K=%8d wi=%8d,%8d", "pc",             ints.read0Int(),      ints.read1Int(),     ints.read2Int(),     bits.read1Int(), writeInt(),   writeInt());}
+                        units[I.i()] =  setBit(units[I.i()], J.i(), K.i);
+                            writeIntEnable      = false; jTrace(f("%8d putBit4 i=%8d K=%8d wi=%8d,%8d",  currentPc(), lui(i.in0j()), lui(bits.read1Int),  lui(units[I.i()]), lui(writeInt)));}
+        String v() {return  writeIntEnable()+" <= 0;" +  vTrace(  "%8d putBit4 i=%8d K=%8d wi=%8d,%8d", "pc",             i.in0v(),      bits.read1Int(),     writeInt(),        writeInt());}
        };
+
       return this;
      }
 
@@ -2131,7 +2145,7 @@ module {name};                                                                  
       for(VerilogArrays.Array a : verilogArrays.arrays()) put(a.connectModule());                                       // Connect to Verilog array modules
       for(Memory m              : memories              ) put(m.instantiateModule());                                   // Instantiate each memory
 
-      /*Execute*/put("""
+      /*Execute*/put(s("""
 
 `ifndef SYNTHESIS
   initial begin
@@ -2140,13 +2154,16 @@ module {name};                                                                  
     forever #1 begin                                                                                                    // Let the clock run
       clock = ~clock;                                                                                                   // Execute instructions
       if (!clock) steps = steps + 1;                                                                                    // Number of steps executed - one per clock cycle
+      if (steps > {maxSteps}) begin $fclose(traceFile); $finish; end                                                     // Upper limit on number of steps for this program
     end
   end                                                                                                                   // Execute instructions
   always @(posedge clock) begin                                                                                         // Decode and execute instructions by iterating a case statement
 `else                                                                                                                   // Clock - only needed during icarus Verilog simulation not during synthesis
   always_ff @(posedge clock) begin                                                                                      // Decode and execute instructions by iterating a case statement
 `endif                                                                                                                  // Clock - only needed during icarus Verilog simulation not during synthesis
-""");
+""",
+"maxSteps", ""+maxSteps
+));
 
       if (!compressInstructions || !compressInstructionLabels)                                                          // No compression of instruction labels
         /*Execute case*/put("""
@@ -2284,7 +2301,11 @@ endmodule
 
     void createFastInts()                                                                                               // Create an array of integers to represent any fast integers used by the program
      {put(s("""
+  integer fastInts_i;                                                                                                   // Declare index for fast integers
   reg[31:0] fastInts[{n}];                                                                                              // Declare fast integers
+  initial begin                                                                                                         // Initialize fast ints
+    for (fastInts_i = 0; fastInts_i < {n}; fastInts_i = fastInts_i + 1) fastInts[fastInts_i] = 0;
+  end
 """,
 "n", ""+nextFastIntId));
      }
@@ -2586,7 +2607,7 @@ check
 `ifdef __ICARUS__
   reg[31:0] memory [0:{size}];
   initial $readmemh("{file}", memory, 0, {size});
-  assign dout0 = memory[addr0];
+  assign dout0 = memory[addr0];                                                                                         // Assume that the value can be retrieved from memory and used in a comoptation all within one clock cycle.
 `endif
 endmodule
 """,
@@ -2670,16 +2691,27 @@ endmodule
   static void test_forCount(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {int i = 0;
+      int incI() {return ++i;}
+      void code()
        {final Int a = new FastInt("a");
-        final Int N = new Int("N", 2);
+        final Int b = new FastInt("b");
+        final Int c = new FastInt("b");
+        final Int N = new Int("N", 4);
         new ForCount(N)
          {void body(Int Index)
-           {dumpProgramState("AAAA");
-            a.inc();
+           {a.inc();
+            new ForCount(N, N.Add(N))
+             {void body(Int Index2)
+               {b.inc();
+               }
+             };
+            c.inc();
            }
          };
         a.ok(N);
+        b.ok(N.Mul(N));
+        c.ok(N);
         scDieAreaX = 500; scDieAreaY = 400;
         execute();
        }
@@ -3011,51 +3043,98 @@ endmodule
 
   static void test_mem(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(2))
+    final Program P = new Program(new Build().immediate(Ex).memory(4))
      {void code()
        {final Memory m = unitMemory;
-        final Int a = new Int("a"); a.set(2) ;                   m.putInt(new Int(1), a);
-        final Int b = m.getInt(new Int(1));                      b.name = "b"; b.ok(2);
-        final Bit c = m.getBit(new Int(1), new Int(1));          c.name = "c"; c.ok(true);
-        final Bit d = m.getBit(new Int(1), new Int(0));          d.name = "d"; d.ok(false);
+        final Int     N0 = new Int    ("ZERO",  0);
+        final Int     N1 = new Int    ("ONE",   1);
+        final Int     N2 = new Int    ("TWO",   2);
+        final Int     N3 = new Int    ("THREE", 3);
+        final FastInt n0 = new FastInt("zero") ; n0.set(N0);
+        final FastInt n1 = new FastInt("one")  ; n1.set(N1);
+        final FastInt n2 = new FastInt("two")  ; n2.set(N2);
+        final FastInt n3 = new FastInt("three"); n3.set(N3);
+        n0.ok(0); N0.ok(0);
+        n1.ok(1); N1.ok(1);
+        n2.ok(2); N2.ok(2);
+        n3.ok(3); N3.ok(3);
+        m.putInt(N0, n3);
+        m.putInt(N1, n2);
+        m.putInt(N2, n2);
+        m.putInt(N3, n3);
+
+        m.getInt(N0).ok(N3); m.getInt(N0).ok(n3); m.getInt(n0).ok(N3); m.getInt(n0).ok(n3);
+        m.getInt(N1).ok(N2); m.getInt(N1).ok(n2); m.getInt(n1).ok(N2); m.getInt(n1).ok(n2);
+        m.getInt(N2).ok(N2); m.getInt(N2).ok(n2); m.getInt(n2).ok(N2); m.getInt(n2).ok(n2);
+        m.getInt(N3).ok(N3); m.getInt(N3).ok(n3); m.getInt(n3).ok(N3); m.getInt(n3).ok(n3);
         //stop(nws(m.dumpJavaMemoryInDecimal()));
-        ok(()->nws(m.dumpJavaMemoryInDecimal()), """
+        if (false) ok(()->nws(m.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
-00000000         2
-      read1Int =        0
-      read2Int =        0
-      writeInt =        2
-readWriteIndex =        1
-writeIntEnable =        0
-""");
-        dumpProgramState("AAAA");
-        m.putBit(new Int(1), new Int(0),   new Bit(true));
-        dumpProgramState("BBBB");
-        //stop(nws(m.dumpJavaMemoryInDecimal()));
-        ok(()->nws(m.dumpJavaMemoryInDecimal()), """
-Memory 2 program
-            0    1    2    3    4    5    6    7    8    9
-00000000         3
+00000000    3    2    2    3
       read1Int =        0
       read2Int =        0
       writeInt =        3
-readWriteIndex =        1
+readWriteIndex =        3
 writeIntEnable =        0
 """);
-        m.putBit(new Int(1), new Int(1),   new Bit(false));
+
+        m.clear();
+        m.putInt(n0, N2);
+        m.putInt(n1, N3);
+        m.putInt(n2, N0);
+        m.putInt(n3, N1);
         //stop(nws(m.dumpJavaMemoryInDecimal()));
         ok(()->nws(m.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
-00000000         1
+00000000    2    3         1
       read1Int =        0
       read2Int =        0
       writeInt =        1
-readWriteIndex =        1
+readWriteIndex =        3
 writeIntEnable =        0
 """);
-        final Int e = new Int("e"); e.set(m.getInt(new Int(1)));  e.name = "e"; e.ok(1);
+        m.getBit(n1, N0).ok(true);
+        m.getBit(n1, N1).ok(true);
+        m.getBit(n1, N2).ok(false);
+
+        m.getBit(N1, n0).ok(true);
+        m.getBit(N1, n1).ok(true);
+        m.getBit(N1, n2).ok(false);
+
+        m.getBit(N1, N0).ok(true);
+        m.getBit(N1, N1).ok(true);
+        m.getBit(N1, N2).ok(false);
+
+        m.clear();
+        m.putBit(N1, N0, new Bit(true));
+        m.putBit(N1, N1, new Bit(true));
+        m.putBit(N1, N2, new Bit(false));
+        m.putBit(N1, N3, new Bit(true));
+        m.getInt(N1).ok(11);
+
+        m.clear();
+        m.putBit(N1, n0, new Bit(true));
+        m.putBit(N1, n1, new Bit(true));
+        m.putBit(N1, n2, new Bit(false));
+        m.putBit(N1, n3, new Bit(true));
+        m.getInt(N1).ok(11);
+
+        m.clear();
+        m.putBit(n1, N0, new Bit(true));
+        m.putBit(n1, N1, new Bit(true));
+        m.putBit(n1, N2, new Bit(false));
+        m.putBit(n1, N3, new Bit(true));
+        m.getInt(n1).ok(11);
+
+        m.clear();
+        m.putBit(n1, n0, new Bit(true));
+        m.putBit(n1, n1, new Bit(true));
+        m.putBit(n1, n2, new Bit(false));
+        m.putBit(n1, n3, new Bit(true));
+        m.getInt(n1).ok(11);
+
         scDieAreaX = 500; scDieAreaY = 500;
         execute();
        }
@@ -3129,7 +3208,7 @@ writeIntEnable =        0
     test_memory(false);
    }
 
-//  static void test_memoryNegative(boolean Ex)
+//  static void test_memoryNegative(boolean Ex)                                                                         // Non negative values simplifies silicon compiler
 //   {sayCurrentTestName();
 //    final Program P = new Program(new Build().immediate(Ex).memory(8))
 //     {void code()
@@ -3266,7 +3345,7 @@ Memory 2 program
       read1Int =        0
       read2Int =        0
       writeInt =        0
-readWriteIndex =        2
+readWriteIndex =        9
 writeIntEnable =        0
 """);
            }
@@ -3556,6 +3635,10 @@ writeIntEnable =        0
         a.le(c).ok(true);
         a.ge(c).ok(true);
         a.gt(c).ok(false);
+        a.add(c);
+        a.ok(4);
+        c.add(a);
+        c.ok(6);
         execute();
        }
      };
@@ -3564,6 +3647,23 @@ writeIntEnable =        0
   static void test_fastInt()
    {          test_fastInt(true);
               test_fastInt(false);
+   }
+
+  static void test_pcConstant (Boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Int a = new Int("a", 1);
+        a.add(2);
+        a.ok(3);
+        execute();
+       }
+     };
+   }
+
+  static void test_pcConstant()
+   {          test_pcConstant(true);
+              test_pcConstant(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -3593,15 +3693,13 @@ writeIntEnable =        0
     test_ifInc();
     test_forLoops();
     test_fastInt();
+    test_pcConstant();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    //test_forCount(!true);
-    //test_fastInt();
-    //test_fibonacci(false);
-    //test_memoryRef(false);
-    test_forCount();
+   {oldTests();
+    //test_memoryRef();
+    //test_mem();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
