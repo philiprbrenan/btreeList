@@ -1502,8 +1502,8 @@ keys     :    0   0   4   3
         new ForCount(2)
          {void body(Int Index)
            {final Int kr = new Int(), kl = new Int(0);
-            new If (Index.eq(0)) {void Then() {kr.set(3); kl.set(2);}};
-            new If (Index.eq(1)) {void Then() {kr.set(4); kl.set(1);}};
+            new If (Index.eq(new Int(0))) {void Then() {kr.set(3); kl.set(2);}};
+            new If (Index.eq(new Int(1))) {void Then() {kr.set(4); kl.set(1);}};
             r.insert(kr); l.insert(kl);
            }
          };
@@ -2426,7 +2426,8 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_alloc(!true);
+    test_insert();
+    //test_insert2();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
