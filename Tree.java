@@ -417,18 +417,22 @@ class Tree extends Program                                                      
           final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
           final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
           final Bint            L = new Bint();                                                                         // There are four possibilities to consider
+          final Int            I0 = new Int(0).constant();                                                              // Non fast integer constants
+          final Int            I1 = new Int(1).constant();                                                              // Non fast integer constants
+          final Int            I2 = new Int(2).constant();                                                              // Non fast integer constants
+          final Int            I3 = new Int(3).constant();                                                              // Non fast integer constants
           new ForCount(4)                                                                                               // Locate the left sibling
            {void body(Int Index)
-             {new If (Index.eq(0))                                                                                      // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
-               {void Then()                                 {L.copy(mergeLeftLeft(  p, d.slot));}
+             {new If (Index.eq(I0))                                                                                      // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
+               {void Then()                                  {L.copy(mergeLeftLeft(  p, d.slot));}
                 void Else()
-                 {new If (Index.eq(1))
-                   {void Then()                             {L.copy(mergeRightRight(p, d.slot));}
+                 {new If (Index.eq(I1))
+                   {void Then()                              {L.copy(mergeRightRight(p, d.slot));}
                     void Else()
-                     {new If (Index.eq(2))
-                       {void Then()                         {L.copy(mergeLeft(      p, d.slot));}
+                     {new If (Index.eq(I2))
+                       {void Then()                          {L.copy(mergeLeft(      p, d.slot));}
                         void Else()
-                         {new If (Index.eq(3)) {void Then() {L.copy(mergeRight(     p, d.slot));}};
+                         {new If (Index.eq(I3)) {void Then() {L.copy(mergeRight(     p, d.slot));}};
                          }
                        };
                      }
@@ -1177,15 +1181,15 @@ Number of Keys:    0
 
         new ForCount(N)
          {void body(Int Index)
-           {final Int k = new Int("Key", 0);
+           {final Int k = new Int("Key", Index);
 
-            Index.S();                                                                                                  // Load index of item we want
+            k.S();                                                                                                      // Load index of item we want
             new I()
              {void        a() {       intMemory().writeInt        =     random_32[Index.i()];}
               String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
               boolean trace() {return false;}
              };
-            k.TW();                                                                                                      // Write key into variable
+            k.TW();                                                                                                     // Write key into variable
             insert(k, Index);
             dumpProgramState("AAAA");
            }
@@ -1554,8 +1558,9 @@ Number of Keys:    0
 
         new ForCount(new Int(N))
          {void body(Int Index)
-           {final Int k = new Int("Key", 0);
-            Index.S();                                                                                                  // Load index of item we want
+           {final Int k = new Int("Key", Index);
+
+            k.S();                                                                                                  // Load index of item we want
             new I()
              {void        a() {       intMemory().writeInt        =     random_32[Index.i()];}
               String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
