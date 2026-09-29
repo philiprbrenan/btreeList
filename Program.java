@@ -78,8 +78,8 @@ public class Program extends Test                                               
   int                                          nextIntId = 0;                                                           // Unique id for each Int held in memory
   int                                      nextFastIntId = 0;                                                           // Unique id for each Int held in registers to make access faster
   int                                          nextBitId = 0;                                                           // Unique id for each Bit
-  int                                         scDieAreaX = 2_000;                                                       // Default size of x dimension for chip. Was 1000x1000 before fast integers for "forCount" made this too small for tree delete
-  int                                         scDieAreaY = 2_000;                                                       // Default size of y dimension for chip
+  int                                         scDieAreaX = 1_000;                                                       // Default size of x dimension for chip. Was 1000x1000 before fast integers for "forCount" made this too small for tree delete
+  int                                         scDieAreaY = 1_000;                                                       // Default size of y dimension for chip
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
 
   final static class Build                                                                                              // Builder for this program
@@ -165,15 +165,6 @@ public class Program extends Test                                               
 
   Memory   intMemory ()          {return intMemory;}
   Memory   bitMemory ()          {return bitMemory;}
-
-//  void initializeRegisters ()                                                                                           // Initialize registers
-//   {currentPc(0);
-//    sourceInt(0);
-//    source2Int(0);
-//    sourceBit(false);
-//    targetInt(0);
-//    targetBit(false);
-//   }
 
   TreeMap<Integer,Integer> pcConstant () {return pcConstant;}                                                           // Instruction number to variable or memory
   VerilogArrays         verilogArrays () {return verilogArrays;}                                                        // Verilog array definitions
@@ -708,23 +699,27 @@ public class Program extends Test                                               
         final String mv = pV(m.read0Int());                                                                             // Value register
         final String ms = pV(registerName(Register));                                                                   // Saved value register
 
+        final String f1 = "%8d ILST1-"+Label+" "+mi+" = %8d";                                                           // Load index
+        final String f2 = "%8d ILST2-"+Label+" "+mv+" = %8d";                                                           // Load value
+        final String f3 = "%8d ILST3-"+Label+" "+ms+" = %8d";                                                           // Transfer to source register
+
         final I index = new I()                                                                                         // Load index of integer
          {final String c = mi + pV(" <= arrayData_pcConstant;");
-          void   a() {m.readWriteIndex = id;   jTrace(f("%8d ILST1-"+Label+" "+mi+" = %8d",  pc(), id)                  );}
-          String v() {return c+" "+            vTrace(  "%8d ILST1-"+Label+" "+mi+" = %8d", "pc", "arrayData_pcConstant");}
+          void   a() {m.readWriteIndex = id;   jTrace(f(f1,  pc(), id)                  );}
+          String v() {return c+" "+            vTrace(  f1, "pc", "arrayData_pcConstant");}
          }.c(id);                                                                                                       // Id of variable being addressed by these instructions is saved in the PC constant table to allow it to be used on this instruction
 
         if (LoadValue)
          {new I()                                                                                                       // Value of integer
            {void   a() {if (m.read0Int == i()) wastedReads.inc(traceBack);
-                        m.read0Int = i();      jTrace(f("%8d ILST2-"+Label+" "+mv+" = %8d",  pc(), lui(i))); incUsage(Register);}
-            String v() {return                 vTrace(  "%8d ILST2-"+Label+" "+mv+" = %8d", "pc",  m.memory(mi));}      // The memory module loads the corresponding value field automatically at the end of this instruction cycle
+                        m.read0Int = i();      jTrace(f(f2,  pc(), lui(i))); incUsage(Register);}
+            String v() {return                 vTrace(  f2, "pc",  m.memory(mi));}                                      // The memory module loads the corresponding value field automatically at the end of this instruction cycle
            };
          }
 
-        if (LoadValue && Register > 0) new I()                                                                          // Load integer read into a source register if necessary to preserve its value after reading the target or another source operand. To preserve the value of the target it must be read last
-         {void   a() {loadValue(i());          jTrace(f("%8d ILST3-"+Label+" "+ms+" = %8d",  pc(), lui(i)));}
-          String v() {return ms+" <= "+mv+"; "+vTrace(  "%8d ILST3-"+Label+" "+ms+" = %8d", "pc",  m.memory(mi));}
+        if (LoadValue && Register > 0) new I()                                                                          // Transfer integer read into a source register if necessary to preserve its value after reading the target or another source operand. To preserve the value of the target it must be read last
+         {void   a() {loadValue(i());          jTrace(f(f3,  pc(), lui(i)));}
+          String v() {return ms+" <= "+mv+"; "+vTrace(  f3, "pc",  m.memory(mi));}
          };
        }
 
@@ -759,15 +754,18 @@ public class Program extends Test                                               
       final Int     w = this;                                                                                           // Set index locating the integer to be written to
       final Memory  M = intMemory();
       final boolean x = immediate();
+
       new I()                                                                                                           // Load value into integer or memory
        {final String f = "%8d writeInt %8d = %8d";
         void   a() {i(M.writeInt); M.writeIntEnable = true; nw++;  jTrace(f(f,  currentPc(), M.readWriteIndex, lui(M.writeInt)));}
         String v() {return         M.writeIntEnable() + " <= 1; "+ vTrace(  f, "pc",         M.readWriteIndex(),   M.writeInt());}
        };
+
       new I()                                                                                                           // Lower  right enable - which could be merged with the next instruction
        {void   a() {if (!x && M.units[M.readWriteIndex] == M.writeInt) wastedWrites.inc(traceBack);
-                    if (!x)   M.units[M.readWriteIndex] =  M.writeInt; M.writeIntEnable = false; jTrace(f("%8d Disable write", currentPc()));}
-        String v() {return M.writeIntEnable() + " <= 0; "+                                       vTrace(  "%8d Disable write", "pc");}
+                    if (!x)   M.units[M.readWriteIndex] =  M.writeInt; M.writeIntEnable = false;
+                                                           jTrace(f("%8d Disable write", currentPc()));}
+        String v() {return M.writeIntEnable() + " <= 0; "+ vTrace(  "%8d Disable write", "pc");}
        };
      }
 
@@ -2071,7 +2069,7 @@ cd {f}; yosys -q {y}                                                            
   void printProgramExecutionStatistics()                                                                                // Execution statistics for prgram
    {//printReadWriteUsage();                                                                                            // Print read write usage of integers
     //printExecutionCoverageForTest();                                                                                  // Print details of which instructions were executed and which were not
-    say(f("%d integers, %d fast integers, %d bits", nextIntId, nextFastIntId, nextBitId));                              // Numbers of variables
+    //say(f("%d integers, %d fast integers, %d bits", nextIntId, nextFastIntId, nextBitId));                              // Numbers of variables
    }
 
 //D1 Verilog                                                                                                            // Generate Verilog
