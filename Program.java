@@ -33,7 +33,7 @@ public class Program extends Test                                               
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
-  final static boolean       suppressExecutionStatistics = !github_action;                                              // Print wasted read and write operations and other execution statistics
+  final static boolean       suppressExecutionStatistics =!true;                                                        // Print wasted read and write operations and other execution statistics
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
@@ -220,21 +220,20 @@ public class Program extends Test                                               
 
   abstract class For                                                                                                    // For loop: executed a specified number of times as long as the iterated code requests continuation
    {For (Int Start, Int End)                                                                                            // Execute the loop the specified number of times
-     {final Int index = new Int("Index", Start == null);
+     {final Int index = new Int("Index", fast());                                                                       // Make the index a fast integer if requested
       final Bit cont  = new Bit("Continue");
+      if (Start != null && fast()) stop("No start value allowed when using fast integer index");                        // Check fast index and start combination
       if (Start == null) index.zero(); else index.set(Start);                                                           // Start index
 
       if (immediate())                                                                                                  // Immediate execution
-       {//index.set(Start);                                                                                               // Start index
-        for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
+       {for(int i : range(index.i(), End.i()))                                                                          // Iterate over the specified range
          {body(index, cont.clear());                                                                                    // Execute the loop body
           index.inc();                                                                                                  // Set the index to each element of the specified range
           if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation has been requested
          }
        }
       else                                                                                                              // Machine code
-       {//index.set(Start);                                                                                               // Start index
-        final Label start = new Label();                                                                                // Start of for loop code
+       {final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         final Bit    done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
         final I         S = new I(false)                                                                                // Start of loop - make sure the index is still in range
@@ -256,15 +255,18 @@ public class Program extends Test                                               
        }
      }
 
-    For (int End) {this(new Int("Start", 0), new Int("End", End));}                                                     // Execute the loop the specified number of times as long as it returns true
-    For (Int End) {this(new Int("Start", 0),                End);}                                                      // Execute the loop the specified number of times as long as it returns true
+    For (int End) {this(null, new Int("End", End));}                                                                    // Execute the loop the specified number of times as long as it returns true
+    For (Int End) {this(null,                End);}                                                                     // Execute the loop the specified number of times as long as it returns true
 
     abstract void body (Int Index, Bit Continue);                                                                       // Body of the for loop - execute while in range and continuation has been requested
+
+    boolean fast () {return false;}                                                                                     // Override for a fast integer as index - but be careful - fast integers quickly increase the die area
    } // For
 
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
    {ForCount (Int Start, Int End)                                                                                       // Execute the loop the specified number of times
-     {final Int index = new Int("Index", Start == null);                                                                // Make the index a fast integer rather than a normal integer as it tends to be accessed a lot
+     {final Int index = new Int("Index", fast());                                                                       // Make the index a fast integer rather than a normal integer as it tends to be accessed a lot
+      if (Start != null && fast()) stop("No start value allowed when using fast integer index");                        // Check fast index and start combination
       if (Start == null) index.zero(); else index.set(Start);                                                           // Start index
 
       if (immediate())                                                                                                  // Immediate execution
@@ -300,6 +302,8 @@ public class Program extends Test                                               
     ForCount (int Start, int End) {this(new Int("Start", Start), new Int("End", End));}                                 // Execute the loop the known number of times
 
     abstract void body (Int Index);                                                                                     // Body of the for loop - execute while in range and continuation requested
+
+    boolean fast() {return false;}                                                                                      // Override for a fast integer as index - but be careful - fast integers quickly increase the die area
    } // ForCount
 
 //D2 If                                                                                                                 // If then else
@@ -608,7 +612,7 @@ public class Program extends Test                                               
     Int (String Name, Int I) {this(I); name = Name; out = top;}                                                         // Output register if its value is unknown at the start and is at the top
 
     Int (String Name, boolean Fast)                                                                                     // Create a fast integer.  A fast integer is held in a register rather than memory
-     {ai(); name = Name; fast = Fast; fastId = program().nextFastIntId++;
+     {ai(); name = Name; fast = Fast; fastId = Fast ? program().nextFastIntId++ : -1;
       ie(Ops.zero);
       ints().push(this);
      }
@@ -1708,8 +1712,7 @@ endmodule
     if (steps >= maxSteps) stop("Out of steps after step:", steps);                                                     // Show ran out of steps
     else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steps unless we are going to print this in during the Verilog process
 
-    printReadWriteUsage();                                                                                              // Print read write usage of integers
-    printExecutionCoverageForTest();                                                                                    // Print details of which instructions were executed and which were not
+    printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
 
     final GenerateVerilog g = new GenerateVerilog();                                                                    // Generate corresponding Verilog code
 
@@ -1844,7 +1847,7 @@ cd {f}; yosys -q {y}                                                            
   void dumpJavaVariables ()                                                                                             // Dump all memories and variables to the Java trace file
    {final StringBuilder s = new StringBuilder();
     for (Int  i  : ints())                                                                                              // Dump ints
-     {s.append(f("Int  %8d ==    %8d", i.id, lui(i.i)));                                                                // Take underlying value regardless of whether the integer has been set because whether the integer has been set is not available on Verilog yet the traces must match
+     {s.append(f("Int  %8d ==    %s%8d", i.id, (i.fast ? "*" : " "), lui(i.i)));                                        // Take underlying value regardless of whether the integer has been set because whether the integer has been set is not available on Verilog yet the traces must match
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
@@ -2063,6 +2066,12 @@ cd {f}; yosys -q {y}                                                            
    {if (suppressExecutionStatistics) return;                                                                            // Suppress print if necessary
     if (wastedReads .size() > 0) say("Wasted Reads:\n",  wastedReads);
     if (wastedWrites.size() > 0) say("Wasted Writes:\n", wastedWrites);
+   }
+
+  void printProgramExecutionStatistics()                                                                                // Execution statistics for prgram
+   {//printReadWriteUsage();                                                                                            // Print read write usage of integers
+    //printExecutionCoverageForTest();                                                                                  // Print details of which instructions were executed and which were not
+    say(f("%d integers, %d fast integers, %d bits", nextIntId, nextFastIntId, nextBitId));                              // Numbers of variables
    }
 
 //D1 Verilog                                                                                                            // Generate Verilog
@@ -2522,11 +2531,11 @@ check
     final StringBuilder v = new StringBuilder();                                                                        // Dump each variable
     for(Int i : ints)                                                                                                   // Dump integers
      {if (i.name != null) v.append(substitute("""
-      $fdisplay(traceFile, "Int  %8d ==    %8d {name}", {id}, {v});
-""", "name", i.name, "id", ""+i.id, "v", intMemory(i)));
+      $fdisplay(traceFile, "Int  %8d ==    %s%8d {name}", {id}, "{f}", {v});
+""", "name", i.name, "id", ""+i.id, "v", intMemory(i), "f", i.fast ? "*" : " "));
       else v.append(substitute("""
-      $fdisplay(traceFile, "Int  %8d ==    %8d",        {id}, {v});
-""",                 "id", ""+i.id, "v", intMemory(i)));
+      $fdisplay(traceFile, "Int  %8d ==    %s%8d",        {id}, "{f}", {v});
+""",                 "id", ""+i.id, "v", intMemory(i), "f", i.fast ? "*" : " "));
      }
 
     for(Bit b : bits)                                                                                                   // Dump booleans
@@ -3661,6 +3670,13 @@ writeIntEnable =        0
         a.ok(4);
         c.add(a);
         c.ok(6);
+        new ForCount(new Int(2))
+         {void body(Int Index)
+           {c.inc();
+           }
+          boolean fast() {return true;}
+         };
+        c.ok(8);
         execute();
        }
      };
@@ -3749,6 +3765,7 @@ writeIntEnable =        0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    //test_fastInt();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
