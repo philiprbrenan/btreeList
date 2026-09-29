@@ -265,6 +265,15 @@ If that question interests you, contributions are welcome.
 
 
 
+# Experiments
+
+Converting just **4** ``for loops`` in ``BitSet`` produces the following in ``Tree.deleteAscending```:
+
+```
+68090 integers, 1366 fast integers, 24307 bits:
+```
+
+while making ``place and route`` take an excessivley long time to run.
 
 
 
