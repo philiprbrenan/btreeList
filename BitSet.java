@@ -180,6 +180,7 @@ public class BitSet extends Program                                             
          {void Then() {setBitNC(p); p.set(parentOne(p)); Continue.set(); }                                              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
          };
        }
+      boolean fast() {return true;}
      };
     subFinish();
    }
@@ -202,6 +203,7 @@ public class BitSet extends Program                                             
            }
          };
        }
+      boolean fast() {return true;}
      };
     subFinish();
    }
@@ -232,6 +234,7 @@ public class BitSet extends Program                                             
                    }
                  };
                }
+              boolean fast() {return true;}
              };
            }
          };
@@ -249,6 +252,7 @@ public class BitSet extends Program                                             
          {void Then() {clearBitNC(p); p.set(parentZero(p)); Continue.set();}                                            // Stop creating the path once we have arrived at a zeros tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
          };
        }
+      boolean fast() {return true;}
      };
     subFinish();
    }
@@ -410,6 +414,7 @@ public class BitSet extends Program                                             
           void Else() {p.inc();}
          };
        }
+      boolean fast() {return !true;}
      };
     subFinish();
     return p;
@@ -428,6 +433,7 @@ public class BitSet extends Program                                             
           void Else() {p.dec();}
          };
        }
+      boolean fast() {return !true;}
      };
     subFinish();
     return p;
@@ -446,6 +452,7 @@ public class BitSet extends Program                                             
           void Else() {p.set(p);}
          };
        }
+      boolean fast() {return !true;}
      };
     subFinish();
     return p;
@@ -464,6 +471,7 @@ public class BitSet extends Program                                             
           void Else() {p.set(p);}
          };
        }
+      boolean fast() {return !true;}
      };
     subFinish();
     return p;
@@ -559,6 +567,7 @@ public class BitSet extends Program                                             
            }
          };
        }
+      boolean fast() {return !true;}
      };
 
     if (!powerOfTwo)                                                                                                    // Check result is in range if the requested bitset has a size that is not a power of two
@@ -598,6 +607,7 @@ public class BitSet extends Program                                             
            }
          };
        }
+      boolean fast() {return !true;}
      };
     subFinish();
     return Prev;                                                                                                        // Result is valid if found
@@ -661,6 +671,7 @@ public class BitSet extends Program                                             
                    }
                  };
                }
+              boolean fast() {return !true;}
              };
            }
           void Else()
@@ -714,6 +725,7 @@ public class BitSet extends Program                                             
                    }
                  };
                }
+              boolean fast() {return !true;}
              };
            }
          };
@@ -756,6 +768,7 @@ public class BitSet extends Program                                             
                }
              };
            }
+          boolean fast() {return !true;}
          };
        }
      };
@@ -784,6 +797,7 @@ public class BitSet extends Program                                             
            }
          };
        }
+      boolean fast() {return !true;}
      };
     subFinish();
     return c;                                                                                                           // Return count
@@ -808,6 +822,7 @@ public class BitSet extends Program                                             
            }
          };
        }
+      boolean fast() {return !true;}
      };
     subFinish();
     return c;                                                                                                           // Return count
