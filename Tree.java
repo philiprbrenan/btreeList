@@ -1776,7 +1776,7 @@ Leaf           size:   4, count:   2
     if (rtg( 4)) test_insertMerged();
     if (rtg( 5)) test_insertReverse();
     if (rtg( 6)) test_insertRandom32();
-    if (rtg( 7)) test_deleteAscending();
+    if (rtg( 7)) test_deleteAscending();                                                                                // 68090 integers, 2374 fast integers, 24307 bits: with both For and ForCount in bitset with fast integer indexes.  Openroad takes hours with  fast integers. Die larger than 2000*2000?  Restricted fast integers to first 4 for loops in bitset:  68090 integers, 1366 fast integers, 24307 bits.
     if (rtg( 8)) test_deleteDescending();
     if (rtg( 9)) test_deleteRandom32();
     if (rtg(10)) test_update();
@@ -1785,7 +1785,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_update();
+    test_deleteAscending();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
