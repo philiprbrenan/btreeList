@@ -157,7 +157,6 @@ public class Program extends Test                                               
   boolean  targetBit ()          {return bitMemory.read0Int != 0;}
   boolean  sourceBit ()          {return bitMemory.read1Int != 0;}
 
-  void    currentPc (int V)      {ngv(); program().currentPc = V;}
   void    targetBit (boolean V)  {ngv(); bitMemory.writeInt  = V ? 1 : 0;}                                              // Currently bits are stored wastefully as integers hoping that Yosys will remove unused paths
   void    sourceBit (boolean V)  {ngv(); bitMemory.read1Int  = V ? 1 : 0;}
 
@@ -346,15 +345,15 @@ public class Program extends Test                                               
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
   final class Bit                                                                                                       // A boolean value
-   {boolean    i = false;                                                                                               // Value of the boolean
-    boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
-    boolean   nd = false;                                                                                               // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
-    final int id = program().nextBitId++;                                                                               // Unique id for Bit
-    final boolean    top = callerName() == "code";                                                                      // A declaration at the top level
-          boolean     in = false;                                                                                       // An input wire if true and named and at the top
-          boolean    out = false;                                                                                       // An output register if true and named and at the top
-    boolean         fast = false;                                                                                       // Make this bit into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
-    String  name = null;                                                                                                // The name of the variable
+   {boolean         i = false;                                                                                          // Value of the boolean
+    boolean         v = false;                                                                                          // Whether the current value of the integer is valid or not
+    boolean        nd = false;                                                                                          // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
+    final int      id = program().nextBitId++;                                                                          // Unique id for Bit
+    final boolean top = callerName() == "code";                                                                         // A declaration at the top level
+          boolean  in = false;                                                                                          // An input wire if true and named and at the top
+          boolean out = false;                                                                                          // An output register if true and named and at the top
+    boolean      fast = false;                                                                                          // Make this bit into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
+    String       name = null;                                                                                           // The name of the variable
 
     enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
 
