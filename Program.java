@@ -144,29 +144,29 @@ public class Program extends Test                                               
 
   Program maxSteps (int MaxSteps) {program().maxSteps = MaxSteps; return this;}                                         // Set number of steps
 
-  I compiling ()                 {return program().compiling;}                                                          // Instruction currently being compiled
-  I executing ()                 {return program().executing;}                                                          // Instruction currently being executed
-  I compiling (I I)              {return program().compiling = I;}                                                      // Instruction currently being compiled
-  I executing (I I)              {return program().executing = I;}                                                      // Instruction currently being executed
+  I            compiling ()      {return program().compiling;}                                                          // Instruction currently being compiled
+  I            executing ()      {return program().executing;}                                                          // Instruction currently being executed
+  I            compiling (I I)   {return program().compiling = I;}                                                      // Instruction currently being compiled
+  I            executing (I I)   {return program().executing = I;}                                                      // Instruction currently being executed
 
-  Stack<Int>  ints ()            {return ints;}
-  Stack<Bit>  bits ()            {return bits;}
+  Stack<Int>        ints ()      {return ints;}
+  Stack<Bit>        bits ()      {return bits;}
   Stack<Memory> memories ()      {return memories;}
 
-  int      currentPc ()          {return program().currentPc;}
-  void           ngv ()          {if (generatingVerilog) stop("Cannot call this function while generating Verilog");}   // The variable is owned by the associated Verilog memory module and so cannot be written to by the main module although the main module can read the value
+  int          currentPc ()      {return program().currentPc;}
+  void               ngv ()      {if (generatingVerilog) stop("Cannot call this function while generating Verilog");}   // The variable is owned by the associated Verilog memory module and so cannot be written to by the main module although the main module can read the value
 
-  Memory   intMemory ()          {return intMemory;}
-  Memory   bitMemory ()          {return bitMemory;}
+  Memory       intMemory ()      {return intMemory;}
+  Memory       bitMemory ()      {return bitMemory;}
 
   TreeMap<Integer,Integer> pcConstant () {return pcConstant;}                                                           // Instruction number to variable or memory
   VerilogArrays         verilogArrays () {return verilogArrays;}                                                        // Verilog array definitions
   DumpLocations         dumpLocations () {return dumpLocations;}                                                        // Verilog array definitions
 
-  void pcConstant (I I, Label Target)    {pcConstant().put(I.instructionNumber, Target.offset);}                        // Save a constant label into the instruction to constant map
-  void pcConstant (I I, int   Target)    {pcConstant().put(I.instructionNumber, Target);}                               // Save a constant integer into the instruction to constant map
+  void    pcConstant (I I, Label Target) {pcConstant().put(I.instructionNumber, Target.offset);}                        // Save a constant label into the instruction to constant map
+  void    pcConstant (I I, int   Target) {pcConstant().put(I.instructionNumber, Target);}                               // Save a constant integer into the instruction to constant map
 
-  String pV (      String Text)          {return pad(Text, padVerilog);}                                                // Pad Verilog expressions
+  String          pV (String Text)       {return pad(Text, padVerilog);}                                                // Pad Verilog expressions
 
   static class Counter {int count = 0;}                                                                                 // A mutable counter
 
@@ -358,6 +358,7 @@ public class Program extends Test                                               
     Bit ()                       {ai();  del(false);     bits().push(this);}                                            // Constructors. Set newly constructed integers to invalid and minus one
     Bit (boolean I)              {ai();  ie(Ops.set, I); bits().push(this);}
     Bit (Bit     I)              {ai();  ie(Ops.set, I); bits().push(this);}
+
     boolean      b ()            {x(); return i;}
     void         x ()            {if (!v) variableNotSet("Bit", name);}                                                 // Check a value has been set for the boolean
 
@@ -449,7 +450,7 @@ public class Program extends Test                                               
       final Memory  M = bitMemory();
       final boolean x = immediate();
 
-      new I()                                                                                                           // Write value of bit into memory
+      if (false) new I()                                                                                                // Write value of bit into memory
        {final String f = "%8d writeBit %8d = %8d";
         void   a() {i = M.writeInt != 0; M.writeIntEnable = true; jTrace(f(f,  pc(), b.id,               b.i ? 1 : 0));}
         String v() {return M.writeIntEnable() + " <= 1; " +       vTrace(  f, "pc",  M.readWriteIndex(), M.writeInt());}
@@ -466,8 +467,8 @@ public class Program extends Test                                               
     boolean  targetBit ()          {return bitMemory.read0Int != 0;}
     boolean  sourceBit ()          {return bitMemory.read1Int != 0;}
 
-    void    targetBit (boolean V)  {ngv(); bitMemory.writeInt  = V ? 1 : 0;}                                            // Currently bits are stored wastefully as integers hoping that Yosys will remove unused paths
-    void    sourceBit (boolean V)  {ngv(); bitMemory.read1Int  = V ? 1 : 0;}
+    void    targetBit (boolean V)  {ngv(); i = V; bitMemory.writeInt  = V ? 1 : 0; bitMemory.writeIntEnable = true;}    // Currently bits are stored wastefully as integers hoping that Yosys will remove unused paths
+    void    sourceBit (boolean V)  {ngv();        bitMemory.read1Int  = V ? 1 : 0;}
 
     Bit ex (Ops Op)                                                                                                     // Execute a monadic boolean operation
      {executingCheck();
@@ -531,10 +532,12 @@ public class Program extends Test                                               
      }
 
     String vtrace (String Label, StringBuilder Value)                                                                   // Trace a Verilog boolean operation
-     {final String id = bitMemory().readWriteIndex();
-      return bitMemory().writeInt() + " <= "+Value+";"+" "+
+     {final Memory  M = bitMemory();
+      final String id = M.readWriteIndex();
+      return M.writeInt() + " <= "+Value+";"+" "+M.writeIntEnable()+" <= 1; "+
       vTrace(  "%8d bitOperation-"+Label+" %8d = %8d",  "pc",        id,  ""+Value);
      }
+
     void jtrace (String Label)                                                                                          // Trace a Java    boolean operation
      {jTrace(f("%8d bitOperation-"+Label+" %8d = %8d",  currentPc(), id, bitMemory().writeInt));
      }
