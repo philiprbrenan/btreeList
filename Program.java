@@ -754,14 +754,13 @@ public class Program extends Test                                               
       final boolean x = immediate();
 
       if (Start) new I()                                                                                                // Set write integer enable to start the write into integer memory cycle
-       {void   a() {if (!x && M.units[M.readWriteIndex] == M.writeInt) wastedWrites.inc(traceBack);
-                    if (!x)   M.units[M.readWriteIndex] =  M.writeInt;
-                           M.writeIntEnable        = true;  jTrace(f("%8d Start write int "+id, currentPc()));}
+       {void   a() {       M.writeIntEnable        = true;  jTrace(f("%8d Start write int "+id, currentPc()));}
         String v() {return M.writeIntEnable() + " <= 1; "+  vTrace(  "%8d Start write int "+id, "pc"        );}
        };
 
       if (Finish) new I()                                                                                               // Clear write integer enable to finish the write into integer memory cycle
-       {void   a() {       M.writeIntEnable        = false; jTrace(f("%8d Finish write int "+id, currentPc()));}
+       {void   a() {if (!x) M.units[M.readWriteIndex] =  M.writeInt;                                                    // Update java version of integer memory
+                           M.writeIntEnable        = false; jTrace(f("%8d Finish write int "+id, currentPc()));}
         String v() {return M.writeIntEnable() + " <= 0; "+  vTrace(  "%8d Finish write int "+id, "pc"        );}
        };
      }
@@ -772,7 +771,8 @@ public class Program extends Test                                               
     int      targetInt () {return fast ? i() : intMemory().read0Int;}                                                   // Load integer value either directly or indirectly from memory
     int      sourceInt () {return fast ? i() : intMemory().read1Int;}
     int     source2Int () {return fast ? i() : intMemory().read2Int;}
-    void     targetInt (int V) {ngv(); i(V); if (!fast) {final Memory M = intMemory(); M.writeInt = V; M.writeIntEnable = true;}}
+    void     targetInt (int V) {ngv(); i(V); if (!fast) {final Memory M = intMemory(); if (!immediate() && M.units[M.readWriteIndex] == M.writeInt) wastedWrites.inc(traceBack);
+                                                                                       M.writeInt = V; M.writeIntEnable = true;}}
     void     sourceInt (int V) {ngv(); i(V); if (!fast) {final Memory M = intMemory(); M.read1Int = V;                         }}
     void    source2Int (int V) {ngv(); i(V); if (!fast) {final Memory M = intMemory(); M.read2Int = V;                         }}
 
