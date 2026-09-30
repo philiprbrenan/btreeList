@@ -21,7 +21,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static String                     currentProject = "Write enable compression";                                  // Project currently being worked on
+ {final static String                     currentProject = "Bit write enable compression";                              // Project currently being worked on
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
@@ -154,13 +154,7 @@ public class Program extends Test                                               
   Stack<Memory> memories ()      {return memories;}
 
   int      currentPc ()          {return program().currentPc;}
-  boolean  targetBit ()          {return bitMemory.read0Int != 0;}
-  boolean  sourceBit ()          {return bitMemory.read1Int != 0;}
-
-  void    targetBit (boolean V)  {ngv(); bitMemory.writeInt  = V ? 1 : 0;}                                              // Currently bits are stored wastefully as integers hoping that Yosys will remove unused paths
-  void    sourceBit (boolean V)  {ngv(); bitMemory.read1Int  = V ? 1 : 0;}
-
-  void  ngv() {if (generatingVerilog) stop("Cannot call this function while generating Verilog");}                      // The variable is owned by the associated Verilog memory module and so cannot be written to by the main module although the main module can read the value
+  void           ngv ()          {if (generatingVerilog) stop("Cannot call this function while generating Verilog");}   // The variable is owned by the associated Verilog memory module and so cannot be written to by the main module although the main module can read the value
 
   Memory   intMemory ()          {return intMemory;}
   Memory   bitMemory ()          {return bitMemory;}
@@ -468,6 +462,12 @@ public class Program extends Test                                               
         String v() {return M.writeIntEnable() + " <= 0; "+  vTrace(  "%8d Disable write bit", "pc");}                   // Finishes write in Verilog
        };
      }
+
+    boolean  targetBit ()          {return bitMemory.read0Int != 0;}
+    boolean  sourceBit ()          {return bitMemory.read1Int != 0;}
+
+    void    targetBit (boolean V)  {ngv(); bitMemory.writeInt  = V ? 1 : 0;}                                            // Currently bits are stored wastefully as integers hoping that Yosys will remove unused paths
+    void    sourceBit (boolean V)  {ngv(); bitMemory.read1Int  = V ? 1 : 0;}
 
     Bit ex (Ops Op)                                                                                                     // Execute a monadic boolean operation
      {executingCheck();
@@ -958,8 +958,8 @@ public class Program extends Test                                               
      {x();
       B.v = true;
       switch(Op)
-       {case ez -> targetBit(sourceInt() == 0);
-        case nz -> targetBit(sourceInt() != 0);
+       {case ez -> B.targetBit(sourceInt() == 0);
+        case nz -> B.targetBit(sourceInt() != 0);
         default -> stop("Op not implemented:", Op);
        }
       B.jtrace(""+Op);
@@ -969,12 +969,12 @@ public class Program extends Test                                               
      {x();
       B.v = true;
       switch(Op)
-       {case eq -> targetBit(sourceInt() == I);
-        case ne -> targetBit(sourceInt() != I);
-        case le -> targetBit(sourceInt() <= I);
-        case lt -> targetBit(sourceInt() <  I);
-        case ge -> targetBit(sourceInt() >= I);
-        case gt -> targetBit(sourceInt() >  I);
+       {case eq -> B.targetBit(sourceInt() == I);
+        case ne -> B.targetBit(sourceInt() != I);
+        case le -> B.targetBit(sourceInt() <= I);
+        case lt -> B.targetBit(sourceInt() <  I);
+        case ge -> B.targetBit(sourceInt() >= I);
+        case gt -> B.targetBit(sourceInt() >  I);
         default -> stop("Op not implemented:", Op);
        }
       B.jtrace(""+Op);
