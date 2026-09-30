@@ -1184,7 +1184,7 @@ Number of Keys:    0
 
             k.S();                                                                                                      // Load index of item we want
             new I()
-             {void        a() {       intMemory().writeInt        =     random_32[Index.i()];}
+             {void        a() {k.targetInt(random_32[Index.i()]); k.setValid();}
               String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
               boolean trace() {return false;}
              };
@@ -1559,9 +1559,9 @@ Number of Keys:    0
          {void body(Int Index)
            {final Int k = new Int("Key", Index);
 
-            k.S();                                                                                                  // Load index of item we want
+            k.S();                                                                                                      // Load index of item we want
             new I()
-             {void        a() {       intMemory().writeInt        =     random_32[Index.i()];}
+             {void        a() {k.targetInt(random_32[Index.i()]); k.setValid();}
               String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
               boolean trace() {return false;}
              };
