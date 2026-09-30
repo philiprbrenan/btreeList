@@ -1812,7 +1812,7 @@ Zero:
 
             k.S();                                                                                                      // Load index of item we want using a non fast integer
             new I()                                                                                                     // Set the key to insert
-             {void        a() {       intMemory().writeInt      =     keys[Index.i()];}
+             {void        a() {k.targetInt(keys[Index.i()]); k.setValid();}
               String      v() {return intMemory().writeInt()+" <= "+a.dataRegisterName()+";";}                          // Translate index into key
               boolean trace() {return false;}
              };
@@ -1906,7 +1906,7 @@ keys     :   14  13  16  15  18  17  12  11
 
             k.S();                                                                                                      // Load index of item we want using a non  fast integer index
             new I()                                                                                                     // Set the key to insert
-             {void        a() {       intMemory().writeInt        =     keys[Index.i()];}
+             {void        a() {k.targetInt(keys[Index.i()]); k.setValid();}
               String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
               boolean trace() {return false;}
              };
@@ -2426,7 +2426,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert2();
+    test_insert();
    }
 // perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList"
   public static void main(String[] args)                                                                                // Test if called as a program
