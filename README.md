@@ -264,8 +264,7 @@ This project asks a more radical question:
 If that question interests you, contributions are welcome.
 
 
-
-# Experiments
+# Experimental Results
 
 Converting just **4** ``for loops`` in ``BitSet`` produces the following in ``Tree.deleteAscending```:
 
@@ -273,9 +272,13 @@ Converting just **4** ``for loops`` in ``BitSet`` produces the following in ``Tr
 68090 integers, 1366 fast integers, 24307 bits:
 ```
 
-while making ``place and route`` take an excessivley long time to run.
+In this configuration ``place and route`` takes an excessively long time to run and the metals layers occupy 2K*2K as
+can be seen in ``images/``.  The conclusion has to be that fast integers do not scale well from small designs to large
+ones.
 
+# Experiments
 
+Compress start of write cycle so that it overlaps with setting the value to be written.
 
 
 
