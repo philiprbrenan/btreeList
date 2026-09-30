@@ -21,7 +21,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static String                     currentProject = "Fast Ints - For";                                           // Project currently being worked on
+ {final static String                     currentProject = "Write enable compression";                                  // Project currently being worked on
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
@@ -33,7 +33,7 @@ public class Program extends Test                                               
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
-  final static boolean       suppressExecutionStatistics =!true;                                                        // Print wasted read and write operations and other execution statistics
+  final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
@@ -458,17 +458,15 @@ public class Program extends Test                                               
 
       new I()                                                                                                           // Write value of bit into memory
        {final String f = "%8d writeBit %8d = %8d";
-        final Memory B = bitMemory();
         void   a() {i = M.writeInt != 0; M.writeIntEnable = true; jTrace(f(f,  pc(), b.id,               b.i ? 1 : 0));}
-        String v() {return M.writeIntEnable() + " <= 1; " +       vTrace(  f, "pc",  B.readWriteIndex(), B.writeInt());}
+        String v() {return M.writeIntEnable() + " <= 1; " +       vTrace(  f, "pc",  M.readWriteIndex(), M.writeInt());}
        };
       new I()                                                                                                           // Lower  right enable - which could be merged with the next instruction
        {void   a()
          {//if (!x && M.units[M.readWriteIndex] == M.writeInt) wastedWrites.inc(traceBack);                             // Only two values so there are bound to be collisions
-          if (!x) M.units[M.readWriteIndex] = M.writeInt; M.writeIntEnable = false;
-                                                            jTrace(f("%8d Disable write", currentPc()));
-         }
-        String v() {return M.writeIntEnable() + " <= 0; "+  vTrace(  "%8d Disable write", "pc");}
+          if (!x) M.units[M.readWriteIndex] = M.writeInt;
+                           M.writeIntEnable = false;        jTrace(f("%8d Disable write bit", currentPc()));}           // Finished write in Java
+        String v() {return M.writeIntEnable() + " <= 0; "+  vTrace(  "%8d Disable write bit", "pc");}                   // Finishes write in Verilog
        };
      }
 
@@ -748,35 +746,43 @@ public class Program extends Test                                               
        };
      }
 
-    void W ()                                                                                                           // Write result back into an integer variable whose index has been loaded by T ()
+    void W (boolean Start, boolean Finish)                                                                              // Optionally start and optionally Finish a write cycle
      {if (constant) stop("Attempting to modify a constant integer");                                                    // Check that we are not about to update a constant
       if (fast) return;                                                                                                 // Bypass for integers held in registers
       final Int     w = this;                                                                                           // Set index locating the integer to be written to
       final Memory  M = intMemory();
       final boolean x = immediate();
 
-      new I()                                                                                                           // Load value into integer or memory
+      if (false) new I()                                                                                                // Load value into integer or memory
        {final String f = "%8d writeInt %8d = %8d";
         void   a() {i(M.writeInt); M.writeIntEnable = true; nw++;  jTrace(f(f,  currentPc(), M.readWriteIndex, lui(M.writeInt)));}
         String v() {return         M.writeIntEnable() + " <= 1; "+ vTrace(  f, "pc",         M.readWriteIndex(),   M.writeInt());}
        };
 
-      new I()                                                                                                           // Lower  right enable - which could be merged with the next instruction
+      if (Start) new I()                                                                                                // Set write integer enable to start the write into integer memory cycle
        {void   a() {if (!x && M.units[M.readWriteIndex] == M.writeInt) wastedWrites.inc(traceBack);
-                    if (!x)   M.units[M.readWriteIndex] =  M.writeInt; M.writeIntEnable = false;
-                                                           jTrace(f("%8d Disable write", currentPc()));}
-        String v() {return M.writeIntEnable() + " <= 0; "+ vTrace(  "%8d Disable write", "pc");}
+                    if (!x)   M.units[M.readWriteIndex] =  M.writeInt;
+                           M.writeIntEnable        = true;  jTrace(f("%8d Start write int "+id, currentPc()));}
+        String v() {return M.writeIntEnable() + " <= 1; "+  vTrace(  "%8d Start write int "+id, "pc"        );}
+       };
+
+      if (Finish) new I()                                                                                               // Clear write integer enable to finish the write into integer memory cycle
+       {void   a() {if (!x && M.units[M.readWriteIndex] == M.writeInt) wastedWrites.inc(traceBack);
+                    if (!x)   M.units[M.readWriteIndex] =  M.writeInt;
+                           M.writeIntEnable        = false; jTrace(f("%8d Finish write int "+id, currentPc()));}
+        String v() {return M.writeIntEnable() + " <= 0; "+  vTrace(  "%8d Finish write int "+id, "pc"        );}
        };
      }
 
-    void TW () {T(false); W();}                                                                                         // Load the target index of an integer value and write its value assuming that the value to be written has already been loaded into the write integer register
+    void  W () {W(false, true);}                                                                                        // Finish a write to integer memory cycle
+    void TW () {T(false); W(true, true);}                                                                               // Load the target index of an integer value and write its value assuming that the value to be written has already been loaded into the write integer register
 
     int      targetInt () {return fast ? i() : intMemory().read0Int;}                                                   // Load integer value either directly or indirectly from memory
     int      sourceInt () {return fast ? i() : intMemory().read1Int;}
     int     source2Int () {return fast ? i() : intMemory().read2Int;}
-    void     targetInt (int V) {ngv(); if (fast) i(V); else intMemory().writeInt  = V;}
-    void     sourceInt (int V) {ngv(); if (fast) i(V); else intMemory().read1Int  = V;}
-    void    source2Int (int V) {ngv(); if (fast) i(V); else intMemory().read2Int  = V;}
+    void     targetInt (int V) {ngv(); i(V); if (!fast) {final Memory M = intMemory(); M.writeInt = V; M.writeIntEnable = true;}}
+    void     sourceInt (int V) {ngv(); i(V); if (!fast) {final Memory M = intMemory(); M.read1Int = V;                         }}
+    void    source2Int (int V) {ngv(); i(V); if (!fast) {final Memory M = intMemory(); M.read2Int = V;                         }}
 
     Int ex (Ops Op)                                                                                                     // Execute a monadic integer operation
      {executingCheck();
@@ -875,10 +881,14 @@ public class Program extends Test                                               
     final String atf = "%8d assign writeInt = %8d";                                                                     // Trace format for an assign statement
 
     String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
-     {final String t = onv();
-      final String s = pV(Value+";");
-      final String v = vTrace(  atf, "pc",         Value);
-      return t + " <= " + s + v;
+     {final String        t = onv();
+      final String        s = pV(Value+";");
+      final String        v = vTrace(  atf, "pc",         Value);
+      final StringBuilder a = new StringBuilder();
+      a.append(t + " <= " + s);                                                                                         // Update target
+      if (!fast) a.append(" "+intMemory().writeIntEnable() + " <= 1; /*WWWW*/");                                        // Start write if necessary
+      a.append(v);                                                                                                      // Trace
+      return ""+a;
      }
     void jtrace ()    {jTrace(f(atf,  currentPc(), lui(fast ? i() : intMemory().writeInt)));}                           // Trace the integer operation in Java
 
@@ -1689,7 +1699,9 @@ endmodule
         executing = i;                                                                                                  // Currently executing instruction
         jtrace    = 0;                                                                                                  // Number of java trace records produced
         if (!suppressInstructionCoverage) i.updateInstructionCoverage();                                                // Update instruction coverage by location in Java code where instruction was generated
+
         i.a();                                                                                                          // Execute the instruction
+
         i.executed++;                                                                                                   // Count the executions of the instruction
         if (i.trace())                                                                                                  // Check tracing
          {if (jtrace != i.traces())                                                                                     // Wrong number of trace calls
@@ -2808,7 +2820,7 @@ endmodule
      {void code()
        {final Int a = new Int("a", 1);
         final Int b = new Int("b", a.Add(2));
-        b.Add(1).name = "c";
+        b.Add(1).ok(4).name = "c";
         a.ok(1);
         b.ok(3);
         dumpProgramState("AAAA");
@@ -3399,10 +3411,11 @@ writeIntEnable =        0
         dumpProgramState("AAAA");
         final Int i = new Int("i").set(2);                                                                              // Input
         final Int o = new Int("o");                                                                                     // Output
+        final Memory  M = intMemory();
         i.S();                                                                                                          // Load the index of the array element required - the answer shows up in arrayData_array
         new I()
          {void        a() {o.targetInt(array[i.i()]); o.setValid();}                                                    // Load from array
-          String      v() {return intMemory().writeInt()+" <= "+A.dataRegisterName()+";";}                              // Load from array data register
+          String      v() {return M.writeInt()+" <= "+A.dataRegisterName()+";";}                                        // Load from array data register and start write cycle
           boolean trace() {return false;}
          };
         o.TW();                                                                                                         // Address output variable and write array element into it
@@ -3763,7 +3776,7 @@ writeIntEnable =        0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_fastInt();
+    //test_verilogArray();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
