@@ -753,12 +753,6 @@ public class Program extends Test                                               
       final Memory  M = intMemory();
       final boolean x = immediate();
 
-      if (false) new I()                                                                                                // Load value into integer or memory
-       {final String f = "%8d writeInt %8d = %8d";
-        void   a() {i(M.writeInt); M.writeIntEnable = true; nw++;  jTrace(f(f,  currentPc(), M.readWriteIndex, lui(M.writeInt)));}
-        String v() {return         M.writeIntEnable() + " <= 1; "+ vTrace(  f, "pc",         M.readWriteIndex(),   M.writeInt());}
-       };
-
       if (Start) new I()                                                                                                // Set write integer enable to start the write into integer memory cycle
        {void   a() {if (!x && M.units[M.readWriteIndex] == M.writeInt) wastedWrites.inc(traceBack);
                     if (!x)   M.units[M.readWriteIndex] =  M.writeInt;
@@ -767,9 +761,7 @@ public class Program extends Test                                               
        };
 
       if (Finish) new I()                                                                                               // Clear write integer enable to finish the write into integer memory cycle
-       {void   a() {if (!x && M.units[M.readWriteIndex] == M.writeInt) wastedWrites.inc(traceBack);
-                    if (!x)   M.units[M.readWriteIndex] =  M.writeInt;
-                           M.writeIntEnable        = false; jTrace(f("%8d Finish write int "+id, currentPc()));}
+       {void   a() {       M.writeIntEnable        = false; jTrace(f("%8d Finish write int "+id, currentPc()));}
         String v() {return M.writeIntEnable() + " <= 0; "+  vTrace(  "%8d Finish write int "+id, "pc"        );}
        };
      }
