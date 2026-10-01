@@ -947,7 +947,7 @@ class Tree extends Program                                                      
     t.dumpProgramState("AAAA");
 
     //stop(t.memoriesMd5Sum());
-    t.ok(()->t.memoriesMd5Sum(), "{f371c5bdbcbff6af8e6531681045dd0e, b4b147bc522828731f1a016bfa72c073}");
+    t.ok(()->t.memoriesMd5Sum(), "{2a310d9fc4de8c7b3d1bc99f999d80b6, b4b147bc522828731f1a016bfa72c073}");
 
     if (Ex) ok(t.dumpTree(), """
 Tree memory dump
@@ -978,7 +978,7 @@ Branch at:   2 size:   3, count:   2, top:   0
     t.dumpProgramState("BBBB");
 
     //stop(t.memoriesMd5Sum());
-    t.ok(()->t.memoriesMd5Sum(), "{11b051f5015cfffe5e1b8dac5472013e, b4b147bc522828731f1a016bfa72c073}");
+    t.ok(()->t.memoriesMd5Sum(), "{26ae8578277f81ec5bda05406c80b75a, b4b147bc522828731f1a016bfa72c073}");
     if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
@@ -1003,7 +1003,7 @@ Branch at:   2 size:   3, count:   2, top:   0
     t.dumpProgramState("CCCC");
 
     //stop(t.memoriesMd5Sum());
-    t.ok(()->t.memoriesMd5Sum(), "{623d8ee8624f6871fc426c828d6cefb6, b4b147bc522828731f1a016bfa72c073}");
+    t.ok(()->t.memoriesMd5Sum(), "{9ea4458c5418aba2fc5b1450883fde7e, b4b147bc522828731f1a016bfa72c073}");
     if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
@@ -1025,7 +1025,7 @@ Branch at:   2 size:   3, count:   2, top:   0
     t.dumpProgramState("DDDD");
 
     //stop(t.memoriesMd5Sum());
-    t.ok(()->t.memoriesMd5Sum(), "{ff5da33d1ca92818dc85b214aabca86f, b4b147bc522828731f1a016bfa72c073}");
+    t.ok(()->t.memoriesMd5Sum(), "{2c1d9e1a547c8e3a45d6625b43b882c5, b4b147bc522828731f1a016bfa72c073}");
     if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
@@ -1105,7 +1105,7 @@ Number of Keys:    0
          };
 
         //stop(memoriesMd5Sum(), dump(), print());
-        ok(()->memoriesMd5Sum(), "{c1b89dca198d6405658b8573f8ccc391, c77d99f7299b1247cf51cdcb396e65df}");
+        ok(()->memoriesMd5Sum(), "{20b8fb0ff251f5868ca9105a14bbff0a, c77d99f7299b1247cf51cdcb396e65df}");
 
         if (Ex) ok(dump(), """
                                                          0016                                                                    |
@@ -1148,7 +1148,7 @@ Number of Keys:    0
          };
 
         //stop(memoriesMd5Sum(), dump(), print());
-        ok(()->memoriesMd5Sum(), "{220e1d7ea10d7a38c27d020bd18ba875, 161a1b8081b22d264fcfb3777fe6c142}");
+        ok(()->memoriesMd5Sum(), "{518df26de45e9fccd697b6e727c00f54, 161a1b8081b22d264fcfb3777fe6c142}");
 
         if (Ex) ok(dump(), """
                                                           0016                                                                    |
@@ -1203,7 +1203,7 @@ Number of Keys:    0
          };
 
         //stop(memoriesMd5Sum(), dump(), print());
-        ok(()->memoriesMd5Sum(), "{4e361ad72f7d7bd06ccdf2ada5a8901c, 161a1b8081b22d264fcfb3777fe6c142}");
+        ok(()->memoriesMd5Sum(), "{ac798ae2d477e820a9641f9e7b1d45cc, 161a1b8081b22d264fcfb3777fe6c142}");
 
         if (Ex) ok(dump(), """
                                                          0015                                                           0026                          |
@@ -1733,7 +1733,7 @@ Number of Keys:    0
            }
          };
         //stop(memoriesMd5Sum());
-        ok(()->memoriesMd5Sum(), "{65dd292088a9fd3ef5ef0fe905a1a1a6, b4b147bc522828731f1a016bfa72c073}");
+        ok(()->memoriesMd5Sum(), "{0e1ee28654479e2608a482c294f15e12, b4b147bc522828731f1a016bfa72c073}");
         if (Ex) ok(dumpTree(), """
 Tree memory dump
 Leaf   size   :   41
@@ -1805,8 +1805,7 @@ Leaf           size:   4, count:   2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_deleteRandom32(true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
