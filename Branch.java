@@ -28,11 +28,11 @@ class Branch extends Program implements Program.Locatable                       
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
     Slots.Build               slots;                                                                                    // Bytes needed for slots
 
-    Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
-    Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory   (Memory.Ref Ref)     {unitMemoryRef = Ref;       return this;}
-    Build parent   (Program Parent    ) {parent        = Parent;    return this;}
-    Build at       (Int     At        ) {at            = At;        return this;}
+    Build immediate (boolean Immediate) {immediate     = Immediate; return this;}
+    Build   maxSize (int     MaxSize  ) {maxSize       = MaxSize;   return this;}
+    Build    memory (Memory.Ref Ref   ) {unitMemoryRef = Ref;       return this;}
+    Build    parent (Program Parent   ) {parent        = Parent;    return this;}
+    Build        at (Int     At       ) {at            = At;        return this;}
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -53,8 +53,8 @@ class Branch extends Program implements Program.Locatable                       
       final int size     = posTop   + 1;
      }
 
-    int size()      {return memoryPositions.size;}                                                                      // Bytes needed for the slots
-    int dataUnits() {return maxSize;}                                                                                   // Bytes needed for the data
+    int      size () {return memoryPositions.size;}                                                                     // Bytes needed for the slots
+    int dataUnits () {return maxSize;}                                                                                  // Bytes needed for the data
    }
 
   Branch (Build Build)                                                                                                  // Create a description of a branch
@@ -94,7 +94,7 @@ class Branch extends Program implements Program.Locatable                       
   Int          top ()                     {return refTop.getInt();}                                                     // Get value of top
   void         top (Int Top)              {refTop.putInt(Top);}                                                         // Set value of top
 
-  void branchCode  ()                     {}                                                                            // Override this method to provide code for testing the branch
+  void  branchCode ()                     {}                                                                            // Override this method to provide code for testing the branch
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a branch
 
@@ -117,9 +117,9 @@ class Branch extends Program implements Program.Locatable                       
    {final Int  key  = new Int();                                                                                        // The key we are stepping down with
     final Int  node = new Int();                                                                                        // The next node down
     final Bint slot = new Bint();                                                                                       // The slot used to step down.  If not set then stepped through top
-    StepDown(Int Key) {key.set(Key);}
+    StepDown (Int Key) {key.set(Key);}
 
-    public String toString()
+    public String toString ()
      {final StringBuilder s = new StringBuilder();
       s.append("StepDown key: "+key+" node: "+node+" slot: "+slot+"\n"+Branch.this);
       return ""+s;
@@ -387,7 +387,7 @@ class Branch extends Program implements Program.Locatable                       
            }
          }
        }
-      boolean trace() {return false;}
+      boolean trace () {return false;}
      };
     subFinish();
     return s;
