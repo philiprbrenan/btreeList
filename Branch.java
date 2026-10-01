@@ -15,6 +15,7 @@ class Branch extends Program implements Program.Locatable                       
   final Memory.Ref refSlots;                                                                                            // The slot associated with each key being used
   final Memory.Ref  refData;                                                                                            // Bitset showing which slots are being mapped to keys
   final Memory.Ref   refTop;                                                                                            // Target for keys greater than all the keys in the branch bitset
+  final Memory.Ref refLevel;                                                                                            // Level of this branch.  The first layer of branched above the leaves has level 1, the next layer of branches level 2 and so on
   final Build         build;                                                                                            // Build used to construct this branch
 
 //D1 Construction                                                                                                       // Construct and layout a branch
@@ -29,10 +30,10 @@ class Branch extends Program implements Program.Locatable                       
     Slots.Build               slots;                                                                                    // Bytes needed for slots
 
     Build immediate (boolean Immediate) {immediate     = Immediate; return this;}
-    Build   maxSize (int     MaxSize  ) {maxSize       = MaxSize;   return this;}
-    Build    memory (Memory.Ref Ref   ) {unitMemoryRef = Ref;       return this;}
-    Build    parent (Program Parent   ) {parent        = Parent;    return this;}
-    Build        at (Int     At       ) {at            = At;        return this;}
+    Build   maxSize (int       MaxSize) {maxSize       = MaxSize;   return this;}
+    Build    memory (Memory.Ref    Ref) {unitMemoryRef = Ref;       return this;}
+    Build    parent (Program    Parent) {parent        = Parent;    return this;}
+    Build        at (Int            At) {at            = At;        return this;}
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -47,10 +48,11 @@ class Branch extends Program implements Program.Locatable                       
 
     class MemoryPositions                                                                                               // Layout of memory
      {final int posMark  = 0;                                                                                           // A tree consists of nodes: leaves and branches. This field tells us which one we have
-      final int posSlots = posMark  + 1;
-      final int posData  = posSlots + slots.size();
-      final int posTop   = posData  + dataUnits();
-      final int size     = posTop   + 1;
+      final int posSlots = posMark  + 1;                                                                                // Slots holding the keys for this branch
+      final int posData  = posSlots + slots.size();                                                                     // Links to children - branches or leaves
+      final int posTop   = posData  + dataUnits();                                                                      // Top link - always guaranteed to be present
+      final int posLevel = posTop   + 1;                                                                                // The level of the branch. Leaves have level 0. The first layer of branches level 1. The next 2 etc.
+      final int size     = posLevel + 1;                                                                                // Size of memory
      }
 
     int      size () {return memoryPositions.size;}                                                                     // Bytes needed for the slots
@@ -68,6 +70,7 @@ class Branch extends Program implements Program.Locatable                       
     refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a branch or a leaf
     refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refTop        = unitMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
+    refLevel      = unitMemoryRef.step(m.posLevel);                                                                     // Level of this branch in the tree.  The first layer of branches above the leaves has level one, the next layer level two and so on, all the way up to the root
     refData       = unitMemoryRef.step(m.posData);                                                                      // Slots in use
     if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).memory(refSlots).parent(program()));              // Slots for branch
@@ -91,8 +94,10 @@ class Branch extends Program implements Program.Locatable                       
   int  bytesNeeded ()                     {return build.size();}                                                        // Number of bytes needed to contain a branch
   void       clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                         // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
   void        copy (Branch Source)        {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                    // Copy one branch into another branch
-  Int          top ()                     {return refTop.getInt();}                                                     // Get value of top
-  void         top (Int Top)              {refTop.putInt(Top);}                                                         // Set value of top
+  Int          top ()                     {return refTop  .getInt();}                                                   // Get value of top
+  Int        level ()                     {return refLevel.getInt();}                                                   // Get value of level
+  void         top (Int Top)              {refTop  .putInt(Top);}                                                       // Set value of top
+  void       level (Int Level)            {refLevel.putInt(Level);}                                                     // Set value of level
 
   void  branchCode ()                     {}                                                                            // Override this method to provide code for testing the branch
 
@@ -234,24 +239,27 @@ class Branch extends Program implements Program.Locatable                       
   Int splitRight (Branch Right)                                                                                         // Split a full branch rightwards into a supplied branch and return the splitting key
    {subStart("Branch.splitRight");
     if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
-    final Branch left = this;
-    Right.slots.initializeMemory();                                                                                     // Clear the target
-    Right.refData.copy(left.refData, left.build.dataUnits());                                                           // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
-    final Int sk = left.slots.splitRightOdd(Right.slots);                                                               // Split the slots  and get the index of the splitting key
-    Right.top(left.top());                                                                                              // Right top becomes left top
-    left .top(left.data(sk));                                                                                           // Left top is data from splitting key
-    return left.slots.getKeyValue(sk);                                                                                  // Splitting key
+    final Branch L = this, R = Right;
+    R.slots.initializeMemory();                                                                                         // Clear the target
+    R.refData.copy(L.refData, L.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
+    final Int sk = L.slots.splitRightOdd(R.slots);                                                                      // Split the slots  and get the index of the splitting key
+    R.top(L.top());                                                                                                     // Right top becomes left top
+    L .top(L.data(sk));                                                                                                 // Left top is data from splitting key
+    R.refLevel.copy(L.refLevel, 1);                                                                                     // Copy the level of the left branch into the level of the right branch
+    subFinish();
+    return L.slots.getKeyValue(sk);                                                                                     // Splitting key
    }
 
   Int splitLeft (Branch Left)                                                                                           // Split a full branch leftwards into a supplied branch and return the splitting key
    {subStart("Branch.mergeRight");
     if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
-    final Branch right = this;
-    Left.slots.initializeMemory();                                                                                      // Clear target
-    Left.refData.copy(right.refData, right.build.dataUnits());                                                          // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
-    final Int sk = right.slots.splitLeftOdd(Left.slots);                                                                // Split the slots  and get the index of the splitting key
-    Left .top(right.data(sk));                                                                                          // Left top is data from splitting key
-    final Int r = right.slots.getKeyValue(sk);                                                                          // Splitting key
+    final Branch L = Left, R = this;
+    L.slots.initializeMemory();                                                                                         // Clear target
+    L.refData.copy(R.refData, R.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
+    final Int sk = R.slots.splitLeftOdd(L.slots);                                                                       // Split the slots  and get the index of the splitting key
+    L .top(R.data(sk));                                                                                                 // Left top is data from splitting key
+    final Int r = R.slots.getKeyValue(sk);                                                                              // Splitting key
+    L.refLevel.copy(R.refLevel, 1);                                                                                     // Copy the level of the right branch into the level of the left branch
     subFinish();
     return r;                                                                                                           // Splitting key
    }
@@ -271,9 +279,9 @@ class Branch extends Program implements Program.Locatable                       
   Bit mergeRight (Branch Right, Int Sk)                                                                                 // Merge the specified branch into the right of this branch separating the two by the specified splitting key
    {subStart("Branch.mergeRight");
     final Branch left = this;
-    final Int    lc   = left .count();
-    final Int    rc   = Right.count();
-    final Bit   r    = new Bit().clear();
+    final Int      lc = left .count();
+    final Int      rc = Right.count();
+    final Bit      r  = new Bit().clear();
 
     new If (lc.Add(rc).lt(maxSize()))
      {void Then()
@@ -369,13 +377,14 @@ class Branch extends Program implements Program.Locatable                       
       void Else() {new I() {void a() {s.append(" ".repeat(8));           } boolean trace() {return false;}};}
      };
 
-    final Int c = count(), t = top();
+    final Int c = count(), t = top(), v = level();
 
     new I()
      {void a()
        {s.append(f(" size: %3d",  maxSize()));
         s.append(f(", count: %3d", c.i()));
         s.append(f(", top: %3d",   t.i()));
+        s.append(f(", level: %3d", v.i()));
         s.append("\n Ref   Key  Data\n");
 
         for (int i : range(slots.numberOfSlotsToKeys()))
@@ -408,9 +417,11 @@ class Branch extends Program implements Program.Locatable                       
     l.insert(l.new Int(4), l.new Int(44)); l.count().ok(2);
     l.insert(l.new Int(3), l.new Int(33)); l.count().ok(3);
     l.insert(l.new Int(1), l.new Int(11)); l.count().ok(4);
+    l.level (l.new Int(1));
+    l.level().ok(1);
     //new I() {void a() {testStop("AAAA", l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   4, top:   0
+Branch         size:   7, count:   4, top:   0, level:   1
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -449,7 +460,7 @@ Branch         size:   7, count:   4, top:   0
     l.delete(l.new Int(2));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   3, top:   0
+Branch         size:   7, count:   3, top:   0, level:   0
  Ref   Key  Data
    3     1    11
    2     3    33
@@ -458,7 +469,7 @@ Branch         size:   7, count:   3, top:   0
     l.compactLeft();
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   3, top:   0
+Branch         size:   7, count:   3, top:   0, level:   0
  Ref   Key  Data
    0     1    11
    2     3    33
@@ -483,7 +494,7 @@ Branch         size:   7, count:   3, top:   0
     l.insert(l.new Int(1), l.new Int(11));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   4, top:   0
+Branch         size:   7, count:   4, top:   0, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -493,7 +504,7 @@ Branch         size:   7, count:   4, top:   0
     l.compactRight();
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   4, top:   0
+Branch         size:   7, count:   4, top:   0, level:   0
  Ref   Key  Data
    3     1    11
    6     2    22
@@ -523,7 +534,7 @@ Branch         size:   7, count:   4, top:   0
     l.top(l.new Int(99));
     //testStop(l.print());
     l.check(l.print(), """
-Branch         size:   7, count:   7, top:  99
+Branch         size:   7, count:   7, top:  99, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -538,7 +549,7 @@ Branch         size:   7, count:   7, top:  99
     l.splitRight(r).ok(4);
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   3, top:  44
+Branch         size:   7, count:   3, top:  44, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -546,7 +557,7 @@ Branch         size:   7, count:   3, top:  44
 """);
     //l.new I() {void a() {testStop(r);}};
     l.check(r.print(), """
-Branch         size:   7, count:   3, top:  99
+Branch         size:   7, count:   3, top:  99, level:   0
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -575,7 +586,7 @@ Branch         size:   7, count:   3, top:  99
     r.top(r.new Int(99));
     //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Branch         size:   7, count:   7, top:  99
+Branch         size:   7, count:   7, top:  99, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -589,7 +600,7 @@ Branch         size:   7, count:   7, top:  99
     r.splitLeft(l).ok(4);
     //r.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   3, top:  44
+Branch         size:   7, count:   3, top:  44, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -597,7 +608,7 @@ Branch         size:   7, count:   3, top:  44
 """);
     //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Branch         size:   7, count:   3, top:  99
+Branch         size:   7, count:   3, top:  99, level:   0
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -626,7 +637,7 @@ Branch         size:   7, count:   3, top:  99
     l.top(l.new Int(99));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   7, top:  99
+Branch         size:   7, count:   7, top:  99, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -640,7 +651,7 @@ Branch         size:   7, count:   7, top:  99
     l.splitRight(r).ok(4);
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   3, top:  44
+Branch         size:   7, count:   3, top:  44, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -648,7 +659,7 @@ Branch         size:   7, count:   3, top:  44
 """);
     //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Branch         size:   7, count:   3, top:  99
+Branch         size:   7, count:   3, top:  99, level:   0
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -657,7 +668,7 @@ Branch         size:   7, count:   3, top:  99
     l.mergeRight(r, r.new Int(4));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   7, top:  99
+Branch         size:   7, count:   7, top:  99, level:   0
  Ref   Key  Data
    1     1    11
    0     2    22
@@ -690,7 +701,7 @@ Branch         size:   7, count:   7, top:  99
     r.top(r.new Int(99));
     // r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Branch         size:   7, count:   7, top:  99
+Branch         size:   7, count:   7, top:  99, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -704,7 +715,7 @@ Branch         size:   7, count:   7, top:  99
     r.splitLeft(l);
     //r.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   3, top:  44
+Branch         size:   7, count:   3, top:  44, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -712,7 +723,7 @@ Branch         size:   7, count:   3, top:  44
 """);
     //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Branch         size:   7, count:   3, top:  99
+Branch         size:   7, count:   3, top:  99, level:   0
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -721,7 +732,7 @@ Branch         size:   7, count:   3, top:  99
     r.mergeLeft(l, r.new Int(4));
     //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Branch         size:   7, count:   7, top:  99
+Branch         size:   7, count:   7, top:  99, level:   0
  Ref   Key  Data
    1     1    11
    0     2    22
@@ -753,7 +764,7 @@ Branch         size:   7, count:   7, top:  99
     l.insert(l.new Int(5), l.new Int(55));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Branch         size:   7, count:   7, top:   0
+Branch         size:   7, count:   7, top:   0, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -781,7 +792,7 @@ Branch         size:   7, count:   7, top:   0
     l.delete(l.new Int(7)).ok(77); l.find(l.new Int(7)).notValid().ok(true); l.count().ok(1);
     l.delete(l.new Int(5)).ok(55); l.find(l.new Int(5)).notValid().ok(true); l.count().ok(0);
     l.check(l.print(), """
-Branch         size:   7, count:   0, top:   0
+Branch         size:   7, count:   0, top:   0, level:   0
  Ref   Key  Data
 """);
 
@@ -808,7 +819,7 @@ Branch         size:   7, count:   0, top:   0
         insert(new Int(5), new Int(55));
         top(new Int(88));
         check(print(), """
-Branch         size:   7, count:   7, top:  88
+Branch         size:   7, count:   7, top:  88, level:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -899,7 +910,7 @@ Branch         size:   7, count:   7, top:  88
        {//initializeMemory();
         insertEmpty(new Int(4), new Int(44));
         check(print(), """
-Branch         size:   7, count:   1, top:   0
+Branch         size:   7, count:   1, top:   0, level:   0
  Ref   Key  Data
    0     4    44
 """);
@@ -915,7 +926,7 @@ keys     :    4   0   0   0   0   0   0
 
         insert(new Int(2), new Int(22), new Bint().set(new Int(7)));
         check(print(), """
-Branch         size:   7, count:   2, top:   0
+Branch         size:   7, count:   2, top:   0, level:   0
  Ref   Key  Data
    1     2    22
    0     4    44
@@ -932,7 +943,7 @@ keys     :    4   2   0   0   0   0   0
 
         insert(new Int(6), new Int(66), new Bint());
         check(print(), """
-Branch         size:   7, count:   3, top:   0
+Branch         size:   7, count:   3, top:   0, level:   0
  Ref   Key  Data
    1     2    22
    0     4    44
