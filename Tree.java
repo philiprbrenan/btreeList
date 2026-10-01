@@ -16,6 +16,7 @@ class Tree extends Program                                                      
   final Memory.Ref       refNodes;                                                                                      // The nodes associated with this tree
   final Memory.Ref   refFreeChain;                                                                                      // The free chain for this tree
   final Memory.Ref       refCount;                                                                                      // The number of keys in this tree
+  final Memory.Ref      refHeight;                                                                                      // The height of the tree
   final Build               build;                                                                                      // Memory containing the tree base followed by the leaves and branches of the tree
   final int   linesToPrintABranch = 4;                                                                                  // The number of lines required to print a branch
   final Memory          mergePath;                                                                                      // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
@@ -63,9 +64,10 @@ class Tree extends Program                                                      
 
     class MemoryPositions                                                                                               // Layout of memory
      {final int posNodes     = 0;                                                                                       // A tree consists of nodes: leaves and branches. This field tells us which one we have
-      final int posFreeChain = posNodes     + unitsNeededForNodes;
-      final int posCount     = posFreeChain + unitsNeededForFree;
-      final int size         = posCount     + 1;
+      final int posFreeChain = posNodes     + unitsNeededForNodes;                                                      // Free chain
+      final int posCount     = posFreeChain + unitsNeededForFree;                                                       // Number of key/value pairs
+      final int posHeight    = posCount     + 1;                                                                        // Height of tree
+      final int size         = posHeight    + 1;                                                                        // Size of memory holding tree
      }
 
     int size () {return memoryPositions.size;}                                                                          // Bytes needed for the slots
@@ -97,12 +99,14 @@ class Tree extends Program                                                      
     refNodes       = unitMemoryRef.step(build.memoryPositions.posNodes);                                                // Memory for nodes
     refFreeChain   = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                            // Memory for free chain
     refCount       = unitMemoryRef.step(build.memoryPositions.posCount);                                                // Memory for key count
+    refHeight      = unitMemoryRef.step(build.memoryPositions.posHeight);                                               // Memory for height of tree
 
     mergePath      = new Memory(mnl(), "tree", false);                                                                  // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
     leaf();                                                                                                             // Initialize the root as a leaf
+    refHeight.putInt(new Int(1));                                                                                       // Current height of the tree
     treeCode();
    }
 
@@ -147,6 +151,7 @@ class Tree extends Program                                                      
   Int         root () {return new Int(0);}                                                                              // The root is always at node zero
   Bit   isRootLeaf () {return checkType(root(), BranchOrLeaf.leaf);}                                                    // Whether the root is a leaf
   Bit isRootBranch () {return checkType(root(), BranchOrLeaf.branch);}                                                  // Whether the root is a branch
+  Int       height () {final Int h = refHeight.getInt(); h.name = "Height"; return h;}                                  // Height of tree
 
   Bit checkType (Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
    {final Int a = nodeAddress(Node);
@@ -422,7 +427,7 @@ class Tree extends Program                                                      
           final Int            I3 = new Int(3).constant();                                                              // Non fast integer constants
           new ForCount(4)                                                                                               // Locate the left sibling
            {void body(Int Index)
-             {new If (Index.eq(I0))                                                                                      // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
+             {new If (Index.eq(I0))                                                                                     // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
                {void Then()                                  {L.copy(mergeLeftLeft(  p, d.slot));}
                 void Else()
                  {new If (Index.eq(I1))
@@ -461,6 +466,7 @@ class Tree extends Program                                                      
               free(b);                                                                                                  // Free top as no longer needed
              }
            };
+          refHeight.putInt(refHeight.getInt().dec());                                                                   // Decrease the height of the tree
          }
        };
       subFinish();
@@ -483,12 +489,12 @@ class Tree extends Program                                                      
      }
    }
 
-  Path path(Int Key)                                                                                                    // The path from the root to the leaf that should contain the specified key
+  Path path (Int Key)                                                                                                    // The path from the root to the leaf that should contain the specified key
    {final Path f = new Path(Key);                                                                                       // Find results
     return f;
    }
 
-  public void insert(Int Key, Int Data)                                                                                 // Insert a key, data pair into the tree
+  public void insert (Int Key, Int Data)                                                                                 // Insert a key, data pair into the tree
    {subStart("Tree.insert");
 
     new If (isRootLeaf())
@@ -510,6 +516,7 @@ class Tree extends Program                                                      
                 b.insert(sk, l.getLocation().i());                                                                      // Insert the left leaf
                 b.top(r.getLocation().i());                                                                             // The right leaf becomes top of the root branch
                 new If (Key.le(sk)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};            // Insert left or right leaf depending on key versus splitting key
+                refHeight.putInt(refHeight.getInt().inc());                                                             // Increase height of tree
                }
               void Else()                                                                                               // Root is a non full leaf that does not contain the key
                {R.insert(Key, Data);                                                                                    // Insert in non full leaf that does not contain the key
@@ -610,10 +617,10 @@ class Tree extends Program                                                      
 //D1 Split and Merge                                                                                                    // Split and merge nodes in the tree
 //D2 Split                                                                                                              // Split nodes in the tree to make the tree wider
 
-  private Int splitRootBranch()                                                                                         // Split the root assuming that it is a branch
+  private Int splitRootBranch ()                                                                                        // Split the root assuming that it is a branch
    {subStart("Tree.splitRootBranch");
     final Branch R = branch(root());                                                                                    // The root
-    if (immediate() && isRootLeaf()   .b()) stop("Cannot split the root because it is not a branch");                   // Check that it is a branch
+    if (immediate() && isRootLeaf()   .b()) stop("Cannot split the root as a branch because it is not a branch");       // Check that it is a branch
     if (immediate() && R.full().Flip().b()) stop("Cannot split the root because it is not full");                       // Check that the root is full
     final Branch l = branch();                                                                                          // New left branch
     final Branch r = branch();                                                                                          // New right branch
@@ -623,6 +630,7 @@ class Tree extends Program                                                      
     makeBranch(R.getLocation().i());                                                                                    // Mark the root as a branch
     R.insertEmpty(sk, l.getLocation().i());                                                                             // Insert the left branch below the splitting key
     R.top(r.getLocation().i());                                                                                         // Insert right as top of root
+    refHeight.putInt(refHeight.getInt().inc());                                                                         // Increase height of tree
     subFinish();
     return sk;                                                                                                          // Return the splitting key
    }
@@ -1049,12 +1057,13 @@ Number of Keys:    0
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
             dumpProgramState("AAAA");
+            final Int h = height();
+            if (immediate()) say("AAAA", h);
            }
          };
 
-
         //stop(memoriesMd5Sum());
-        ok(()->memoriesMd5Sum(), "{995d7c9b4b37d2a72d6be9d7eb521a65, c77d99f7299b1247cf51cdcb396e65df}");
+        ok(()->memoriesMd5Sum(), "{244d3796aeb33e783f808820034a9e9a, c77d99f7299b1247cf51cdcb396e65df}");
 
         if (Ex) ok(dump(), """
                                                          0016                                                                    |
@@ -1785,7 +1794,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending();
+    test_insert(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
