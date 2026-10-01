@@ -280,7 +280,7 @@ public class Program extends Test                                               
 
     abstract void body (Int Index);                                                                                     // Body of the for loop - execute while in range and continuation requested
 
-    boolean fast() {return false;}                                                                                      // Override for a fast integer as index - but be careful - fast integers quickly increase the die area
+    boolean fast () {return false;}                                                                                     // Override for a fast integer as index - but be careful - fast integers quickly increase the die area
    } // ForCount
 
 //D2 If                                                                                                                 // If then else
@@ -305,7 +305,7 @@ public class Program extends Test                                               
           String v()
            {return "if ("+bitMemory().read0Int()+" == 0) pc <= "+cawci+"; else pc <= pc + 1;";
            }
-          int traces() {return 0;}
+          int traces () {return 0;}
          };
         Then();                                                                                                         // Then body
         final I Else = new I(false)                                                                                     // Jump over else to end
@@ -419,7 +419,6 @@ public class Program extends Test                                               
            };
          }
        }
-      int pc() {return currentPc();}                                                                                    // Address of this instruction
       abstract void loadValue(boolean V);                                                                               // Override to record the value of the variable
      } // LoadSourceOrTarget
 
@@ -557,7 +556,7 @@ public class Program extends Test                                               
           Test.ok(got.b(), Value.b());
          }
         String v() {return "/* Bit ok(Bit) */";}
-        int traces() {return 0;}
+        int traces () {return 0;}
        };
       return this;
      }
@@ -612,33 +611,33 @@ public class Program extends Test                                               
      {abs, add, add2, dec, del, div, down, eq, ez, ge, gt, inc, le, lt, mod, mul, neg, ne, nz, set, sqrt, sub, up, zero
      };
 
-    Int  set (int  I) {return ie(Ops.set , I);}
-    Int  set (Int  I) {return ie(Ops.set , I);}
-    Int  set (Bint I) {return ie(Ops.set , I.i());}
-    Int  add (int  I) {return ie(Ops.add , I);}
-    Int  add (Int  I) {return ie(Ops.add , I);}
-    Int  add2(Int  I) {return ie(Ops.add2, I);}                                                                         //N
-    Int  sub (int  I) {return ie(Ops.sub , I);}
-    Int  sub (Int  I) {return ie(Ops.sub , I);}
-    Int  mul (int  I) {return ie(Ops.mul , I);}
-    Int  mul (Int  I) {return ie(Ops.mul , I);}
-    Int  div (int  I) {return ie(Ops.div , I);}
-    Int  div (Int  I) {return ie(Ops.div , I);}
-    Int  mod (int  I) {return ie(Ops.mod , I);}
-    Int  mod (Int  I) {return ie(Ops.mod , I);}                                                                         //N
-    Int  inc ()       {return ie(Ops.inc    );}
-    Int  dec ()       {return ie(Ops.dec    );}
-    Int  up  ()       {return ie(Ops.up     );}                                                                         //N
-    Int  down()       {return ie(Ops.down   );}
-    Int  sqrt()       {return ie(Ops.sqrt   );}                                                                         //N
-    Int  neg ()       {return ie(Ops.neg    );}                                                                         //N
-    Int  abs ()       {return ie(Ops.abs    );}
-    Int zero ()       {return ie(Ops.zero   );}
-    Int  del (int  I) {return ie(Ops.del , I);}
+    Int   set (int  I) {return ie(Ops.set , I);}
+    Int   set (Int  I) {return ie(Ops.set , I);}
+    Int   set (Bint I) {return ie(Ops.set , I.i());}
+    Int   add (int  I) {return ie(Ops.add , I);}
+    Int   add (Int  I) {return ie(Ops.add , I);}
+    Int  add2 (Int  I) {return ie(Ops.add2, I);}                                                                        //N
+    Int   sub (int  I) {return ie(Ops.sub , I);}
+    Int   sub (Int  I) {return ie(Ops.sub , I);}
+    Int   mul (int  I) {return ie(Ops.mul , I);}
+    Int   mul (Int  I) {return ie(Ops.mul , I);}
+    Int   div (int  I) {return ie(Ops.div , I);}
+    Int   div (Int  I) {return ie(Ops.div , I);}
+    Int   mod (int  I) {return ie(Ops.mod , I);}
+    Int   mod (Int  I) {return ie(Ops.mod , I);}                                                                        //N
+    Int   inc ()       {return ie(Ops.inc    );}
+    Int   dec ()       {return ie(Ops.dec    );}
+    Int   up  ()       {return ie(Ops.up     );}                                                                        //N
+    Int   down()       {return ie(Ops.down   );}
+    Int   sqrt()       {return ie(Ops.sqrt   );}                                                                        //N
+    Int   neg ()       {return ie(Ops.neg    );}                                                                        //N
+    Int   abs ()       {return ie(Ops.abs    );}
+    Int  zero ()       {return ie(Ops.zero   );}
+    Int   del (int  I) {return ie(Ops.del , I);}
 
     Int ie (Ops Op)                                                                                                     // Create an instruction that can either be executed immediately one by one or later en masse
      {T(Op);                                                                                                            // Load target if necessary
-      new I(){void a() {ex(Op);} String v() {return ev(Op);}}.c(this);                                                  // Instruction embodying the operation
+      new I() {void a() {ex(Op);} String v() {return ev(Op);}}.c(this);                                                 // Instruction embodying the operation
       W();                                                                                                              // Write result of operation
       return this;
      }
@@ -647,7 +646,7 @@ public class Program extends Test                                               
      {if (fast && I.fast) stop("Only one fast integer allowed, Cannot process two fast integers in this operation");    // There is only one variable component per instruction which can be used to hold the index of the target or the source  but not both. Variables have to be indexed else place and route becomes impossible.  Fast integer registers have to be few in number to avoid the same problem.
       I.S();                                                                                                            // Load source
       T(Op);                                                                                                            // Load target if necessary
-      final I i = new I(){void a() {ex(Op, I);} String v() {return ev(Op, I);}}.c(this).c(I);                           // Instruction embodying the operation
+      final I i = new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}.c(this).c(I);                          // Instruction embodying the operation
       W();                                                                                                              // Write result of operation
       return this;
      }
@@ -710,7 +709,7 @@ public class Program extends Test                                               
          };
        }
 
-      int pc() {return currentPc();}                                                                                    // Address of this instruction
+      int pc () {return currentPc();}                                                                                   // Address of this instruction
       abstract void loadValue(int V);                                                                                   // Override to save the current value of the integer variable
      } // LoadSourceOrTarget
 
@@ -881,7 +880,7 @@ public class Program extends Test                                               
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
-    Int  Add2(Int I) {return dup().add2(I);}                                                                            //N
+    Int Add2 (Int I) {return dup().add2(I);}                                                                            //N
     Int  Sub (int I) {return dup().sub(I) ;}
     Int  Sub (Int I) {return dup().sub(I) ;}
     Int  Mul (int I) {return dup().mul(I) ;}
@@ -892,28 +891,28 @@ public class Program extends Test                                               
     Int  Mod (Int I) {return dup().mod(I) ;}                                                                            //N
     Int  Inc ()      {return dup().add(1) ;}
     Int  Dec ()      {return dup().sub(1) ;}
-    Int  Up  ()      {return dup().up()   ;}                                                                            //N
-    Int  Down()      {return dup().down() ;}
-    Int  Sqrt()      {return dup().sqrt() ;}                                                                            //N
+    Int   Up ()      {return dup().up()   ;}                                                                            //N
+    Int Down ()      {return dup().down() ;}
+    Int Sqrt ()      {return dup().sqrt() ;}                                                                            //N
     Int  Neg ()      {return dup().neg()  ;}                                                                            //N
     Int  Abs ()      {return dup().abs()  ;}                                                                            //N
 
-    Bit eq ( int I) {return bie(Ops.eq, I);}                                                                            // Comparisons with a constant integer
-    Bit ne ( int I) {return bie(Ops.ne, I);}                                                                            //N
-    Bit le ( int I) {return bie(Ops.le, I);}
-    Bit lt ( int I) {return bie(Ops.lt, I);}
-    Bit ge ( int I) {return bie(Ops.ge, I);}
-    Bit gt ( int I) {return bie(Ops.gt, I);}
+    Bit   eq (int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a constant integer
+    Bit   ne (int I) {return bie(Ops.ne, I);}                                                                           //N
+    Bit   le (int I) {return bie(Ops.le, I);}
+    Bit   lt (int I) {return bie(Ops.lt, I);}
+    Bit   ge (int I) {return bie(Ops.ge, I);}
+    Bit   gt (int I) {return bie(Ops.gt, I);}
 
-    Bit eq ( Int I) {return bie(Ops.eq, I);}                                                                            // Comparisons with a variable integer
-    Bit ne ( Int I) {return bie(Ops.ne, I);}                                                                            //N
-    Bit le ( Int I) {return bie(Ops.le, I);}
-    Bit lt ( Int I) {return bie(Ops.lt, I);}
-    Bit ge ( Int I) {return bie(Ops.ge, I);}                                                                            //N
-    Bit gt ( Int I) {return bie(Ops.gt, I);}
+    Bit   eq (Int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a variable integer
+    Bit   ne (Int I) {return bie(Ops.ne, I);}                                                                           //N
+    Bit   le (Int I) {return bie(Ops.le, I);}
+    Bit   lt (Int I) {return bie(Ops.lt, I);}
+    Bit   ge (Int I) {return bie(Ops.ge, I);}                                                                           //N
+    Bit   gt (Int I) {return bie(Ops.gt, I);}
 
-    Bit ez ()       {return bie(Ops.ez);}
-    Bit nz ()       {return bie(Ops.nz);}
+    Bit   ez ()      {return bie(Ops.ez);}
+    Bit   nz ()      {return bie(Ops.nz);}
 
     Bit bie (Ops Op)                                                                                                    // Instruction to perform a boolean comparison between an integer variable and a known constant
      {final Bit b = new Bit();
@@ -1049,7 +1048,7 @@ public class Program extends Test                                               
           Test.ok(i(), Value);
          }
         String v() {return "/* Int ok(int) */";}
-        boolean trace() {return false;}                                                                                 // No need to test  under Verilog as long as all data accesses match
+        boolean trace () {return false;}                                                                                // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
@@ -1063,7 +1062,7 @@ public class Program extends Test                                               
            Test.ok(got.i(), Value.i());
          }
         String v() {return "/* Int ok(Int) */";}
-        boolean trace() {return false;}
+        boolean trace () {return false;}
        };
       return this;
      }
@@ -1111,8 +1110,8 @@ public class Program extends Test                                               
     public String toString ()                                                                                           // Print the boolean integer
      {final StringBuilder s = new StringBuilder();
       new I()
-       {void a(){if (b.b()) s.append("Bint("+i+")"); else s.append("Bint(invalid)");}
-        boolean trace() {return false;}
+       {void a() {if (b.b()) s.append("Bint("+i+")"); else s.append("Bint(invalid)");}
+        boolean trace () {return false;}
        };
       return ""+s;
      }
@@ -1143,7 +1142,7 @@ public class Program extends Test                                               
 
     void reallocate (final int Size) {units = new int[Size];}                                                           // Resize the memory
 
-    static int bitsPerUnit() {return Integer.SIZE;}                                                                     // Bits per memory unit
+    static int bitsPerUnit () {return Integer.SIZE;}                                                                    // Bits per memory unit
 
     Memory (int Length, String Name, boolean ReadOnly)                                                                  // Create and clear some memory
      {name = Name; readOnly = ReadOnly;
@@ -1499,8 +1498,8 @@ endmodule
 
 //D2 Memory Dumps                                                                                                       // Overridable dump memory methods for Java and Verilog
 
-    String dumpVerilog ()       {return dumpVerilogMemoryInDecimalName()+"();";}
-    String memory(String Index) {return substitute("{n}.memory[{i}]", "n", n(), "i", Index);}                           // Verilog to get the indexed location in memory
+    String dumpVerilog ()             {return dumpVerilogMemoryInDecimalName()+"();";}
+    String      memory (String Index) {return substitute("{n}.memory[{i}]", "n", n(), "i", Index);}                     // Verilog to get the indexed location in memory
 
 //D2 OpenRAM                                                                                                            // Generate OpenRAM versions of each memory
 
@@ -1567,7 +1566,7 @@ endmodule
       return "";
      }
 
-    void updateInstructionCoverage() {instructionCover.get(traceTest).count++;}                                         // Update instruction coverage by location in Java code where instruction was generated
+    void updateInstructionCoverage () {instructionCover.get(traceTest).count++;}                                        // Update instruction coverage by location in Java code where instruction was generated
 
 //D3 Verilog                                                                                                            // Generate Verilog for an instruction
 
@@ -1909,7 +1908,7 @@ cd {f}; yosys -q {y}                                                            
     class RW                                                                                                            // Total read write activity for each integer
      {final Int i;
       final int n;
-      RW(Int I, int N) {i = I; n = N;}
+      RW (Int I, int N) {i = I; n = N;}
      }
 
     final Stack<RW> sorted = new Stack<RW>();
@@ -2300,20 +2299,20 @@ endmodule
         final int        block = sequence.size();                                                                       // Match number in sequence
         final Stack<I> matches = new Stack<I>();                                                                        // Instructions in this set of identical instructions
 
-        Match(String Verilog, I I) {verilog = Verilog; sequence.push(this); matches.push(I);}                           // Create a new match set and add it to the existing matching instructions
+        Match (String Verilog, I I) {verilog = Verilog; sequence.push(this); matches.push(I);}                          // Create a new match set and add it to the existing matching instructions
 
         void push (I I) {matches.push(I);}                                                                              // Add another instruction to the match set
         int  size ()    {return matches.size();}                                                                        // Number of instructions in the match set
         I   first ()    {return matches.size() == 0 ? null : matches.firstElement();}                                   // First instruction in match set
 
-        String labels()                                                                                                 // Instruction numbers formatted as a comma separated list for attachment to the always case statement
+        String labels ()                                                                                                // Instruction numbers formatted as a comma separated list for attachment to the always case statement
          {final StringJoiner j = new StringJoiner(", ");
           for (I i : matches) j.add(""+i.instructionNumber);
           return ""+j;
          }
        } // Match
 
-      void add(I I)                                                                                                     // Add an instruction
+      void add (I I)                                                                                                    // Add an instruction
        {final String v = I.interiorVerilog();
         if (matches.containsKey(v))                                                                                     // Add to an existing set of matches
          {final Match m = matches.get(v);
@@ -2327,19 +2326,19 @@ endmodule
          }
        }
 
-      Match firstMatch(I I)                                                                                             // Is this instruction the first of a match block of equivalent instructions
+      Match firstMatch (I I)                                                                                            // Is this instruction the first of a match block of equivalent instructions
        {final Match m = inMatch.get(I.instructionNumber);
         return m.matches.firstElement() == I ? m : null;
        }
 
-      TreeMap<Integer,Integer> pcMatchSet()                                                                             // Match instructions to sets of equivalent instructions
+      TreeMap<Integer,Integer> pcMatchSet ()                                                                            // Match instructions to sets of equivalent instructions
        {final TreeMap<Integer,Integer> M = new TreeMap<>();                                                             // Instruction number to class of equivalent instructions
         for (Match m : sequence) for (I i : m.matches) M.put(i.instructionNumber, m.block);                             // Instruction to matching instructions block number
         return M;
        }
      } // InstructionMatches
 
-    void printInstructionLocations()                                                                                    // Print the location of each instruction
+    void printInstructionLocations ()                                                                                   // Print the location of each instruction
      {final String f = verilogTestFolder.file("InstructionLocations").txt$();                                           // Instruction to location listing file
       final StringBuilder s = new StringBuilder();
 
@@ -2498,14 +2497,14 @@ check
     return ""+s;
    }
 
-  String intMemory(Int I) {return I.fast ? "fastInts["+I.fastId+"]" : intMemory().memory(I.id);}                        // Name of a memory location holding an integer
+  String intMemory (Int I) {return I.fast ? "fastInts["+I.fastId+"]" : intMemory().memory(I.id);}                       // Name of a memory location holding an integer
 
 //D2 Verilog Arrays                                                                                                     // Define arrays in Verilog to match this used in Java
 
   class VerilogArrays                                                                                                   // Define arrays in Verilog to match this used in Java
    {final TreeMap<String, Array> arrays = new TreeMap<>();                                                              // Arrays defined by name - same name assumes same content
 
-    Collection<Array> arrays() {return arrays.values();}                                                                // The arrays being defined
+    Collection<Array> arrays () {return arrays.values();}                                                               // The arrays being defined
 
     class Array                                                                                                         // Matching set of instructions
      {final String       name;                                                                                          // Name of the array
@@ -2536,7 +2535,7 @@ check
       String         arrayName () {return "array_"      +name;}                                                         // Name of this array
       String      indexVarName () {return "index_array_"+name;}                                                         // Index name for clearing this array
 
-      int max(int[]A) {int m = 0; for (int i = 1; i < A.length; i++) if (A[i] > A[m]) m = i; return m;}                 // The index of the maximum element in the array
+      int max (int[]A) {int m = 0; for (int i = 1; i < A.length; i++) if (A[i] > A[m]) m = i; return m;}                // The index of the maximum element in the array
 
       String connectModule ()                                                                                           // Connect the main module to the array module
        {if (!pcIndexed) return substitute("""
@@ -2592,9 +2591,9 @@ endmodule
 
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
-  void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
+  void testsStartHere () {super.testsStartHere();}                                                                      // Divider between code to be tested and code to drive testing
 
-  static void deleteAllFileInVerilogTestsFolder() {deleteAllFiles(verilogTestsFolder.folder, 9999);}                    // Delete generated Verilog files created by a prior run of the current test
+  static void deleteAllFileInVerilogTestsFolder () {deleteAllFiles(verilogTestsFolder.folder, 9999);}                   // Delete generated Verilog files created by a prior run of the current test
 
   void check (StringBuilder G, String E)                                                                                // Test the supplied content against the specified string, then clear the output area ready for the next report
    {new I() {void a() {Test.ok(nws(G), nws(E));} int traces() {return 0;}};
@@ -3715,6 +3714,6 @@ writeIntEnable =        0
      }
    }
  }
-//https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
-//https://github.com/philiprbrenan/btreeList/compare/8a4b06a28b8...1f0109e91e
-// ^.{10,119}//
+//https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha                                                    // Compare github comits
+// ^.{10,119}//                                                                                                         // Misplaced comment markers
+// \b[A-Za-z_$][A-Za-z0-9_$]*(?:| {2,})\(.*?\)(?: *//[^\r\n]*)?(?:\r?\n *//[^\r\n]*)* *\{                               // Methods declared without intervening space
