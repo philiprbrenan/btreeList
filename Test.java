@@ -44,9 +44,9 @@ public class Test                                                               
   static double elapsedTime (Long Start) {return (System.nanoTime() - Start) / 1_000_000_000.0;}                        // Elapsed time in seconds since start
   static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
-  Test() {testsStartHere();}                                                                                            // Constructor
+  Test () {testsStartHere();}                                                                                           // Constructor
 
-  Test Test() {return this;}                                                                                            // Instance
+  Test Test () {return this;}                                                                                           // Instance
 
 //D1 String routines                                                                                                    // String routines
 
@@ -249,15 +249,15 @@ public class Test                                                               
     return S;
    }
 
-  static String trimRight(String S) {return S.stripTrailing();}                                                         // Remove spaces at the end of a string if there are any
+  static String trimRight (String S) {return S.stripTrailing();}                                                        // Remove spaces at the end of a string if there are any
 
   static StringBuilder trimRight(StringBuilder S)                                                                       // Remove spaces at the end of a string builder if there are any
    {while (S.length() > 0 && S.charAt(S.length() - 1) == ' ') S.setLength(S.length() - 1);
     return S;
    }
 
-  static String        trimRightAndPad(String        S, int Length) {return pad(trimRight(S), Length);}                 // Remove spaces at the end of a string if there are any and pad to the specified length
-  static StringBuilder trimRightAndPad(StringBuilder S, int Length) {return pad(trimRight(S), Length);}                 // Remove spaces at the end of a string builder if there are any and pad to the specified length
+  static String        trimRightAndPad (String        S, int Length) {return pad(trimRight(S), Length);}                // Remove spaces at the end of a string if there are any and pad to the specified length
+  static StringBuilder trimRightAndPad (StringBuilder S, int Length) {return pad(trimRight(S), Length);}                // Remove spaces at the end of a string builder if there are any and pad to the specified length
 
   static String q (String S)                                                                                            // Quote a string
    {return "\"" + S
@@ -269,9 +269,9 @@ public class Test                                                               
         + "\"";
     }
 
-  static String q(StringBuilder S) {return q(""+S);}                                                                    // Quote a string builder
+  static String q (StringBuilder S) {return q(""+S);}                                                                   // Quote a string builder
 
-  static boolean inJob(String Job) {return Job.equals(github_job);}                                                     // Whether we are running in the specified job in a github action
+  static boolean inJob (String Job) {return Job.equals(github_job);}                                                    // Whether we are running in the specified job in a github action
 
 //D1 Numeric routines                                                                                                   // Numeric routines
 
@@ -1084,7 +1084,7 @@ public class Test                                                               
     public String toString () {return "FileNames(folder: "+folder+", file: "+file+")";}
    }
 
-  static String fqn(String Relative) {return Path.of(Relative).toAbsolutePath().normalize().toString();}                // Fully qualified file name from filename relative to current working directory
+  static String fqn (String Relative) {return Path.of(Relative).toAbsolutePath().normalize().toString();}               // Fully qualified file name from filename relative to current working directory
 
   class CompressFile
    {final  String sourceFile;
@@ -1502,7 +1502,7 @@ public class Test                                                               
       if (rc != 0) stop(this);
      }
 
-    ExecCommand(StringBuilder Command) {this(""+Command);}
+    ExecCommand (StringBuilder Command) {this(""+Command);}
 
     public String toString()                                                                                            // Print execution results
      {final StringBuilder s = new StringBuilder();
@@ -1518,9 +1518,9 @@ public class Test                                                               
 
 //D1 Tests                                                                                                              // Tests
 
-  static String testCallerName(int Level) {return Level > 0 ?  testCallerName(Level-1) : traceTest();}                  // Has to go before the start of tests
+  static String testCallerName (int Level) {return Level > 0 ?  testCallerName(Level-1) : traceTest();}                 // Has to go before the start of tests
 
-  void testsStartHere()                                                                                                 // Line number in the current file where tests start - so many call made from this point onwards shopuld be assumed to be part of teh test harness rather then teh code to be tested
+  void testsStartHere ()                                                                                                // Line number in the current file where tests start - so many call made from this point onwards shopuld be assumed to be part of teh test harness rather then teh code to be tested
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
     for(int i = t.length-1; i >= 0; --i)
      {final StackTraceElement s = t[i];
