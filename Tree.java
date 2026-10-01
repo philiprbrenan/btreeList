@@ -219,7 +219,8 @@ class Tree extends Program                                                      
         s.append(f("MaxBranchSize : %4d\n", maxBranchSize));
         s.append(f("NumberOfNodes : %4d\n", numberOfNodes));
         s.append(f("Allocations   : %4d\n", f.i()));
-        s.append(f("Number of Keys: %4d\n", refCount.getInt(0)));
+        s.append(f("Number of Keys: %4d\n", refCount .getInt(0)));
+        s.append(f("Height        : %4d\n", refHeight.getInt(0)));
        }
       boolean trace () {return false;}
      };
@@ -369,7 +370,7 @@ class Tree extends Program                                                      
 
     void splitDown()                                                                                                    // Split from the splitting top most splitting branch if such a branch exists
      {subStart("Tree.splitDown");
-      new If (split)
+      new If (split)                                                                                                    // The top most branch to split
        {void Then()
          {new If (split.i().eq(0))                                                                                      // Split the root branch
            {void Then()
@@ -508,7 +509,7 @@ class Tree extends Program                                                      
            }
           void Else()                                                                                                   // The key does not exist in the root leaf
            {new If (R.full())                                                                                           // Is the leaf full
-             {void Then()                                                                                               // Split the leaf to make room for  the new key
+             {void Then()                                                                                               // Split the root leaf to make room for  the new key
                {final Leaf l = leaf(), r = leaf();                                                                      // Child leaves of root branch
                 l.copy(R);                                                                                              // Duplicate the root
                 final Int   sk = l.splitRight(r);                                                                       // Split the root leaf in two
@@ -516,7 +517,9 @@ class Tree extends Program                                                      
                 b.insert(sk, l.getLocation().i());                                                                      // Insert the left leaf
                 b.top(r.getLocation().i());                                                                             // The right leaf becomes top of the root branch
                 new If (Key.le(sk)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};            // Insert left or right leaf depending on key versus splitting key
-                refHeight.putInt(refHeight.getInt().inc());                                                             // Increase height of tree
+                b.level(new Int(1));                                                                                    // Level of a root branch made by splitting a leaf
+                refHeight .putInt(refHeight.getInt().inc());                                                            // Increase height of tree
+
                }
               void Else()                                                                                               // Root is a non full leaf that does not contain the key
                {R.insert(Key, Data);                                                                                    // Insert in non full leaf that does not contain the key
@@ -630,6 +633,7 @@ class Tree extends Program                                                      
     makeBranch(R.getLocation().i());                                                                                    // Mark the root as a branch
     R.insertEmpty(sk, l.getLocation().i());                                                                             // Insert the left branch below the splitting key
     R.top(r.getLocation().i());                                                                                         // Insert right as top of root
+    R.refLevel.putInt(l.refLevel.getInt().inc());                                                                       // Level of root is no one more than that of the branches below
     refHeight.putInt(refHeight.getInt().inc());                                                                         // Increase height of tree
     subFinish();
     return sk;                                                                                                          // Return the splitting key
@@ -773,7 +777,8 @@ class Tree extends Program                                                      
     void traverse (int Index, int Parent, int Depth)                                                                    // Traverse the branch at the indicated index
      {final Slots          s = slots(Index, maxBranchSize);                                                             // Slots for branch
       final Memory.Ref nodes = refNodes.step(Index*build.nodeSize + 1 + s.build.size());                                // Array of child nodes
-      final int            t = nodes.getInt(maxBranchSize);
+      final int            t = refNodes.step(Index*build.nodeSize + build.branch.memoryPositions.posTop  ).getInt(0);   // Top reference
+      final int            v = refNodes.step(Index*build.nodeSize + build.branch.memoryPositions.posLevel).getInt(0);   // Level of branch
 
       if (isLeaf(t))
        {for(int i = 0; i < maxBranchSize*2; ++i)                                                                        // Each leaf
@@ -782,7 +787,7 @@ class Tree extends Program                                                      
             final int n = s.getSlotToKeyIndex(i);
             final int l = nodes.getInt(n);
             pLeaf(l, Depth+1, Index, i);
-            branchSlot(Index, Depth, Parent, i, k, l);
+            branchSlot(Index, Depth, v, Parent, i, k, l);                                                               // Print the connection back to the parent node.
            }
          }
         branchTop(t, Depth);
@@ -790,13 +795,13 @@ class Tree extends Program                                                      
        }
       else
        {for(int i = 0; i < maxBranchSize*2; ++i)                                                                        // Each sub branch
-         {if (s.getSlotToKeysInUse(i))
-           {final int k = s.getSlotToKeyValue(i);
-            final int n = s.getSlotToKeyIndex(i);
-            final int c = nodes.getInt(n);
+         {if (s.getSlotToKeysInUse(i))                                                                                  // Slot in use
+           {final int k = s.getSlotToKeyValue(i);                                                                       // Key in slot
+            final int n = s.getSlotToKeyIndex(i);                                                                       // Index of data associated with key
+            final int c = nodes.getInt(n);                                                                              // Child branch or leaf
             if (Depth <= maximumNumberOfLevels) traverse(c, Index, Depth+1);                                            // Terminate large traverses perhaps produced in error
 
-            branchSlot(Index, Depth, Parent, i, k, c);
+            branchSlot(Index, Depth, v, Parent, i, k, c);
            }
          }
         branchTop(t, Depth);
@@ -820,8 +825,8 @@ class Tree extends Program                                                      
      {say("LLLL", "Index", Index, "Depth", Depth, "Parent", Parent, "Slot", Slot, "Keys", Keys, slots(Index, maxLeafSize));
      }
 
-    void branchSlot (int Index, int Depth, int Parent, int Slot, int Key, int Child)                                    // Process branch slot by printing the tree to the left of the slot and then the slot
-     {say("BBBB", "Index", Index, "Depth", Depth, "Parent", Parent, "Slot", Slot, "Key",  Key, "Child", Child, slots(Index, maxBranchSize));
+    void branchSlot (int Index, int Depth, int Level, int Parent, int Slot, int Key, int Child)                         // Process branch slot by printing the tree to the left of the slot and then the slot
+     {say("BBBB", "Index", Index, "Depth", Depth, "Level", Level, "Parent", Parent, "Slot", Slot, "Key",  Key, "Child", Child, slots(Index, maxBranchSize));
      }
 
     void branchTop ( int Index, int Depth)                                                                              // Process branch top by printing its sub tree to the right
@@ -832,12 +837,12 @@ class Tree extends Program                                                      
   void check (StringBuilder A, String B) {Test.ok(""+A, B);}
 
 //D2 Print
-//                                                          16  br slot key                                                            |
-//                                                          (0) br index                                                            |
-//                                                          [9,2] child index, slot                                                          |
+//                                                          16  br slot key                                                 |
+//                                                          (0) br index                                                    |
+//                                                          [9,2]2 child index, parent slot, level                          |
 //         4             8                12                                20              24              28              |
 //         (9,0,2)       (9,0,2)          (9,0,2)                           (6,0)           (6,0)           (6,0)           |
-//         [12,0]        [5,2]            [10,4]                            [7,0]           [4,2]           [3,4]           |
+//         [12,0]1       [5,2]1           [10,4]1                           [7,0]1          [4,2]1          [3,4]1          |
 // 1,2,3,4        5,6,7,8       9,10,11,12       13,14,15,16     17,18,19,20     21,22,23,24     25,26,27,28     29,30,31,32|
 // (12,9,0)       (5,9,2)       (10,9,4)         (8,9)           (7,6,0)         (4,6,2)         (3,6,4)         (2,6)      |
 
@@ -866,14 +871,14 @@ class Tree extends Program                                                      
            }
          }
 
-        @Override void branchSlot(int Index, int Depth, int Parent, int Slot, int Key, int Child)                       // Print keys of branch and optionally the details of the parent and the children of this branch
+        @Override void branchSlot(int Index, int Depth, int Level, int Parent, int Slot, int Key, int Child)            // Print keys of branch and optionally the details of the parent and the children of this branch
          {final int d = Depth * linesToPrintABranch;
           if (Context)                                                                                                  // Print relationships with surrounding nodes
            {pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
             P.elementAt(d).append(f("%04d", Key));                                                                      // Write key into output area
             if (Depth == 0) P.elementAt(d+1).append("("+Index+","+Slot+")");                                            // Format second line for a root
             else P.elementAt(d+1).append("("+Index+","+Parent+","+Slot+")");                                            // Format second line for a non root branch showing the parent of the branch and the slot in the parent this branch came from
-            P.elementAt(d+3).append("["+Child+","+Slot+"]");                                                            // Format third line
+            P.elementAt(d+3).append("["+Child+","+Slot+"]"+Level);                                                      // Format third line
            }
           else                                                                                                          // Keys without connections to surrounding nodes
            {pad(d+3);
@@ -946,19 +951,21 @@ class Tree extends Program                                                      
     C.insert(t.new Int(6), t.new Int(66));
     t.dumpProgramState("AAAA");
 
-    //stop(t.memoriesMd5Sum());
-    t.ok(()->t.memoriesMd5Sum(), "{2a310d9fc4de8c7b3d1bc99f999d80b6, b4b147bc522828731f1a016bfa72c073}");
+    //stop(t.mainMemoryMd5Sum());
+    t.ok(()->t.mainMemoryMd5Sum(), "22a420772637045e7d9ae61e800574cb");
 
-    if (Ex) ok(t.dumpTree(), """
+    //stop(t.dumpTree());
+    if (Ex) ok  (t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
-Branch size   :   33
-Node   size   :   33
+Branch size   :   34
+Node   size   :   34
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    3
 Number of Keys:    4
+Height        :    1
 Leaf           size:   2, count:   2
  Ref   Key  Data
    1     1    11
@@ -967,7 +974,7 @@ Leaf   at:   1 size:   2, count:   2
  Ref   Key  Data
    1     3    33
    0     4    44
-Branch at:   2 size:   3, count:   2, top:   0
+Branch at:   2 size:   3, count:   2, top:   0, level:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -977,23 +984,25 @@ Branch at:   2 size:   3, count:   2, top:   0
     t.free(A); t.isAllocated(a.at.i()).ok(false);  t.countDec(); t.countDec();
     t.dumpProgramState("BBBB");
 
-    //stop(t.memoriesMd5Sum());
-    t.ok(()->t.memoriesMd5Sum(), "{26ae8578277f81ec5bda05406c80b75a, b4b147bc522828731f1a016bfa72c073}");
-    if (Ex) ok(t.dumpTree(), """
+    //stop(t.mainMemoryMd5Sum());
+    t.ok(()->t.mainMemoryMd5Sum(), "3d21553ae48ccd5ffaabaa5e92eab08d");
+    //stop(t.dumpTree());
+    if (Ex) ok  (t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
-Branch size   :   33
-Node   size   :   33
+Branch size   :   34
+Node   size   :   34
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    2
 Number of Keys:    2
+Height        :    1
 Leaf   at:   1 size:   2, count:   2
  Ref   Key  Data
    1     3    33
    0     4    44
-Branch at:   2 size:   3, count:   2, top:   0
+Branch at:   2 size:   3, count:   2, top:   0, level:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1002,19 +1011,21 @@ Branch at:   2 size:   3, count:   2, top:   0
     t.free(b); t.isAllocated(b.at.i()).ok(false);   t.countDec(); t.countDec();
     t.dumpProgramState("CCCC");
 
-    //stop(t.memoriesMd5Sum());
-    t.ok(()->t.memoriesMd5Sum(), "{9ea4458c5418aba2fc5b1450883fde7e, b4b147bc522828731f1a016bfa72c073}");
+    //stop(t.mainMemoryMd5Sum());
+    t.ok(()->t.mainMemoryMd5Sum(), "c6dbe9dd44a0eecce5cfcf65c22389ae");
+    //stop(t.dumpTree);
     if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
-Branch size   :   33
-Node   size   :   33
+Branch size   :   34
+Node   size   :   34
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    1
 Number of Keys:    0
-Branch at:   2 size:   3, count:   2, top:   0
+Height        :    1
+Branch at:   2 size:   3, count:   2, top:   0, level:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1024,18 +1035,20 @@ Branch at:   2 size:   3, count:   2, top:   0
     t.free(c); t.isAllocated(c.at.i()).ok(false);
     t.dumpProgramState("DDDD");
 
-    //stop(t.memoriesMd5Sum());
-    t.ok(()->t.memoriesMd5Sum(), "{2c1d9e1a547c8e3a45d6625b43b882c5, b4b147bc522828731f1a016bfa72c073}");
+    //stop(t.mainMemoryMd5Sum());
+    t.ok(()->t.mainMemoryMd5Sum(), "834280feda4034532dd30fb92002eea5");
+    //stop(t.dumpTree());
     if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
-Branch size   :   33
-Node   size   :   33
+Branch size   :   34
+Node   size   :   34
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    0
 Number of Keys:    0
+Height        :    1
 """);
 
     t.maxSteps(999_999);
@@ -1051,7 +1064,7 @@ Number of Keys:    0
    {sayCurrentTestName();
 
     final int  N = 32;
-    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeCode()
        {new ForCount(new Int(1), new Int(N+1))
          {void body(Int Index)
@@ -1059,26 +1072,32 @@ Number of Keys:    0
             dumpProgramState("AAAA");
            }
          };
-        height().ok(3);
+        height().ok(4);
 
-        //stop(memoriesMd5Sum());
-        ok(()->memoriesMd5Sum(), "{244d3796aeb33e783f808820034a9e9a, c77d99f7299b1247cf51cdcb396e65df}");
+        //stop(mainMemoryMd5Sum());
+        ok(()->mainMemoryMd5Sum(), "c039873361f0bdc304c9b2def96e7ab0");
 
+        //stop(dump());
         if (Ex) ok(dump(), """
-                                                         0016                                                                    |
-                                                         (0,2)6                                                                  |
-                                                         [9,2]                                                                   |
-       0004          0008             0012                                0020              0024              0028               |
-       (9,0,0)       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
-       [3,0]         [4,2]            [7,4]                               [10,0]            [5,2]             [12,4]             |
-1,2,3,4       5,6,7,8       9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
-(3,9,0)       (4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                                                                                                                           0016                                                                                                                                 |
+                                                                                                                           (0,3)20                                                                                                                              |
+                                                                                                                           [19,3]3                                                                                                                              |
+                                                   0008                                                                                                                                          0024                                                           |
+                                                   (19,0,2)14                                                                                                                                    (20,0,2)6                                                      |
+                                                   [9,2]2                                                                                                                                        [21,2]2                                                        |
+       0002           0004           0006                             0010             0012              0014                              0018              0020              0022                               0026            0028            0030          |
+       (9,19,0)       (9,19,2)       (9,19,4)8                        (14,19,0)        (14,19,2)         (14,19,4)13                       (21,20,0)         (21,20,2)         (21,20,4)18                        (6,20,0)        (6,20,2)        (6,20,4)2     |
+       [3,0]1         [4,2]1         [7,4]1                           [10,0]1          [5,2]1            [12,4]1                           [15,0]1           [11,2]1           [17,4]1                            [22,0]1         [16,2]1         [24,4]1       |
+1,2            3,4            5,6             7,8            9,10              11,12            13,14               15,16         17,18             19,20             21,22               23,24           25,26           27,28           29,30            31,32|
+(3,9,0)        (4,9,2)        (7,9,4)         (8,9)          (10,14,0)         (5,14,2)         (12,14,4)           (13,14)       (15,21,0)         (11,21,2)         (17,21,4)           (18,21)         (22,6,0)        (16,6,2)        (24,6,4)         (2,6)|
 """);
 
+        //stop(print());
         if (Ex) ok(print(), """
-                                               0016                                                        |
-       0004       0008          0012                          0020           0024           0028           |
-1,2,3,4    5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
+                                                           0016                                                                    |
+                        0008                                                                   0024                                |
+   0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
+1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
 """);
 
         maxSteps(9_999_999);
@@ -1104,20 +1123,22 @@ Number of Keys:    0
            }
          };
 
-        //stop(memoriesMd5Sum(), dump(), print());
-        ok(()->memoriesMd5Sum(), "{20b8fb0ff251f5868ca9105a14bbff0a, c77d99f7299b1247cf51cdcb396e65df}");
+        //stop(mainMemoryMd5Sum(), dump(), print());
+        ok(()->mainMemoryMd5Sum(), "c8fd801ae2fbd65d306cb86b4cb36ce6");
 
+        //stop(dump());
         if (Ex) ok(dump(), """
                                                          0016                                                                    |
                                                          (0,2)6                                                                  |
-                                                         [9,2]                                                                   |
+                                                         [9,2]2                                                                  |
        0004          0008             0012                                0020              0024              0028               |
        (9,0,0)       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
-       [3,0]         [4,2]            [7,4]                               [10,0]            [5,2]             [12,4]             |
+       [3,0]1        [4,2]1           [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
 1,2,3,4       5,6,7,8       9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
 (3,9,0)       (4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
 """);
 
+        //stop(print());
         if (Ex) ok(print(), """
                                                0016                                                        |
        0004       0008          0012                          0020           0024           0028           |
@@ -1147,24 +1168,25 @@ Number of Keys:    0
            }
          };
 
-        //stop(memoriesMd5Sum(), dump(), print());
-        ok(()->memoriesMd5Sum(), "{518df26de45e9fccd697b6e727c00f54, 161a1b8081b22d264fcfb3777fe6c142}");
+        //stop(mainMemoryMd5Sum(), dump(), print());
+        ok(()->mainMemoryMd5Sum(), "6b2ad5d037c4e256818af9d17310f1cf");
 
+        //stop(dump());
         if (Ex) ok(dump(), """
                                                           0016                                                                    |
                                                           (0,2)6                                                                  |
-                                                          [9,2]                                                                   |
+                                                          [9,2]2                                                                  |
         0004          0008             0012                                0020              0024              0028               |
         (9,0,0)       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
-        [12,0]        [5,2]            [10,4]                              [7,0]             [4,2]             [3,4]              |
+        [12,0]1       [5,2]1           [10,4]1                             [7,0]1            [4,2]1            [3,4]1             |
 1,2,3,4        5,6,7,8       9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
 (12,9,0)       (5,9,2)       (10,9,4)          (8,9)            (7,6,0)           (4,6,2)           (3,6,4)            (2,6)      |
 """);
 
+        //stop(print());
         if (Ex) ok(print(), """
                                                0016                                                        |
        0004       0008          0012                          0020           0024           0028           |
-1,2,3,4    5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
 """);
 
         maxSteps(9_999_999);
@@ -1202,20 +1224,22 @@ Number of Keys:    0
            }
          };
 
-        //stop(memoriesMd5Sum(), dump(), print());
-        ok(()->memoriesMd5Sum(), "{ac798ae2d477e820a9641f9e7b1d45cc, 161a1b8081b22d264fcfb3777fe6c142}");
+        //stop(mainMemoryMd5Sum(), dump(), print());
+        ok(()->mainMemoryMd5Sum(), "9ecc3079854a5469e66f53479057706f");
 
+        //stop(dump());
         if (Ex) ok(dump(), """
-                                                         0015                                                           0026                          |
-                                                         (0,1)                                                          (0,4)6                        |
-                                                         [5,1]                                                          [11,4]                        |
-        0004          0007            0011                               0019            0021            0024                            0030         |
-        (5,0,0)       (5,0,2)         (5,0,4)4                           (11,0,1)        (11,0,4)        (11,0,5)7                       (6,0,2)2     |
-        [14,0]        [1,2]           [9,4]                              [12,1]          [3,4]           [8,5]                           [10,2]       |
-1,2,3,4        5,6,7         8,9,10,11        12,13,14,15     16,17,18,19        20,21           22,23,24         25,26       27,28,29,30        31,32|
-(14,5,0)       (1,5,2)       (9,5,4)          (4,5)           (12,11,1)          (3,11,4)        (8,11,5)         (7,11)      (10,6,2)           (2,6)|
+                                                         0015                                                            0026                           |
+                                                         (0,1)                                                           (0,4)6                         |
+                                                         [5,1]2                                                          [11,4]2                        |
+        0004          0007            0011                                0019            0021            0024                             0030         |
+        (5,0,0)       (5,0,2)         (5,0,4)4                            (11,0,1)        (11,0,4)        (11,0,5)7                        (6,0,2)2     |
+        [14,0]1       [1,2]1          [9,4]1                              [12,1]1         [3,4]1          [8,5]1                           [10,2]1      |
+1,2,3,4        5,6,7         8,9,10,11        12,13,14,15      16,17,18,19        20,21           22,23,24         25,26        27,28,29,30        31,32|
+(14,5,0)       (1,5,2)       (9,5,4)          (4,5)            (12,11,1)          (3,11,4)        (8,11,5)         (7,11)       (10,6,2)           (2,6)|
 """);
 
+        //stop(print());
         if (Ex) ok(print(), """
                                             0015                                         0026                    |
        0004     0007         0011                          0019     0021        0024                    0030     |
@@ -1259,7 +1283,7 @@ Number of Keys:    0
          {void body(Int Index)
            {delete(Index.Inc());
             if (Ex) s.append(print());
-            new I() {void a() {m.append(memoriesMd5Sum()+"\n");} boolean trace() {return false;}};
+            new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
             dumpProgramState("BBBB");
             if (immediate())
              {final int i = Index.i();
@@ -1270,42 +1294,43 @@ Number of Keys:    0
            }
          };
 
-        //if (immediate()) stop(m);
+        //stop(m);
         ok(()->m, """
-{d10157659c94c17d1df1a0aee7908424, 2e586fbe7fa9003a2b31dd8e9145b093}
-{424a9c4d8266b231e418152ce3d8f48e, 2e586fbe7fa9003a2b31dd8e9145b093}
-{d68f363af5fb9cd9829f3faa7f49c222, 2e586fbe7fa9003a2b31dd8e9145b093}
-{065e701068a0c9f1fa4c8c25472e2cb4, 2e586fbe7fa9003a2b31dd8e9145b093}
-{310dbafc4c2630dc257ac226b9ff7390, 2e586fbe7fa9003a2b31dd8e9145b093}
-{ca6d297a808d266fa80a64f31183266c, 2e586fbe7fa9003a2b31dd8e9145b093}
-{cf4869a4c250eb7b73e0b2ac114127a5, 2e586fbe7fa9003a2b31dd8e9145b093}
-{d84edaf59e73743391b7b144293a9a84, 2e586fbe7fa9003a2b31dd8e9145b093}
-{eac66df43f9ca4219d1f1e71d52f5ebf, 2e586fbe7fa9003a2b31dd8e9145b093}
-{89cf8c6dbef33aaccfd5a55fd85c4e72, 2e586fbe7fa9003a2b31dd8e9145b093}
-{bd1c82d9d2ac92639b38a575cfc92d0f, 2e586fbe7fa9003a2b31dd8e9145b093}
-{8e1b09b5895a186788743cb191cd8a56, 2e586fbe7fa9003a2b31dd8e9145b093}
-{df2efac5945dc5520431d6e4800d2064, 2e586fbe7fa9003a2b31dd8e9145b093}
-{3ac9c06b800fbaae9675948081cb5e8e, 2e586fbe7fa9003a2b31dd8e9145b093}
-{ebe711f8361a8fda83518f8054bc940d, 2e586fbe7fa9003a2b31dd8e9145b093}
-{8acf5ae71721fe00652af42b7d3006dd, 2e586fbe7fa9003a2b31dd8e9145b093}
-{65405343bd0cbcf707a1174d022d2cc8, c77d99f7299b1247cf51cdcb396e65df}
-{5587e6d59270c61093b1b0564fa06bb7, c77d99f7299b1247cf51cdcb396e65df}
-{ffef6634cd1ff659b9e5de74474799c4, c77d99f7299b1247cf51cdcb396e65df}
-{38f4c3e078a9eb10977ff5aa156dd28a, c77d99f7299b1247cf51cdcb396e65df}
-{e8ec3392a3ab897e06903f66e5af235d, dcddb75469b4b4875094e14561e573d8}
-{a75013a13cd7c5653d0b325ea3d3b509, dcddb75469b4b4875094e14561e573d8}
-{31e8480c9ffebfc66c056449de9f4160, dcddb75469b4b4875094e14561e573d8}
-{9b14b6c1070dbd52309804e2386bcef0, dcddb75469b4b4875094e14561e573d8}
-{53b768d9bb4e1f0012a48b62dc89ab01, dcddb75469b4b4875094e14561e573d8}
-{1dc75d244844e08464a8802839bbe473, dcddb75469b4b4875094e14561e573d8}
-{2af898b6ae0bcaa64bde74a9da285e93, dcddb75469b4b4875094e14561e573d8}
-{4c86ea903d911b6052481a3c2e033d3f, dcddb75469b4b4875094e14561e573d8}
-{990a3375ff54f97a06ceb9e8a98a1693, dcddb75469b4b4875094e14561e573d8}
-{d8ab703d826b2804a99346e715ff332e, dcddb75469b4b4875094e14561e573d8}
-{806ce03e8c850dbe807a1cf9b4a79a39, dcddb75469b4b4875094e14561e573d8}
-{0b1394375b506a67c363024a15de3cc6, dcddb75469b4b4875094e14561e573d8}
+cf86f7d811120e97c57bd0c85ae0f924
+9a3c6287f7516a68681461c97133ccef
+14d14b76c50882fe5bc876520258cd37
+41b48525e0fb8f55c48889bc53cc9275
+de54f716ba595c1e123a14e2559c7523
+a5b0fed3fe44ddace85d74da7fdff245
+73b77865a44c42903026dbb40135b152
+83248a092c997ffc9902840ddb9c37c9
+385a0295f0c1e7f65219355e4ae60f73
+88bcd7a964015dc3a75ab5c4698b4ec1
+e7146136e874017d412b393f47ca66b8
+85ec1e7c4ec637e4c77e0455d47e2c4b
+3c5a9a54dcc9f963243b09ca79752944
+e50d1c0c0d9928f7aba4ad37e0a17dad
+61cff5305ddd574f04e16dfd4f4fa621
+1d15b2a4b6a94db69a4cf8b12147fc4e
+c5444ed854e830a3551d0e4befe7a4e7
+4c40789ee6ebe9fea2c6730ed0bb32de
+5922a7eb7b3f0a24d04a58c8632563f0
+bcbeaaf9d6ac873453f3338df4bc9ed3
+38239a8bf485fd2724456e00cd61e42f
+e39773ec7325c7d89b750fe274243df7
+6385ff5bb82a410f35715340ccb36c20
+f2c82a35686a39c996053916dd1b535a
+95d21bd9a64884751740f7e87896d466
+99d4748b65056ccacfd98451d9cf2846
+384e39537873c257e3d26e3fcc0802d2
+55ff5b5255fd28b94898c2dd8a7ff2bf
+cf54d09bad8fa62e79f49a3f11b492b2
+055a1d0c765b2d9bcf0cd490f78bc8c4
+2a434d0989a96061fe60c3e58357064b
+7f3339bf5a5a1f8fd07ed045a50fa6b8
 """);
 
+        //stop(s);
         if (Ex) ok(""+s, """
                                                0016                                                        |
        0004       0008          0012                          0020           0024           0028           |
@@ -1420,48 +1445,49 @@ Number of Keys:    0
            {delete(new Int(N).sub(Index));
 
             if (Ex) s.append(print());
-            new I() {void a() {m.append(memoriesMd5Sum()+"\n");} boolean trace() {return false;}};
+            new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
 
             dumpProgramState("BBBB");
            }
          };
 
-        //if (immediate()) stop(m);
+        //stop(m);
         ok(()->m, """
-{57b068d26e89de4d1e6b92d6b5a4a923, c77d99f7299b1247cf51cdcb396e65df}
-{570d1c81732a9d8dbbd63a4a88af7c33, c77d99f7299b1247cf51cdcb396e65df}
-{7925acbdc5bf9aaede142a2f8ceae0b5, c77d99f7299b1247cf51cdcb396e65df}
-{84ad1b9e88e365effd32df855f4225b2, c77d99f7299b1247cf51cdcb396e65df}
-{bd19717a025b9bd60ac2f991c0149a81, c77d99f7299b1247cf51cdcb396e65df}
-{0daf9fc4045faf3d5ee74044716c81ff, c77d99f7299b1247cf51cdcb396e65df}
-{77f5b206d8518716225e03f2918934aa, c77d99f7299b1247cf51cdcb396e65df}
-{3634b6fc8ec33db1fc3d4dade0d60106, c77d99f7299b1247cf51cdcb396e65df}
-{55f74361d03b8bcd5c2a8e3d4fc024a6, c77d99f7299b1247cf51cdcb396e65df}
-{79fe0f7fbb2bb5fc29326f781c63440f, c77d99f7299b1247cf51cdcb396e65df}
-{ce069791e5fbc6409b9835a99c55ce06, c77d99f7299b1247cf51cdcb396e65df}
-{b40ab3c691e8cc707da03844545da702, c77d99f7299b1247cf51cdcb396e65df}
-{16e15b39d4f531a933db603e5e1fb4d8, c77d99f7299b1247cf51cdcb396e65df}
-{e2bdaa0eaf6930e1d01ba5eac48cfb4a, c77d99f7299b1247cf51cdcb396e65df}
-{fe23bbe63d8ff6caca25d996a263eb3d, c77d99f7299b1247cf51cdcb396e65df}
-{0bf09d1afbfb0b98038bf1430b3421d6, c77d99f7299b1247cf51cdcb396e65df}
-{30f0a7785e9f74b2a412fd7724990506, 2e586fbe7fa9003a2b31dd8e9145b093}
-{c7f207ca4c60a6f496a1bc63338bc23f, 2e586fbe7fa9003a2b31dd8e9145b093}
-{97081aa024f814817a4519e182499155, 2e586fbe7fa9003a2b31dd8e9145b093}
-{dcd4d30947a30ca7a46ed82701c272d2, 2e586fbe7fa9003a2b31dd8e9145b093}
-{ab3f7e207b4498c819416ebb09d9f777, dcddb75469b4b4875094e14561e573d8}
-{7ef3780b0c666e8421eeb82b1e98fbf0, dcddb75469b4b4875094e14561e573d8}
-{7d473a96885deb8502b636b01444210a, dcddb75469b4b4875094e14561e573d8}
-{2922a0dd2958f5d9d6a998bf4ccd99a6, dcddb75469b4b4875094e14561e573d8}
-{549c36927ea78e1f8a8f1ca5e68987ea, dcddb75469b4b4875094e14561e573d8}
-{c3a7719af51db49e7c91e1648b725fac, dcddb75469b4b4875094e14561e573d8}
-{559f29cfddc6c25e12f12575bb282127, dcddb75469b4b4875094e14561e573d8}
-{fce79960b3ba9a6bdb0539fc17938611, dcddb75469b4b4875094e14561e573d8}
-{965c5c0063f4def6237e552d4ace2121, dcddb75469b4b4875094e14561e573d8}
-{8d56bccd15dbdff9ec3f1ae90865a7fa, dcddb75469b4b4875094e14561e573d8}
-{54fac874c43dfe84f4918aa847dfaa44, dcddb75469b4b4875094e14561e573d8}
-{15f6697edf35e02062e22cae21ad2c3e, dcddb75469b4b4875094e14561e573d8}
+0238830bc488436dc1d0e68971375527
+2e60ed03a063b98e9244122509f7d992
+313bd1df2a36622d3a778adf22ddfc0f
+debb0050354944e100f0725e8179dfb2
+c50a8311b5ff38ade22e570a8cc55ae7
+c1b9d71b0125a63bd7c54eb8e0b366b1
+e223d65576a7b30eba91b97bba61301b
+75fe5b036fb2352a2fa73d22d4d848ca
+5ea1880a0de68a61c97ac29cd74e51bc
+68f022cdfef7e9a7107ea304f3efb243
+ef92c66b409f8ed9029f175fe7b18f95
+40f75aa6ca118b973941414b55d35fee
+969f7798ffa6ae9001460971e9370817
+cb3c06baeb04c9d03fdcf8d21e403fb1
+b6f03ae2825760bf62cdc5012fad8a3f
+7d9f67daeac06a97e591478787be26cd
+40e1a7535bd53a9b776cf72b5a931f0c
+04fd87ea88ca4a0dd61fe6080defce29
+0058a17ab2ee62252ff5022f67ab17f5
+c249f78cd826a84783434a7c888aef91
+9b1722dca20a068589fa4071c822b969
+4368afabc3ac71265d806e6c8a87257b
+2b4316a32bf1879dff022a1e54d29c5d
+48af8451482e0e56b1f90b7eed0f099f
+b0223e6f6a2572fc3044220ef5d754a5
+ece194bbd81eca04ed9fe72079a2cddb
+f020b9caf3a9c35d7eaac1e3681dba24
+4da15381637ab333e5f4a4adad6e26f1
+47685c0df76a15a6cd6c7c682cb45a45
+d07ee2494ca6b00607f1649bdee411c2
+5bded26293d5bfc2fc1adf490a6a0802
+bfa4741216b0f0629d2a4899154e98f9
 """);
 
+        //stop(s);
         if (Ex) ok(""+s, """
                                                0016                                                        |
        0004       0008          0012                          0020           0024           0028           |
@@ -1560,8 +1586,6 @@ Number of Keys:    0
    {sayCurrentTestName();
     final int  N = random_32.length;
 
-    //final Tree t = test_reloadTree(Ex);
-    //t.reloadMemories(tree32);
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeCode()
        {new ForCount(new Int(1), new Int(N+1))
@@ -1589,46 +1613,48 @@ Number of Keys:    0
             delete(k);
 
             if (Ex) s.append(print());
-            new I() {void a() {m.append(memoriesMd5Sum()+"\n");} boolean trace() {return false;}};
+            new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
             dumpProgramState("BBBB");
            }
          };
 
-        //if (immediate()) stop(m);
+        //stop(m);
         ok(()->m, """
-{b2609284c1ca0e924bd62c5c41a62def, 2e586fbe7fa9003a2b31dd8e9145b093}
-{cbfd93841f6ac199d38f24e442d2668f, 2e586fbe7fa9003a2b31dd8e9145b093}
-{0247d7f42d715b373ce2d6b4f353cdb8, c77d99f7299b1247cf51cdcb396e65df}
-{06203b12fa17c5880f93e3b2daa79968, 2e586fbe7fa9003a2b31dd8e9145b093}
-{bba248ec0ac98084cf4151e249c9bdfe, c77d99f7299b1247cf51cdcb396e65df}
-{10f80bc1de7313691a2f6715b28ad934, c77d99f7299b1247cf51cdcb396e65df}
-{8532d468c0c80c057f57139b4da641fc, 2e586fbe7fa9003a2b31dd8e9145b093}
-{8364d7d5af8795b10edf255ad0a9e6d6, c77d99f7299b1247cf51cdcb396e65df}
-{11fc557218ff2a61d35f10e5f0f6a027, 2e586fbe7fa9003a2b31dd8e9145b093}
-{42994a3521633abdca360be1dfa320c5, c77d99f7299b1247cf51cdcb396e65df}
-{8b0b2d2fb74b94fe5ab1943b616c5923, c77d99f7299b1247cf51cdcb396e65df}
-{1cef89f4670cffea2626da089a2aff25, 2e586fbe7fa9003a2b31dd8e9145b093}
-{9d7a2bc27400fe2061a63ccb34bea046, 2e586fbe7fa9003a2b31dd8e9145b093}
-{0670bdc3052de9c74d91cafcc7319046, c77d99f7299b1247cf51cdcb396e65df}
-{46c2b250c0fbe744a0b946805dd4a73d, 2e586fbe7fa9003a2b31dd8e9145b093}
-{7762434601b84916ad8c48813a2046f7, c77d99f7299b1247cf51cdcb396e65df}
-{e0fa57cdbb3156ce362b6d63e69f4384, dcddb75469b4b4875094e14561e573d8}
-{68fd14a95629162d6c753d904e0faf4b, dcddb75469b4b4875094e14561e573d8}
-{380b53e778e8dc8caedeca854a122162, dcddb75469b4b4875094e14561e573d8}
-{d4406edc3497424f5df6bccbd2147bbd, dcddb75469b4b4875094e14561e573d8}
-{d36ea2ecaaf50b3aab5cb1d6d05be0e9, dcddb75469b4b4875094e14561e573d8}
-{a15264c327835f1d463fdacc6498ddb6, dcddb75469b4b4875094e14561e573d8}
-{fb78662da04f323aeb322c77effc44b5, dcddb75469b4b4875094e14561e573d8}
-{9d4610b49fb54c1744351948e88660a5, dcddb75469b4b4875094e14561e573d8}
-{9846ba778c2427836dd3b749115568e4, dcddb75469b4b4875094e14561e573d8}
-{6cc6338cea8c6f34e78dca59745ecdd1, dcddb75469b4b4875094e14561e573d8}
-{46d890fffe88728c35050cb298021cb3, dcddb75469b4b4875094e14561e573d8}
-{aab15d33f1a06f232d1306a6f9a6c63b, dcddb75469b4b4875094e14561e573d8}
-{a1dad5354c4f34c3d2a3e1c27ad38097, dcddb75469b4b4875094e14561e573d8}
-{518b991d38a1c4e7c243f796717f8b1e, dcddb75469b4b4875094e14561e573d8}
-{209397109c058782c07fdc992efad32d, dcddb75469b4b4875094e14561e573d8}
-{db916be2af44f2b2dff39c3243f1d18f, dcddb75469b4b4875094e14561e573d8}
+78e490a168eda3f46dec99d4b930bacc
+8cc323dcac345399639e558ffd0796e4
+2b72962cccc76e81e3864a48e1b151d7
+5d499946d9d2ea3a284b494f0b982364
+e4a91c88dddd6312b4bce910c4462cb7
+99642541846b99f4c68fb3dd87e95626
+1d554b6aeaa61604ae8f23c6e8b949c7
+35ee14fa668e09e490e35e3cf956826f
+a9fe3e38beb8db0ccae401c800e82961
+e15df7e7f5c11073eff6ca6980a367be
+6bc13c31fe65e82a971e5a596bfbe611
+dbe68969f14ac68c532f369fda701ed2
+32c5af01729a6709ab582eae05fe21cf
+4a4ae9ef41319e2d848091414c59344a
+4ed395b468847c72fe96d81690d2d4bd
+4d90e829821abe366589db4d7c128e20
+778e24dee43460eb8fbc340d726875e7
+e9600c72def3e63f13a98f0f606bac55
+9cb83735ecedb9ce219e27ddf848853d
+90a012ecb4cc00637689e4a1b8bf3c9e
+76370fd6d2533032f50486a5a8aba77d
+127911abb919d7998c27b1c8921b87ac
+f0eb240379b227b85b90f6b8a2efe9f1
+5b65077a365a9ad42963a2625446d7ac
+988058b3791f7c0cd535a9a9a2b2d7cc
+902634826e0d95c8065a78ca134d0cd9
+0b7c8cc31469444da00f55d1d42ba175
+01d2834a1c1200828e5c3177c054efaf
+d8cbee1e2b1e7ea3d661af0d78393841
+82b587b7268254a61509bac8c35c754c
+007cda1acd6c514fc227ed9f2c282a49
+d40966b68e48bc20b91312f416774d2c
 """);
+
+        //stop(s);
         if (Ex) ok(s, """
                                                0016                                                        |
        0004       0008          0012                          0020           0024           0028           |
@@ -1732,18 +1758,20 @@ Number of Keys:    0
              };
            }
          };
-        //stop(memoriesMd5Sum());
-        ok(()->memoriesMd5Sum(), "{0e1ee28654479e2608a482c294f15e12, b4b147bc522828731f1a016bfa72c073}");
+        //stop(mainMemoryMd5Sum());
+        ok(()->mainMemoryMd5Sum(), "0e1ee28654479e2608a482c294f15e12");
+        //stop(dumpTree());
         if (Ex) ok(dumpTree(), """
 Tree memory dump
 Leaf   size   :   41
-Branch size   :   33
+Branch size   :   34
 Node   size   :   41
 MaxLeafSize   :    4
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    1
 Number of Keys:    2
+Height        :    1
 Leaf           size:   4, count:   2
  Ref   Key  Data
    0     0     1
