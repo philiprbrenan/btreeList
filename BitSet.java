@@ -124,7 +124,7 @@ public class BitSet extends Program                                             
     return memoryCount.getInt(0);
    }
 
-  void bitSetCode() {}                                                                                                  // Override this method to supply some code to be executed against the bitset
+  void bitSetCode () {}                                                                                                 // Override this method to supply some code to be executed against the bitset
 
 //D1 Get and Set Bits                                                                                                   // Get and set bits in the bitset setting the corresponding paths in the bits trees
 
@@ -158,7 +158,7 @@ public class BitSet extends Program                                             
     subFinish();
    }
 
-  Bit      getBit  (Int Index)  {if (immediate()) checkInActual(Index); return getBitNC(Index);}                         // Get a bit from the bit set
+  Bit       getBit (Int Index)  {if (immediate()) checkInActual(Index); return getBitNC(Index);}                         // Get a bit from the bit set
   Bit     getBitNC (Int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
   boolean getBitNC (int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
 
@@ -739,10 +739,10 @@ public class BitSet extends Program                                             
 
 //D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
 
-  public Bit full () {return new Bit(firstZero().notValid());}                                                          // Whether the bitset is full - in log N time. It might be better to keep a separate count field if the extra overhead can be justified
-  public Bit empty() {return new Bit(firstOne ().notValid());}                                                          // Whether the bitset is empty
+  public Bit  full () {return new Bit(firstZero().notValid());}                                                         // Whether the bitset is full - in log N time. It might be better to keep a separate count field if the extra overhead can be justified
+  public Bit empty () {return new Bit(firstOne ().notValid());}                                                         // Whether the bitset is empty
 
-  public Bit twoOrMoreOnes()                                                                                            //N Whether there two or more ones in the bitset
+  public Bit twoOrMoreOnes ()                                                                                           //N Whether there two or more ones in the bitset
    {subStart("Bitset.twoOrMoreOnes");
     final Bit r = new Bit(false);                                                                                       // Assume contrary
     final Int  p = new Int(topOne());                                                                                   // Start at top of ones tree
@@ -778,7 +778,7 @@ public class BitSet extends Program                                             
 
 //D2 Counts                                                                                                             // The number of bits set to zero or one in the bitset. Superceded by Slots.count as it is believed that the extra cost of maintaining the count is offset by faster access to the current count. However, the count is not being maintained at the bitset level to avoid duplicating effort.  It might be better to transfer the counting logic to Bitset from Slots with the possibility of making it optional when a count is not required
 
-  public Int countAllOnes()                                                                                             // Count ones in bitset
+  public Int countAllOnes ()                                                                                            // Count ones in bitset
    {subStart("Bitset.countAllOnes");
     final Int  c = new Int(0);                                                                                          // Count
     final Bint p = firstOne();                                                                                          // Position in bitset starting at first one
@@ -797,7 +797,7 @@ public class BitSet extends Program                                             
            }
          };
        }
-      // boolean fast() {return true;}
+      // boolean fast () {return true;}
      };
     subFinish();
     return c;                                                                                                           // Return count
@@ -822,7 +822,7 @@ public class BitSet extends Program                                             
            }
          };
        }
-      // boolean fast() {return true;}
+      // boolean fast () {return true;}
      };
     subFinish();
     return c;                                                                                                           // Return count
@@ -872,7 +872,7 @@ public class BitSet extends Program                                             
 
 //D1 Tests                                                                                                              // Tests
 
-  void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
+  void testsStartHere () {super.testsStartHere();}                                                                      // Divider between code to be tested and code to drive testing
 
   static BitSet testBits(boolean Ex, int N) {return testBits(Ex, N, false);}                                            // Create test bitset.
   static BitSet testBits(boolean Ex, int N, boolean Count)                                                              // Create test bitset.
