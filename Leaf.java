@@ -27,13 +27,13 @@ class Leaf extends Program implements Program.Locatable                         
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
     Slots.Build               slots;                                                                                    // Bytes needed for slots
 
-    Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
-    Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory   (Memory.Ref Ref    ) {unitMemoryRef = Ref;       return this;}
-    Build parent   (Program Parent    ) {parent        = Parent;    return this;}
-    Build at       (Int     At        ) {at            = At;        return this;}
+    Build immediate (boolean Immediate ) {immediate     = Immediate; return this;}
+    Build   maxSize (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
+    Build    memory (Memory.Ref Ref    ) {unitMemoryRef = Ref;       return this;}
+    Build    parent (Program Parent    ) {parent        = Parent;    return this;}
+    Build        at (Int     At        ) {at            = At;        return this;}
 
-    Program.Build build()                                                                                               // Create a description of the needed containing program
+    Program.Build build ()                                                                                              // Create a description of the needed containing program
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
       final Slots.Build   s = slots = new Slots.Build().numberOfKeys(maxSize);
       final Program.Build S = s.build();                                                                                // Has the side effect of computing the size of the slots
@@ -51,8 +51,8 @@ class Leaf extends Program implements Program.Locatable                         
       final int size     = posData  + dataUnits();
      }
 
-    int size()      {return memoryPositions.size;}                                                                      // Units needed for the slots
-    int dataUnits() {return maxSize;}                                                                                   // Units needed for the data
+    int      size () {return memoryPositions.size;}                                                                     // Units needed for the slots
+    int dataUnits () {return maxSize;}                                                                                  // Units needed for the data
    }
 
   Leaf(Build Build)                                                                                                     // Create a description of a leaf
@@ -75,9 +75,9 @@ class Leaf extends Program implements Program.Locatable                         
    {clear();                                                                                                            // Clear backing memory
     return this;
    }
-  void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
+  void leafCode () {}                                                                                                   // Override this method to provide code for testing the leaf
 
-  public Bint getLocation() {return at;}                                                                                // The location of this node in memory
+  public Bint getLocation () {return at;}                                                                               // The location of this node in memory
 
   Bit       empty ()                     {return slots.empty();}                                                        // Is the leaf empty
   Bit        full ()                     {return slots.full ();}                                                        // Is the leaf full
@@ -89,14 +89,14 @@ class Leaf extends Program implements Program.Locatable                         
   int bytesNeeded ()                     {return build.size();}                                                         // Number of bytes needed to contain a leaf
   void      clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                          // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
-  void copy (Leaf Source) {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
+  void       copy (Leaf Source) {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                              // Copy one leaf into another leaf
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
-  Bint find          (Int Key) {return getDataFromKey(Key, false);}                                                     // Get the data associated with a key
-  Bint delete        (Int Key) {return getDataFromKey(Key, true);}                                                      // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Bint       find (Int Key) {return getDataFromKey(Key, false);}                                                        // Get the data associated with a key
+  Bint     delete (Int Key) {return getDataFromKey(Key, true);}                                                         // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
-  Bint getDataFromKey(Int Key, boolean Delete)                                                                          // Get the data associated with a key with the option of deleting the key if found
+  Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
@@ -108,7 +108,7 @@ class Leaf extends Program implements Program.Locatable                         
     return r;                                                                                                           // Return data associated with key
    }
 
-  Slots.Insert insert(Int Key, Int Data)                                                                                // Insert a key data pair into a leaf returning the index of the containing slot
+  Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a leaf returning the index of the containing slot
    {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                    // The key must not already be present
     final Slots.Insert i = slots.insert(Key);                                                                           // Insert key
     final Int          k = slots.getSlotToKeyIndex(i.slot.i());                                                         // Key into which the insertion was performed
@@ -119,19 +119,19 @@ class Leaf extends Program implements Program.Locatable                         
 //D1 Compact, Split, Merge                                                                                              // Compact, split or merge leaves
 //D2 Compact                                                                                                            // Compact a leaf to the left or right
 
-  void compactLeft()                                                                                                    // Compact a leaf to the left
+  void compactLeft ()                                                                                                   // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
     slots.compactKeysLeft((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                          // Compact the slots to match
    }
 
-  void compactRight()                                                                                                   // Compact a leaf to the right
+  void compactRight ()                                                                                                  // Compact a leaf to the right
    {slots.compactSlotsRight();                                                                                          // Compact the slots to match
     slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
    }
 
 //D2 Split                                                                                                              // Split a full leaf into two leaves
 
-  Int splitRight(Leaf Right)                                                                                            // Split a full leaf rightwards into a supplied leaf and return the splitting key value
+  Int splitRight (Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf and return the splitting key value
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf left = this;                                                                                             // Current leaf is on the left
     Right.slots.initializeMemory();                                                                                     // Clear target
@@ -139,7 +139,7 @@ class Leaf extends Program implements Program.Locatable                         
     return left.slots.splitRightEven(Right.slots);                                                                      // Split the slots
    }
 
-  Int splitLeft(Leaf Left)                                                                                              // Split a full leaf leftwards into a supplied leaf and return the splitting key value
+  Int splitLeft (Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf and return the splitting key value
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf right = this;                                                                                            // Current leaf is on the right
     Left.slots.initializeMemory();                                                                                      // Clear target
@@ -149,7 +149,7 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D2 Merge                                                                                                              // Merge two leaves
 
-  private void copyMergeData(Leaf Source, Int Start, Int End)                                                           // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
+  private void copyMergeData (Leaf Source, Int Start, Int End)                                                          // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {new ForCount (Start, End)
      {void body(Int Index)
        {data(Index, Source.data(Index));                                                                                // The keys have been compacted left and right so we can copy them from the source position into the same position in the target without collisions
@@ -157,7 +157,7 @@ class Leaf extends Program implements Program.Locatable                         
      };
    }
 
-  Bit mergeRight(Leaf Right)                                                                                            // Merge the specified leaf into the right of this leaf
+  Bit mergeRight (Leaf Right)                                                                                           // Merge the specified leaf into the right of this leaf
    {final Leaf left = this;
     final Int    lc = left .count();
     final Int    rc = Right.count();
@@ -198,7 +198,7 @@ class Leaf extends Program implements Program.Locatable                         
     return r;
    }
 
-  int splitSize() {return maxSize()>>>1;}                                                                               // Size of a split leaf
+  int splitSize () {return maxSize()>>>1;}                                                                              // Size of a split leaf
 
 //D1 Iterate                                                                                                            // Iterate over a leaf
 
@@ -272,11 +272,11 @@ class Leaf extends Program implements Program.Locatable                         
     return s;
    }
 
-  public String toString() {return ""+print();}                                                                         // Print leaf
+  public String toString () {return ""+print();}                                                                        // Print leaf
 
 //D1 Tests                                                                                                              // Tests
 
-  void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
+  void testsStartHere () {super.testsStartHere();}                                                                      // Divider between code to be tested and code to drive testing
 
   static void test_leaf(boolean Ex)
    {sayCurrentTestName();
