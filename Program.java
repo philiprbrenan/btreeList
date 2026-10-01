@@ -2,6 +2,7 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Replace new Int(0) and new Int(1) used as constants with a global constant
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -26,6 +27,7 @@ public class Program extends Test                                               
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
+  final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
@@ -1353,18 +1355,18 @@ public class Program extends Test                                               
       Ref (int Offset) {offset.set(Offset); offsetBits = offset.Mul(Integer.SIZE);}                                     // Offset this ref
       Ref (Int Offset) {offset.set(Offset); offsetBits = offset.Mul(Integer.SIZE);}                                     // Offset this ref
 
-      Ref        copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}             // Copy the specified memory possibly from another byte memory
-      Ref       clear (int Width)            {m.clear(offset, Width);                         return this;}             // Clear memory by setting its bytes to zero
-      Int      getInt (Int I)                {return m.getInt(I.Add(offset));}                                          // Get the int at the indicated position
-      Bit      getBit (Int I)                {return m.getBit(I.Add(offsetBits));}                                      // Get the bit at the bit indexed location
-      Int      getInt ()                     {return m.getInt(offset);}                                                 // Get the referenced int
-      Ref      putInt (Int J)                {m.putInt (offset, J);                           return this;}             // Put the referenced int at zero offset in this memory reference
-      Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);             return this;}             // Set the int at the indicated position relative to the start to the specified value
-      Ref      putBit (Int I, Bit K)         {m.putBit(        I.Add(offsetBits), K);         return this;}             // Set the bit at the bit indexed position
-      Ref        step (int Width)            {return new Ref(offset.Add(Width));}                                       // Step up from an existing ref to make a new one - only while not executing
+      Ref       copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from this or another memory
+      Ref      clear (int Width)            {m.clear(offset, Width);                         return this;}              // Clear memory by setting its bytes to zero
+      Int     getInt (Int I)                {return m.getInt(I.Add(offset));}                                           // Get the int at the indicated position
+      Bit     getBit (Int I)                {return m.getBit(I.Add(offsetBits));}                                       // Get the bit at the bit indexed location
+      Int     getInt ()                     {return m.getInt(offset);}                                                  // Get the referenced int
+      Ref     putInt (Int J)                {m.putInt (offset, J);                           return this;}              // Put the referenced int at zero offset in this memory reference
+      Ref     putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);             return this;}              // Set the int at the indicated position relative to the start to the specified value
+      Ref     putBit (Int I, Bit K)         {m.putBit(        I.Add(offsetBits), K);         return this;}              // Set the bit at the bit indexed position
+      Ref       step (int Width)            {return new Ref(offset.Add(Width));}                                        // Step up from an existing ref to make a new one - only while not executing
 
-      int      getInt (int I) {                                        return units[I+offset.i()];}                     // Get an integer immediately when debugging
-      boolean  getBit (int I) {final int i = getInt(I / Integer.SIZE); return Test.getBit(i, I % Integer.SIZE);}        // Get a boolean  immediately when debugging
+      int     getInt (int I) {                                        return units[I+offset.i()];}                      // Get an integer immediately when debugging
+      boolean getBit (int I) {final int i = getInt(I / Integer.SIZE); return Test.getBit(i, I % Integer.SIZE);}         // Get a boolean  immediately when debugging
 
       public String toString () {final StringBuilder s = saySb("Ref: " , offset.i()); return ""+s;}                     // Print memory reference
      } // Ref
@@ -1510,6 +1512,8 @@ endmodule
 
   interface Locatable {Bint getLocation();}                                                                             // The location of an object in memory
 
+  String mainMemoryMd5Sum () {return md5Sum(unitMemory.units);}                                                         // Get md5 sum of main memory
+
   String memoriesMd5Sum ()                                                                                              // Get md5 sums of memories without changing the state of the program. Useful for confirming that memory contents are as expected during execution without any observable side effects in the executing program.
    {final StringJoiner j = new StringJoiner(", ");
     for (Memory m : memories()) if (m != intMemory() && m != bitMemory) j.add(md5Sum(m.units));
@@ -1627,7 +1631,7 @@ endmodule
 // D2 Execute                                                                                                           // Execute the code in the current program
 
   void execute ()                                                                                                       // Execute the current code
-   {if (immediate()) return;                                                                                            // The code has already been executed interpretively
+   {if (immediate() || !suppressImmediateOnly) return;                                                                  // The code has already been executed interpretively and, optionally, that is all that is required
 
     if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
     else if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                      // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
