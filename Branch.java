@@ -101,7 +101,7 @@ class Branch extends Program implements Program.Locatable                       
   Bint   find (Int Key) {return getDataFromKey(Key, false);}                                                            // Get the data associated with a key
   Bint delete (Int Key) {return getDataFromKey(Key, true);}                                                             // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
-  Bint getDataFromKey(Int Key, boolean Delete)                                                                          // Get the data associated with a key with the option of deleting the key if found
+  Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
@@ -126,7 +126,7 @@ class Branch extends Program implements Program.Locatable                       
      }
    }
 
-  StepDown stepDown(Int Key)                                                                                            // Reference to the next branch down that might contain the specified key
+  StepDown stepDown (Int Key)                                                                                           // Reference to the next branch down that might contain the specified key
    {final Slots.Find f = slots.find(Key);                                                                               // Find result
     final StepDown   d = new StepDown(Key);                                                                             // Result
 
@@ -154,7 +154,7 @@ class Branch extends Program implements Program.Locatable                       
     return d;                                                                                                           // Result
    }
 
-  Slots.Insert insert(Int Key, Int Data)                                                                                // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
+  Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
    {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
     final Slots.Insert i = slots.insert(Key);
     final Int          k = slots.getSlotToKeyIndex(i.slot.i());
@@ -162,7 +162,7 @@ class Branch extends Program implements Program.Locatable                       
     return i;                                                                                                           // Return the slot in the branch in which the key, data pair was inserted
    }
 
-  Int insert(Int Key, Int Data, Bint BelowSlot)                                                                         // Insert a key data pair into a branch when the slot below which to make the insertion is known, assuming the key is not already present, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
+  Int insert (Int Key, Int Data, Bint BelowSlot)                                                                        // Insert a key data pair into a branch when the slot below which to make the insertion is known, assuming the key is not already present, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
    {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     new If (BelowSlot)                                                                                                  // Insert below the specified slot if it is valid
@@ -258,7 +258,7 @@ class Branch extends Program implements Program.Locatable                       
 
 //D2 Merge                                                                                                              // Merge two branches
 
-  private void copyMergeData(Branch Source, Int Start, Int End)                                                         // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
+  private void copyMergeData (Branch Source, Int Start, Int End)                                                        // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {subStart("Branch.copyMergeData");
     new ForCount (Start, End)
      {void body(Int Index)
@@ -393,13 +393,13 @@ class Branch extends Program implements Program.Locatable                       
     return s;
    }
 
-  public String toString() {return ""+print();}                                                                         // Print branch
+  public String toString () {return ""+print();}                                                                        // Print branch
 
 //D1 Tests                                                                                                              // Tests
 
-  void testsStartHere() {super.testsStartHere();}                                                                       // Divider between code to be tested and code to drive testing
+  void testsStartHere () {super.testsStartHere();}                                                                      // Divider between code to be tested and code to drive testing
 
-  static void test_branch(boolean Ex)
+  static void test_branch (boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     //l.initializeMemory();
