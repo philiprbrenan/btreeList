@@ -382,7 +382,7 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-//D4 Split                                                                                                              // Split full slots into left and right hand pieces
+//D4 Split                                                                                                              // Split full slots into left and right hand pieces. An even split splits the slots into two equal parts. An odd split removes the middle key and splits the remainder into two equal parts,  This is a nice symmetry in narrow slot sets but it is probably irrelevant in wide slot sets.
 
 //D5 Even                                                                                                               // Splitting an even number of slots
 
@@ -2425,8 +2425,8 @@ keys     :    0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_insert();
+   {oldTests();
+    //test_insert();
    }
 // perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList"
   public static void main(String[] args)                                                                                // Test if called as a program
