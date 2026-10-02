@@ -27,7 +27,7 @@ public class Program extends Test                                               
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
-  final static boolean             suppressImmediateOnly =!true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
+  final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
@@ -2998,8 +2998,10 @@ endmodule
      };
     P.scDieAreaX = 300; P.scDieAreaY = 400;
     P.execute();
-    ok(P.intMemory.size(), P.immediate() ? 0 : 2);
-    ok(Q.intMemory.size(), Q.immediate() ? 0 : 2);
+    if ( P.immediate()) ok(P.intMemory.size(), 0);
+    if ( Q.immediate()) ok(Q.intMemory.size(), 0);
+    if (!P.immediate() && Program.suppressImmediateOnly) ok(P.intMemory.size(), 2);
+    if (!Q.immediate() && Program.suppressImmediateOnly) ok(Q.intMemory.size(), 2);
    }
 
   static void test_remote()
@@ -3772,8 +3774,7 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_maxMin();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
