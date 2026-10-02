@@ -7,7 +7,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 
-class Slots extends Program                                                                                             // Maps a sparse slot to a key allowing keys to be inserted in order into an array that can be binary searched
+class Slots extends Program                                                                                             // Maps a sparse set of slots to a dense set of keys key allowing keys to be inserted in order into an array that can be binary searched
  {final int              numberOfKeys;                                                                                  // The maximum number of references maintained by these slots
   final int                      size;                                                                                  // Number of bytes needed to hold slots
   final BitSet        usedSlotsToKeys;                                                                                  // The slots in use.  There are more slots than references so that they can be distributed with intervening empty slots to make insertions faster
@@ -386,7 +386,7 @@ class Slots extends Program                                                     
 
 //D5 Even                                                                                                               // Splitting an even number of slots
 
-  Int splitRightEven(Slots Right)                                                                                       // Split a full set of slots that contains an even number of entries then redistribute the slots. Return the splitting key
+  Int splitRightEven (Slots Right)                                                                                      // Split a full set of slots that contains an even number of entries then redistribute the slots. Return the splitting key
    {subStart("Slots.splitRightEven");
     final int N = numberOfKeys;
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
@@ -407,7 +407,7 @@ class Slots extends Program                                                     
     return sk;                                                                                                          // Return splitting key
    }
 
-  Int splitLeftEven(Slots Left)                                                                                         // Split a full set of slots that contains an even number of entries, redistribute the slots. Return the splitting key
+  Int splitLeftEven (Slots Left)                                                                                        // Split a full set of slots that contains an even number of entries, redistribute the slots. Return the splitting key
    {subStart("Slots.splitLeftEven");
     final int N = numberOfKeys;
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
@@ -430,7 +430,7 @@ class Slots extends Program                                                     
 
 //D5 Odd                                                                                                                // Splitting an odd number of slots
 
-  Int splitRightOdd(Slots Right)                                                                                        // Split a full set of slots that contains an odd number of entries redistributing the slots in the source and target slots. Return the index of the splitting key
+  Int splitRightOdd (Slots Right)                                                                                       // Split a full set of slots that contains an odd number of entries redistributing the slots in the source and target slots. Return the index of the splitting key
    {subStart("Slots.splitRightOdd");
     final int N = numberOfKeys;
     final Int M = new Int(N/2);                                                                                         // Mid point
@@ -456,7 +456,7 @@ class Slots extends Program                                                     
     return sk;                                                                                                          // Return the index of the splitting key
    }
 
-  Int splitLeftOdd(Slots Left)                                                                                          // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots. Return the index of the splitting key
+  Int splitLeftOdd (Slots Left)                                                                                         // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots. Return the index of the splitting key
    {subStart("Slots.splitLeftOdd");
     final int N = numberOfKeys;
     final Int M = new Int(N/2);                                                                                         // Mid point
