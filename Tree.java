@@ -189,7 +189,15 @@ class Tree extends Program                                                      
   Branch branch (Int Node, boolean Check)                                                                               // Index an existing branch in memory optionally confirming that it really is a branch
    {if (immediate() && Check && !isBranch(Node).b()) stop("Not a branch:", Node);                                       // Check the location actually holds a branch
     final Memory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                         // Address branch
-    return new Branch(build.branch.parent(program()).memory(r).at(Node));                                               // Base branch at the indexed address
+    final Tree    tree = this;                                                                                          // Current tree
+    return new Branch(build.branch.parent(program()).memory(r).at(Node));                                                // Base branch at the indexed address
+//     {Bit full()
+//       {final Int d = new Int(1).up(tree.height().sub(level())).dec();                                                  // Make branches close to the root smaller to reduce queueing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
+//        d.min(maxBranchSize);                                                                                           // Upper limit on branch size
+//say("AAAA", count(), d);
+//        return count().ge(d);                                                                                           // Is the branch full by this criteria
+//       }
+//     };
    }
 
   Branch makeBranch (Int Node)                                                                                          // Make a branch from the specified node
@@ -1111,6 +1119,57 @@ Height        :    1
               test_insert(false);
    }
 
+  static void test_smallRoot (boolean Ex)
+   {sayCurrentTestName();
+
+    final int  N = 128;
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(15).numberOfNodes(N).immediate(Ex))
+     {void treeCode()
+       {new ForCount(new Int(1), new Int(N+1))
+         {void body(Int Index)
+           {insert(Index, Index.Mul(11));
+            dumpProgramState("AAAA");
+           }
+         };
+        height().ok(4);
+
+        //stop(mainMemoryMd5Sum());
+        ok(()->mainMemoryMd5Sum(), "c039873361f0bdc304c9b2def96e7ab0");
+
+        stop(dump());
+        if (Ex) ok(dump(), """
+                                                                                                                           0016                                                                                                                                 |
+                                                                                                                           (0,3)20                                                                                                                              |
+                                                                                                                           [19,3]3                                                                                                                              |
+                                                   0008                                                                                                                                          0024                                                           |
+                                                   (19,0,2)14                                                                                                                                    (20,0,2)6                                                      |
+                                                   [9,2]2                                                                                                                                        [21,2]2                                                        |
+       0002           0004           0006                             0010             0012              0014                              0018              0020              0022                               0026            0028            0030          |
+       (9,19,0)       (9,19,2)       (9,19,4)8                        (14,19,0)        (14,19,2)         (14,19,4)13                       (21,20,0)         (21,20,2)         (21,20,4)18                        (6,20,0)        (6,20,2)        (6,20,4)2     |
+       [3,0]1         [4,2]1         [7,4]1                           [10,0]1          [5,2]1            [12,4]1                           [15,0]1           [11,2]1           [17,4]1                            [22,0]1         [16,2]1         [24,4]1       |
+1,2            3,4            5,6             7,8            9,10              11,12            13,14               15,16         17,18             19,20             21,22               23,24           25,26           27,28           29,30            31,32|
+(3,9,0)        (4,9,2)        (7,9,4)         (8,9)          (10,14,0)         (5,14,2)         (12,14,4)           (13,14)       (15,21,0)         (11,21,2)         (17,21,4)           (18,21)         (22,6,0)        (16,6,2)        (24,6,4)         (2,6)|
+""");
+
+        stop(print());
+        if (Ex) ok(print(), """
+                                                           0016                                                                    |
+                        0008                                                                   0024                                |
+   0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
+1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
+""");
+
+        maxSteps(9_999_999);
+        execute();
+       }
+     };
+   }
+
+  static void test_smallRoot ()
+   {          test_smallRoot(true);
+              test_smallRoot(false);
+   }
+
   static void test_insertMerged(boolean Ex)
    {sayCurrentTestName();
     final int N = 32;
@@ -1835,7 +1894,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insertReverse();
+    test_smallRoot(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
