@@ -230,15 +230,18 @@ class Branch extends Program implements Program.Locatable                       
 
   private Int splittingKey ()                                                                                           // Splitting key for a branch assuming that the branch has been compacted to the right
    {subStart("Branch.splittingKey");
-    if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
-    final Int r = slots.getSlotToKeyValue(new Int(maxSize/2));
+//  if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+    if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
+//  final Int r = slots.getSlotToKeyValue(new Int(maxSize/2));
+    final Int r = slots.getSlotToKeyValue(count().down());
     subFinish();
     return r;
    }
 
   Int splitRight (Branch Right)                                                                                         // Split a full branch rightwards into a supplied branch and return the splitting key
    {subStart("Branch.splitRight");
-    if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+//  if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+    if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
     final Branch L = this, R = Right;
     R.slots.initializeMemory();                                                                                         // Clear the target
     R.refData.copy(L.refData, L.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
@@ -252,7 +255,8 @@ class Branch extends Program implements Program.Locatable                       
 
   Int splitLeft (Branch Left)                                                                                           // Split a full branch leftwards into a supplied branch and return the splitting key
    {subStart("Branch.mergeRight");
-    if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+//  if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+    if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
     final Branch L = Left, R = this;
     L.slots.initializeMemory();                                                                                         // Clear target
     L.refData.copy(R.refData, R.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
