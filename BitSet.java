@@ -16,7 +16,7 @@ public class BitSet extends Program                                             
   final Int            bitSizeInt;                                                                                      // Bitsize as an Int to avoid overloading the program counter indexed constant array
   final Build               build;                                                                                      // Memory to use
   final Memory.Ref      memoryRef;                                                                                      // Build used to create bitset
-  final Memory.Ref    memoryCount;                                                                                      // Memory for count field of present
+  final Memory.Ref    memoryCount;                                                                                      // Memory for count field if present
   static int         bitsetNumbers = 0;                                                                                 // Bitsets created
   final  int          bitsetNumber = ++bitsetNumbers;                                                                   // Number of this bitset
   final  int[]     limitsUpperOne;                                                                                      // The upper limit of the ones  tree for each possible position in the ones tree
