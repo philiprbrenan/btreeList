@@ -20,13 +20,13 @@ public class Program extends Test                                               
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
-  final static boolean                runSiliconCompiler =!true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
+  final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
-  final static boolean       suppressExecutionStatistics =!true;                                                        // Print wasted read and write operations and other execution statistics
+  final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
@@ -610,7 +610,8 @@ public class Program extends Test                                               
     Int constant ()       {constant = true; return this;}                                                               // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
     enum Ops                                                                                                            // Possible integer operations
-     {abs, add, add2, dec, del, div, down, eq, ez, ge, gt, inc, le, lt, mod, mul, neg, ne, nz, set, sqrt, sub, up, zero
+     {abs, add, add2, dec, del, div, down, eq,  ez,   ge,  gt, inc, le, lt,
+      max, min, mod,  mul, neg, ne,  nz,   set, sqrt, sub, up, zero
      };
 
     Int   set (int  I) {return ie(Ops.set , I);}
@@ -618,7 +619,7 @@ public class Program extends Test                                               
     Int   set (Bint I) {return ie(Ops.set , I.i());}
     Int   add (int  I) {return ie(Ops.add , I);}
     Int   add (Int  I) {return ie(Ops.add , I);}
-    Int  add2 (Int  I) {return ie(Ops.add2, I);}                                                                        //N
+    Int  add2 (Int  I) {return ie(Ops.add2, I);}
     Int   sub (int  I) {return ie(Ops.sub , I);}
     Int   sub (Int  I) {return ie(Ops.sub , I);}
     Int   mul (int  I) {return ie(Ops.mul , I);}
@@ -626,16 +627,24 @@ public class Program extends Test                                               
     Int   div (int  I) {return ie(Ops.div , I);}
     Int   div (Int  I) {return ie(Ops.div , I);}
     Int   mod (int  I) {return ie(Ops.mod , I);}
-    Int   mod (Int  I) {return ie(Ops.mod , I);}                                                                        //N
+    Int   mod (Int  I) {return ie(Ops.mod , I);}
     Int   inc ()       {return ie(Ops.inc    );}
     Int   dec ()       {return ie(Ops.dec    );}
-    Int   up  ()       {return ie(Ops.up     );}                                                                        //N
+    Int   up  ()       {return ie(Ops.up     );}
+    Int   up  (int I)  {return ie(Ops.up,   I);}
+    Int   up  (Int I)  {return ie(Ops.up,   I);}
     Int   down()       {return ie(Ops.down   );}
-    Int   sqrt()       {return ie(Ops.sqrt   );}                                                                        //N
-    Int   neg ()       {return ie(Ops.neg    );}                                                                        //N
+    Int   down(int I)  {return ie(Ops.down, I);}
+    Int   down(Int I)  {return ie(Ops.down, I);}
+    Int   sqrt()       {return ie(Ops.sqrt   );}
+    Int   neg ()       {return ie(Ops.neg    );}
     Int   abs ()       {return ie(Ops.abs    );}
     Int  zero ()       {return ie(Ops.zero   );}
-    Int   del (int  I) {return ie(Ops.del , I);}
+    Int   del (int  I) {return ie(Ops.del,  I);}
+    Int   max (int  I) {return ie(Ops.max,  I);}
+    Int   max (Int  I) {return ie(Ops.max,  I);}
+    Int   min (int  I) {return ie(Ops.min , I);}
+    Int   min (Int  I) {return ie(Ops.min , I);}
 
     Int ie (Ops Op)                                                                                                     // Create an instruction that can either be executed immediately one by one or later en masse
      {T(Op);                                                                                                            // Load target if necessary
@@ -796,14 +805,18 @@ public class Program extends Test                                               
      {executingCheck();
       v = true;
       switch (Op)
-       {case set  -> {      targetInt(              I);}
-        case del  -> {      targetInt(              I); v = false;}                                                     // Mark the integer as having no defined value
-        case add  -> { x(); targetInt(targetInt() + I);}
-        case sub  -> { x(); targetInt(targetInt() - I);}
-        case mul  -> { x(); targetInt(targetInt() * I);}
-        case div  -> { x(); targetInt(targetInt() / I);}
-        case mod  -> { x(); targetInt(targetInt() % I);}
-        case add2 -> { x(); targetInt(targetInt() + I + I);}
+       {case set  -> {     targetInt(              I);}
+        case del  -> {     targetInt(              I); v = false;}                                                     // Mark the integer as having no defined value
+        case add  -> {x(); targetInt(targetInt() + I);}
+        case sub  -> {x(); targetInt(targetInt() - I);}
+        case mul  -> {x(); targetInt(targetInt() * I);}
+        case div  -> {x(); targetInt(targetInt() / I);}
+        case mod  -> {x(); targetInt(targetInt() % I);}
+        case add2 -> {x(); targetInt(targetInt() + I + I);}
+        case down -> {x(); targetInt(targetInt() >>>   I);}
+        case up   -> {x(); targetInt(targetInt() <<    I);}
+        case min  -> {x(); targetInt(targetInt() <     I ? targetInt() : I);}
+        case max  -> {x(); targetInt(targetInt() >     I ? targetInt() : I);}
         default   -> stop("Op not implemented:", Op);
        }
       jtrace();
@@ -837,14 +850,18 @@ public class Program extends Test                                               
      {final String        n = in0v(), c = pV(cawci);                                                                    // The constant will be stored in the instruction to constant map so it cannot be used to address a fast integer target
       final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set  -> {s.append(        c);}
-        case del  -> {s.append(        c);}
-        case add  -> {s.append(n+" + "+c);}
-        case sub  -> {s.append(n+" - "+c);}
-        case mul  -> {s.append(n+" * "+c);}
-        case div  -> {s.append(n+" / "+c);}
-        case mod  -> {s.append(n+" % "+c);}
-        case add2 -> {s.append(n+" + "+c+"*2");}
+       {case set  -> {s.append(         c);}
+        case del  -> {s.append(         c);}
+        case add  -> {s.append(n+" + " +c);}
+        case sub  -> {s.append(n+" - " +c);}
+        case mul  -> {s.append(n+" * " +c);}
+        case div  -> {s.append(n+" / " +c);}
+        case mod  -> {s.append(n+" % " +c);}
+        case add2 -> {s.append(n+" + " +c+"*2");}
+        case down -> {s.append(n+" >> "+c);}
+        case up   -> {s.append(n+" << "+c);}
+        case min  -> {s.append(n+" < " +c+" ? "+n+" : "+c);}
+        case max  -> {s.append(n+" > " +c+" ? "+n+" : "+c);}
         default   -> stop("Op not implemented:", Op);
        }
       return vExecuteAndTrace(""+s);
@@ -854,13 +871,17 @@ public class Program extends Test                                               
      {final String        n = in0v(), i = I.in1v();                                                                     // Memory fields for target and source integers
       final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set  -> {s.append(        i);}
-        case add  -> {s.append(n+" + "+i);}
-        case sub  -> {s.append(n+" - "+i);}
-        case mul  -> {s.append(n+" * "+i);}
-        case div  -> {s.append(n+" / "+i);}
-        case mod  -> {s.append(n+" % "+i);}
-        case add2 -> {s.append(n+" + "+i+"*2");}
+       {case set  -> {s.append(         i);}
+        case add  -> {s.append(n+" + " +i);}
+        case sub  -> {s.append(n+" - " +i);}
+        case mul  -> {s.append(n+" * " +i);}
+        case div  -> {s.append(n+" / " +i);}
+        case mod  -> {s.append(n+" % " +i);}
+        case add2 -> {s.append(n+" + " +i+"*2");}
+        case down -> {s.append(n+" >> "+i);}
+        case up   -> {s.append(n+" << "+i);}
+        case min  -> {s.append(n+" < " +i+" ? "+n+" : "+i);}
+        case max  -> {s.append(n+" > " +i+" ? "+n+" : "+i);}
         default   -> stop("Op not implemented:", Op);
        }
       return vExecuteAndTrace(""+s);
@@ -882,35 +903,43 @@ public class Program extends Test                                               
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
-    Int Add2 (Int I) {return dup().add2(I);}                                                                            //N
+    Int Add2 (Int I) {return dup().add2(I);}
     Int  Sub (int I) {return dup().sub(I) ;}
     Int  Sub (Int I) {return dup().sub(I) ;}
     Int  Mul (int I) {return dup().mul(I) ;}
     Int  Mul (Int I) {return dup().mul(I) ;}
     Int  Div (int I) {return dup().div(I) ;}
-    Int  Div (Int I) {return dup().div(I) ;}                                                                            //N
+    Int  Div (Int I) {return dup().div(I) ;}
     Int  Mod (int I) {return dup().mod(I) ;}
-    Int  Mod (Int I) {return dup().mod(I) ;}                                                                            //N
+    Int  Mod (Int I) {return dup().mod(I) ;}
     Int  Inc ()      {return dup().add(1) ;}
     Int  Dec ()      {return dup().sub(1) ;}
-    Int   Up ()      {return dup().up()   ;}                                                                            //N
+    Int   Up ()      {return dup().up()   ;}
+    Int   Up (int I) {return dup().up(I)  ;}
+    Int   Up (Int I) {return dup().up(I)  ;}
     Int Down ()      {return dup().down() ;}
-    Int Sqrt ()      {return dup().sqrt() ;}                                                                            //N
-    Int  Neg ()      {return dup().neg()  ;}                                                                            //N
-    Int  Abs ()      {return dup().abs()  ;}                                                                            //N
+    Int Down (int I) {return dup().down(I);}
+    Int Down (Int I) {return dup().down(I);}
+    Int Sqrt ()      {return dup().sqrt() ;}
+    Int  Neg ()      {return dup().neg()  ;}
+    Int  Abs ()      {return dup().abs()  ;}
+    Int  Max (int I) {return dup().max(I) ;}
+    Int  Max (Int I) {return dup().max(I) ;}
+    Int  Min (int I) {return dup().min(I) ;}
+    Int  Min (Int I) {return dup().min(I) ;}
 
     Bit   eq (int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a constant integer
-    Bit   ne (int I) {return bie(Ops.ne, I);}                                                                           //N
+    Bit   ne (int I) {return bie(Ops.ne, I);}
     Bit   le (int I) {return bie(Ops.le, I);}
     Bit   lt (int I) {return bie(Ops.lt, I);}
     Bit   ge (int I) {return bie(Ops.ge, I);}
     Bit   gt (int I) {return bie(Ops.gt, I);}
 
     Bit   eq (Int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a variable integer
-    Bit   ne (Int I) {return bie(Ops.ne, I);}                                                                           //N
+    Bit   ne (Int I) {return bie(Ops.ne, I);}
     Bit   le (Int I) {return bie(Ops.le, I);}
     Bit   lt (Int I) {return bie(Ops.lt, I);}
-    Bit   ge (Int I) {return bie(Ops.ge, I);}                                                                           //N
+    Bit   ge (Int I) {return bie(Ops.ge, I);}
     Bit   gt (Int I) {return bie(Ops.gt, I);}
 
     Bit   ez ()      {return bie(Ops.ez);}
@@ -3665,6 +3694,50 @@ writeIntEnable =        0
               test_compareZero(false);
    }
 
+  static void test_upDown (Boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Int a = new Int("a", 1);
+        final Int b = new Int("b", 2);
+        a.Up  () .ok(2);
+        a.Up  (2).ok(4);
+        a.Up  (b).ok(4);
+        a.up  (3).ok(8);
+        a.Down() .ok(4);
+        a.Down(2).ok(2);
+        a.Down(b).ok(2);
+        a.down(3).ok(1);
+        execute();
+       }
+     };
+   }
+
+  static void test_upDown()
+   {          test_upDown(true);
+              test_upDown(false);
+   }
+
+  static void test_maxMin (Boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Int a = new Int("a", 2);
+        final Int b = new Int("b", 4);
+        a.Max(4).ok(4);
+        a.Min(4).ok(a);
+        a.Max(b).ok(b);
+        a.Min(b).ok(a);
+        execute();
+       }
+     };
+   }
+
+  static void test_maxMin()
+   {          test_maxMin(true);
+              test_maxMin(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_ifThen();
     test_ifElse();
@@ -3694,11 +3767,13 @@ writeIntEnable =        0
     test_fastInt();
     test_pcConstant();
     test_compareZero();
+    test_upDown();
+    test_maxMin();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_verilogArray();
+   {//oldTests();
+    test_maxMin();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
