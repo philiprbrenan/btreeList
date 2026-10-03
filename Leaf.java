@@ -191,7 +191,7 @@ class Leaf extends Program implements Program.Locatable                         
         Left .slots.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
         right.slots.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
 
-        right.copyMergeData(Left, new Int(0), lc);                                                                      // Copy the data values associated with the slots
+        right.copyMergeData(Left, Zero, lc);                                                                            // Copy the data values associated with the slots
         right.slots.mergeFromLeftEven(Left.slots);                                                                      // Merge the slots
        }
      };
@@ -285,7 +285,7 @@ class Leaf extends Program implements Program.Locatable                         
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     //testStop("AAAA", l.print());
     l.check(l.print(), """
 Leaf           size:   8, count:   4
@@ -295,17 +295,17 @@ Leaf           size:   8, count:   4
    2     3    33
    1     4    44
 """);
-    l.find  (l.new Int(1)).ok(11);
+    l.find  (l.One).ok(11);
     l.find  (l.new Int(2)).ok(22);
     l.find  (l.new Int(3)).ok(33);
     l.find  (l.new Int(4)).ok(44);
 
-    l.delete(l.new Int(1)).ok(11);
+    l.delete(l.One).ok(11);
     l.delete(l.new Int(2)).ok(22);
     l.delete(l.new Int(3)).ok(33);
     l.delete(l.new Int(4)).ok(44);
 
-    l.delete(l.new Int(1)).valid().ok(false);
+    l.delete(l.One).valid().ok(false);
 
     l.maxSteps(999_999);
     l.execute();
@@ -323,7 +323,7 @@ Leaf           size:   8, count:   4
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     l.delete(l.new Int(2));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
@@ -358,7 +358,7 @@ Leaf           size:   8, count:   3
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Leaf           size:   8, count:   4
@@ -394,7 +394,7 @@ Leaf           size:   8, count:   4
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
@@ -449,7 +449,7 @@ Leaf           size:   8, count:   4
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
-    r.insert(r.new Int(1), r.new Int(11));
+    r.insert(r.One, r.new Int(11));
     r.insert(r.new Int(6), r.new Int(66));
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
@@ -503,7 +503,7 @@ Leaf           size:   8, count:   4
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
@@ -569,7 +569,7 @@ Leaf           size:   8, count:   8
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
-    r.insert(r.new Int(1), r.new Int(11));
+    r.insert(r.One, r.new Int(11));
     r.insert(r.new Int(6), r.new Int(66));
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
@@ -637,7 +637,7 @@ Leaf           size:   8, count:   8
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
@@ -654,8 +654,8 @@ Leaf           size:   8, count:   8
    5     7    77
    7     8    88
 """);
-    l.find(l.new Int(0)).notValid().ok(true);
-    l.find(l.new Int(1)).ok(11);
+    l.find(l.Zero).notValid().ok(true);
+    l.find(l.One).ok(11);
     l.find(l.new Int(2)).ok(22);
     l.find(l.new Int(3)).ok(33);
     l.find(l.new Int(4)).ok(44);
@@ -666,7 +666,7 @@ Leaf           size:   8, count:   8
     l.find(l.new Int(9)).notValid().ok(true);
 
     l.delete(l.new Int(2)).ok(22); l.find(l.new Int(2)).notValid().ok(true); l.count().ok(7);
-    l.delete(l.new Int(1)).ok(11); l.find(l.new Int(1)).notValid().ok(true); l.count().ok(6);
+    l.delete(l.One).ok(11); l.find(l.One).notValid().ok(true); l.count().ok(6);
     l.delete(l.new Int(4)).ok(44); l.find(l.new Int(4)).notValid().ok(true); l.count().ok(5);
     l.delete(l.new Int(3)).ok(33); l.find(l.new Int(3)).notValid().ok(true); l.count().ok(4);
     l.delete(l.new Int(8)).ok(88); l.find(l.new Int(8)).notValid().ok(true); l.count().ok(3);
@@ -695,7 +695,7 @@ Leaf           size:   8, count:   0
         insert(new Int(2), new Int(22));
         insert(new Int(4), new Int(44));
         insert(new Int(3), new Int(33));
-        insert(new Int(1), new Int(11));
+        insert(One, new Int(11));
         insert(new Int(6), new Int(66));
         insert(new Int(7), new Int(77));
         insert(new Int(5), new Int(55));
@@ -743,15 +743,15 @@ Leaf           size:   8, count:   8
      {void leafCode()
        {final Leaf l = this;
         //l.initializeMemory();
-        l.data(new Int(1), new Int(A));
-        l.data(new Int(1))     .ok(A);
+        l.data(One, new Int(A));
+        l.data(One)     .ok(A);
         final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
         //r.initializeMemory();
         r.copy(l);
 
         l.clear();
-        l.data(new Int(1))  .ok(0);
-        r.data(new Int(1))  .ok(A);
+        l.data(One)  .ok(0);
+        r.data(One)  .ok(A);
         execute();
        }
      };
