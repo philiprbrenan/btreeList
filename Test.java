@@ -865,7 +865,7 @@ public class Test                                                               
    {appendFile(FilePath, new StringBuilder(String));
    }
 
-  static String writeFile (String FilePath, StringBuilder String)                                                         // Write a string builder to a file
+  static String writeFile (String FilePath, StringBuilder String)                                                       // Write a string builder to a file
    {try
      {makePath(folderName(FilePath));
       Files.write(Paths.get(FilePath), String.toString().getBytes());
@@ -877,11 +877,11 @@ public class Test                                                               
     return FilePath;
    }
 
-  static String writeFile (String FilePath, String String)                                                                // Write a string to a file
+  static String writeFile (String FilePath, String String)                                                              // Write a string to a file
    {return writeFile(FilePath, new StringBuilder(String));
    }
 
-  static String deleteFile (String FilePath, boolean required)                                                            // Delete a file
+  static String deleteFile (String FilePath, boolean required)                                                          // Delete a file
    {try
      {Files.delete(Paths.get(FilePath));
      }
@@ -892,7 +892,7 @@ public class Test                                                               
    }
   static String deleteFile (String FilePath) {return deleteFile(FilePath, false);}
 
-  static String makePath (String Folder)                                                                                  // Make a path
+  static String makePath (String Folder)                                                                                // Make a path
    {try
      {Files.createDirectories(Paths.get(Folder));
      }
