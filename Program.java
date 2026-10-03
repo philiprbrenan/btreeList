@@ -2,7 +2,7 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Replace new Int(0) and new Int(1) used as constants with a global constant
+// Replace Zero and One used as constants with a global constant
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -62,6 +62,8 @@ public class Program extends Test                                               
   final Memory                                 bitMemory;                                                               // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
   final String                                     cawci = "arrayData_pcConstant";                                      // The name of the variable containing the constant associated with the current instruction
   static String                                subsTrace = null;                                                        // Traceback through the methods currently active
+  final Int                                         Zero;                                                               // Integer constant zero
+  final Int                                          One;                                                               // Integer constant one
   I                                            executing = null;                                                        // Instruction currently being executed
   I                                            compiling = null;                                                        // Instruction currently being compiled
   int                                           maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -104,9 +106,10 @@ public class Program extends Test                                               
     pcConstant      = p ? new TreeMap<>()              : program().pcConstant;                                          // Instruction equivalence set identified by program counter
     intMemory       = p ? new Memory(0, "Ints", false) : program().intMemory;                                           // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
     bitMemory       = p ? new Memory(0, "Bits", false) : program().bitMemory;                                           // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    Zero            = new Int(0).constant();                                                                            // Integer constant zero
+    One             = new Int(1).constant();                                                                            // Integer constant one
 
     unitMemory      = Build.size != null ? new Memory(Build.size, "program", false) : null;                             // Memory associated with program if any
-//  initializeRegisters();                                                                                              // Start registers in known state
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -121,20 +124,6 @@ public class Program extends Test                                               
    {final I      i = executing();
     final String m = immediate() ? "immediate" : "delayed";
     if (i != null) stop("Allocation within an instruction while executing in", m, "mode:", i.traceBack, "====");
-   }
-
-  void rx ()                                                                                                            // This register can only be accessed during execution
-   {final I x = executing();
-    if (!immediate() && x == null)
-     {stop("Control register can only be accessed during execution:", x.traceBack, "====");
-     }
-   }
-
-  void rc ()                                                                                                            // This register can only be accessed during compilation
-   {final I x = executing();
-    if (x != null)
-     {stop("Control registers can only be accessed during compilation:", x.traceBack, "====");
-     }
    }
 
   Program maxSteps (int MaxSteps) {program().maxSteps = MaxSteps; return this;}                                         // Set number of steps
@@ -806,7 +795,7 @@ public class Program extends Test                                               
       v = true;
       switch (Op)
        {case set  -> {     targetInt(              I);}
-        case del  -> {     targetInt(              I); v = false;}                                                     // Mark the integer as having no defined value
+        case del  -> {     targetInt(              I); v = false;}                                                      // Mark the integer as having no defined value
         case add  -> {x(); targetInt(targetInt() + I);}
         case sub  -> {x(); targetInt(targetInt() - I);}
         case mul  -> {x(); targetInt(targetInt() * I);}
@@ -1227,7 +1216,7 @@ public class Program extends Test                                               
     Memory clear ()                                                                                                     // Clear memory in Java
      {subStart("Program.Memory.clear(I)");
       if (readOnly) stop("Target memory is read only and so can not be cleared");
-      final Int z = new Int(0);
+      final Int z = Zero;
       new ForCount(size()) {void  body(Int Index) {putInt(Index, z);}};
       subFinish();
       return this;
@@ -1236,7 +1225,7 @@ public class Program extends Test                                               
     Memory clear (Int Start, int Width)                                                                                 // Clear memory range in Java
      {subStart("Program.Memory.clear(II)");
       if (readOnly) stop("Target memory is read only and so can not be cleared even in part");
-      final Int z = new Int(0);
+      final Int z = Zero;
 
       new ForCount (Start, Start.Add(Width))
        {void body(Int Index)
@@ -3145,7 +3134,7 @@ writeIntEnable =        0
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Memory m = new Memory(2, "test memory name", false);
-        final Int a = new Int("a"); a.set(2); m.putInt(new Int(1), a);
+        final Int a = new Int("a"); a.set(2); m.putInt(One, a);
         dumpProgramState("aaaa");
         scDieAreaX = 500; scDieAreaY = 500;
         execute();
@@ -3209,9 +3198,9 @@ writeIntEnable =        0
 //       {final Memory m = unitMemory;
 //        new ForCount(2)
 //         {void body(Int Index)
-//           {m.putInt(new Int(0), new Int(2));
+//           {m.putInt(Zero, new Int(2));
 //            m.putInt(new Int(4), new Int(3));
-//            m.getInt(new Int(0)).ok(2);
+//            m.getInt(Zero).ok(2);
 //            m.getInt(new Int(4)).ok(3);
 //           }
 //         };
@@ -3234,10 +3223,10 @@ writeIntEnable =        0
         final Memory.Ref n = M.new Ref(3);
         new ForCount(2)
          {void body(Int Index)
-           {m.putInt(new Int(0), new Int(1));
+           {m.putInt(Zero, One);
 
-            m.putInt(new Int(1), new Int(0));
-            m.putInt(new Int(1), new Int(2));
+            m.putInt(One, Zero);
+            m.putInt(One, new Int(2));
 
             new If (Index.ez())
              {void Then()
@@ -3267,8 +3256,8 @@ writeIntEnable =        0
 """);
                }
              };
-            m.getInt(new Int(0)).ok(1);
-            m.getInt(new Int(1)).ok(2);
+            m.getInt(Zero).ok(1);
+            m.getInt(One).ok(2);
 
             m.getBit(new Int(32)).ok(false);
             m.getBit(new Int(33)).ok(true);
@@ -3579,7 +3568,7 @@ writeIntEnable =        0
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int  a = new Int("a").set(0);
-        new For(new Int(1), new Int(10))
+        new For(One, new Int(10))
          {void body(Int Index, Bit Continue)
            {new If (Index.le(2))
              {void Then() {a.add(01);}
