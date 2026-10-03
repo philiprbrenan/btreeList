@@ -158,7 +158,7 @@ public class BitSet extends Program                                             
     subFinish();
    }
 
-  Bit       getBit (Int Index)  {if (immediate()) checkInActual(Index); return getBitNC(Index);}                         // Get a bit from the bit set
+  Bit       getBit (Int Index)  {if (immediate()) checkInActual(Index); return getBitNC(Index);}                        // Get a bit from the bit set
   Bit     getBitNC (Int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
   boolean getBitNC (int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
 
@@ -617,7 +617,7 @@ public class BitSet extends Program                                             
 
   public Bint firstZero()                                                                                               // Find the index of the first set bit
    {subStart("Bitset.firstZero");
-    final Int  p = new Int(0);
+    final Int  p = Zero;
     final Bint r = new Bint();                                                                                          // Result
     new If (getBit(p))
      {void Then() {r.copy(nextZero(p));}                                                                                // Use copy because the result might be invalid showing that there is no first zero
@@ -719,8 +719,8 @@ public class BitSet extends Program                                             
                  {void Then()                                                                                           // At start of row - not found
                    {p.dec();                                                                                            // Position to left
                     new If (getBitNC(p).flip())                                                                         // Found a one
-                     {void Then() {Prev.set(highZero(p));}                                                               // Reached a one so we turn over and head back up the tree going as high as possible
-                      void Else() {ContinueUp.set();}                                                                    // Continue the search for a one
+                     {void Then() {Prev.set(highZero(p));}                                                              // Reached a one so we turn over and head back up the tree going as high as possible
+                      void Else() {ContinueUp.set();}                                                                   // Continue the search for a one
                      };
                    }
                  };
@@ -780,7 +780,7 @@ public class BitSet extends Program                                             
 
   public Int countAllOnes ()                                                                                            // Count ones in bitset
    {subStart("Bitset.countAllOnes");
-    final Int  c = new Int(0);                                                                                          // Count
+    final Int  c = Zero;                                                                                                // Count
     final Bint p = firstOne();                                                                                          // Position in bitset starting at first one
     new For(size())                                                                                                     // Step from one to one
      {void body(Int Index, Bit Continue)
@@ -805,7 +805,7 @@ public class BitSet extends Program                                             
 
   public Int countAllZeros()                                                                                            // Count zeros in bitset
    {subStart("Bitset.countAllZeros");
-    final Int  c = new Int(0);                                                                                          // Count
+    final Int  c = Zero;                                                                                                // Count
     final Bint p = firstZero();
     new For(size())
      {void body(Int Index, Bit Continue)
@@ -990,13 +990,13 @@ Zero:
    4   45    1 |  0
 """);
 
-    b.nextOne(b.new Int(0)).ok(1);
+    b.nextOne(b.Zero).ok(1);
     for (int i : range( 3))     b.nextOne(b.new Int(i)).ok(i+1);
     for (int i : range( 4,  8)) b.nextOne(b.new Int(i)).ok(  8);
     for (int i : range( 7, 11)) b.nextOne(b.new Int(i)).ok(i+1);
     for (int i : range(11, 16)) b.nextOne(b.new Int(i)).notValid().ok(true);
 
-                                b.prevOne(b.new Int(0)).notValid().ok(true);
+                                b.prevOne(b.Zero).notValid().ok(true);
     for (int i : range( 1,  5)) b.prevOne(b.new Int(i)).ok(i-1);
     for (int i : range( 4,  9)) b.prevOne(b.new Int(i)).ok(  3);
     for (int i : range( 9, 12)) b.prevOne(b.new Int(i)).ok(i-1);
@@ -1055,7 +1055,7 @@ Zero:
     for (int i : range( 7, 11)) b.nextZero(b.new Int(i)).ok(i+1);
     for (int i : range(11, 16)) b.nextZero(b.new Int(i)).ok(false);
 
-                                b.prevZero(b.new Int(0)).ok(false);
+                                b.prevZero(b.Zero).ok(false);
     for (int i : range( 1,  5)) b.prevZero(b.new Int(i)).ok(i-1);
     for (int i : range( 4,  8)) b.prevZero(b.new Int(i)).ok(  3);
     for (int i : range( 9, 13)) b.prevZero(b.new Int(i)).ok(i-1);
