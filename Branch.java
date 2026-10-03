@@ -326,7 +326,7 @@ class Branch extends Program implements Program.Locatable                       
 
         final Int lt = Left .top();                                                                                     // Left top
         final Int rt = right.top();                                                                                     // Right top
-        right.copyMergeData(Left, new Int(0), new Int(lc));                                                             // Copy the left data values into the right data values
+        right.copyMergeData(Left, Zero, new Int(lc));                                                                   // Copy the left data values into the right data values
         right.data(lc, lt);                                                                                             // Place left top in left data values
         rs.mergeFromLeftOdd(Ls, Sk);                                                                                    // Merge the slots
        }
@@ -420,8 +420,8 @@ class Branch extends Program implements Program.Locatable                       
     l.insert(l.new Int(2), l.new Int(22)); l.count().ok(1);
     l.insert(l.new Int(4), l.new Int(44)); l.count().ok(2);
     l.insert(l.new Int(3), l.new Int(33)); l.count().ok(3);
-    l.insert(l.new Int(1), l.new Int(11)); l.count().ok(4);
-    l.level (l.new Int(1));
+    l.insert(l.One, l.new Int(11)); l.count().ok(4);
+    l.level (l.One);
     l.level().ok(1);
     //new I() {void a() {testStop("AAAA", l);}};
     l.check(l.print(), """
@@ -432,17 +432,17 @@ Branch         size:   7, count:   4, top:   0, level:   1
    2     3    33
    1     4    44
 """);
-    l.find  (l.new Int(1)).ok(11);
+    l.find  (l.One).ok(11);
     l.find  (l.new Int(2)).ok(22);
     l.find  (l.new Int(3)).ok(33);
     l.find  (l.new Int(4)).ok(44);
 
-    l.delete(l.new Int(1)).ok(11); l.count().ok(3);
+    l.delete(l.One).ok(11); l.count().ok(3);
     l.delete(l.new Int(2)).ok(22); l.count().ok(2);
     l.delete(l.new Int(3)).ok(33); l.count().ok(1);
     l.delete(l.new Int(4)).ok(44); l.count().ok(0);
 
-    l.delete(l.new Int(1)).valid().ok(false);
+    l.delete(l.One).valid().ok(false);
 
     l.maxSteps(999_999);
     l.execute();
@@ -460,7 +460,7 @@ Branch         size:   7, count:   4, top:   0, level:   1
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     l.delete(l.new Int(2));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
@@ -495,7 +495,7 @@ Branch         size:   7, count:   3, top:   0, level:   0
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7, count:   4, top:   0, level:   0
@@ -531,7 +531,7 @@ Branch         size:   7, count:   4, top:   0, level:   0
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
@@ -583,7 +583,7 @@ Branch         size:   7, count:   3, top:  99, level:   0
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
-    r.insert(r.new Int(1), r.new Int(11));
+    r.insert(r.One, r.new Int(11));
     r.insert(r.new Int(6), r.new Int(66));
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
@@ -634,7 +634,7 @@ Branch         size:   7, count:   3, top:  99, level:   0
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
@@ -698,7 +698,7 @@ Branch         size:   7, count:   7, top:  99, level:   0
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
-    r.insert(r.new Int(1), r.new Int(11));
+    r.insert(r.One, r.new Int(11));
     r.insert(r.new Int(6), r.new Int(66));
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
@@ -762,7 +762,7 @@ Branch         size:   7, count:   7, top:  99, level:   0
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.One, l.new Int(11));
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
@@ -778,8 +778,8 @@ Branch         size:   7, count:   7, top:   0, level:   0
    4     6    66
    5     7    77
 """);
-    l.find(l.new Int(0)).notValid().ok(true);
-    l.find(l.new Int(1)).ok(11);
+    l.find(l.Zero).notValid().ok(true);
+    l.find(l.One).ok(11);
     l.find(l.new Int(2)).ok(22);
     l.find(l.new Int(3)).ok(33);
     l.find(l.new Int(4)).ok(44);
@@ -789,7 +789,7 @@ Branch         size:   7, count:   7, top:   0, level:   0
     l.find(l.new Int(8)).notValid().ok(true);
 
     l.delete(l.new Int(2)).ok(22); l.find(l.new Int(2)).notValid().ok(true); l.count().ok(6);
-    l.delete(l.new Int(1)).ok(11); l.find(l.new Int(1)).notValid().ok(true); l.count().ok(5);
+    l.delete(l.One).ok(11); l.find(l.One).notValid().ok(true); l.count().ok(5);
     l.delete(l.new Int(4)).ok(44); l.find(l.new Int(4)).notValid().ok(true); l.count().ok(4);
     l.delete(l.new Int(3)).ok(33); l.find(l.new Int(3)).notValid().ok(true); l.count().ok(3);
     l.delete(l.new Int(6)).ok(66); l.find(l.new Int(6)).notValid().ok(true); l.count().ok(2);
@@ -817,7 +817,7 @@ Branch         size:   7, count:   0, top:   0, level:   0
         insert(new Int(2), new Int(22));
         insert(new Int(4), new Int(44));
         insert(new Int(3), new Int(33));
-        insert(new Int(1), new Int(11));
+        insert(One, new Int(11));
         insert(new Int(6), new Int(66));
         insert(new Int(7), new Int(77));
         insert(new Int(5), new Int(55));
@@ -863,15 +863,15 @@ Branch         size:   7, count:   7, top:  88, level:   0
      {void branchCode()
        {final Branch l = this;
         //l.initializeMemory();
-        l.data(new Int(1), new Int(A));
-        l.data(new Int(1))  .ok(A);
+        l.data(One, new Int(A));
+        l.data(One)  .ok(A);
         final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
         //r.initializeMemory();
         r.copy(l);
 
         l.clear();
-        l.data(new Int(1))  .ok(0);
-        r.data(new Int(1))  .ok(A);
+        l.data(One)  .ok(0);
+        r.data(One)  .ok(A);
         execute();
        }
      };
@@ -888,7 +888,7 @@ Branch         size:   7, count:   7, top:  88, level:   0
     final Branch a = new Branch(new Build().maxSize(N-1).immediate(Ex))
      {void branchCode()
        {//initializeMemory();
-        insert(new Int(10), new Int(1));
+        insert(new Int(10), One);
         insert(new Int(20), new Int(2));
         insert(new Int(30), new Int(3));
         top   (             new Int(4));
