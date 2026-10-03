@@ -9,6 +9,8 @@ import java.util.*;
 class Tree extends Program                                                                                              // A tree that translates keys into values to be implemented as an application specific integrated circuit
  {final int           maxLeafSize;                                                                                      // The maximum number of entries in a leaf of the tree
   final int         maxBranchSize;                                                                                      // The maximum number of entries in a branch of the tree
+  final int         rootFanLevels;                                                                                      // Number of levels from the root to fan out to make the launching of multiple parallel readers faster.
+  final int          fanOutAtRoot;                                                                                      // The amount of fan out at the root
   final BitSet          freeChain;                                                                                      // Nodes currently free
   final int         numberOfNodes;                                                                                      // Maximum number of leaves plus branches in this tree
   final int maximumNumberOfLevels;                                                                                      // Maximum number of levels in tree to prevent runaways while debugging
@@ -31,6 +33,8 @@ class Tree extends Program                                                      
     Integer     maxLeafSize;
     Integer   maxBranchSize;
     Integer   numberOfNodes;
+    Integer   rootFanLevels;
+    Integer    fanOutAtRoot;
     Boolean         execute;
     BitSet.Build  freeChain;
     Branch.Build     branch;
@@ -43,6 +47,8 @@ class Tree extends Program                                                      
     Build   maxLeafSize (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
     Build maxBranchSize (int     MaxBranchSize) {maxBranchSize = MaxBranchSize; return this;}
     Build numberOfNodes (int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
+    Build rootFanLevels (int     Levels       ) {rootFanLevels = Levels;        return this;}
+    Build  fanOutAtRoot (int     FanOut       ) {fanOutAtRoot  = FanOut;        return this;}
     Build       execute (boolean Execute      ) {execute       = Execute;       return this;}
 
     Program.Build build()                                                                                               // Describe the program used to execute the tree algorithm
@@ -79,6 +85,8 @@ class Tree extends Program                                                      
     maxBranchSize = Build.maxBranchSize == null ?  3 : Build.maxBranchSize;                                             // The maximum number of entries in a branch
     numberOfNodes = Build.numberOfNodes == null ? 99 : Build.numberOfNodes;                                             // The maximum number of leaves and branches combined
     maximumNumberOfLevels = logTwo(numberOfNodes);                                                                      // The maximum number of levels needed to step down through the tree because it is so well balanced
+    rootFanLevels = Build.rootFanLevels == null ?  0 : Build.rootFanLevels;                                            // Number of levels including the root to be subjected to root fan out
+    fanOutAtRoot  = Build.fanOutAtRoot  == null ?  0 : Build.fanOutAtRoot;                                             // Fan out at root if requested
 
     final String m  = "The maximum ";
     final String m1 = m + "leaf size must be 2 or more, not: "   +maxLeafSize;
@@ -106,7 +114,7 @@ class Tree extends Program                                                      
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
     leaf();                                                                                                             // Initialize the root as a leaf
-    refHeight.putInt(new Int(1));                                                                                       // Current height of the tree
+    refHeight.putInt(One);                                                                                              // Current height of the tree
     treeCode();
    }
 
@@ -148,7 +156,7 @@ class Tree extends Program                                                      
     int value ()             {return value;}
    }
 
-  Int         root () {return new Int(0);}                                                                              // The root is always at node zero
+  Int         root () {return Zero;}                                                                              // The root is always at node zero
   Bit   isRootLeaf () {return checkType(root(), BranchOrLeaf.leaf);}                                                    // Whether the root is a leaf
   Bit isRootBranch () {return checkType(root(), BranchOrLeaf.branch);}                                                  // Whether the root is a branch
   Int       height () {final Int h = refHeight.getInt(); h.name = "Height"; return h;}                                  // Height of tree
@@ -188,14 +196,23 @@ class Tree extends Program                                                      
   Branch branch (Int Node) {return branch(Node, true);}                                                                 // Index an existing branch in memory            confirming that it really is a branch
   Branch branch (Int Node, boolean Check)                                                                               // Index an existing branch in memory optionally confirming that it really is a branch
    {if (immediate() && Check && !isBranch(Node).b()) stop("Not a branch:", Node);                                       // Check the location actually holds a branch
-    final Memory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                         // Address branch
-    final Tree    tree = this;                                                                                          // Current tree
+    final Memory.Ref   r = unitMemory.new Ref(nodeAddress(Node));                                                       // Address branch
+    final Tree      tree = this;                                                                                        // Current tree
+
     return new Branch(build.branch.parent(program()).memory(r).at(Node));                                                // Base branch at the indexed address
-//     {Bit full()
-//       {final Int d = new Int(1).up(tree.height().sub(level())).dec();                                                  // Make branches close to the root smaller to reduce queueing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
-//        d.min(maxBranchSize);                                                                                           // Upper limit on branch size
-//say("AAAA", count(), d);
-//        return count().ge(d);                                                                                           // Is the branch full by this criteria
+//     {Bit full()                                                                                                        // Whether the branch should be regarded as full or not
+//       {if (rootFanLevels > 0)                                                                                          // Root fan out has been requested
+//         {final Int d = One.Up(tree.height().sub(level()));                                                             // Make branches close to the root small to reduce queuing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
+//          final Bit f = new Bit("Full", false);                                                                         // Whether the branch is full under the criterion of root fan out
+//          new If (d.lt(rootFanLevels))                                                                                  // Close enough to the root
+//           {void Then()
+//             {f.set(count().gt(fanOutAtRoot));                                                                          // The amount of fanout requested for the root
+//              if (immediate()) say("BBBB", Node, d, f);
+//             }
+//           };
+//          return f;
+//         }
+//        return super.full();                                                                                            // Revert to normal definition of full - i.e. when the branch is actually full
 //       }
 //     };
    }
@@ -297,7 +314,7 @@ class Tree extends Program                                                      
 
   FindLeaf findLeaf (Int Key)                                                                                           // Find the specified key in a leaf in the tree
    {subStart("Tree.findLeaf");
-    final Int      p = root();                                                                                          // Start at root
+    final Int      p = root().dup();                                                                                    // Start at root
     final FindLeaf f = new FindLeaf();                                                                                  // Find results
     f.start(Key);
 
@@ -330,7 +347,7 @@ class Tree extends Program                                                      
 
     Path(Int Key)
      {subStart("Tree.Path");
-      final Int p = root();                                                                                             // Start at root
+      final Int p = root().dup();                                                                                       // Start at root
       final Bit valid = new Bit(false);                                                                                 // Whether a leaf was reached
 
       key .set(Key);                                                                                                    // Record search key
@@ -430,8 +447,8 @@ class Tree extends Program                                                      
           final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
           final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
           final Bint            L = new Bint();                                                                         // There are four possibilities to consider
-          final Int            I0 = new Int(0).constant();                                                              // Non fast integer constants
-          final Int            I1 = new Int(1).constant();                                                              // Non fast integer constants
+          final Int            I0 = Zero.constant();                                                              // Non fast integer constants
+          final Int            I1 = One.constant();                                                              // Non fast integer constants
           final Int            I2 = new Int(2).constant();                                                              // Non fast integer constants
           final Int            I3 = new Int(3).constant();                                                              // Non fast integer constants
           new ForCount(4)                                                                                               // Locate the left sibling
@@ -498,12 +515,12 @@ class Tree extends Program                                                      
      }
    }
 
-  Path path (Int Key)                                                                                                    // The path from the root to the leaf that should contain the specified key
+  Path path (Int Key)                                                                                                   // The path from the root to the leaf that should contain the specified key
    {final Path f = new Path(Key);                                                                                       // Find results
     return f;
    }
 
-  public void insert (Int Key, Int Data)                                                                                 // Insert a key, data pair into the tree
+  public void insert (Int Key, Int Data)                                                                                // Insert a key, data pair into the tree
    {subStart("Tree.insert");
 
     new If (isRootLeaf())
@@ -525,7 +542,7 @@ class Tree extends Program                                                      
                 b.insert(sk, l.getLocation().i());                                                                      // Insert the left leaf
                 b.top(r.getLocation().i());                                                                             // The right leaf becomes top of the root branch
                 new If (Key.le(sk)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};            // Insert left or right leaf depending on key versus splitting key
-                b.level(new Int(1));                                                                                    // Level of a root branch made by splitting a leaf
+                b.level(One);                                                                                           // Level of a root branch made by splitting a leaf
                 refHeight .putInt(refHeight.getInt().inc());                                                            // Increase height of tree
 
                }
@@ -954,7 +971,7 @@ class Tree extends Program                                                      
     final Leaf   B = t.leaf  (b.at.i());   t.isAllocated(b.at.i()).ok(true);
     final Branch C = t.branch(c.at.i());   t.isAllocated(c.at.i()).ok(true);
 
-    A.insert(t.new Int(1), t.new Int(11)); t.countInc();
+    A.insert(t.One, t.new Int(11)); t.countInc();
     B.insert(t.new Int(3), t.new Int(33)); t.countInc();
     C.insert(t.new Int(6), t.new Int(66));
     t.dumpProgramState("AAAA");
@@ -1074,7 +1091,7 @@ Height        :    1
     final int  N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeCode()
-       {new ForCount(new Int(1), new Int(N+1))
+       {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
             dumpProgramState("AAAA");
@@ -1119,63 +1136,12 @@ Height        :    1
               test_insert(false);
    }
 
-  static void test_smallRoot (boolean Ex)
-   {sayCurrentTestName();
-
-    final int  N = 128;
-    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(15).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
-       {new ForCount(new Int(1), new Int(N+1))
-         {void body(Int Index)
-           {insert(Index, Index.Mul(11));
-            dumpProgramState("AAAA");
-           }
-         };
-        height().ok(4);
-
-        //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "c039873361f0bdc304c9b2def96e7ab0");
-
-        stop(dump());
-        if (Ex) ok(dump(), """
-                                                                                                                           0016                                                                                                                                 |
-                                                                                                                           (0,3)20                                                                                                                              |
-                                                                                                                           [19,3]3                                                                                                                              |
-                                                   0008                                                                                                                                          0024                                                           |
-                                                   (19,0,2)14                                                                                                                                    (20,0,2)6                                                      |
-                                                   [9,2]2                                                                                                                                        [21,2]2                                                        |
-       0002           0004           0006                             0010             0012              0014                              0018              0020              0022                               0026            0028            0030          |
-       (9,19,0)       (9,19,2)       (9,19,4)8                        (14,19,0)        (14,19,2)         (14,19,4)13                       (21,20,0)         (21,20,2)         (21,20,4)18                        (6,20,0)        (6,20,2)        (6,20,4)2     |
-       [3,0]1         [4,2]1         [7,4]1                           [10,0]1          [5,2]1            [12,4]1                           [15,0]1           [11,2]1           [17,4]1                            [22,0]1         [16,2]1         [24,4]1       |
-1,2            3,4            5,6             7,8            9,10              11,12            13,14               15,16         17,18             19,20             21,22               23,24           25,26           27,28           29,30            31,32|
-(3,9,0)        (4,9,2)        (7,9,4)         (8,9)          (10,14,0)         (5,14,2)         (12,14,4)           (13,14)       (15,21,0)         (11,21,2)         (17,21,4)           (18,21)         (22,6,0)        (16,6,2)        (24,6,4)         (2,6)|
-""");
-
-        stop(print());
-        if (Ex) ok(print(), """
-                                                           0016                                                                    |
-                        0008                                                                   0024                                |
-   0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
-1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
-""");
-
-        maxSteps(9_999_999);
-        execute();
-       }
-     };
-   }
-
-  static void test_smallRoot ()
-   {          test_smallRoot(true);
-              test_smallRoot(false);
-   }
-
   static void test_insertMerged(boolean Ex)
    {sayCurrentTestName();
     final int N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeCode()
-       {new ForCount(new Int(1), new Int(N+1))
+       {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index);
             dumpProgramState("AAAA");
@@ -1323,7 +1289,7 @@ Height        :    1
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeCode()
-       {new ForCount(new Int(1), new Int(N+1))
+       {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
             dumpProgramState("AAAA");
@@ -1490,7 +1456,7 @@ cf54d09bad8fa62e79f49a3f11b492b2
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeCode()
-       {new ForCount(new Int(1), new Int(N+1))
+       {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
            }
@@ -1648,7 +1614,7 @@ bfa4741216b0f0629d2a4899154e98f9
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeCode()
-       {new ForCount(new Int(1), new Int(N+1))
+       {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
            }
@@ -1669,7 +1635,7 @@ bfa4741216b0f0629d2a4899154e98f9
               String      v() {return intMemory().writeInt() + " <= "+a.dataRegisterName()+";";}                        // Translate index into key
               boolean trace() {return false;}
              };
-            k.TW();                                                                                                      // Write key into variable
+            k.TW();                                                                                                     // Write key into variable
             delete(k);
 
             if (Ex) s.append(print());
@@ -1852,7 +1818,7 @@ Leaf           size:   4, count:   2
    {sayCurrentTestName();
     final int  N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
-    t.new ForCount(t.new Int(1), t.new Int(N+1))
+    t.new ForCount(t.One, t.new Int(N+1))
      {void body(Int Index)
        {t.insert(Index, Index.Mul(11));
        }
@@ -1878,9 +1844,61 @@ Leaf           size:   4, count:   2
    }
 
 
+  static void test_rootFanOut (boolean Ex)
+   {sayCurrentTestName();
+
+    final int  N = 128;
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(15).rootFanLevels(2).fanOutAtRoot(2).numberOfNodes(N).immediate(Ex))
+     {void treeCode()
+       {new ForCount(One, new Int(N+1))
+         {void body(Int Index)
+           {insert(Index, Index.Mul(11));
+            dumpProgramState("AAAA");
+            if (immediate()) say("AAAA", dump());
+           }
+         };
+        height().ok(4);
+
+        //stop(mainMemoryMd5Sum());
+        ok(()->mainMemoryMd5Sum(), "c039873361f0bdc304c9b2def96e7ab0");
+
+        stop(dump());
+        if (Ex) ok(dump(), """
+                                                                                                                           0016                                                                                                                                 |
+                                                                                                                           (0,3)20                                                                                                                              |
+                                                                                                                           [19,3]3                                                                                                                              |
+                                                   0008                                                                                                                                          0024                                                           |
+                                                   (19,0,2)14                                                                                                                                    (20,0,2)6                                                      |
+                                                   [9,2]2                                                                                                                                        [21,2]2                                                        |
+       0002           0004           0006                             0010             0012              0014                              0018              0020              0022                               0026            0028            0030          |
+       (9,19,0)       (9,19,2)       (9,19,4)8                        (14,19,0)        (14,19,2)         (14,19,4)13                       (21,20,0)         (21,20,2)         (21,20,4)18                        (6,20,0)        (6,20,2)        (6,20,4)2     |
+       [3,0]1         [4,2]1         [7,4]1                           [10,0]1          [5,2]1            [12,4]1                           [15,0]1           [11,2]1           [17,4]1                            [22,0]1         [16,2]1         [24,4]1       |
+1,2            3,4            5,6             7,8            9,10              11,12            13,14               15,16         17,18             19,20             21,22               23,24           25,26           27,28           29,30            31,32|
+(3,9,0)        (4,9,2)        (7,9,4)         (8,9)          (10,14,0)         (5,14,2)         (12,14,4)           (13,14)       (15,21,0)         (11,21,2)         (17,21,4)           (18,21)         (22,6,0)        (16,6,2)        (24,6,4)         (2,6)|
+""");
+
+        stop(print());
+        if (Ex) ok(print(), """
+                                                           0016                                                                    |
+                        0008                                                                   0024                                |
+   0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
+1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
+""");
+
+        maxSteps(9_999_999);
+        execute();
+       }
+     };
+   }
+
+  static void test_rootFanOut ()
+   {          test_rootFanOut(true);
+              test_rootFanOut(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (rtg( 1)) test_tree();
-    //if (rtg( 2)) test_saveReload();
+    if (rtg( 2)) test_rootFanOut();
     if (rtg( 3)) test_insert();
     if (rtg( 4)) test_insertMerged();
     if (rtg( 5)) test_insertReverse();
@@ -1894,7 +1912,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_smallRoot(true);
+    test_rootFanOut(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
