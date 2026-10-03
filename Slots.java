@@ -19,6 +19,8 @@ class Slots extends Program                                                     
   final Memory.Ref        refUsedKeys;                                                                                  // Bitset showing which keys are in use
   final Memory.Ref            refKeys;                                                                                  // The keys are held unordered in this array but ordered by the slot references to them
   final Build                   build;                                                                                  // Build details
+  final Int              NumberOfKeys;                                                                                  // Number of keys as an integer constant
+  final Int       NumberOfSlotsToKeys;                                                                                  // Number of slots to keys as an integer constant
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
@@ -79,7 +81,9 @@ class Slots extends Program                                                     
     refUsedKeys          = unitMemoryRef.step(m.posusedKeys);                                                           // References in use.  There are fewer references than slots to make insertions faster
     refKeys              = unitMemoryRef.step(m.posKeys);                                                               // Keys used in btree held unordered in this array but ordered by the slot references to them
     usedSlotsToKeys      = new BitSet(m.us.memory(refUsedSlotsToKeys).parent(parentProgram));                           // Create bitsets to reference the program and memory used by this program
-    usedKeys             = new BitSet(m.ur.memory(refUsedKeys)       .parent(parentProgram));
+    usedKeys             = new BitSet(m.ur.memory(refUsedKeys)       .parent(parentProgram));                           // Bitset showing keys in use
+    NumberOfKeys         = new Int(numberOfKeys).constant();                                                            // Number of slots to keys as an integer constant
+    NumberOfSlotsToKeys  = new Int(numberOfSlotsToKeys()).constant();                                                   // Number of slots to keys as an integer constant
     slotsCode();                                                                                                        // Generate machine code if any assembler code has been supplied
     subFinish();
    }
@@ -269,7 +273,7 @@ class Slots extends Program                                                     
    {subStart("Slots.compactSlotsLeft");
     new If (empty().flip())                                                                                             // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
-       {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
+       {new For(numberOfKeys)                                                                                           // No need to make any more than this number of moves
          {void body(Int Index, Bit Continue)
            {final Bint s = usedSlotsToKeys.firstZero();                                                                 // First empty slot which will be different each time
             final Bint S = usedSlotsToKeys.nextOne(s.i());                                                              // Next used slot beyond first empty slot
@@ -287,7 +291,7 @@ class Slots extends Program                                                     
     new If (empty())                                                                                                    // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
       void Else()
-       {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
+       {new For(numberOfKeys)                                                                                           // No need to make any more than this number of moves
          {void body(Int Index, Bit Continue)
            {final Bint s = usedSlotsToKeys.lastZero();                                                                  // Last empty slot
             final Bint S = usedSlotsToKeys.prevOne(s.i());                                                              // Previously used slot beyond last empty one
@@ -309,7 +313,7 @@ class Slots extends Program                                                     
      {void Then()
        {new If (full().flip())                                                                                          // Keys cannot be compacted if the slots are full or empty
          {void Then()
-           {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
+           {new For(numberOfKeys)                                                                                       // No need to make any more than this number of moves
              {void body(Int Index, Bit Continue)
                {final Bint k = usedKeys .firstZero();                                                                   // First empty key
                 final Bint K = usedKeys .lastOne();                                                                     // Last used key so we get the longest possible move
@@ -336,7 +340,7 @@ class Slots extends Program                                                     
       {void Then()
         {new If (full().flip())                                                                                         // Keys cannot be compacted if the slots are full or empty
          {void Then()
-           {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
+           {new For(numberOfKeys)                                                                                       // No need to make any more than this number of moves
              {void body(Int Index, Bit Continue)
                {final Bint k = usedKeys .lastZero();                                                                    // Last empty key
                 final Bint K = usedKeys .firstOne();                                                                    // First used key so we get the longest possible move
@@ -360,7 +364,7 @@ class Slots extends Program                                                     
     final Slots slots = this;
     new If (empty().flip())                                                                                             // Something to redistribute
      {void Then()                                                                                                       // Redistribute
-       {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
+       {final Int         N = NumberOfSlotsToKeys;                                                                      // Maximum number of slots
         final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
         compactSlotsLeft();                                                                                             // Compact slots to the left so it is in a known position
         final Int         c = usedSlotsToKeys.firstZero().i(); c.name = "c";                                            // Number of slots in use
@@ -388,19 +392,18 @@ class Slots extends Program                                                     
 
   Int splitRightEven (Slots Right)                                                                                      // Split a full set of slots that contains an even number of entries then redistribute the slots. Return the splitting key
    {subStart("Slots.splitRightEven");
-    final int N = numberOfKeys;
-    if (N % 2 == 1) stop("Slot set must have an even number of entries");
-    if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
+    final Int N = count();                                                                                              // Number of keys in use
+    final Int M = N.Down();                                                                                             // Mid point
+    if (immediate() && N.i() < 2) stop("Even slot set must have at least two entries to be split right");               // Minimum splittable size
 
     final Slots left = this;
     left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
     Right.copy(left);                                                                                                   // Duplicate left into right
 
-    final Int sk = new Int(left.getSlotToKeyValue(new Int(numberOfKeys/2-1))).                                          // Splitting key is half the two middle keys
-                       add(left.getSlotToKeyValue(new Int(numberOfKeys/2-0))).down();
+    final Int sk = left.getSlotToKeyValue(M.Dec()).Add(left.getSlotToKeyValue(M)).down();                               // Splitting key is half the two middle keys
 
-    new ForCount(N/2)    {void body(Int Index) {Right.delete(Index);}};                                                 // Clear lower half of target right slots
-    new ForCount(N/2, N) {void body(Int Index) {left .delete(Index);}};                                                 // Clear upper half of left slots
+    new ForCount(M)    {void body(Int Index) {Right.delete(Index);}};                                                   // Clear lower half of target right slots
+    new ForCount(M, N) {void body(Int Index) {left .delete(Index);}};                                                   // Clear upper half of left slots
     left .redistribute();                                                                                               // Redistribute source and target slots if requested
     Right.redistribute();
     subFinish();
@@ -409,19 +412,18 @@ class Slots extends Program                                                     
 
   Int splitLeftEven (Slots Left)                                                                                        // Split a full set of slots that contains an even number of entries, redistribute the slots. Return the splitting key
    {subStart("Slots.splitLeftEven");
-    final int N = numberOfKeys;
-    if (N % 2 == 1) stop("Slot set must have an even number of entries");
-    if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
+    final Int N = count();                                                                                              // Number of keys is use
+    final Int M = N.Down();                                                                                             // Mid point
+    if (immediate() && N.i() < 2) stop("Even slot set must have at least two entries to be split left");                // Minimum splittable size
 
     final Slots right = this;
     right.compactSlotsLeft();                                                                                           // Compacting the source on the right will not affect the order of the keys
     Left.copy(right);                                                                                                   // Duplicate right into left
 
-    final Int sk = new Int(right.getSlotToKeyValue(new Int(numberOfKeys/2-1))).                                         // Splitting key is half the two middle keys
-                       add(right.getSlotToKeyValue(new Int(numberOfKeys/2-0))).down();
+    final Int sk = right.getSlotToKeyValue(M.Dec()).Add(right.getSlotToKeyValue(M)).down();                             // Splitting key is half the two middle keys
 
-    new ForCount(N/2)    {void body(Int Index) {right.delete(Index);}};                                                 // Clear lower half of target left slots
-    new ForCount(N/2, N) {void body(Int Index) {Left .delete(Index);}};                                                 // Clear upper half of left slots
+    new ForCount(M)    {void body(Int Index) {right.delete(Index);}};                                                   // Clear lower half of target left slots
+    new ForCount(M, N) {void body(Int Index) {Left .delete(Index);}};                                                   // Clear upper half of left slots
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
     right.redistribute();
     subFinish();
@@ -432,11 +434,10 @@ class Slots extends Program                                                     
 
   Int splitRightOdd (Slots Right)                                                                                       // Split a full set of slots that contains an odd number of entries redistributing the slots in the source and target slots. Return the index of the splitting key
    {subStart("Slots.splitRightOdd");
-    final int N = numberOfKeys;
-    final Int M = new Int(N/2);                                                                                         // Mid point
-    final Int R = new Int(N/2+1);                                                                                       // Start of right range
-    if (N % 2 == 0) stop("Slot set must have an odd number of entries");
-    if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
+    final Int N = count();                                                                                              // Number of keys is use
+    final Int M = N.Down();                                                                                             // Mid point
+    final Int R = M.Inc();                                                                                              // Start of right range
+    if (immediate() && N.i() < 3) stop("Odd slot set must have at least three keys to be split right");                 // Minimum splittable size
 
     final Slots left = this;
     left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
@@ -445,8 +446,8 @@ class Slots extends Program                                                     
     final Int sk = new Int(left.getSlotToKeyIndex(M));                                                                  // Get the index of the splitting key. The actual key can be recovered from the index.
     final Int sK = new Int(left.getKeyValue(sk));                                                                       // Value of the splitting key
 
-    new ForCount(R)      {void body(Int Index) {Right.delete(Index);}};                                                 // Clear lower half of target right slots
-    new ForCount(N/2, N) {void body(Int Index) {left .delete(Index);}};                                                 // Clear upper half of left slots
+    new ForCount(R)    {void body(Int Index) {Right.delete(Index);}};                                                   // Clear lower half of target right slots
+    new ForCount(M, N) {void body(Int Index) {left .delete(Index);}};                                                   // Clear upper half of left slots
 
     left.refKeys.putInt(sk, sK);                                                                                        // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
 
@@ -458,11 +459,10 @@ class Slots extends Program                                                     
 
   Int splitLeftOdd (Slots Left)                                                                                         // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots. Return the index of the splitting key
    {subStart("Slots.splitLeftOdd");
-    final int N = numberOfKeys;
-    final Int M = new Int(N/2);                                                                                         // Mid point
-    final Int R = new Int(N/2+1);                                                                                       // Start of right range
-    if (N % 2 == 0) stop("Slot set must have an odd number of entries");
-    if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
+    final Int N = count();                                                                                              // Number of keys is use
+    final Int M = N.Down();                                                                                             // Mid point
+    final Int R = M.Inc();                                                                                              // Start of right range
+    if (immediate() && N.i() < 3) stop("Odd slot set must have at least three keys to be split left");                  // Minimum splittable size
 
     final Slots right = this;
     right.compactSlotsLeft();                                                                                           // Compacting the source on the left will not affect the order of the keys
@@ -471,9 +471,9 @@ class Slots extends Program                                                     
     final Int sk = new Int(right.getSlotToKeyIndex(M));                                                                 // Get the index of the splitting key. The actual key can be recovered from the index.
     final Int sK = new Int(right.getKeyValue(sk));                                                                      // Value of the splitting key
 
-    new ForCount(R)       {void body(Int Index) {right.delete(Index);}};                                                // Clear lower half of target right slots
+    new ForCount(R)     {void body(Int Index) {right.delete(Index);}};                                                  // Clear lower half of target right slots
     right.refKeys.putInt(sk, sK);                                                                                       // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
-    new ForCount(N/2, N)  {void body(Int Index) {Left .delete(Index);}};                                                // Clear upper half of left slots
+    new ForCount(M, N)  {void body(Int Index) {Left .delete(Index);}};                                                  // Clear upper half of left slots
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
     right.redistribute();
     subFinish();
@@ -487,11 +487,11 @@ class Slots extends Program                                                     
   Bit mergeFromRightEven (Slots Right) {return mergeFromRightEven(Right, (S, t, s)->{});}                               //N Merge the specified slots from the right without observing the results
   Bit mergeFromRightEven (Slots Right, CompactKey CompactKey)                                                           //N Merge the specified slots from the right
    {subStart("Slots.mergeFromRightEven");
-    final Slots left = this;
-    final Int      N = new Int(numberOfSlotsToKeys());
+    final Slots left = this;                                                                                            // Identify left hand side
+    final Int      N = NumberOfSlotsToKeys;                                                                             // Number of slots to keys as a constant
     final Int     lc = left .count();                                                                                   // Count on left
     final Int     rc = Right.count();                                                                                   // Count on right
-    final Bit     r = new Bit(false);                                                                                   // Assume a merge is not possible
+    final Bit      r = new Bit(false);                                                                                  // Assume a merge is not possible
 
     new If (lc.Add(rc).le(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots
      {void Then()
@@ -521,10 +521,10 @@ class Slots extends Program                                                     
   Bit mergeFromLeftEven (Slots Left, CompactKey CompactKey)                                                             // Merge the specified slots from the right
    {subStart("Slots.mergeFromLeftEven");
     final Slots right = this;
-    final Int       N = new Int(numberOfSlotsToKeys());
+    final Int       N = NumberOfSlotsToKeys;                                                                            // Number of slots to keys as a constant
     final Int      rc = right.count();
     final Int      lc = Left .count();
-    final Bit      r = new Bit(false);
+    final Bit       r = new Bit(false);
 
     new If (lc.Add(rc).le(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots
      {void Then()
@@ -556,7 +556,7 @@ class Slots extends Program                                                     
   Bit mergeFromRightOdd (Slots Right, Int Sk, CompactKey CompactKey)                                                    //N Merge the specified slots from the right observing the key compaction process
    {subStart("Slots.mergeFromRightOdd");
     final Slots left = this;
-    final Int      N = new Int(numberOfSlotsToKeys());
+    final Int      N = NumberOfSlotsToKeys;                                                                             // Number of slots to keys as a constant
     final Int     lc = left .count();                                                                                   // Count on left
     final Int     rc = Right.count();                                                                                   // Count on right
     final Bit      r = new Bit(false);                                                                                  // Assume a merge is not possible
@@ -591,10 +591,10 @@ class Slots extends Program                                                     
   Bit mergeFromLeftOdd (Slots Left, Int Sk, CompactKey CompactKey)                                                      // Merge the specified slots from the right observing the key compaction process
    {subStart("Slots.mergeFromLeftOdd");
     final Slots right = this;
-    final Int       N = new Int(numberOfSlotsToKeys());
+    final Int       N = NumberOfSlotsToKeys;                                                                            // Number of slots to keys as a constant
     final Int      rc = right.count();
     final Int      lc = Left .count();
-    final Bit      r = new Bit(false);
+    final Bit       r = new Bit(false);
 
     new If (lc.Add(rc).lt(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots with space for the additional key
      {void Then()
@@ -2426,7 +2426,6 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_insert();
    }
 // perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList"
   public static void main(String[] args)                                                                                // Test if called as a program
