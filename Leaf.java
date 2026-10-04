@@ -132,7 +132,8 @@ class Leaf extends Program implements Program.Locatable                         
 //D2 Split                                                                                                              // Split a full leaf into two leaves
 
   Int splitRight (Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf and return the splitting key value
-   {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
+   {//if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                               // The leaf must be full
+    if (immediate() && count().i() < 2) stop("Leaf too small to be split");                                             // The leaf must be large enough to split
     final Leaf left = this;                                                                                             // Current leaf is on the left
     Right.slots.initializeMemory();                                                                                     // Clear target
     Right.refData.copy(left.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
@@ -140,7 +141,8 @@ class Leaf extends Program implements Program.Locatable                         
    }
 
   Int splitLeft (Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf and return the splitting key value
-   {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
+   {//if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                               // The leaf must be large enough to split
+    if (immediate() && count().i() < 2) stop("Leaf too small to be split");                                             // The leaf must be full
     final Leaf right = this;                                                                                            // Current leaf is on the right
     Left.slots.initializeMemory();                                                                                      // Clear target
     Left.refData.copy(right.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
@@ -148,6 +150,8 @@ class Leaf extends Program implements Program.Locatable                         
    }
 
 //D2 Merge                                                                                                              // Merge two leaves
+
+  Int mergeLimit() {return new Int(maxSize());}                                                                         // Combined leaf size limit for a merge
 
   private void copyMergeData (Leaf Source, Int Start, Int End)                                                          // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {new ForCount (Start, End)
@@ -163,7 +167,7 @@ class Leaf extends Program implements Program.Locatable                         
     final Int    rc = Right.count();
     final Bit     r = new Bit().clear();
 
-    new If (lc.Add(rc).le(maxSize()))
+    new If (lc.Add(rc).le(mergeLimit()))
      {void Then()
        {r.set();
         left .compactLeft();    Right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
@@ -183,7 +187,7 @@ class Leaf extends Program implements Program.Locatable                         
     final Int    rc  = right.count();
     final Bit     r  = new Bit().clear();
 
-    new If (lc.Add(rc).le(maxSize()))
+    new If (lc.Add(rc).le(mergeLimit()))
      {void Then()
        {r.set();
         Left .compactLeft();
