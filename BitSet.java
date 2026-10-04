@@ -717,9 +717,9 @@ public class BitSet extends Program                                             
                {p.set(parentZero(p));                                                                                   // Every bit has a parent except the topmost bit in the tree but the loop will terminated on count before then
                 new If (pos_zero(p).gt(0))                                                                              // At start of row
                  {void Then()                                                                                           // At start of row - not found
-                   {p.dec();                                                                                            // Position to left
-                    new If (getBitNC(p).flip())                                                                         // Found a one
-                     {void Then() {Prev.set(highZero(p));}                                                              // Reached a one so we turn over and head back up the tree going as high as possible
+                   {final Int Q = p.Dec();                                                                                            // Position to left
+                    new If (getBitNC(Q).flip())                                                                         // Found a one
+                     {void Then() {Prev.set(highZero(Q));}                                                              // Reached a one so we turn over and head back up the tree going as high as possible
                       void Else() {ContinueUp.set();}                                                                   // Continue the search for a one
                      };
                    }
@@ -780,7 +780,7 @@ public class BitSet extends Program                                             
 
   public Int countAllOnes ()                                                                                            // Count ones in bitset
    {subStart("Bitset.countAllOnes");
-    final Int  c = Zero;                                                                                                // Count
+    final Int  c = new Int(0);                                                                                                // Count
     final Bint p = firstOne();                                                                                          // Position in bitset starting at first one
     new For(size())                                                                                                     // Step from one to one
      {void body(Int Index, Bit Continue)
@@ -805,7 +805,7 @@ public class BitSet extends Program                                             
 
   public Int countAllZeros()                                                                                            // Count zeros in bitset
    {subStart("Bitset.countAllZeros");
-    final Int  c = Zero;                                                                                                // Count
+    final Int  c = new Int(0);                                                                                                // Count
     final Bint p = firstZero();
     new For(size())
      {void body(Int Index, Bit Continue)
@@ -1361,29 +1361,7 @@ Zero:
               test_count(32, false);
    }
 
-/*
-  0    1    2    3    4    5    6    7   8   9  10  11  12  13  14  15
- 16        17        18        19       20      21      22      23
- 24                  25                 26              27
- 28                                     29
- 30
-
-BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16 |  0  0  0  0  0  1  1  1  0  0  0  1  0  0  0  0
-One:
-   2   16    8 |  0  0  1  1  0  1  0  0
-   3   24    4 |  0  1  1  0
-   4   28    2 |  1  1
-   5   30    1 |  1
-Zero:
-   1   31    8 |  1  1  1  0  1  1  1  1
-   2   39    4 |  1  1  1  1
-   3   43    2 |  1  1
-   4   45    1 |  1
-
-*/
-
-  static void test_powerPosOneZero(boolean Ex)
+  static void test_powerPosOneZero16(boolean Ex)
    {sayCurrentTestName();
     final int N = 16;
     final BitSet b = testBits(Ex, N);
@@ -1563,9 +1541,9 @@ Zero:
     b.execute();
    }
 
-  static void test_powerPosOneZero()
-   {          test_powerPosOneZero(true);
-              test_powerPosOneZero(false);
+  static void test_powerPosOneZero16()
+   {          test_powerPosOneZero16(true);
+              test_powerPosOneZero16(false);
    }
 
   static void test_twoOrMoreOnes(boolean Ex)
@@ -1782,6 +1760,262 @@ Zero:
    {          test_b4(true);
               test_b4(false);
    }
+/*
+BitSet            0  1  2  3  4  5  6  7  8
+   1    0   16 |  0  0  0  1  0  0  1  1  1
+One:
+   2   16    8 |  0  1  0  1  1  0  0  0
+   3   24    4 |  1  1  1  0
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  0  0  0  1  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
+*/
+  static void test_b7(boolean Ex)
+   {sayCurrentTestName();
+    final BitSet b = new BitSet(new Build().bitSize(7).immediate(Ex))
+     {void  bitSetCode()
+       {set(new Int(3));
+        set(new Int(6));
+        //stop(this);
+        ok(()->this, """
+BitSet            0  1  2  3  4  5  6
+   1    0    8 |  0  0  0  1  0  0  1
+One:
+   2    8    4 |  0  1  0  1
+   3   12    2 |  1  1
+   4   14    1 |  1
+Zero:
+   1   15    4 |  0  0  0  0
+   2   19    2 |  0  0
+   3   21    1 |  0
+""");
+        firstOne().ok(3);
+        nextOne(new Int(0)).ok(3);
+        nextOne(new Int(1)).ok(3);
+        nextOne(new Int(2)).ok(3);
+        nextOne(new Int(3)).ok(6);
+        nextOne(new Int(4)).ok(6);
+        nextOne(new Int(5)).ok(6);
+        nextOne(new Int(6)).notValid().ok(true);
+
+        lastOne().ok(6);
+        prevOne(new Int(6)).ok(3);
+        prevOne(new Int(5)).ok(3);
+        prevOne(new Int(4)).ok(3);
+        prevOne(new Int(3)).notValid().ok(true);
+        prevOne(new Int(2)).notValid().ok(true);
+        prevOne(new Int(1)).notValid().ok(true);
+        prevOne(new Int(0)).notValid().ok(true);
+
+        firstZero().ok(0);
+        nextZero(new Int(0)).ok(1);
+        nextZero(new Int(1)).ok(2);
+        nextZero(new Int(2)).ok(4);
+        nextZero(new Int(3)).ok(4);
+        nextZero(new Int(4)).ok(5);
+        nextZero(new Int(5)).notValid().ok(true);
+        nextZero(new Int(6)).notValid().ok(true);
+
+        lastZero().ok(5);
+        prevZero(new Int(6)).ok(5);
+        prevZero(new Int(5)).ok(4);
+        prevZero(new Int(3)).ok(2);
+        prevZero(new Int(2)).ok(1);
+        prevZero(new Int(1)).ok(0);
+        prevZero(new Int(0)).notValid().ok(true);
+        execute();
+       }
+     };
+   }
+
+  static void test_b7()
+   {          test_b7(true);
+              test_b7(false);
+   }
+/*
+BitSet            0  1  2  3  4  5  6  7  8
+   1    0   16 |  0  0  0  1  0  0  1  1  1
+One:
+   2   16    8 |  0  1  0  1  1  0  0  0
+   3   24    4 |  1  1  1  0
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  0  0  0  1  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
+*/
+  static void test_b9(boolean Ex)
+   {sayCurrentTestName();
+    final BitSet b = new BitSet(new Build().bitSize(9).immediate(Ex))
+     {void  bitSetCode()
+       {set(new Int(3));
+        set(new Int(6));
+        set(new Int(7));
+        set(new Int(8));
+        //stop(this);
+        ok(()->this, """
+BitSet            0  1  2  3  4  5  6  7  8
+   1    0   16 |  0  0  0  1  0  0  1  1  1
+One:
+   2   16    8 |  0  1  0  1  1  0  0  0
+   3   24    4 |  1  1  1  0
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  0  0  0  1  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
+""");
+        firstOne().ok(3);
+        nextOne(new Int(0)).ok(3);
+        nextOne(new Int(1)).ok(3);
+        nextOne(new Int(2)).ok(3);
+        nextOne(new Int(3)).ok(6);
+        nextOne(new Int(4)).ok(6);
+        nextOne(new Int(5)).ok(6);
+        nextOne(new Int(6)).ok(7);
+        nextOne(new Int(7)).ok(8);
+        nextOne(new Int(8)).notValid().ok(true);
+
+        lastOne().ok(8);
+        prevOne(new Int(8)).ok(7);
+        prevOne(new Int(7)).ok(6);
+        prevOne(new Int(6)).ok(3);
+        prevOne(new Int(5)).ok(3);
+        prevOne(new Int(4)).ok(3);
+        prevOne(new Int(3)).notValid().ok(true);
+        prevOne(new Int(2)).notValid().ok(true);
+        prevOne(new Int(1)).notValid().ok(true);
+        prevOne(new Int(0)).notValid().ok(true);
+
+        firstZero().ok(0);
+        nextZero(new Int(0)).ok(1);
+        nextZero(new Int(1)).ok(2);
+        nextZero(new Int(2)).ok(4);
+        nextZero(new Int(3)).ok(4);
+        nextZero(new Int(4)).ok(5);
+        nextZero(new Int(5)).notValid().ok(true);
+        nextZero(new Int(6)).notValid().ok(true);
+        nextZero(new Int(7)).notValid().ok(true);
+        nextZero(new Int(8)).notValid().ok(true);
+
+        lastZero().ok(5);
+        prevZero(new Int(8)).ok(5);
+        prevZero(new Int(7)).ok(5);
+        prevZero(new Int(6)).ok(5);
+        prevZero(new Int(5)).ok(4);
+        prevZero(new Int(3)).ok(2);
+        prevZero(new Int(2)).ok(1);
+        prevZero(new Int(1)).ok(0);
+        prevZero(new Int(0)).notValid().ok(true);
+        execute();
+       }
+     };
+   }
+
+  static void test_b9()
+   {          test_b9(true);
+              test_b9(false);
+   }
+/*
+BitSet            0  1  2  3  4  5  6  7  8
+   1    0   16 |  0  0  0  1  0  0  1  1  1
+One:
+   2   16    8 |  0  1  0  1  1  0  0  0
+   3   24    4 |  1  1  1  0
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  0  0  0  1  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
+*/
+  static void test_b10(boolean Ex)
+   {sayCurrentTestName();
+    final BitSet b = new BitSet(new Build().bitSize(10).immediate(Ex))
+     {void  bitSetCode()
+       {set(new Int(3));
+        set(new Int(6));
+        set(new Int(7));
+        set(new Int(8));
+        //stop(this);
+        ok(()->this, """
+BitSet            0  1  2  3  4  5  6  7  8  9
+   1    0   16 |  0  0  0  1  0  0  1  1  1  0
+One:
+   2   16    8 |  0  1  0  1  1  0  0  0
+   3   24    4 |  1  1  1  0
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  0  0  0  1  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
+""");
+        firstOne().ok(3);
+        nextOne(new Int(0)).ok(3);
+        nextOne(new Int(1)).ok(3);
+        nextOne(new Int(2)).ok(3);
+        nextOne(new Int(3)).ok(6);
+        nextOne(new Int(4)).ok(6);
+        nextOne(new Int(5)).ok(6);
+        nextOne(new Int(6)).ok(7);
+        nextOne(new Int(7)).ok(8);
+        nextOne(new Int(8)).notValid().ok(true);
+        nextOne(new Int(9)).notValid().ok(true);
+
+        lastOne().ok(8);
+        prevOne(new Int(9)).ok(8);
+        prevOne(new Int(8)).ok(7);
+        prevOne(new Int(7)).ok(6);
+        prevOne(new Int(6)).ok(3);
+        prevOne(new Int(5)).ok(3);
+        prevOne(new Int(4)).ok(3);
+        prevOne(new Int(3)).notValid().ok(true);
+        prevOne(new Int(2)).notValid().ok(true);
+        prevOne(new Int(1)).notValid().ok(true);
+        prevOne(new Int(0)).notValid().ok(true);
+
+        firstZero().ok(0);
+        nextZero(new Int(0)).ok(1);
+        nextZero(new Int(1)).ok(2);
+        nextZero(new Int(2)).ok(4);
+        nextZero(new Int(3)).ok(4);
+        nextZero(new Int(4)).ok(5);
+        nextZero(new Int(5)).ok(9);
+        nextZero(new Int(6)).ok(9);
+        nextZero(new Int(7)).ok(9);
+        nextZero(new Int(8)).ok(9);
+        nextZero(new Int(9)).notValid().ok(true);
+
+        lastZero().ok(9);
+        prevZero(new Int(9)).ok(5);
+        prevZero(new Int(8)).ok(5);
+        prevZero(new Int(7)).ok(5);
+        prevZero(new Int(6)).ok(5);
+        prevZero(new Int(5)).ok(4);
+        prevZero(new Int(3)).ok(2);
+        prevZero(new Int(2)).ok(1);
+        prevZero(new Int(1)).ok(0);
+        prevZero(new Int(0)).notValid().ok(true);
+        execute();
+       }
+     };
+   }
+
+  static void test_b10()
+   {          test_b10(true);
+              test_b10(false);
+   }
 
   static void test_set(boolean Ex)
    {sayCurrentTestName();
@@ -1818,16 +2052,19 @@ Zero:
     if (rtg( 4)) test_oneZero();
     if (rtg( 5)) test_fullEmpty();
     if (rtg( 6)) test_count();
-    if (rtg( 7)) test_powerPosOneZero();
+    if (rtg( 7)) test_powerPosOneZero16();
     if (rtg( 8)) test_twoOrMoreOnes();
     if (rtg( 9)) test_limits();
     if (rtg(10)) test_lowHighZero();
     if (rtg(11)) test_b4();
+    if (rtg(12)) test_b7();
+    if (rtg(13)) test_b9();
+    if (rtg(14)) test_b10();
+    if (rtg(15)) test_set();
    }
 
   static void newTests()                                                                                                // Tests under development.
    {oldTests();
-    //test_prevNext(false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
