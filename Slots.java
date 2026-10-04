@@ -340,10 +340,13 @@ class Slots extends Program                                                     
       {void Then()
         {new If (full().flip())                                                                                         // Keys cannot be compacted if the slots are full or empty
          {void Then()
-           {new For(numberOfKeys)                                                                                       // No need to make any more than this number of moves
-             {void body(Int Index, Bit Continue)
+           {
+if (immediate() && debug) say("GGGG1111", usedKeys);
+             new For(numberOfKeys)                                                                                       // No need to make any more than this number of moves
+              {void body(Int Index, Bit Continue)
                {final Bint k = usedKeys .lastZero();                                                                    // Last empty key
                 final Bint K = usedKeys .firstOne();                                                                    // First used key so we get the longest possible move
+if (immediate() && debug) say("GGGG222", K, k);
                 new If (K.i().lt(k.i()))                                                                                // Compaction possible
                  {void Then()
                    {moveKey(k, K, Continue);
@@ -352,6 +355,8 @@ class Slots extends Program                                                     
                  };
                }
              };
+if (immediate() && debug) say("GGGG3333", usedKeys);
+
            }
          };
        }
@@ -395,7 +400,6 @@ class Slots extends Program                                                     
     final Int N = count();                                                                                              // Number of keys in use
     final Int M = N.Down();                                                                                             // Mid point
     if (immediate() && N.i() < 2) stop("Even slot set must have at least two entries to be split right");               // Minimum splittable size
-    if (immediate()) say("SplitRightEven 1111");
 
     final Slots left = this;
     left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
@@ -416,7 +420,6 @@ class Slots extends Program                                                     
     final Int N = count();                                                                                              // Number of keys is use
     final Int M = N.Down();                                                                                             // Mid point
     if (immediate() && N.i() < 2) stop("Even slot set must have at least two entries to be split left");                // Minimum splittable size
-    if (immediate()) say("SplitLeftEven");
 
     final Slots right = this;
     right.compactSlotsLeft();                                                                                           // Compacting the source on the right will not affect the order of the keys
@@ -440,7 +443,6 @@ class Slots extends Program                                                     
     final Int M = N.Down();                                                                                             // Mid point
     final Int R = M.Inc();                                                                                              // Start of right range
     if (immediate() && N.i() < 3) stop("Odd slot set must have at least three keys to be split right");                 // Minimum splittable size
-    if (immediate()) say("SplitRightOdd");
 
     final Slots left = this;
     left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
@@ -466,7 +468,6 @@ class Slots extends Program                                                     
     final Int M = N.Down();                                                                                             // Mid point
     final Int R = M.Inc();                                                                                              // Start of right range
     if (immediate() && N.i() < 3) stop("Odd slot set must have at least three keys to be split left");                  // Minimum splittable size
-    if (immediate()) say("SplitLeftOdd");
 
     final Slots right = this;
     right.compactSlotsLeft();                                                                                           // Compacting the source on the left will not affect the order of the keys
@@ -640,9 +641,10 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  void shiftDownOne(Int Position, Int Width)                                                                            // Shift down the specified slots by one position to create a free space at the specified position
+  void shiftDownOne(Int Position, Int Width)                                                                            // Shift down the specified slots by one position to create a free space at the specified position. Position is at the right end of the block to be moved
    {final Slots slots = this;
     subStart("Slots.shiftDownOne");
+if (immediate()) say("SSSS", Position, Width, this);
     new ForCount(Width)                                                                                                 // Move the indicated slots up one position
      {void body(Int Index)
        {final Int t = Position.Sub(Width).add(Index);                                                                   // Index of source element to be moved
@@ -690,7 +692,7 @@ class Slots extends Program                                                     
 //D2 High level operations                                                                                              // Find, insert, delete values in the slots
 
   final class Find                                                                                                      // Find result
-   {final Bint  slot = new Bint();                                                                                      // Slot found
+   {final Bint slot = new Bint();                                                                                       // Slot found
     final Bit lower = new Bit(), higher = new Bit(), equal = new Bit(), empty = new Bit();                              // Position of search item relative to the slot found
     boolean insertBelow = false;                                                                                        // If true, then the key to be inserted should be inserted below the indicated slot, otherwise the insertion position will be determined at run time.  Setting this flag reduces the amount of code generated because the case where the key has to be inserted above the found key can be safely ignored
     boolean insertAbove = false;                                                                                        // If true, then the key to be inserted should be inserted above the indicated slot, otherwise the insertion position will be determined at run time.  Setting this flag reduces the amount of code generated because the case where the key has to be inserted above the found key can be safely ignored
@@ -769,7 +771,10 @@ class Slots extends Program                                                     
 
           final Runnable upper = new Runnable()                                                                         // The key should be inserted above the found key
            {public void run()
-             {shiftDownOne(p.Inc(), s.Sub(p));                                                                          // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
+             {if (immediate()) say("DDDD", p, s);
+//           shiftDownOne(p.Inc(), s.Sub(p));                                                                          // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
+//stop("DDDD");
+              shiftDownOne(s, s.Sub(p));                                                                          // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
               setSlotAndKey(P.set(s), K.i(), Key);                                                                      // Insert key in nearest found key slot
              }
            };
