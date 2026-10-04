@@ -241,7 +241,8 @@ class Branch extends Program implements Program.Locatable                       
   Int splitRight (Branch Right)                                                                                         // Split a full branch rightwards into a supplied branch and return the splitting key
    {subStart("Branch.splitRight");
 //  if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
-    if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
+//  if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
+    if (immediate() && count().i() < 2) stop("Branch must have at least two children before it can be split");          // The branch must have sufficient entries
     final Branch L = this, R = Right;
     R.slots.initializeMemory();                                                                                         // Clear the target
     R.refData.copy(L.refData, L.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
@@ -256,7 +257,8 @@ class Branch extends Program implements Program.Locatable                       
   Int splitLeft (Branch Left)                                                                                           // Split a full branch leftwards into a supplied branch and return the splitting key
    {subStart("Branch.mergeRight");
 //  if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
-    if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
+//  if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
+    if (immediate() && count().i() < 2) stop("Branch must have at least two children before it can be split");          // The branch must have sufficient entries
     final Branch L = Left, R = this;
     L.slots.initializeMemory();                                                                                         // Clear target
     L.refData.copy(R.refData, R.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
@@ -269,6 +271,8 @@ class Branch extends Program implements Program.Locatable                       
    }
 
 //D2 Merge                                                                                                              // Merge two branches
+
+  Int mergeLimit() {return new Int(maxSize());}                                                                         // Combined branch size limit for a merge
 
   private void copyMergeData (Branch Source, Int Start, Int End)                                                        // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {subStart("Branch.copyMergeData");
@@ -287,7 +291,7 @@ class Branch extends Program implements Program.Locatable                       
     final Int      rc = Right.count();
     final Bit      r  = new Bit().clear();
 
-    new If (lc.Add(rc).lt(maxSize()))
+    new If (lc.Add(rc).lt(mergeLimit()))
      {void Then()
        {r.set();
         final Slots ls = left .slots;
@@ -315,7 +319,7 @@ class Branch extends Program implements Program.Locatable                       
     final Int       rc = right.count();
     final Bit        r = new Bit().clear();
 
-    new If (lc.Add(rc).lt(maxSize()))
+    new If (lc.Add(rc).lt(mergeLimit()))
      {void Then()
        {r.set();
         final Slots Ls = Left .slots;
