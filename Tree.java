@@ -338,6 +338,7 @@ class Tree extends Program                                                      
     return f;
    }
 
+final Tree T = this;
   final class Path                                                                                                      // Record the path from the root to the leaf that should contain a key
    {final Int          key = new Int("key");                                                                            // Search key
     final Int         leaf = new Int("leaf");                                                                           // Leaf that should contain the key
@@ -447,8 +448,8 @@ class Tree extends Program                                                      
           final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
           final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
           final Bint            L = new Bint();                                                                         // There are four possibilities to consider
-          final Int            I0 = Zero.constant();                                                              // Non fast integer constants
-          final Int            I1 = One.constant();                                                              // Non fast integer constants
+          final Int            I0 = Zero;                                                                               // Non fast integer constants
+          final Int            I1 = One;                                                                                // Non fast integer constants
           final Int            I2 = new Int(2).constant();                                                              // Non fast integer constants
           final Int            I3 = new Int(3).constant();                                                              // Non fast integer constants
           new ForCount(4)                                                                                               // Locate the left sibling
@@ -462,7 +463,9 @@ class Tree extends Program                                                      
                      {new If (Index.eq(I2))
                        {void Then()                          {L.copy(mergeLeft(      p, d.slot));}
                         void Else()
-                         {new If (Index.eq(I3)) {void Then() {L.copy(mergeRight(     p, d.slot));}};
+                         {new If (Index.eq(I3)) {void Then() {
+                           L.copy(mergeRight(     p, d.slot));
+                           }};
                          }
                        };
                      }
@@ -595,6 +598,7 @@ class Tree extends Program                                                      
        {s.copy(d.slot);                                                                                                 // Insert new left leaf below the key in the indicated slot
        }
      };
+if (immediate()) say("CCCC insert ", Key, dump());
     P.insert(sk, l.getLocation().i(), s);                                                                               // Insert new left leaf below the key in the indicated slot
 
     new If (Key.le(sk))                                                                                                 // Insert the key in the left leaf if it less than the splitting key
@@ -685,7 +689,7 @@ class Tree extends Program                                                      
 
   Bit mergeLeftBranchIntoRightSibling (Branch Parent, Int Left, Branch Right)                                           // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {subStart("Tree.mergeLeftBranchIntoRightSibling");
-    final Bit   m = new Bit(false);                                                                                     // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Bit    m = new Bit(false);                                                                                     // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(Left)));                                                   // Left branch of merge
     final Int    k = P.slots.getSlotToKeyValue(Left);                                                                   // The parent key for the left sibling
@@ -702,7 +706,7 @@ class Tree extends Program                                                      
 
   Bit mergeLeftIntoRightSibling (Branch Parent, Int Left)                                                               // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
    {subStart("Tree.mergeLeftIntoRightSibling");
-    final Bit   m = new Bit(false);                                                                                     // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Bit    m = new Bit(false);                                                                                    // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Int    l = new Int();                                                                                         // Next sibling location
     final Bint   R = P.slots.usedSlotsToKeys.nextOne(Left);                                                             // Right sibling via next valid slot
@@ -1847,16 +1851,20 @@ Leaf           size:   4, count:   2
   static void test_rootFanOut (boolean Ex)
    {sayCurrentTestName();
 
-    final int  N = 128;
-    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(15).rootFanLevels(2).fanOutAtRoot(2).numberOfNodes(N).immediate(Ex))
+    final int  N = 39;
+//  final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(9).rootFanLevels(2).fanOutAtRoot(2).numberOfNodes(N).immediate(Ex))
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(9).numberOfNodes(N).immediate(Ex))
      {void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
             dumpProgramState("AAAA");
-            if (immediate()) say("AAAA", dump());
+            if (immediate()) say("AAAA", Index, dump());
            }
          };
+debug = true;
+insert(new Int(40), Zero);
+
         height().ok(4);
 
         //stop(mainMemoryMd5Sum());
@@ -1898,7 +1906,7 @@ Leaf           size:   4, count:   2
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (rtg( 1)) test_tree();
-    if (rtg( 2)) test_rootFanOut();
+    //if (rtg( 2)) test_rootFanOut();
     if (rtg( 3)) test_insert();
     if (rtg( 4)) test_insertMerged();
     if (rtg( 5)) test_insertReverse();
@@ -1912,6 +1920,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
+    //test_insert(!true);
     test_rootFanOut(true);
    }
 
