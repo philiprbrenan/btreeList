@@ -1850,6 +1850,82 @@ Zero:
    3   43    2 |  0  0
    4   45    1 |  0
 */
+  static void test_b8(boolean Ex)
+   {sayCurrentTestName();
+    final BitSet b = new BitSet(new Build().bitSize(8).immediate(Ex))
+     {void  bitSetCode()
+       {set(new Int(3));
+        set(new Int(6));
+        //stop(this);
+        ok(()->this, """
+BitSet            0  1  2  3  4  5  6
+   1    0    8 |  0  0  0  1  0  0  1
+One:
+   2    8    4 |  0  1  0  1
+   3   12    2 |  1  1
+   4   14    1 |  1
+Zero:
+   1   15    4 |  0  0  0  0
+   2   19    2 |  0  0
+   3   21    1 |  0
+""");
+        firstOne().ok(3);
+        nextOne(new Int(0)).ok(3);
+        nextOne(new Int(1)).ok(3);
+        nextOne(new Int(2)).ok(3);
+        nextOne(new Int(3)).ok(6);
+        nextOne(new Int(4)).ok(6);
+        nextOne(new Int(5)).ok(6);
+        nextOne(new Int(6)).notValid().ok(true);
+
+        lastOne().ok(6);
+        prevOne(new Int(6)).ok(3);
+        prevOne(new Int(5)).ok(3);
+        prevOne(new Int(4)).ok(3);
+        prevOne(new Int(3)).notValid().ok(true);
+        prevOne(new Int(2)).notValid().ok(true);
+        prevOne(new Int(1)).notValid().ok(true);
+        prevOne(new Int(0)).notValid().ok(true);
+
+        firstZero().ok(0);
+        nextZero(new Int(0)).ok(1);
+        nextZero(new Int(1)).ok(2);
+        nextZero(new Int(2)).ok(4);
+        nextZero(new Int(3)).ok(4);
+        nextZero(new Int(4)).ok(5);
+        nextZero(new Int(5)).notValid().ok(true);
+        nextZero(new Int(6)).notValid().ok(true);
+
+        lastZero().ok(5);
+        prevZero(new Int(6)).ok(5);
+        prevZero(new Int(5)).ok(4);
+        prevZero(new Int(3)).ok(2);
+        prevZero(new Int(2)).ok(1);
+        prevZero(new Int(1)).ok(0);
+        prevZero(new Int(0)).notValid().ok(true);
+        execute();
+       }
+     };
+   }
+
+  static void test_b8()
+   {          test_b8(true);
+              test_b8(false);
+   }
+/*
+BitSet            0  1  2  3  4  5  6  7  8
+   1    0   16 |  0  0  0  1  0  0  1  1  1
+One:
+   2   16    8 |  0  1  0  1  1  0  0  0
+   3   24    4 |  1  1  1  0
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  0  0  0  1  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
+*/
   static void test_b9(boolean Ex)
    {sayCurrentTestName();
     final BitSet b = new BitSet(new Build().bitSize(9).immediate(Ex))
@@ -2058,13 +2134,15 @@ Zero:
     if (rtg(10)) test_lowHighZero();
     if (rtg(11)) test_b4();
     if (rtg(12)) test_b7();
-    if (rtg(13)) test_b9();
-    if (rtg(14)) test_b10();
-    if (rtg(15)) test_set();
+    if (rtg(13)) test_b8();
+    if (rtg(14)) test_b9();
+    if (rtg(15)) test_b10();
+    if (rtg(16)) test_set();
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();
+   {//oldTests();
+    test_b8(true);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
