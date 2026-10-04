@@ -340,13 +340,10 @@ class Slots extends Program                                                     
       {void Then()
         {new If (full().flip())                                                                                         // Keys cannot be compacted if the slots are full or empty
          {void Then()
-           {
-if (immediate() && debug) say("GGGG1111", usedKeys);
-             new For(numberOfKeys)                                                                                       // No need to make any more than this number of moves
+           {new For(numberOfKeys)                                                                                       // No need to make any more than this number of moves
               {void body(Int Index, Bit Continue)
                {final Bint k = usedKeys .lastZero();                                                                    // Last empty key
                 final Bint K = usedKeys .firstOne();                                                                    // First used key so we get the longest possible move
-if (immediate() && debug) say("GGGG222", K, k);
                 new If (K.i().lt(k.i()))                                                                                // Compaction possible
                  {void Then()
                    {moveKey(k, K, Continue);
@@ -355,8 +352,6 @@ if (immediate() && debug) say("GGGG222", K, k);
                  };
                }
              };
-if (immediate() && debug) say("GGGG3333", usedKeys);
-
            }
          };
        }
@@ -644,7 +639,6 @@ if (immediate() && debug) say("GGGG3333", usedKeys);
   void shiftDownOne(Int Position, Int Width)                                                                            // Shift down the specified slots by one position to create a free space at the specified position. Position is at the right end of the block to be moved
    {final Slots slots = this;
     subStart("Slots.shiftDownOne");
-if (immediate()) say("SSSS", Position, Width, this);
     new ForCount(Width)                                                                                                 // Move the indicated slots up one position
      {void body(Int Index)
        {final Int t = Position.Sub(Width).add(Index);                                                                   // Index of source element to be moved
@@ -771,10 +765,7 @@ if (immediate()) say("SSSS", Position, Width, this);
 
           final Runnable upper = new Runnable()                                                                         // The key should be inserted above the found key
            {public void run()
-             {if (immediate()) say("DDDD", p, s);
-//           shiftDownOne(p.Inc(), s.Sub(p));                                                                          // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
-//stop("DDDD");
-              shiftDownOne(s, s.Sub(p));                                                                          // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
+             {shiftDownOne(s, s.Sub(p));                                                                          // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
               setSlotAndKey(P.set(s), K.i(), Key);                                                                      // Insert key in nearest found key slot
              }
            };
