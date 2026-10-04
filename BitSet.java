@@ -1858,8 +1858,8 @@ Zero:
         set(new Int(6));
         //stop(this);
         ok(()->this, """
-BitSet            0  1  2  3  4  5  6
-   1    0    8 |  0  0  0  1  0  0  1
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  0  0  0  1  0  0  1  0
 One:
    2    8    4 |  0  1  0  1
    3   12    2 |  1  1
@@ -1877,8 +1877,10 @@ Zero:
         nextOne(new Int(4)).ok(6);
         nextOne(new Int(5)).ok(6);
         nextOne(new Int(6)).notValid().ok(true);
+        nextOne(new Int(7)).notValid().ok(true);
 
         lastOne().ok(6);
+        prevOne(new Int(7)).ok(6);
         prevOne(new Int(6)).ok(3);
         prevOne(new Int(5)).ok(3);
         prevOne(new Int(4)).ok(3);
@@ -1893,10 +1895,12 @@ Zero:
         nextZero(new Int(2)).ok(4);
         nextZero(new Int(3)).ok(4);
         nextZero(new Int(4)).ok(5);
-        nextZero(new Int(5)).notValid().ok(true);
-        nextZero(new Int(6)).notValid().ok(true);
+        nextZero(new Int(5)).ok(7);
+        nextZero(new Int(6)).ok(7);
+        nextZero(new Int(7)).notValid().ok(true);
 
-        lastZero().ok(5);
+        lastZero().ok(7);
+        prevZero(new Int(7)).ok(5);
         prevZero(new Int(6)).ok(5);
         prevZero(new Int(5)).ok(4);
         prevZero(new Int(3)).ok(2);
