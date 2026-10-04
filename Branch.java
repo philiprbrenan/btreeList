@@ -322,19 +322,13 @@ class Branch extends Program implements Program.Locatable                       
         final Slots rs = right.slots;
         Left .compactLeft();    right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
         Ls.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
-if (immediate() && debug) say("FFFF1111", right, right.slots);
         rs.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
-if (immediate() && debug) say("FFFF2222", right, right.slots);
 
         final Int lt = Left .top();                                                                                     // Left top
         final Int rt = right.top();                                                                                     // Right top
-if (immediate() && debug) say("FFFF3333", Left, Left.slots, right, right.slots);
         right.copyMergeData(Left, Zero, new Int(lc));                                                                   // Copy the left data values into the right data values
-if (immediate() && debug) say("FFFF4444", Left, Left.slots, right, right.slots);
         right.data(lc, lt);                                                                                             // Place left top in left data values
-if (immediate() && debug) say("FFFF5555", Left, Left.slots, right, right.slots);
         rs.mergeFromLeftOdd(Ls, Sk);                                                                            // Merge the slots
-if (immediate() && debug) say("FFFF6666", Left, Left.slots, right, right.slots);
        }
      };
     subFinish();
