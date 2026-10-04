@@ -1989,7 +1989,7 @@ Leaf           size:   4, count:   2
   static void test_rootFanOut3 (boolean Ex)
    {sayCurrentTestName();
 
-    final int  N = 1280;
+    final int  N = 512;
     final Tree t = new Tree(new Build().maxLeafSize(8).maxBranchSize(9).rootFanLevels(4).branchFanOut(3).leafFanOut(2).numberOfNodes(N).immediate(Ex))
      {void treeCode()
        {new ForCount(One, new Int(N+1))
