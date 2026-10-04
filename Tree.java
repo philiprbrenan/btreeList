@@ -199,22 +199,22 @@ class Tree extends Program                                                      
     final Memory.Ref   r = unitMemory.new Ref(nodeAddress(Node));                                                       // Address branch
     final Tree      tree = this;                                                                                        // Current tree
 
-    return new Branch(build.branch.parent(program()).memory(r).at(Node));                                                // Base branch at the indexed address
-//     {Bit full()                                                                                                        // Whether the branch should be regarded as full or not
-//       {if (rootFanLevels > 0)                                                                                          // Root fan out has been requested
-//         {final Int d = One.Up(tree.height().sub(level()));                                                             // Make branches close to the root small to reduce queuing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
-//          final Bit f = new Bit("Full", false);                                                                         // Whether the branch is full under the criterion of root fan out
-//          new If (d.lt(rootFanLevels))                                                                                  // Close enough to the root
-//           {void Then()
-//             {f.set(count().gt(fanOutAtRoot));                                                                          // The amount of fanout requested for the root
-//              if (immediate()) say("BBBB", Node, d, f);
-//             }
-//           };
-//          return f;
-//         }
-//        return super.full();                                                                                            // Revert to normal definition of full - i.e. when the branch is actually full
-//       }
-//     };
+    return new Branch(build.branch.parent(program()).memory(r).at(Node))                                                // Base branch at the indexed address
+     {Bit full()                                                                                                        // Whether the branch should be regarded as full or not
+       {if (rootFanLevels > 0)                                                                                          // Root fan out has been requested
+         {final Int d = One.Up(tree.height().sub(level()));                                                             // Make branches close to the root small to reduce queuing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
+          final Bit f = new Bit("Full", false);                                                                         // Whether the branch is full under the criterion of root fan out
+          new If (d.lt(rootFanLevels))                                                                                  // Close enough to the root
+           {void Then()
+             {f.set(count().gt(fanOutAtRoot));                                                                          // The amount of fanout requested for the root
+              if (immediate()) say("BBBB", Node, d, f);
+             }
+           };
+          return f;
+         }
+        return super.full();                                                                                            // Revert to normal definition of full - i.e. when the branch is actually full
+       }
+     };
    }
 
   Branch makeBranch (Int Node)                                                                                          // Make a branch from the specified node
@@ -1847,12 +1847,10 @@ Leaf           size:   4, count:   2
               test_find(false);
    }
 
-
   static void test_rootFanOut (boolean Ex)
    {sayCurrentTestName();
 
     final int  N = 128;
-//  final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(9).rootFanLevels(2).fanOutAtRoot(2).numberOfNodes(N).immediate(Ex))
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(9).numberOfNodes(N).immediate(Ex))
      {void treeCode()
        {new ForCount(One, new Int(N+1))
@@ -1897,6 +1895,54 @@ Leaf           size:   4, count:   2
               test_rootFanOut(false);
    }
 
+  static void test_rootFanOut2 (boolean Ex)
+   {sayCurrentTestName();
+
+    final int  N = 128;
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(9).rootFanLevels(2).fanOutAtRoot(2).numberOfNodes(N).immediate(Ex))
+     {void treeCode()
+       {new ForCount(One, new Int(N+1))
+         {void body(Int Index)
+           {insert(Index, Index.Mul(11));
+            dumpProgramState("AAAA");
+           }
+         };
+
+        height().ok(3);
+
+        //stop(mainMemoryMd5Sum());
+        ok(()->mainMemoryMd5Sum(), "2aac7256bd1345cb2bb27f81a9a8fcdb");
+
+        stop(dump());
+        if (Ex) ok(dump(), """
+                                                                                                                                                                   0020                                                                                                                                                                             0040                                                                                                                                                                             0060                                                                                                                                                                              0080                                                                                                                                                                              0100                                                                             0110                                                                                                                                                            |
+                                                                                                                                                                   (0,2)                                                                                                                                                                            (0,6)                                                                                                                                                                            (0,10)                                                                                                                                                                            (0,15)                                                                                                                                                                            (0,16)                                                                           (0,17)12                                                                                                                                                        |
+                                                                                                                                                                   [18,2]2                                                                                                                                                                          [29,6]2                                                                                                                                                                          [40,10]2                                                                                                                                                                          [51,15]2                                                                                                                                                                          [62,16]2                                                                         [1,17]2                                                                                                                                                         |
+        0002            0004            0006            0008            0010             0012              0014               0016               0018                              0022             0024             0026             0028             0030              0032               0034               0036               0038                              0042             0044             0046             0048             0050              0052               0054               0056               0058                               0062             0064             0066             0068             0070              0072               0074               0076               0078                               0082             0084             0086             0088             0090              0092               0094               0096               0098                              0102           0104            0106             0108                              0112             0114             0116             0118              0120               0122               0124               0126             |
+        (18,0,0)        (18,0,2)        (18,0,4)        (18,0,6)        (18,0,8)         (18,0,10)         (18,0,12)          (18,0,14)          (18,0,16)14                       (29,0,0)         (29,0,2)         (29,0,4)         (29,0,6)         (29,0,8)          (29,0,10)          (29,0,12)          (29,0,14)          (29,0,16)25                       (40,0,0)         (40,0,2)         (40,0,4)         (40,0,6)         (40,0,8)          (40,0,10)          (40,0,12)          (40,0,14)          (40,0,16)36                        (51,0,0)         (51,0,2)         (51,0,4)         (51,0,6)         (51,0,8)          (51,0,10)          (51,0,12)          (51,0,14)          (51,0,16)47                        (62,0,0)         (62,0,2)         (62,0,4)         (62,0,6)         (62,0,8)          (62,0,10)          (62,0,12)          (62,0,14)          (62,0,16)58                       (1,0,2)        (1,0,6)         (1,0,10)         (1,0,14)56                        (12,0,2)         (12,0,4)         (12,0,6)         (12,0,8)          (12,0,10)          (12,0,12)          (12,0,15)          (12,0,17)2       |
+        [3,0]1          [4,2]1          [5,4]1          [6,6]1          [7,8]1           [8,10]1           [9,12]1            [10,14]1           [13,16]1                          [15,0]1          [16,2]1          [17,4]1          [19,6]1          [11,8]1           [20,10]1           [21,12]1           [22,14]1           [24,16]1                          [26,0]1          [27,2]1          [28,4]1          [30,6]1          [23,8]1           [31,10]1           [32,12]1           [33,14]1           [35,16]1                           [37,0]1          [38,2]1          [39,4]1          [41,6]1          [34,8]1           [42,10]1           [43,12]1           [44,14]1           [46,16]1                           [48,0]1          [49,2]1          [50,4]1          [52,6]1          [45,8]1           [53,10]1           [54,12]1           [55,14]1           [57,16]1                          [59,2]1        [60,6]1         [61,10]1         [63,14]1                          [64,2]1          [65,4]1          [66,6]1          [68,8]1           [69,10]1           [70,12]1           [71,15]1           [72,17]1         |
+1,2             3,4             5,6             7,8             9,10            11,12             13,14             15,16              17,18                19,20         21,22            23,24            25,26            27,28            29,30            31,32              33,34              35,36              37,38                39,40         41,42            43,44            45,46            47,48            49,50            51,52              53,54              55,56              57,58                59,60          61,62            63,64            65,66            67,68            69,70            71,72              73,74              75,76              77,78                79,80          81,82            83,84            85,86            87,88            89,90            91,92              93,94              95,96              97,98                99,100         101,102        103,104        105,106          107,108            109,110        111,112          113,114          115,116          117,118          119,120            121,122            123,124            125,126             127,128|
+(3,18,0)        (4,18,2)        (5,18,4)        (6,18,6)        (7,18,8)        (8,18,10)         (9,18,12)         (10,18,14)         (13,18,16)           (14,18)       (15,29,0)        (16,29,2)        (17,29,4)        (19,29,6)        (11,29,8)        (20,29,10)         (21,29,12)         (22,29,14)         (24,29,16)           (25,29)       (26,40,0)        (27,40,2)        (28,40,4)        (30,40,6)        (23,40,8)        (31,40,10)         (32,40,12)         (33,40,14)         (35,40,16)           (36,40)        (37,51,0)        (38,51,2)        (39,51,4)        (41,51,6)        (34,51,8)        (42,51,10)         (43,51,12)         (44,51,14)         (46,51,16)           (47,51)        (48,62,0)        (49,62,2)        (50,62,4)        (52,62,6)        (45,62,8)        (53,62,10)         (54,62,12)         (55,62,14)         (57,62,16)           (58,62)        (59,1,2)       (60,1,6)       (61,1,10)        (63,1,14)          (56,1)         (64,12,2)        (65,12,4)        (66,12,6)        (68,12,8)        (69,12,10)         (70,12,12)         (71,12,15)         (72,12,17)          (2,12) |
+""");
+
+        stop(print());
+        if (Ex) ok(print(), """
+                                                                             0020                                                                                      0040                                                                                      0060                                                                                      0080                                                                                       0100                                                   0110                                                                                               |
+   0002   0004   0006   0008    0010     0012     0014     0016     0018              0022     0024     0026     0028     0030     0032     0034     0036     0038              0042     0044     0046     0048     0050     0052     0054     0056     0058              0062     0064     0066     0068     0070     0072     0074     0076     0078              0082     0084     0086     0088     0090     0092     0094     0096     0098                 0102       0104       0106       0108                  0112       0114       0116       0118       0120       0122       0124       0126       |
+1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32    33,34    35,36    37,38    39,40    41,42    43,44    45,46    47,48    49,50    51,52    53,54    55,56    57,58    59,60    61,62    63,64    65,66    67,68    69,70    71,72    73,74    75,76    77,78    79,80    81,82    83,84    85,86    87,88    89,90    91,92    93,94    95,96    97,98    99,100    101,102    103,104    105,106    107,108    109,110    111,112    113,114    115,116    117,118    119,120    121,122    123,124    125,126    127,128|
+""");
+
+        maxSteps(9_999_999);
+        execute();
+       }
+     };
+   }
+
+  static void test_rootFanOut2 ()
+   {          test_rootFanOut2(true);
+              test_rootFanOut2(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (rtg( 1)) test_tree();
     //if (rtg( 2)) test_rootFanOut();
@@ -1909,12 +1955,14 @@ Leaf           size:   4, count:   2
     if (rtg( 9)) test_deleteRandom32();
     if (rtg(10)) test_update();
     if (rtg(11)) test_find();
+    if (rtg(12)) test_rootFanOut();
+    if (rtg(13)) test_rootFanOut2();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_insert(!true);
-    test_rootFanOut(true);
+    test_rootFanOut2(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
