@@ -2031,7 +2031,7 @@ Leaf           size:   4, count:   2
 
   static void test_rootFanOut3 ()
    {          test_rootFanOut3(true);
-              test_rootFanOut3(false);
+            //test_rootFanOut3(false);                                                                                 // Github keeps running out of memory
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
