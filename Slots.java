@@ -365,7 +365,7 @@ class Slots extends Program                                                     
     new If (empty().flip())                                                                                             // Something to redistribute
      {void Then()                                                                                                       // Redistribute
        {final Int         N = NumberOfSlotsToKeys;                                                                      // Maximum number of slots
-        final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
+        final Int         R = numberOfKeys();                                                                           // Maximum number of keys
         compactSlotsLeft();                                                                                             // Compact slots to the left so it is in a known position
         final Int         c = usedSlotsToKeys.firstZero().i(); c.name = "c";                                            // Number of slots in use
         final Int     space = N.Sub(c).div(c);                                                                          // Space between used slots
@@ -434,17 +434,17 @@ class Slots extends Program                                                     
 
   Int splitRightOdd (Slots Right)                                                                                       // Split a full set of slots that contains an odd number of entries redistributing the slots in the source and target slots. Return the index of the splitting key
    {subStart("Slots.splitRightOdd");
-    final Int N = count();                                                                                              // Number of keys is use
-    final Int M = N.Down();                                                                                             // Mid point
-    final Int R = M.Inc();                                                                                              // Start of right range
+    final Int N = count() .constant();                                                                                  // Number of keys is use
+    final Int M = N.Down().constant();                                                                                  // Mid point
+    final Int R = M.Inc() .constant();                                                                                  // Start of right range
     if (immediate() && N.i() < 3) stop("Odd slot set must have at least three keys to be split right");                 // Minimum splittable size
 
     final Slots left = this;
     left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
     Right.copy(left);                                                                                                   // Duplicate left into right
 
-    final Int sk = new Int(left.getSlotToKeyIndex(M));                                                                  // Get the index of the splitting key. The actual key can be recovered from the index.
-    final Int sK = new Int(left.getKeyValue(sk));                                                                       // Value of the splitting key
+    final Int sk = left.getSlotToKeyIndex(M).constant();                                                                // Get the index of the splitting key. The actual key can be recovered from the index.
+    final Int sK = left.getKeyValue(sk)     .constant();                                                                // Value of the splitting key
 
     new ForCount(R)    {void body(Int Index) {Right.delete(Index);}};                                                   // Clear lower half of target right slots
     new ForCount(M, N) {void body(Int Index) {left .delete(Index);}};                                                   // Clear upper half of left slots
@@ -459,17 +459,17 @@ class Slots extends Program                                                     
 
   Int splitLeftOdd (Slots Left)                                                                                         // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots. Return the index of the splitting key
    {subStart("Slots.splitLeftOdd");
-    final Int N = count();                                                                                              // Number of keys is use
-    final Int M = N.Down();                                                                                             // Mid point
-    final Int R = M.Inc();                                                                                              // Start of right range
+    final Int N = count() .constant();                                                                                  // Number of keys is use
+    final Int M = N.Down().constant();                                                                                  // Mid point
+    final Int R = M.Inc() .constant();                                                                                  // Start of right range
     if (immediate() && N.i() < 3) stop("Odd slot set must have at least three keys to be split left");                  // Minimum splittable size
 
     final Slots right = this;
     right.compactSlotsLeft();                                                                                           // Compacting the source on the left will not affect the order of the keys
     Left.copy(right);                                                                                                   // Duplicate left into right
 
-    final Int sk = new Int(right.getSlotToKeyIndex(M));                                                                 // Get the index of the splitting key. The actual key can be recovered from the index.
-    final Int sK = new Int(right.getKeyValue(sk));                                                                      // Value of the splitting key
+    final Int sk = new Int(right.getSlotToKeyIndex(M)).constant();                                                      // Get the index of the splitting key. The actual key can be recovered from the index.
+    final Int sK = new Int(right.getKeyValue(sk))     .constant();                                                      // Value of the splitting key
 
     new ForCount(R)     {void body(Int Index) {right.delete(Index);}};                                                  // Clear lower half of target right slots
     right.refKeys.putInt(sk, sK);                                                                                       // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
@@ -720,7 +720,7 @@ class Slots extends Program                                                     
      {final Int  P = new Int();                                                                                         // The slot into which the key was inserted
       final Find f = this;                                                                                              // Find nearest existing key in slots
       final Bint K = usedKeys.firstZero();                                                                              // Position for key in key slots
-      final Int  s = new Int(f.slot.i());     // Unwrap?                                                                // Nearest existing key slot
+      final Int  s = new Int(f.slot.i());                                                                               // Nearest existing key slot
       final Int  p = locateNearestFreeSlotToKey(s, f.lower);                                                            // Absolute position of nearest free slot
 
       if (immediate() && empty().b()) stop("Insert after find requires a non empty set of slots");                      // The slots must have at least one element
@@ -730,6 +730,7 @@ class Slots extends Program                                                     
        {void Then() {rd.set(s.Sub(p).ge(redistributionWidth()));}
         void Else() {rd.set(p.Sub(s).ge(redistributionWidth()));}
        };
+
       new If (rd)                                                                                                       // Redistribution required
        {void Then()
          {final Int b = new Int(getSlotToKeyIndex(f.slot.i()));                                                         // Index of the key before redistribution
