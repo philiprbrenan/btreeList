@@ -287,8 +287,8 @@ class Branch extends Program implements Program.Locatable                       
   Bit mergeRight (Branch Right, Int Sk)                                                                                 // Merge the specified branch into the right of this branch separating the two by the specified splitting key
    {subStart("Branch.mergeRight");
     final Branch left = this;
-    final Int      lc = left .count();
-    final Int      rc = Right.count();
+    final Int      lc = left .count().constant();
+    final Int      rc = Right.count().constant();
     final Bit      r  = new Bit().clear();
 
     new If (lc.Add(rc).lt(mergeLimit()))
@@ -315,8 +315,8 @@ class Branch extends Program implements Program.Locatable                       
   Bit mergeLeft (Branch Left, Int Sk)                                                                                   // Merge the specified branch into the left of this branch separating the two by the specified splitting key
    {subStart("Branch.mergeLeft");
     final Branch right = this;
-    final Int       lc = Left .count();
-    final Int       rc = right.count();
+    final Int       lc = Left .count().constant();
+    final Int       rc = right.count().constant();
     final Bit        r = new Bit().clear();
 
     new If (lc.Add(rc).lt(mergeLimit()))
@@ -330,9 +330,9 @@ class Branch extends Program implements Program.Locatable                       
 
         final Int lt = Left .top();                                                                                     // Left top
         final Int rt = right.top();                                                                                     // Right top
-        right.copyMergeData(Left, Zero, new Int(lc));                                                                   // Copy the left data values into the right data values
+        right.copyMergeData(Left, Zero, lc);                                                                            // Copy the left data values into the right data values
         right.data(lc, lt);                                                                                             // Place left top in left data values
-        rs.mergeFromLeftOdd(Ls, Sk);                                                                            // Merge the slots
+        rs.mergeFromLeftOdd(Ls, Sk);                                                                                    // Merge the slots
        }
      };
     subFinish();
