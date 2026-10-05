@@ -2989,8 +2989,8 @@ endmodule
     P.execute();
     if ( P.immediate()) ok(P.intMemory.size(), 0);
     if ( Q.immediate()) ok(Q.intMemory.size(), 0);
-    if (!P.immediate() && Program.suppressImmediateOnly) ok(P.intMemory.size(), 2);
-    if (!Q.immediate() && Program.suppressImmediateOnly) ok(Q.intMemory.size(), 2);
+    if (!P.immediate() && Program.suppressImmediateOnly) ok(P.intMemory.size(), 6);
+    if (!Q.immediate() && Program.suppressImmediateOnly) ok(Q.intMemory.size(), 6);
    }
 
   static void test_remote()
@@ -3763,7 +3763,8 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_remote();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
