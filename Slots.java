@@ -69,7 +69,6 @@ class Slots extends Program                                                     
 
   Slots(Build Build)                                                                                                    // Create the slots
    {super(Build.build());
-    subStart("Slots");
     build                = Build;                                                                                       // Save build details
     numberOfKeys         = Build.numberOfKeys;                                                                          // Maximum number of keys
     size                 = Build.size();                                                                                // Size of memory used to hold a leaf
@@ -85,7 +84,6 @@ class Slots extends Program                                                     
     NumberOfKeys         = new Int(numberOfKeys).constant();                                                            // Number of slots to keys as an integer constant
     NumberOfSlotsToKeys  = new Int(numberOfSlotsToKeys()).constant();                                                   // Number of slots to keys as an integer constant
     slotsCode();                                                                                                        // Generate machine code if any assembler code has been supplied
-    subFinish();
    }
 
   Slots initializeMemory()                                                                                              // Initialize memory
@@ -2427,6 +2425,7 @@ keys     :    0   0   0   0
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
    }
+
 // perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList"
   public static void main(String[] args)                                                                                // Test if called as a program
    {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
