@@ -324,6 +324,7 @@ class Tree extends Program                                                      
        }
      };
 
+    subFinish();
     return data;                                                                                                        // Will be set to invalid unless the key was found in which case it will contain the data associated with the key
    }
 
