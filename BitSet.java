@@ -2145,8 +2145,7 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();
-    test_b8(true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
