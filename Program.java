@@ -1385,7 +1385,7 @@ public class Program extends Test                                               
       int     getInt (int I) {                                        return units[I+offset.i()];}                      // Get an integer immediately when debugging
       boolean getBit (int I) {final int i = getInt(I / Integer.SIZE); return Test.getBit(i, I % Integer.SIZE);}         // Get a boolean  immediately when debugging
 
-      public String toString () {final StringBuilder s = saySb("Ref: " , offset.i()); return ""+s;}                     // Print memory reference
+        public String toString () {final StringBuilder s = saySb("Ref: " , offset.i()); return ""+s;}                     // Print memory reference
      } // Ref
 
 //D2 Dump memory                                                                                                        // Dump or print memory
@@ -1696,6 +1696,8 @@ endmodule
     if (steps >= maxSteps) stop("Out of steps after step:", steps);                                                     // Show ran out of steps
     else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steps unless we are going to print this in during the Verilog process
 
+    if (subs.size() > 0) stop("Subroutine starts contains:", subs);                                                     // Confirm that all subroutine opens had matching closes
+
     printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
 
     final GenerateVerilog g = new GenerateVerilog();                                                                    // Generate corresponding Verilog code
@@ -1900,9 +1902,11 @@ cd {f}; yosys -q {y}                                                            
      }
    }
 
-  static void subFinish ()                                                                                              // Finish a subroutine definition
+  static void subFinish () {subFinish(null);}                                                                           // Finish a subroutine definition without a name check
+  static void subFinish (String Name)                                                                                   // Finish a subroutine definition with a name check
    {if (subs.size() == 0) stop("No matching subStart()");
-    subs.pop();
+    final String name = subs.pop();                                                                                     // Name of last start
+    if (Name != null && !name.equalsIgnoreCase(Name)) stop("Opening name does not match closing name:", name, Name);    // Check names if requested
     subsTrace = subs.size() == 0 ? null : joinStrings(subs, "\n");                                                      // Trace of active subs to avoid recomputing the trace back each time
    }
 
@@ -3762,8 +3766,7 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_remote();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
