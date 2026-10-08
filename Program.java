@@ -46,6 +46,7 @@ public class Program extends Test                                               
   final Stack<FileNames>                      blackBoxes;                                                               // Black box files created
   final Memory                                unitMemory;                                                               // Optional memory associated with the program
   final boolean                                immediate;                                                               // Execute immediately if true else generate machine code and execute later
+  final Locks                                      locks = new Locks();                                                 // Locks held over areas of memory
   final        Stack<Memory>                    memories;                                                               // Memories used by this program and its dependent programs
   final        Stack<Int>                           ints;                                                               // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
   final        Stack<Bit>                           bits;                                                               // Bit variables processed in the same way as ints.
@@ -2613,6 +2614,47 @@ endmodule
        }
      } // Array
    } // VerilogArrays
+
+//D1 Locks                                                                                                              // Data must be locked to prevent it from being read or modified by multiple processes at the same time. Although we do not actually run multiple processes, we can simulate concurrent access. This is preferable to relying solely on actual execution in some ways, because we can control the simulation to achieve better test coverage and reproduce the same scenarios for regression testing.
+
+  class Locks                                                                                                           // Locks held by the currently executing programs.  Although there is, in ewfffect, opnly one CPU nver the less we can have one program called inside another to provide a silmualtion of more than one program running at a time with the advantages of determinancy and repeatability.
+   {final TreeMap<Integer,Lock> locks = new TreeMap<>();
+    class Lock                                                                                                          // A lock on an area of memory. It is upto the user to respect the lock and to know to how much memory it applies
+     {int     reads = 0;                                                                                                // The data can have multiple readers at a given ;point in time
+      boolean write = false;                                                                                            // The data can only have one writer at a given time and there must be no readers relying on this data at this point in time
+     }
+
+    boolean getReadLock(int Area)                                                                                       // Get a read lock on an area in memory
+     {if (!locks.containsKey(Area)) locks.put(Area, new Lock());                                                        // Create a lock description for this area
+      final Lock l = locks.get(Area);                                                                                   // Address lock
+      if (!l.write)                                                                                                     // There can be no writes in progress
+       {l.reads++; return true;                                                                                         // Record another reader
+       }
+      return false;
+     }
+
+    boolean getWriteLock(int Area)                                                                                      // Get a read lock on an area in memory
+     {if (!locks.containsKey(Area)) locks.put(Area, new Lock());                                                        // Create a lock description for this area
+      final Lock l = locks.get(Area);                                                                                   // Address lock
+      if (!l.write && l.reads == 0)                                                                                     // There can be no other reads or writes in progress
+       {l.reads++; return true;                                                                                         // Record another reader
+       }
+      return false;
+     }
+
+    void freeReadLock(int Area)                                                                                         // Free a read lock if it exists or complain if it does not
+     {if (!locks.containsKey(Area)) stop("No lock to free for area:", Area);                                            // Create a lock description for this area
+      final Lock l = locks.get(Area);                                                                                   // Address lock
+      if (l.reads > 0) --l.reads; else stop("No read lock to free");                                                    // Free the red lock if it exists else complain that there is no read lock to free as this would seem to be caused by programming error
+     }
+
+    void freeWriteLock(int Area)                                                                                        // Free a write lock on an area in memory if it exists or complain if it does not
+     {if (!locks.containsKey(Area)) stop("No lock to free for area:", Area);                                            // Check that there is a lock for this area
+      final Lock l = locks.get(Area);                                                                                   // Address lock
+      if (!l.write) stop("Memory area not write locked:", Area);                                                        // There must be a write lock to free
+      l.write = false;                                                                                                  // Free the write lock
+     }
+   }
 
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
