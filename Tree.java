@@ -306,9 +306,9 @@ class Tree extends Program                                                      
 
 //D1 Find, Insert, Delete                                                                                               // Find, insert and delete
 
-  Bint find (Int Key)                                                                                                   // Find the data associated with the specified key in the tree
+  public Bint find (Int Key)                                                                                            // Find the data associated with the specified key in the tree
    {subStart("Tree.find");
-    final FindLeaf l = findLeaf(Key);                                                                                   // Find leaf that should contain the key
+    final FindLeaf l = new FindLeaf(Key);                                                                                   // Find leaf that should contain the key
     final Bint  data = new Bint();
 
     new If (l.valid)
@@ -330,8 +330,32 @@ class Tree extends Program                                                      
 
   final class FindLeaf                                                                                                  // Find results
    {Bit valid = new Bit("valid");                                                                                       // Whether the search results are valid
-    Int  key   = new Int ("key");                                                                                       // Search key
-    Int  leaf  = new Int ("leaf index");                                                                                // Leaf that should contain the key
+    Int  key  = new Int ("key");                                                                                        // Search key
+    Int  leaf = new Int ("leaf index");                                                                                 // Leaf that should contain the key
+
+    FindLeaf  (Int Key)                                                                                                 // Find the specified key in a leaf in the tree
+     {subStart("Tree.findLeaf");
+      final Int      p = root().dup();                                                                                  // Start at root
+      start(Key);
+
+      new For(mnl())                                                                                                    // Step down from branch to branch
+       {void body(Int Index, Bit Continue)
+         {new If (isLeaf(p))                                                                                            // On a leaf
+           {void Then()
+             {set(p);                                                                                                   // Show the key and matching leaf
+             }
+            void Else()                                                                                                 // On a branch
+             {final Branch.StepDown d = branch(p).stepDown(Key);                                                        // Step down details
+              p.set(d.node);                                                                                            // Step down to next level
+              Continue.set();                                                                                           // Continue search
+             }
+           };
+         }
+       };
+
+      if (immediate && !valid.b()) stop("Find fell off the end of tree after this many searches:", mnl());
+      subFinish();
+     }
 
     void start (Int Key) {key.set(Key); valid.clear();}                                                                 // Start the find operation
 
@@ -351,33 +375,6 @@ class Tree extends Program                                                      
      }
    }
 
-  FindLeaf findLeaf (Int Key)                                                                                           // Find the specified key in a leaf in the tree
-   {subStart("Tree.findLeaf");
-    final Int      p = root().dup();                                                                                    // Start at root
-    final FindLeaf f = new FindLeaf();                                                                                  // Find results
-    f.start(Key);
-
-    new For(mnl())                                                                                                      // Step down from branch to branch
-     {void body(Int Index, Bit Continue)
-       {new If (isLeaf(p))                                                                                              // On a leaf
-         {void Then()
-           {f.set(p);                                                                                                   // Show the key and matching leaf
-           }
-          void Else()                                                                                                   // On a branch
-           {final Branch.StepDown d = branch(p).stepDown(Key);                                                          // Step down details
-            p.set(d.node);                                                                                              // Step down to next level
-            Continue.set();                                                                                             // Continue search
-           }
-         };
-       }
-     };
-
-    if (immediate && !f.valid.b()) stop("Find fell off the end of tree after this many searches:", mnl());
-    subFinish();
-    return f;
-   }
-
-final Tree T = this;
   final class Path                                                                                                      // Record the path from the root to the leaf that should contain a key
    {final Int          key = new Int("key");                                                                            // Search key
     final Int         leaf = new Int("leaf");                                                                           // Leaf that should contain the key
@@ -597,7 +594,7 @@ final Tree T = this;
          };
        }
       void Else()                                                                                                       // The root is a branch
-       {final FindLeaf   f = findLeaf(Key);                                                                             // Find the leaf for the key
+       {final FindLeaf   f = new FindLeaf(Key);                                                                         // Find the leaf for the key
         final Leaf       l = leaf(f.leaf);                                                                              // Leaf that should contain the key
         final Slots.Find F = l.slots.find(Key);                                                                         // Perhaps the key is already present in the leaf
         new If (F.equal)                                                                                                // Key exists in full leaf
@@ -2037,19 +2034,19 @@ Leaf           size:   4, count:   2
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (rtg( 1)) test_tree();
-    //if (rtg( 2)) test_rootFanOut();
-    if (rtg( 3)) test_insert();
-    if (rtg( 4)) test_insertMerged();
-    if (rtg( 5)) test_insertReverse();
-    if (rtg( 6)) test_insertRandom32();
-    if (rtg( 7)) test_deleteAscending();                                                                                // 68090 integers, 2374 fast integers, 24307 bits: with both For and ForCount in bitset with fast integer indexes.  Openroad takes hours with  fast integers. Die larger than 2000*2000?  Restricted fast integers to first 4 for loops in bitset:  68090 integers, 1366 fast integers, 24307 bits.
-    if (rtg( 8)) test_deleteDescending();
-    if (rtg( 9)) test_deleteRandom32();
-    if (rtg(10)) test_update();
-    if (rtg(11)) test_find();
-    if (rtg(12)) test_rootFanOut();
-    if (rtg(13)) test_rootFanOut2();
-    if (rtg(14)) test_rootFanOut3();
+    if (rtg( 2)) test_insert();
+    if (rtg( 3)) test_insertMerged();
+    if (rtg( 4)) test_insertReverse();
+    if (rtg( 5)) test_insertRandom32();
+    if (rtg( 6)) test_deleteAscending();                                                                                // 68090 integers, 2374 fast integers, 24307 bits: with both For and ForCount in bitset with fast integer indexes.  Openroad takes hours with  fast integers. Die larger than 2000*2000?  Restricted fast integers to first 4 for loops in bitset:  68090 integers, 1366 fast integers, 24307 bits.
+    if (rtg( 7)) test_deleteDescending();
+    if (rtg( 8)) test_deleteRandom32();
+    if (rtg( 9)) test_update();
+    if (rtg(10)) test_find();
+    if (rtg(11)) test_rootFanOut();
+    if (rtg(12)) test_rootFanOut2();
+    if (rtg(13)) test_rootFanOut3();
+    if (rtg(14)) {}
    }
 
   static void newTests()                                                                                                // Tests being worked on
