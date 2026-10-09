@@ -1479,6 +1479,7 @@ cf54d09bad8fa62e79f49a3f11b492b2
 31,32|
 32|
 """);
+        scDieAreaX = 700; scDieAreaY = 700;
         maxSteps(9_999_999);
         execute();
        }
