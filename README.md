@@ -1,8 +1,10 @@
 # btreeList
 
-A Java exploration of B Tree and B+ Tree style data structures with a much larger ambition:
+![Delete Ascending](https://raw.githubusercontent.com/philiprbrenan/btreeList/refs/heads/main/images/deleteAscending.png)
 
-**translate database [algorithms](https://en.wikipedia.org/wiki/Algorithm) directly into [synthesizable](https://en.wikipedia.org/wiki/Logic_synthesis) Verilog and eventually silicon.**
+A Java exploration of B Tree and BTree style data structures with a much larger ambition:
+
+**Translate database [algorithms](https://en.wikipedia.org/wiki/Algorithm) written in Java into synthesized Verilog.**
 
 Repository:
 
@@ -12,17 +14,10 @@ Repository:
 
 # Why This Project Matters
 
-Modern databases still spend enormous amounts of time and power moving data between:
+Modern databases systems use [software](https://en.wikipedia.org/wiki/Software) implementations of the Btree [algorithm](https://en.wikipedia.org/wiki/Algorithm) running on generic processors rather than
+using specialized [instructions](https://en.wikipedia.org/wiki/Instruction_set_architecture) implemented on custom processors to perform database operations.
 
-- storage
-- DRAM
-- CPU caches
-- [software](https://en.wikipedia.org/wiki/Software) data structures
-
-B Trees are at the center of that world.
-
-This project explores what happens when B Tree operations are treated not merely as [software](https://en.wikipedia.org/wiki/Software) [algorithms](https://en.wikipedia.org/wiki/Algorithm), but as **hardware pipelines**.
-
+This project explores what happens when Btree operations are implemented in [hardware](https://en.wikipedia.org/wiki/Digital_electronics) rather than in [software](https://en.wikipedia.org/wiki/Software). 
 The Java codebase acts as:
 
 - a reference implementation
@@ -57,7 +52,7 @@ The [code](https://en.wikipedia.org/wiki/Computer_program) is especially interes
 
 This is not "framework Java".
 
-It is algorithmic Java that maps surprisingly well onto digital logic.
+It is algorithmic Java that maps surprisingly well onto digital logic represented in Verilog.
 
 ---
 
@@ -83,15 +78,15 @@ This dramatically lowers the cost of experimentation.
 
 # The Big Goal: Java to Verilog
 
-The most exciting part of this project is the possibility of translating core database [algorithms](https://en.wikipedia.org/wiki/Algorithm) into [hardware](https://en.wikipedia.org/wiki/Digital_electronics). 
+The most exciting part of this project is translating core database [algorithms](https://en.wikipedia.org/wiki/Algorithm) into Verilog which can be synthesized as [hardware](https://en.wikipedia.org/wiki/Digital_electronics). 
 That means converting operations such as:
 
 - [tree](https://en.wikipedia.org/wiki/Tree_(data_structure)) traversal
-- node search
 - insertion
 - balancing
 - block movement
 - comparison pipelines
+- SQL parsing
 
 into:
 
@@ -103,7 +98,7 @@ This is a fundamentally different direction from traditional [software](https://
 
 Instead of optimizing [instructions](https://en.wikipedia.org/wiki/Instruction_set_architecture) running on a CPU:
 
-> optimize the [hardware](https://en.wikipedia.org/wiki/Digital_electronics) itself around the database [algorithm](https://en.wikipedia.org/wiki/Algorithm). 
+> optimize the [hardware](https://en.wikipedia.org/wiki/Digital_electronics) itself around the database [algorithms](https://en.wikipedia.org/wiki/Algorithm). 
 ---
 
 # Why Contributors Are Needed
@@ -174,26 +169,13 @@ This repository explores the early foundations of that idea.
 
 ## 1. Verilog Translation
 
-Translate Java [algorithms](https://en.wikipedia.org/wiki/Algorithm) into:
+Use this repo to translate your favorite Java [algorithms](https://en.wikipedia.org/wiki/Algorithm) into [synthesizable](https://en.wikipedia.org/wiki/Logic_synthesis) Verilog:
 
-- finite state machines
-- pipelined RTL
-- BRAM backed node storage
-- streaming search engines
-
-## 2. FPGA Prototypes
-
-Implement experimental B Tree accelerators on:
-
-- Xilinx devices
-- Intel FPGAs
-- open source FPGA toolchains
-
-## 3. Formal Verification
+## 2. Formal Verification
 
 Help [verify](https://en.wikipedia.org/wiki/Software_verification_and_validation): 
 - balancing correctness
-- insertion invariants
+- insertion/deletion locking invariants
 - ordering guarantees
 - [hardware](https://en.wikipedia.org/wiki/Digital_electronics) equivalence
 
@@ -206,52 +188,8 @@ Measure:
 - [memory](https://en.wikipedia.org/wiki/Computer_memory) [Bandwidth](https://en.wikipedia.org/wiki/Bandwidth_(computing)) - scalability
 - energy efficiency
 
-## 5. Toolchain Development
-
-Create workflows that move from:
-
-```text
-Java Algorithm
-    â
-Intermediate Representation
-    â
-Verilog RTL
-    â
-FPGA / ASIC
-```
-
 ---
 
-# Vision
-
-The long term vision is larger than a single repository.
-
-The idea is to [help](https://en.wikipedia.org/wiki/Online_help) create:
-
-- database aware [hardware](https://en.wikipedia.org/wiki/Digital_electronics) - [Silicon](https://en.wikipedia.org/wiki/Silicon) native indexing engines
-- open source storage accelerators
-- reusable Verilog data structure libraries
-- a path from [algorithms](https://en.wikipedia.org/wiki/Algorithm) to [chips](https://en.wikipedia.org/wiki/Integrated_circuit) 
-This is still an open frontier.
-
-There is enormous room for experimentation.
-
----
-
-# If You Want To Help
-
-Start by:
-
-1. Reading the Java implementation carefully
-2. Identifying [hardware](https://en.wikipedia.org/wiki/Digital_electronics) friendly structures
-3. Isolating deterministic state transitions
-4. Converting small operations into Verilog modules
-5. Testing on FPGA
-6. Iterating toward larger subsystems
-
-Even partial translations are useful.
-
----
 
 # Final Thought
 
@@ -261,12 +199,12 @@ This project asks a more radical question:
 
 > What if the database [algorithm](https://en.wikipedia.org/wiki/Algorithm) itself became hardware?
 
-If that question interests you, contributions are welcome.
-
 
 # Experimental Results
 
-Converting just **4** ``for loops`` in ``BitSet`` produces the following in ``Tree.deleteAscending```:
+## Fast Integers
+
+Converting just **4** ``for loops`` in ``BitSet`` to use fast Integers produced the following in ``Tree.deleteAscending```:
 
 ```
 68090 integers, 1366 fast integers, 24307 bits:
@@ -275,18 +213,6 @@ Converting just **4** ``for loops`` in ``BitSet`` produces the following in ``Tr
 In this configuration ``place and route`` takes an excessively long time to run and the metals layers occupy 2K*2K as
 can be seen in ``images/``.  The conclusion has to be that fast integers do not scale well from small designs to large
 ones.
-
-# Experiments
-
-Compress start of write cycle so that it overlaps with setting the value to be written.
-
-
-
-
-
-
-
-
 
 
 #
