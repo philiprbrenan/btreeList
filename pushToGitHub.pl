@@ -18,13 +18,14 @@ my $folder      = fpd $home, $repo;                                             
 my $shaFile     = fpe $folder, q(sha);                                                                                  # Sh256 file sums for each known file to detect changes
 my $wf          = q(.github/workflows/main.yml);                                                                        # Work flow on Ubuntu - compile and test
 my $wfcpd       = q(.github/workflows/cpd.yml);                                                                         # Work flow on Ubuntu - copy paste detection
-my @ext         = qw(c java pl md);                                                                                     # Extensions of files to upload to github
+my @ext         = qw(c java pl md png);                                                                                 # Extensions of files to upload to github
 my @containers  = (                                                                                                     # Containers to use to run the java code once through each set of EDA tools as it is difficult to combine them in one image
 #[qw(or ghcr.io/philiprbrenan/or_github:latest)],                                                                       # Open ram container - but not in use as OpenRam can only produce small memories
  [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);                                                                      # Silicon compiler
 my %tasks       = (BitSet=>15, Branch=>12, Leaf=>10, Slots=>23, Tree=>14);                                              # Number of tasks for each component - default is one
 
-my $include     = q(.);                                                                                                 # Java files to include in testing as they are not yet ready
+#my $include     = q(.);                                                                                                 # Java files to include in testing as they are not yet ready
+my $include     = q(tree);                                                                                                 # Java files to include in testing as they are not yet ready
 my $upload      = 1;                                                                                                    # Upload to github for execution if true
 
 say STDERR timeStamp,  " push to github $repo";
