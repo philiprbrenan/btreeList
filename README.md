@@ -4,7 +4,7 @@
 
 A Java exploration of B Tree and BTree style data structures with a much larger ambition:
 
-**Translate database [algorithms](https://en.wikipedia.org/wiki/Algorithm) written in Java into synthesized Verilog.**
+**Translate database [algorithms](https://en.wikipedia.org/wiki/Algorithm) written in Java into synthesized Verilog and then into Silicon.**
 
 Repository:
 
