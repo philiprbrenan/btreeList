@@ -1312,7 +1312,6 @@ Height        :    1
 1,2,3,4    5,6,7    8,9,10,11    12,13,14,15    16,17,18,19    20,21    22,23,24    25,26    27,28,29,30    31,32|
 """);
 
-        scDieAreaX = 500; scDieAreaY = 500;
         maxSteps(9_999_999);
         execute();
        }
@@ -1480,7 +1479,7 @@ cf54d09bad8fa62e79f49a3f11b492b2
 31,32|
 32|
 """);
-        scDieAreaX = 500; scDieAreaY = 500;
+        scDieAreaX = 600; scDieAreaY = 600;
         maxSteps(9_999_999);
         execute();
        }
