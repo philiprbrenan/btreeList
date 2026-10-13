@@ -17,7 +17,7 @@ public class Program extends Test                                               
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
-  final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
+  final static boolean                   generateVerilog =!true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
@@ -69,6 +69,7 @@ public class Program extends Test                                               
   I                                            executing = null;                                                        // Instruction currently being executed
   I                                            compiling = null;                                                        // Instruction currently being compiled
   int                                           exitCode = 0;                                                           // A non zero exit code indicates the program failed in some way
+  boolean                                        exitBit = true;                                                        // This field is set to indicate whether a sub program succeeded or not.  Being blocked by failing to get a lock is considered a success because the locking worled to prevent an incorrect result. Only if the sub program passes all the locks but fails to get the expected result should the execution of the sub program be considered a failure
   int                                           maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
   int                                              steps = 0;                                                           // Number of instruction steps executed so far during the latest execution of this program
   int                                                 pc;                                                               // Program counter indicating the instruction to be executed after the current one
@@ -131,7 +132,6 @@ public class Program extends Test                                               
   void     executingCheck () {if (!isExecuting()) stop("Not executing");}                                               // Confirm that code is being executed and that consequently an instruction should be executed otherwise complain
   void parentProgramCheck () {if (program() != program().program()) stop("Parent program not set to parent program");}  // Check that code is being written to the expected program
   Locks             locks () {return program().locks;}                                                                  // Locks are global
-  void stopProgram (int Code) {exitCode = Code; program().pc = -1; say("Stopping program");}                            // Stop executing the current program and indicate the reason for stopping
   Stack<Program> subPrograms () {return program().subPrograms;}                                                         // Address the sub programs dependent on this program
   void         beforeOrAfter (Locks.Lock Lock)  {}                                                                      // Called after each lock operation executed in the current program so that the current state of play can be checked programmatically
 
@@ -566,6 +566,16 @@ public class Program extends Test                                               
           Test.ok(got.b(), Value.b());
          }
         String v() {return "/* Bit ok(Bit) */";}
+        int traces () {return 0;}
+       };
+      return this;
+     }
+
+    Bit exit ()                                                                                                         // Set the exit bit to show whether a sub program succeeded or not
+     {final Bit b = this;
+      new I()
+       {void a()   {exitBit = b.v && b.i;}                                                                              // Valid exit bit
+        String v() {return "/* exit bit */";}
         int traces () {return 0;}
        };
       return this;
@@ -1675,7 +1685,7 @@ endmodule
     traceFiles.delete_java();                                                                                           // Clear Java trace file
     dumpProgramState("Finished");                                                                                       // Dump program state at end of execution
 
-    currentPc   = pc = 0;                                                                                               // Reset program counter to start of program
+    currentPc   = pc = exitCode = 0; exitBit = true;                                                                    // Reset program counter to start of program
     final int N = codeSize();                                                                                           // Number of instructions
 
     intMemory().reallocate(nextIntId);                                                                                  // Resize integer memory now we know how big to make it
@@ -2639,6 +2649,8 @@ endmodule
   static class Locks                                                                                                    // Locks held by the currently executing programs.  Static to avoid tying it to a particular program. Although there is, in effect, only one CPU never the less we can have one program called inside another to provide a simulation of more than one program running at a time with the advantages of determinancy and repeatability.
    {final TreeMap<Integer,Lock> locks = new TreeMap<>();
 
+    void stopProgram (Program P, int Code) {P.exitCode = Code; P.exitBit = true; P.pc = -1;}                            // Stop executing the current program because it failed to get a lock. The exit code indicates the reason for stopping.  The exit bit indicates whether the sub program should be regarded as succeeding or not
+
     class Lock                                                                                                          // A lock on an area of memory. It is upto the user to respect the lock and to know to how much memory it applies
      {int     reads = 0;                                                                                                // The data can have multiple readers at a given ;point in time
       boolean write = false;                                                                                            // The data can only have one writer at a given time and there must be no readers relying on this data at this point in time
@@ -2651,7 +2663,7 @@ endmodule
        {l.reads++;
         P.beforeOrAfter(l);
        }
-      else P.stopProgram(1);
+      else stopProgram(P, 1);
      }
 
     void getWriteLock (Program P, int Area)                                                                             // Get a read lock on an area in memory
@@ -2661,7 +2673,7 @@ endmodule
        {P.beforeOrAfter(l);                                                                                             // Record another reader
         l.write = true;
        }
-      else P.stopProgram(1);                                                                                            // There can be no reads or writes in progress
+      else stopProgram(P, 1);                                                                                            // There can be no reads or writes in progress
      }
 
     void    freeReadLock (Program P, int Area)                                                                          // Free a read lock if it exists or complain if it does not
@@ -3846,27 +3858,32 @@ writeIntEnable =        0
 
   static void test_lock ()
    {sayCurrentTestName();
-    final Program Q = new Program(new Build().immediate(false).name("Q"))
+    final Program Q = new Program(new Build().name("Q"))
      {void code()
        {final Int a = new Int("a", 0);
         final Int l = new Int("l", 2);
+        final Int L = new Int("L", 3);
         getWriteLock(l);
+        getWriteLock(L);
         a.inc();
+        freeWriteLock(L);
         freeWriteLock(l);
        }
       void beforeOrAfter(Locks.Lock L)
-       {for (Program P : subPrograms()) P.execute();
+       {for (Program P : subPrograms())
+         {P.execute();
+          ok(P.exitBit);
+         }
        }
      };
-    final Program P = new Program(new Build().immediate(false).subProgramOf(Q).name("P"))
+    final Program P = new Program(new Build().subProgramOf(Q).name("P"))
      {void code()
-       {final Int l = new Int("l", 2);
+       {final Int a = new Int("a", 0);
+        final Int l = new Int("l", 2);
         getReadLock(l);
-        new I()
-         {void        a () {say("AAAA");}
-          boolean trace () {return false;}
-         };
+        a.inc();
         freeReadLock(l);
+        a.eq(1).exit();
        }
      };
     Q.execute();
@@ -3907,8 +3924,8 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_lock();
+   {//oldTests();
+    test_lock();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
