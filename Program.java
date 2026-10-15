@@ -41,7 +41,8 @@ public class Program extends Test                                               
   final static int                            padVerilog = 32;                                                          // Padding for components of the generated Verilog code
 
   final Program                            parentProgram;                                                               // Redirect the code and variables of one program to the specified parent to allow components that have been tested in isolation to be integrated into the larger parent program.
-  final Stack<Program>                       subPrograms = new Stack<>();                                               // Record of sub programs that use the memory and the memeory locking of the parent prgram but are ithwriwse spearate programs that can bve called from within the parent command to perform memory lock testing: just before the parent program obtains or just after it releases a lock the sub programs are run to confirm that the in memory data structures are still intact
+  final Stack<Program>                       subPrograms = new Stack<>();                                               // Record of sub programs that use the memory and the memeory locking of the parent program but are otherwise separate programs that can be called from within the parent command to perform testing
+  final Program                             subProgramOf;                                                               // Record sub program of parent program
   final Stack<I>                                    code;                                                               // Machine code instructions
   final Stack<Label>                              labels;                                                               // Labels for instructions in this process
   final Stack<FileNames>                      blackBoxes;                                                               // Black box files created
@@ -81,6 +82,7 @@ public class Program extends Test                                               
   int                                          nextBitId = 0;                                                           // Unique id for each Bit
   int                                         scDieAreaX = 1_000;                                                       // Default size of x dimension for chip. Was 1000x1000 before fast integers for "forCount" made this too small for tree delete
   int                                         scDieAreaY = 1_000;                                                       // Default size of y dimension for chip
+  boolean                        initializedForExecution = false;                                                       // Whether the program has been initialized for execution or not
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
 
   final static class Build                                                                                              // Builder for this program
@@ -101,6 +103,7 @@ public class Program extends Test                                               
    {immediate       = Build.immediate;                                                                                  // Immediate or delayed execution
     parentProgram   = Build.parent == null ? this : Build.parent;                                                       // Parent program that will contain the code
     if (Build.subProgramOf != null) Build.subProgramOf.subPrograms.push(this);                                          // Record sub programs
+    subProgramOf    = Build.subProgramOf != null ? Build.subProgramOf : null;                                           // Record sub program of parent program
     programName     = Build.name;                                                                                       // Program name
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
@@ -132,16 +135,16 @@ public class Program extends Test                                               
   void     executingCheck () {if (!isExecuting()) stop("Not executing");}                                               // Confirm that code is being executed and that consequently an instruction should be executed otherwise complain
   void parentProgramCheck () {if (program() != program().program()) stop("Parent program not set to parent program");}  // Check that code is being written to the expected program
   Locks             locks () {return program().locks;}                                                                  // Locks are global
+  boolean     mainProgram () {return subProgramOf == null;}                                                             // A main program rather than a sub program
+  void      beforeOrAfter (Locks.Lock Lock)  {}                                                                         // Called after each lock operation executed in the current program so that the current state of play can be checked programmatically
   Stack<Program> subPrograms () {return program().subPrograms;}                                                         // Address the sub programs dependent on this program
-  void         beforeOrAfter (Locks.Lock Lock)  {}                                                                      // Called after each lock operation executed in the current program so that the current state of play can be checked programmatically
 
   void ai ()                                                                                                            // An executing program cannot be extended by adding new data or instructions
    {final I      i = executing();
     final String m = immediate() ? "immediate" : "delayed";
     if (i != null)
-     {say("DDDD", programName, executing, program().programName, program().executing);
-       stop("Allocation within an instruction while executing program", programName, "in", m, "mode:",
-           i.traceBack, "====");
+     {stop("Allocation within an instruction while executing program", programName, "in", m, "mode:",
+            i.traceBack, "====");
      }
    }
 
@@ -571,7 +574,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bit exit ()                                                                                                         // Set the exit bit to show whether a sub program succeeded or not
+    Bit exit ()                                                                                                         // Set the exit bit to show whether a sub program reached this point in the code and produced the expected result
      {final Bit b = this;
       new I()
        {void a()   {exitBit = b.v && b.i;}                                                                              // Valid exit bit
@@ -1680,10 +1683,10 @@ endmodule
   void execute ()                                                                                                       // Execute the current code
    {if (immediate() || !suppressImmediateOnly) return;                                                                  // The code has already been executed interpretively and, optionally, that is all that is required
     if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
-    else if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                      // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
 
-    traceFiles.delete_java();                                                                                           // Clear Java trace file
-    dumpProgramState("Finished");                                                                                       // Dump program state at end of execution
+    if ( initializedForExecution) if (mainProgram()) stop("Already executed");                                          // The idea is to produce a complete program the first time
+    if (!initializedForExecution) if (mainProgram()) traceFiles.delete_java();                                          // Clear Java trace file at first execution of main program
+    if (!initializedForExecution) dumpProgramState("Finished");                                                         // Dump program state at end of execution
 
     currentPc   = pc = exitCode = 0; exitBit = true;                                                                    // Reset program counter to start of program
     final int N = codeSize();                                                                                           // Number of instructions
@@ -1694,7 +1697,10 @@ endmodule
     initializeJavaMemory();                                                                                             // Initialize memory
     initializeJavaVars();                                                                                               // Initialize variables
 
-    if (!suppressInstructionCoverage) initializeInstructionCoverage();                                                  // Update instruction coverage by location in Java code where instruction was generated
+    if (mainProgram()) if (!suppressInstructionCoverage) initializeInstructionCoverage();                               // Update instruction coverage by location in Java code where instruction was generated
+    if (mainProgram()) if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                        // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
+
+    initializedForExecution = true;                                                                                     // The program is now ready for execution
 
     for(steps = 0; steps < maxSteps && pc >= 0 && pc < N; ++steps)                                                      // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
@@ -1724,9 +1730,10 @@ endmodule
      }
 
     if (steps >= maxSteps) stop("Out of steps after step:", steps);                                                     // Show ran out of steps
-    else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steps unless we are going to print this in during the Verilog process
+    if (mainProgram()) if (!generateVerilog) say(f("            Execution: %,12d", steps));                             // Show number of steps unless we are going to print this in during the Verilog process
 
-    if (subs.size() > 0) stop("Subroutine starts contains:", subs);                                                     // Confirm that all subroutine opens had matching closes
+    if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
+    if (locks.size() > 0 && mainProgram()) stop("Not all locks were released:", locks);                                 // Confirm that all locks have been released unless this is a sub program
 
     printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
 
@@ -2650,15 +2657,21 @@ endmodule
    {final TreeMap<Integer,Lock> locks = new TreeMap<>();
 
     void stopProgram (Program P, int Code) {P.exitCode = Code; P.exitBit = true; P.pc = -1;}                            // Stop executing the current program because it failed to get a lock. The exit code indicates the reason for stopping.  The exit bit indicates whether the sub program should be regarded as succeeding or not
+    int size () {return locks.size();}                                                                                  // Number of locks currently open
 
     class Lock                                                                                                          // A lock on an area of memory. It is upto the user to respect the lock and to know to how much memory it applies
      {int     reads = 0;                                                                                                // The data can have multiple readers at a given ;point in time
       boolean write = false;                                                                                            // The data can only have one writer at a given time and there must be no readers relying on this data at this point in time
+      int      area = 0;                                                                                                // The index of the memeory area beiong lcoked.  It is up to the calling code to correctly interpret the amount of memory corresponding to this index
+
+      public String toString()                                                                                          // Print a lock
+       {return f("Read: %d, write: %d, area ^d", reads, write ? 1 : 0, area);
+       }
      }
 
     void getReadLock (Program P, int Area)                                                                              // Get a read lock on an area in memory
      {if (!locks.containsKey(Area)) locks.put(Area, new Lock());                                                        // Create a lock description for this area
-      final Lock l = locks.get(Area);                                                                                   // Address lock
+      final Lock l = locks.get(Area); l.area = Area;                                                                    // Address lock
       if (!l.write)                                                                                                     // There can be no writes in progress
        {l.reads++;
         P.beforeOrAfter(l);
@@ -2667,30 +2680,34 @@ endmodule
      }
 
     void getWriteLock (Program P, int Area)                                                                             // Get a read lock on an area in memory
-     {if (!locks.containsKey(Area)) locks.put(Area, new Lock());                                                        // Create a lock description for this area
-      final Lock l = locks.get(Area);                                                                                   // Address lock
+     {if (!P.mainProgram()) stop("Sub programs may not acquire write locks");                                             // Sub programs are designed to test the results of the main program so they are not expected to make alterations to data structures and so do not need to acquire write locks
+      if (!locks.containsKey(Area)) locks.put(Area, new Lock());                                                        // Create a lock description for this area
+      final Lock l = locks.get(Area);  l.area = Area;                                                                   // Address lock
       if (!l.write && l.reads == 0)                                                                                     // There can be no other reads or writes in progress
-       {P.beforeOrAfter(l);                                                                                             // Record another reader
-        l.write = true;
+       {l.write = true;
+        P.beforeOrAfter(l);                                                                                             // Record another reader
        }
-      else stopProgram(P, 1);                                                                                            // There can be no reads or writes in progress
+      else if (l.write) stop("Write block for this area has already been acquired:", l);                                                                                                  // Lock There can be no other reads or writes in progress
+      else stop("Cannot acquire write lock for this area:", l);
      }
 
     void    freeReadLock (Program P, int Area)                                                                          // Free a read lock if it exists or complain if it does not
      {if (!locks.containsKey(Area)) stop("No lock to free for area:", Area);                                            // Create a lock description for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
-      if (l.reads > 0)                                                                                                  // Free the read lock if it exists else complain that there is no read lock to free as this would seem to be caused by programming error
-       {--l.reads;
-        P.beforeOrAfter(l);
-       }
-      else stop("No read lock to free");
+      if (l.write) stop("Attempting to free a write lock not a read lock:", l);
+      if (l.reads <= 0) stop("Not a valid read lock:", l);
+      --l.reads;                                                                                                        // Free the read lock if it exists else complain that there is no read lock to free as this would seem to be caused by programming error
+      if (l.reads == 0) locks.remove(Area);                                                                             // Remove lock if no locks remain for this area
+      P.beforeOrAfter(l);
      }
 
-    void   freeWriteLock (Program P, int Area)                                                                                     // Free a write lock on an area in memory if it exists or complain if it does not
+    void   freeWriteLock (Program P, int Area)                                                                          // Free a write lock on an area in memory if it exists or complain if it does not
      {if (!locks.containsKey(Area)) stop("No lock to free for area:", Area);                                            // Check that there is a lock for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
-      if (!l.write) stop("Memory area not write locked:", Area);                                                        // There must be a write lock to free
+      if (l.reads > 0) stop("Attempting to free a read lock not a write lock:", l);                                                           // There must be a write lock to free
+      if (!l.write) stop("Memory area not write locked:", l);                                                           // There must be a write lock to free
       l.write = false;                                                                                                  // Free the write lock
+      locks.remove(Area);                                                                                               // No locks remain for this area
       P.beforeOrAfter(l);
      }
 
