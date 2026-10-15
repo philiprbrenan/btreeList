@@ -17,7 +17,7 @@ public class Program extends Test                                               
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
-  final static boolean                   generateVerilog =!true;                                                        // Generate Verilog version of each program
+  final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
@@ -1663,6 +1663,7 @@ endmodule
 
   void jTrace (String Message)                                                                                          // Trace a Java instruction by writing a message to the Java trace file unless the instruction has suppressed tracing
    {++program().jtrace;                                                                                                 // Count trace records written
+    if (!mainProgram()) return;                                                                                         // Only trace main programs
     if (suppressInstructionTracing) return;                                                                             // Suppress instruction tracing
     if (!executing().trace()) return;                                                                                   // Not tracing this instruction
     appendJavaTrace(Message+"\n");                                                                                      // Write tracing message
@@ -1670,6 +1671,7 @@ endmodule
 
   String vTrace (String Format, String...Message)                                                                       // Generate Verilog code to write a message to the Verilog trace log
    {++program().vtrace;
+    if (!mainProgram()) return "";                                                                                      // Only trace main programs
     if (!compiling().trace()) return "";                                                                                // Suppress tracing for this instruction
     final StringBuilder s = new StringBuilder();
     s.append("$fdisplay(traceFile, "+q(Format));
@@ -1686,7 +1688,7 @@ endmodule
 
     if ( initializedForExecution) if (mainProgram()) stop("Already executed");                                          // The idea is to produce a complete program the first time
     if (!initializedForExecution) if (mainProgram()) traceFiles.delete_java();                                          // Clear Java trace file at first execution of main program
-    if (!initializedForExecution) dumpProgramState("Finished");                                                         // Dump program state at end of execution
+    if (!initializedForExecution) if (mainProgram()) dumpProgramState("Finished");                                      // Dump program state at end of execution
 
     currentPc   = pc = exitCode = 0; exitBit = true;                                                                    // Reset program counter to start of program
     final int N = codeSize();                                                                                           // Number of instructions
@@ -1739,7 +1741,7 @@ endmodule
 
     final GenerateVerilog g = new GenerateVerilog();                                                                    // Generate corresponding Verilog code
 
-    if (generateVerilog && (inJob("sc") || !github_action))                                                             // Run Verilog if local or in the Silicon Compiler container. OpenRAM runs on an Ubuntu 20 which uses an incompatible version of iverilog
+    if (mainProgram() && generateVerilog && (inJob("sc") || !github_action))                                            // Run Verilog if local or in the Silicon Compiler container. OpenRAM runs on an Ubuntu 20 which uses an incompatible version of iverilog
      {final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
       final String           scCmd = github_action                                                                      // Silicon compiler command to perform ASIC flow
@@ -2726,7 +2728,7 @@ endmodule
   void getReadLock (Int Area)                                                                                           // Create an instruction to get a read lock
    {new I()
      {void        a () {locks().getReadLock(Program.this, Area.i());}                                                   // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
-      String      v () {return "getReadLock";}
+      String      v () {return "/* getReadLock */";}
       boolean trace () {return false;}
      };
    }
@@ -2734,7 +2736,7 @@ endmodule
   void freeReadLock (Int Area)                                                                                          // Create an instruction to free a read lock
    {new I()
      {void        a () {locks().freeReadLock(Program.this, Area.i());}                                                  // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
-      String      v () {return "freeReadLock";}
+      String      v () {return "/* freeReadLock */";}
       boolean trace () {return false;}
      };
    }
@@ -2742,7 +2744,7 @@ endmodule
   void getWriteLock (Int Area)                                                                                          // Create an instruction to get a write lock
    {new I()
      {void        a () {locks().getWriteLock(Program.this, Area.i());}                                                  // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
-      String      v () {return "getWriteLock";}
+      String      v () {return "/* getWriteLock */";}
       boolean trace () {return false;}
      };
    }
@@ -2750,7 +2752,7 @@ endmodule
   void freeWriteLock (Int Area)                                                                                         // Create an instruction to free a write lock
    {new I()
      {void        a () {locks().freeWriteLock(Program.this, Area.i());}                                                 // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
-      String      v () {return "freeWriteLock";}
+      String      v () {return "/* freeWriteLock */";}
       boolean trace () {return false;}
      };
    }
