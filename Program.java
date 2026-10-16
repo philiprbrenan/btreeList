@@ -5,6 +5,7 @@
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
+import java.util.function.*;
 import java.io.*;
 import java.nio.*;
 import java.nio.file.*;
@@ -1916,16 +1917,12 @@ cd {f}; yosys -q {y}                                                            
      };
    }
 
-  abstract class Ok                                                                                                     // Test a result at program run time rather than program compile time
-   {Ok()
-     {new I()
-       {void        a() {if (!ok(get(), got())) if (traceBack != null) say("====\n", traceBack);}
-        String      v() {return "/* ok */";}
-        boolean trace() {return false;}
-       };
-     }
-    abstract String got();
-    abstract String get();
+  <A> void ok (Supplier<A> A, String B)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
+   {new I()
+     {void   a() {if (!ok(""+A.get(), ""+B)) if (traceBack != null) say("====\n", traceBack);}
+      String v() {return "/* ok */";}
+      boolean trace() {return false;}
+     };
    }
 
 //D2 Instruction counts                                                                                                 // Count the number of instructions in each subroutine minus the instructions supplied by called subroutines
@@ -3201,7 +3198,7 @@ endmodule
         m.getInt(N2).ok(N2); m.getInt(N2).ok(n2); m.getInt(n2).ok(N2); m.getInt(n2).ok(n2);
         m.getInt(N3).ok(N3); m.getInt(N3).ok(n3); m.getInt(n3).ok(N3); m.getInt(n3).ok(n3);
         //stop(nws(m.dumpJavaMemoryInDecimal()));
-        new Ok() {String got() {return nws(m.dumpJavaMemoryInDecimal());} String get() {return """
+        if (false) ok(()->nws(m.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000    3    2    2    3
@@ -3210,7 +3207,7 @@ Memory 2 program
       writeInt =        3
 readWriteIndex =        3
 writeIntEnable =        0
-""";}};
+""");
 
         m.clear();
         m.putInt(n0, N2);
@@ -3218,7 +3215,7 @@ writeIntEnable =        0
         m.putInt(n2, N0);
         m.putInt(n3, N1);
         //stop(nws(m.dumpJavaMemoryInDecimal()));
-        new Ok() {String got() {return nws(m.dumpJavaMemoryInDecimal());} String get() {return """
+        ok(()->nws(m.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000    2    3         1
@@ -3227,7 +3224,7 @@ Memory 2 program
       writeInt =        1
 readWriteIndex =        3
 writeIntEnable =        0
-""";}};
+""");
         m.getBit(n1, N0).ok(true);
         m.getBit(n1, N1).ok(true);
         m.getBit(n1, N2).ok(false);
@@ -3381,7 +3378,7 @@ writeIntEnable =        0
             new If (Index.ez())
              {void Then()
                {//stop(nws(M.dumpJavaMemoryInDecimal()));
-                new Ok() {String got() {return nws(M.dumpJavaMemoryInDecimal());} String get() {return """
+                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
@@ -3390,11 +3387,11 @@ Memory 2 program
       writeInt =        2
 readWriteIndex =        3
 writeIntEnable =        0
-""";}};
+""");
                }
               void Else()
                {//stop(nws(M.dumpJavaMemoryInDecimal()));
-                new Ok() {String got() {return nws(M.dumpJavaMemoryInDecimal());} String get() {return """
+                ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
@@ -3403,7 +3400,7 @@ Memory 2 program
       writeInt =        2
 readWriteIndex =        3
 writeIntEnable =        0
-""";}};
+""");
                }
              };
             m.getInt(Zero).ok(1);
@@ -3417,7 +3414,7 @@ writeIntEnable =        0
             m.getInt (new Int( 1)).ok(7);
             dumpProgramState("AAAA2222");
             //stop(nws(M.dumpJavaMemoryInDecimal()));
-            new Ok() {String got() {return nws(M.dumpJavaMemoryInDecimal());} String get() {return  """
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              1    7
@@ -3426,7 +3423,7 @@ Memory 2 program
       writeInt =        7
 readWriteIndex =        3
 writeIntEnable =        0
-""";}};
+""");
 
             dumpProgramState("AAAA3333");
             m.putBit(new Int(32), new Bit(false));
@@ -3435,7 +3432,7 @@ writeIntEnable =        0
             m.getBit(new Int(34)).ok(true);
             m.getInt (new Int( 1)).ok(6);
             //stop(nws(M.dumpJavaMemoryInDecimal()));
-            new Ok() {String got() {return nws(M.dumpJavaMemoryInDecimal());} String get() {return   """
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              1    6
@@ -3444,10 +3441,10 @@ Memory 2 program
       writeInt =        6
 readWriteIndex =        3
 writeIntEnable =        0
-""";}};
+""");
             m.clear(1);
             //stop(nws(M.dumpJavaMemoryInDecimal()));
-            new Ok() {String got() {return nws(M.dumpJavaMemoryInDecimal());} String get() {return """
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000                   6
@@ -3456,10 +3453,10 @@ Memory 2 program
       writeInt =        0
 readWriteIndex =        2
 writeIntEnable =        0
-""";}};
+""");
             m.copy(n, 1);
             //stop(nws(M.dumpJavaMemoryInDecimal()));
-            new Ok() {String got() {return nws(M.dumpJavaMemoryInDecimal());} String get() {return    """
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000              6    6
@@ -3468,10 +3465,10 @@ Memory 2 program
       writeInt =        6
 readWriteIndex =        2
 writeIntEnable =        0
-""";}};
+""");
             M.clear();
             //stop(nws(M.dumpJavaMemoryInDecimal()));
-            new Ok() {String got() {return nws(M.dumpJavaMemoryInDecimal());} String get() {return    """
+            ok(()->nws(M.dumpJavaMemoryInDecimal()), """
 Memory 2 program
             0    1    2    3    4    5    6    7    8    9
 00000000
@@ -3480,7 +3477,7 @@ Memory 2 program
       writeInt =        0
 readWriteIndex =        9
 writeIntEnable =        0
-""";}};
+""");
            }
          };
         maxSteps(9_999);
