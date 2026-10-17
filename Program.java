@@ -136,7 +136,7 @@ public class Program extends Test                                               
   void parentProgramCheck () {if (program() != program().program()) stop("Parent program not set to parent program");}  // Check that code is being written to the expected program
   Locks             locks () {return program().locks;}                                                                  // Locks are global
   boolean     mainProgram () {return subProgramOf == null;}                                                             // A main program rather than a sub program
-  void      beforeOrAfter (Locks.Lock Lock)  {}                                                                         // Called after each lock operation executed in the current program so that the current state of play can be checked programmatically
+  void      afterLock (Locks.Lock Lock)  {}                                                                         // Called after each lock operation executed in the current program so that the current state of play can be checked programmatically
   Stack<Program> subPrograms () {return program().subPrograms;}                                                         // Address the sub programs dependent on this program
 
   void ai ()                                                                                                            // An executing program cannot be extended by adding new data or instructions
@@ -1178,6 +1178,13 @@ public class Program extends Test                                               
      };
    }
 
+  <T> I push(Stack<T> S, Supplier<T> T)                                                                                 // Push something onto a stack of somethings
+   {return new I()
+     {void        a() {S.push(T.get());}
+      boolean trace() {return false;}
+     };
+   }
+
 //D1 Memory                                                                                                             // Operations on memory divided into units
 
   class Memory                                                                                                          // Memory made of units
@@ -1917,7 +1924,7 @@ cd {f}; yosys -q {y}                                                            
      };
    }
 
-  <A> void ok (Supplier<A> A, String B)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
+  <A> void ok (Supplier<A> A, String B)                                                                                 // Test a result of delayed execution against a known result while the program is still executing
    {new I()
      {void   a() {if (!ok(""+A.get(), ""+B)) if (traceBack != null) say("====\n", traceBack);}
       String v() {return "/* ok */";}
@@ -2677,7 +2684,7 @@ endmodule
       final Lock l = locks.get(Area); l.area = Area;                                                                    // Address lock
       if (!l.write)                                                                                                     // There can be no writes in progress
        {l.reads++;
-        P.beforeOrAfter(l);
+        P.afterLock(l);
        }
       else stopProgram(P, 1);
      }
@@ -2688,7 +2695,7 @@ endmodule
       final Lock l = locks.get(Area);  l.area = Area;                                                                   // Address lock
       if (!l.write && l.reads == 0)                                                                                     // There can be no other reads or writes in progress
        {l.write = true;
-        P.beforeOrAfter(l);                                                                                             // Record another reader
+        P.afterLock(l);                                                                                             // Record another reader
        }
       else if (l.write) stop("Write block for this area has already been acquired:", l);                                                                                                  // Lock There can be no other reads or writes in progress
       else stop("Cannot acquire write lock for this area:", l);
@@ -2701,18 +2708,21 @@ endmodule
       if (l.reads <= 0) stop("Not a valid read lock:", l);
       --l.reads;                                                                                                        // Free the read lock if it exists else complain that there is no read lock to free as this would seem to be caused by programming error
       if (l.reads == 0) locks.remove(Area);                                                                             // Remove lock if no locks remain for this area
-      P.beforeOrAfter(l);
+      P.afterLock(l);
      }
 
     void   freeWriteLock (Program P, int Area)                                                                          // Free a write lock on an area in memory if it exists or complain if it does not
      {if (!locks.containsKey(Area)) stop("No lock to free for area:", Area);                                            // Check that there is a lock for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
-      if (l.reads > 0) stop("Attempting to free a read lock not a write lock:", l);                                                           // There must be a write lock to free
+      if (l.reads > 0) stop("Attempting to free a read lock not a write lock:", l);                                     // There must be a write lock to free
       if (!l.write) stop("Memory area not write locked:", l);                                                           // There must be a write lock to free
       l.write = false;                                                                                                  // Free the write lock
       locks.remove(Area);                                                                                               // No locks remain for this area
-      P.beforeOrAfter(l);
+      P.afterLock(l);
      }
+
+    boolean  hasReadLock (int Area) {return locks.containsKey(Area) && locks.get(Area).reads > 0;}                      // Whether a specified area of memory has been read locked
+    boolean hasWriteLock (int Area) {return locks.containsKey(Area) && locks.get(Area).write;}                          // Whether a specified area of memory has been write locked
 
     public String toString()
      {final StringBuilder s = new StringBuilder();
@@ -2757,6 +2767,9 @@ endmodule
       boolean trace () {return false;}
      };
    }
+
+  boolean  hasReadLock (int Area) {return locks(). hasReadLock(Area);}                                                  // Whether a specified area of memory has been read locked
+  boolean hasWriteLock (int Area) {return locks().hasWriteLock(Area);}                                                  // Whether a specified area of memory has been write locked
 
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
@@ -3889,7 +3902,7 @@ writeIntEnable =        0
         freeWriteLock(L);
         freeWriteLock(l);
        }
-      void beforeOrAfter(Locks.Lock L)
+      void afterLock(Locks.Lock L)
        {for (Program P : subPrograms())
          {P.execute();
           ok(P.exitBit);
@@ -3907,6 +3920,28 @@ writeIntEnable =        0
        }
      };
     Q.execute();
+   }
+
+  static void test_push (boolean Ex)
+   {sayCurrentTestName();
+    final int            N = 10;
+    final Stack<Integer> S = new Stack<>();
+    new Program(new Build().immediate(Ex))
+     {void code()
+       {new ForCount(N)
+         {void body(Int Index)
+           {push(S, ()->Index.i());
+           }
+         };
+        execute();
+       }
+     };
+    ok(S, "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]");
+   }
+
+  static void test_push()
+   {          test_push(true);
+              test_push(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -3941,11 +3976,12 @@ writeIntEnable =        0
     test_upDown();
     test_maxMin();
     test_lock();
+    test_push();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_lock();
+   {//oldTests();
+    test_push();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
