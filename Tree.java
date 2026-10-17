@@ -308,7 +308,7 @@ class Tree extends Program                                                      
 
   public Bint find (Int Key)                                                                                            // Find the data associated with the specified key in the tree
    {subStart("Tree.find");
-    final FindLeaf l = new FindLeaf(Key);                                                                                   // Find leaf that should contain the key
+    final FindLeaf l = new FindLeaf(Key);                                                                               // Find leaf that should contain the key
     final Bint  data = new Bint();
 
     new If (l.valid)
@@ -321,6 +321,7 @@ class Tree extends Program                                                      
             data.set(L.data(k));                                                                                        // Data associated with key
            }
          };
+        freeReadLock(l.leaf);                                                                                           // Safe to free the read lock on the leaf because we have the data associated with the key
        }
      };
 
@@ -335,17 +336,19 @@ class Tree extends Program                                                      
 
     FindLeaf  (Int Key)                                                                                                 // Find the specified key in a leaf in the tree
      {subStart("Tree.findLeaf");
-      final Int      p = root().dup();                                                                                  // Start at root
+      final Int p = root().dup();                                                                                       // Start at root
+      getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
       start(Key);
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {set(p);                                                                                                   // Show the key and matching leaf
+             {set(p);                                                                                                   // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).stepDown(Key);                                                        // Step down details
+              getReadLock(d.node); freeReadLock(p);                                                                     // Transfer the read lock to the leaf or branch stepped to so it cannot be modified while we are reading it
               p.set(d.node);                                                                                            // Step down to next level
               Continue.set();                                                                                           // Continue search
              }
@@ -840,7 +843,8 @@ class Tree extends Program                                                      
      }
 
     void traverse (int Index, int Parent, int Depth)                                                                    // Traverse the branch at the indicated index
-     {final Slots          s = slots(Index, maxBranchSize);                                                             // Slots for branch
+     {if (hasWriteLock(Index)) return;                                                                                  // Skip the parts of the tree that have write locks so we cans ee their effects
+      final Slots          s = slots(Index, maxBranchSize);                                                             // Slots for branch
       final Memory.Ref nodes = refNodes.step(Index*build.nodeSize + 1 + s.build.size());                                // Array of child nodes
       final int            t = refNodes.step(Index*build.nodeSize + build.branch.memoryPositions.posTop  ).getInt(0);   // Top reference
       final int            v = refNodes.step(Index*build.nodeSize + build.branch.memoryPositions.posLevel).getInt(0);   // Level of branch
@@ -970,6 +974,16 @@ class Tree extends Program                                                      
      }
 
     StringBuilder printCollapsed()                                                                                      // Collapse horizontal representation into a string
+     {final StringBuilder t = new StringBuilder();                                                                      // Print the lines of the tree that are not blank
+      pad(0);
+      for  (StringBuilder s : P)
+       {final String l = ""+s;
+        if (!l.isBlank()) t.append(l+"|\n");
+       }
+      return t;
+     }
+
+    StringBuilder printCollapsed22()                                                                                      // Collapse horizontal representation into a string
      {final StringBuilder t = new StringBuilder();                                                                      // Print the lines of the tree that are not blank
       new I()
        {void a()
@@ -1134,7 +1148,7 @@ Height        :    1
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
-            dumpProgramState("AAAA");
+            dumpProgramState("AAAA");                                                                                   // This memory dump occurs in both the immediate mode, delayed mode and verilog executions and so proves that the verilog execution has produced the same results in memory after each insertion as immediate mode execution did while avoiding the need to print the results in verilog mode.
            }
          };
         height().ok(4);
@@ -1143,7 +1157,7 @@ Height        :    1
         ok(()->mainMemoryMd5Sum(), "c039873361f0bdc304c9b2def96e7ab0");
 
         //stop(dump());
-        if (Ex) ok(dump(), """
+        ok(dump(), """
                                                                                                                            0016                                                                                                                                 |
                                                                                                                            (0,3)20                                                                                                                              |
                                                                                                                            [19,3]3                                                                                                                              |
@@ -1158,7 +1172,7 @@ Height        :    1
 """);
 
         //stop(print());
-        if (Ex) ok(print(), """
+        ok(print(), """
                                                            0016                                                                    |
                         0008                                                                   0024                                |
    0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
@@ -2034,6 +2048,37 @@ Leaf           size:   4, count:   2
             //test_rootFanOut3(false);                                                                                 // Github keeps running out of memory
    }
 
+  static void test_insert_locked ()
+   {sayCurrentTestName();
+    final Stack<StringBuilder> s = new Stack<>();
+
+    final int  N = 2;
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N))
+     {void treeCode()
+       {new ForCount(One, new Int(N+1))
+         {void body(Int Index)
+           {insert(Index, Index.Mul(11));
+            find(Index);
+           }
+         };
+
+        maxSteps(9_999_999);
+       }
+      void afterLock(Locks.Lock L)
+       {for (Program P : subPrograms())
+         {P.execute();
+         }
+       }
+     };
+    final Program P = new Program(new Program.Build().subProgramOf(t))
+     {void code()
+       {push(s, ()->t.print());
+       }
+     };
+    t.execute();
+    say("AAAA", s);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (rtg( 1)) test_tree();
     if (rtg( 2)) test_insert();
@@ -2048,13 +2093,13 @@ Leaf           size:   4, count:   2
     if (rtg(11)) test_rootFanOut();
     if (rtg(12)) test_rootFanOut2();
     if (rtg(13)) test_rootFanOut3();
-    if (rtg(14)) {}
+    if (rtg(14)) test_insert_locked();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_insert(!true);
-    test_rootFanOut3(true);
+    test_insert(!true);
+    //test_insert_locked();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
