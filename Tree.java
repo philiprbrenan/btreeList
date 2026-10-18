@@ -1159,7 +1159,7 @@ Height        :    1
         ok(()->mainMemoryMd5Sum(), "c039873361f0bdc304c9b2def96e7ab0");
 
         //stop(dump());
-        if (Ex) ok(()->dump(), """
+        if (Ex) ok(dump(), """
                                                                                                                            0016                                                                                                                                 |
                                                                                                                            (0,3)20                                                                                                                              |
                                                                                                                            [19,3]3                                                                                                                              |
@@ -1174,7 +1174,7 @@ Height        :    1
 """);
 
         //stop(print());
-        if (Ex) ok(()->print(), """
+        if (Ex) ok(print(), """
                                                            0016                                                                    |
                         0008                                                                   0024                                |
    0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
@@ -2100,7 +2100,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert(!true);
+    test_insert();
     //test_insert_locked();
    }
 
