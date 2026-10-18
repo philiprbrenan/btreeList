@@ -1178,7 +1178,7 @@ public class Program extends Test                                               
      };
    }
 
-  <T> I push(Stack<T> S, Supplier<T> T)                                                                                 // Push something onto a stack of somethings
+  <T> I push(Stack<T> S, Supplier<T> T)                                                                                 // Push something onto a stack of somethings inside an instruction
    {return new I()
      {void        a() {S.push(T.get());}
       boolean trace() {return false;}
@@ -2695,10 +2695,10 @@ endmodule
       final Lock l = locks.get(Area);  l.area = Area;                                                                   // Address lock
       if (!l.write && l.reads == 0)                                                                                     // There can be no other reads or writes in progress
        {l.write = true;
-        P.afterLock(l);                                                                                             // Record another reader
+        P.afterLock(l);                                                                                                 // Record another reader
        }
-      else if (l.write) stop("Write block for this area has already been acquired:", l);                                                                                                  // Lock There can be no other reads or writes in progress
-      else stop("Cannot acquire write lock for this area:", l);
+      else if (l.write) stop("Write block for this area has already been acquired:", l);                                // There can be no other writes in progress
+      else stop("Presence of read locks prevents the acquisition of a write lock for this area:", l);                   // There can be no read locks for this area
      }
 
     void    freeReadLock (Program P, int Area)                                                                          // Free a read lock if it exists or complain if it does not
@@ -2714,9 +2714,31 @@ endmodule
     void   freeWriteLock (Program P, int Area)                                                                          // Free a write lock on an area in memory if it exists or complain if it does not
      {if (!locks.containsKey(Area)) stop("No lock to free for area:", Area);                                            // Check that there is a lock for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
-      if (l.reads > 0) stop("Attempting to free a read lock not a write lock:", l);                                     // There must be a write lock to free
+      if (l.reads > 0) stop("Attempting to free a read lock not a write lock:", l);                                     // There must be no read locks present
       if (!l.write) stop("Memory area not write locked:", l);                                                           // There must be a write lock to free
       l.write = false;                                                                                                  // Free the write lock
+      locks.remove(Area);                                                                                               // No locks remain for this area
+      P.afterLock(l);
+     }
+
+    void   promoteReadToWrite (Program P, int Area)                                                                     // Promote a single read lock to a write lock
+     {if (!locks.containsKey(Area)) stop("No read lock to promote to a write lock for area:", Area);                    // Check that there is a lock for this area
+      final Lock l = locks.get(Area);                                                                                   // Address lock
+      if (l.reads != 1) stop("Only a single read lock can be promoted to a write lock:", l);                            // There must be exactly one read lock for this area
+      if (l.write) stop("Memory area is already write locked:", l);                                                     // The area is already write locked
+      l.write = true;                                                                                                   // Apply the write lock
+      l.reads = 0;                                                                                                      // Free the write lock
+      locks.remove(Area);                                                                                               // No locks remain for this area
+      P.afterLock(l);
+     }
+
+    void   demoteWriteToRead (Program P, int Area)                                                                      // Demote a write lock to a read lock
+     {if (!locks.containsKey(Area)) stop("No write lock to demote to a read lock for area:", Area);                     // Check that there is a lock for this area
+      final Lock l = locks.get(Area);                                                                                   // Address lock
+      if (l.reads != 0) stop("Cannot demote the a read lock:", l);                            // There must be exactly one read lock for this area
+      if (l.write) stop("Memory area is already write locked:", l);                                                     // The area is already write locked
+      l.write = true;                                                                                                   // Apply the write lock
+      l.reads = 0;                                                                                                      // Free the write lock
       locks.remove(Area);                                                                                               // No locks remain for this area
       P.afterLock(l);
      }
@@ -2727,10 +2749,10 @@ endmodule
     public String toString()
      {final StringBuilder s = new StringBuilder();
       //if (P.programName != null) s.append(f("Locks for: %s\n", P.programName));
-      s.append(f("%5s  %5s  %5s\n", "#", "Read", "Write"));
+      s.append(f("%5s  %5s  %5s  %5s\n", "#", "Area", "Read", "Write"));
       for(Integer L: locks.keySet())
        {final Lock l = locks.get(L);
-        s.append(f("%5d  %5d  %5d\n", L, l.reads, l.write ? 1 : 0));
+        s.append(f("%5d  %5d  %5d  %5d\n", L, l.area, l.reads, l.write ? 1 : 0));
        }
       return ""+s;
      }
@@ -3980,8 +4002,7 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_push();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
