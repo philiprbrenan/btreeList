@@ -329,7 +329,7 @@ class Tree extends Program                                                      
     return data;                                                                                                        // Will be set to invalid unless the key was found in which case it will contain the data associated with the key
    }
 
-  final class FindLeaf                                                                                                  // Find results
+  final class FindLeaf                                                                                                  // Find the leaf that should contain the specified key.  The leaf is returned with a read lock on it to prevent any modifications of the leaf before the caller has had a chance to process it.  Consequently the caller must release the read lock promptly
    {Bit valid = new Bit("valid");                                                                                       // Whether the search results are valid
     Int  key  = new Int ("key");                                                                                        // Search key
     Int  leaf = new Int ("leaf index");                                                                                 // Leaf that should contain the key
@@ -613,6 +613,7 @@ class Tree extends Program                                                      
             countInc();                                                                                                 // Count inserted key
            }
          };
+        freeReadLock(f.leaf);                                                                                           // Release the read lock on the leaf obtained by find leaf
        }
      };
     subFinish();
@@ -879,7 +880,8 @@ class Tree extends Program                                                      
      }
 
     Traverse ()                                                                                                         // Traverse the tree visiting each leaf and branch in order
-     {if (isLeaf(0)) pLeaf    (0, 0, 0, 0);
+     {if (!immediate()) stop("Traverse only works in immediate mode");
+      if (isLeaf(0)) pLeaf    (0, 0, 0, 0);
       else           traverse (0, 0, 0);
      }
 
@@ -1148,7 +1150,7 @@ Height        :    1
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
-            dumpProgramState("AAAA");                                                                                   // This memory dump occurs in both the immediate mode, delayed mode and verilog executions and so proves that the verilog execution has produced the same results in memory after each insertion as immediate mode execution did while avoiding the need to print the results in verilog mode.
+            dumpProgramState("AAAA");
            }
          };
         height().ok(4);
@@ -1157,7 +1159,7 @@ Height        :    1
         ok(()->mainMemoryMd5Sum(), "c039873361f0bdc304c9b2def96e7ab0");
 
         //stop(dump());
-        ok(()->dump(), """
+        if (Ex) ok(()->dump(), """
                                                                                                                            0016                                                                                                                                 |
                                                                                                                            (0,3)20                                                                                                                              |
                                                                                                                            [19,3]3                                                                                                                              |
@@ -1172,7 +1174,7 @@ Height        :    1
 """);
 
         //stop(print());
-        ok(()->print(), """
+        if (Ex) ok(()->print(), """
                                                            0016                                                                    |
                         0008                                                                   0024                                |
    0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
