@@ -2,6 +2,8 @@
 // Btree with stucks implemented as distributed sparse slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Delete of the last element of a leaf must update the point at which we last went left in the tree
+// Optimize merges by merging into the most full node from the least full node
 // Ensure that the splitting key is equal to the largest key in the sub tree so that the next greater element can easily be found without the complexities of traversing.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -331,9 +333,9 @@ class Tree extends Program                                                      
    }
 
   final class FindLeaf                                                                                                  // Find the leaf that should contain the specified key.  The leaf is returned with a read lock on it to prevent any modifications of the leaf before the caller has had a chance to process it.  Consequently the caller must release the read lock promptly
-   {Bit valid = new Bit("valid");                                                                                       // Whether the search results are valid
-    Int  key  = new Int ("key");                                                                                        // Search key
-    Int  leaf = new Int ("leaf index");                                                                                 // Leaf that should contain the key
+   {final  Bit valid = new Bit ("valid");                                                                               // Whether the search results are valid
+    final  Int  key  = new Int ("key");                                                                                 // Search key
+    final  Int  leaf = new Int ("leaf index");                                                                          // Leaf that should contain the key
 
     FindLeaf  (Int Key)                                                                                                 // Find the specified key in a leaf in the tree
      {subStart("Tree.findLeaf");
@@ -371,9 +373,15 @@ class Tree extends Program                                                      
     public String toString ()                                                                                           // Print the find results
      {subStart("Tree.toString");
       final StringBuilder s = new StringBuilder();
-      new I() {void a() {s.append("Find : "+key+" "+valid+"\n");} boolean trace() {return false;}};
+      new I()
+       {void a() {s.append("Find : "+key+" "+valid+"\n");}
+        boolean trace() {return false;}
+       };
       final StringBuilder l = leaf(leaf).print();
-      new I() {void a() {s.append(l);}                            boolean trace() {return false;}};
+      new I()
+       {void a() {s.append(l);}
+        boolean trace() {return false;}
+       };
       subFinish();
       return ""+s;
      }
@@ -383,7 +391,8 @@ class Tree extends Program                                                      
    {final Int          key = new Int("key");                                                                            // Search key
     final Int         leaf = new Int("leaf");                                                                           // Leaf that should contain the key
     final Int         step = new Int("step");                                                                           // Current step in the path
-    final Bint       split = new Bint();                                                                                // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
+    final Bint       split = new Bint("split");                                                                         // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
+    final Bint    lastLeft = new Bint("last left");                                                                     // Last point at which the path went left
     final Memory.Ref  path = mergePath.new Ref(0);                                                                      // Branches along path
 
     Path(Int Key)
@@ -404,6 +413,7 @@ class Tree extends Program                                                      
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).stepDown(key);                                                        // Step down
+              new If (d.slot) {void Then() {lastLeft.set(p);}};                                                         // Last step left
               path.putInt(step, p);
               step.inc();                                                                                               // Position for next step
               p.set(d.node);                                                                                            // Step down
@@ -544,8 +554,10 @@ class Tree extends Program                                                      
     StringBuilder print()                                                                                               // Print the path
      {subStart("Tree.print.path");
       final StringBuilder s = new StringBuilder();
-      new I() {void a() {s.setLength(0);                    } boolean trace() {return false;}};
-      new I() {void a() {s.append("Path: "+step+" steps: ");} boolean trace() {return false;}};
+
+      new I() {void a() {s.setLength(0);                                      } boolean trace() {return false;}};
+      new I() {void a() {s.append("Path: "+lastLeft+"left: "+step+" steps: ");} boolean trace() {return false;}};
+
       new ForCount(step)
        {void body(Int Index)
          {final Int v = path.getInt(Index);
