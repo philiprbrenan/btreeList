@@ -317,7 +317,7 @@ class Tree extends Program                                                      
     new If (l.valid)
      {void Then()
        {final Leaf       L = leaf(l.leaf);                                                                              // Load leaf
-        final Slots.Find f = L.slots.find(Key);                                                                         // Search for key in root
+        final Slots.Find f = L.slots.new Find(Key);                                                                     // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
            {final Int k = L.slots.getSlotToKeyIndex(f.slot.i());                                                        // Key slot
@@ -581,7 +581,7 @@ class Tree extends Program                                                      
     new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
        {final Leaf R = leaf(root());
-        final Slots.Find f = R.slots.find(Key);                                                                         // Perhaps the key is already present in the leaf root tree
+        final Slots.Find f = R.slots.new Find(Key);                                                                     // Perhaps the key is already present in the leaf root tree
         new If (f.equal)                                                                                                // Key exists in leaf root
          {void Then()
            {final Int p = R.slots.getSlotToKeyIndex(f.slot.i());                                                        // Position of key in leaf root slots
@@ -612,7 +612,7 @@ class Tree extends Program                                                      
       void Else()                                                                                                       // The root is a branch
        {final FindLeaf   f = new FindLeaf(Key);                                                                         // Find the leaf for the key
         final Leaf       l = leaf(f.leaf);                                                                              // Leaf that should contain the key
-        final Slots.Find F = l.slots.find(Key);                                                                         // Perhaps the key is already present in the leaf
+        final Slots.Find F = l.slots.new Find(Key);                                                                     // Perhaps the key is already present in the leaf
         new If (F.equal)                                                                                                // Key exists in full leaf
          {void Then()
            {final Int p = l.slots.getSlotToKeyIndex(F.slot.i());                                                        // Position of key in leaf slots
@@ -672,7 +672,7 @@ class Tree extends Program                                                      
     new If (isRootLeaf())
      {void Then()                                                                                                       // The root is a leaf
        {final Leaf       R = leaf(root());                                                                              // Load root
-        final Slots.Find f = R.slots.find(Key);                                                                         // Search for key in root
+        final Slots.Find f = R.slots.new Find(Key);                                                                     // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
            {data.set(R.data(R.slots.getSlotToKeyValue(f.slot.i())));                                                    // Data associated with key
@@ -684,7 +684,7 @@ class Tree extends Program                                                      
       void Else()                                                                                                       // The root is a branch
        {final Path       p = new Path(Key);                                                                             // Path to leaf that should contain key
         final Leaf       l = leaf(p.leaf);                                                                              // Containing leaf
-        final Slots.Find f = l.slots.find(Key);                                                                         // Search for key in root
+        final Slots.Find f = l.slots.new Find(Key);                                                                     // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
            {data.set(l.data(l.slots.getSlotToKeyValue(f.slot.i())));                                                    // Data associated with key
