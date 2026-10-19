@@ -24,9 +24,9 @@ my @containers  = (                                                             
  [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);                                                                      # Silicon compiler
 my %tasks       = (BitSet=>15, Branch=>12, Leaf=>10, Slots=>23, Tree=>14);                                              # Number of tasks for each component - default is one
 
-#my $include     = q(.);                                                                                                # Java files to include in testing
+my $include     = q(.);                                                                                                 # Java files to include in testing
 #my $include     = q(tree);
-my $include     = q(Program);
+#my $include     = q(Program);
 my $upload      = 1;                                                                                                    # Upload to github for execution if true
 
 say STDERR timeStamp,  " push to github $repo";
