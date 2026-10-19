@@ -766,7 +766,7 @@ class Slots extends Program                                                     
 
           final Runnable upper = new Runnable()                                                                         // The key should be inserted above the found key
            {public void run()
-             {shiftDownOne(s, s.Sub(p));                                                                          // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
+             {shiftDownOne(s, s.Sub(p));                                                                                // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
               setSlotAndKey(P.set(s), K.i(), Key);                                                                      // Insert key in nearest found key slot
              }
            };
