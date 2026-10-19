@@ -398,7 +398,8 @@ class Slots extends Program                                                     
     left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
     Right.copy(left);                                                                                                   // Duplicate left into right
 
-    final Int sk = left.getSlotToKeyValue(M.Dec()).Add(left.getSlotToKeyValue(M)).down();                               // Splitting key is half the two middle keys
+//  final Int sk = left.getSlotToKeyValue(M.Dec()).Add(left.getSlotToKeyValue(M)).down();                               // Splitting key is half the two middle keys
+    final Int sk = left.getSlotToKeyValue(M.Dec());                                                                     // The splitting key is always equal to the largest element in its sub tree
 
     new ForCount(M)    {void body(Int Index) {Right.delete(Index);}};                                                   // Clear lower half of target right slots
     new ForCount(M, N) {void body(Int Index) {left .delete(Index);}};                                                   // Clear upper half of left slots
@@ -418,7 +419,8 @@ class Slots extends Program                                                     
     right.compactSlotsLeft();                                                                                           // Compacting the source on the right will not affect the order of the keys
     Left.copy(right);                                                                                                   // Duplicate right into left
 
-    final Int sk = right.getSlotToKeyValue(M.Dec()).Add(right.getSlotToKeyValue(M)).down();                             // Splitting key is half the two middle keys
+//  final Int sk = right.getSlotToKeyValue(M.Dec()).Add(right.getSlotToKeyValue(M)).down();                             // Splitting key is half the two middle keys
+    final Int sk = right.getSlotToKeyValue(M.Dec());                                                                    // The splitting key is always equal to the largest element in its sub tree
 
     new ForCount(M)    {void body(Int Index) {right.delete(Index);}};                                                   // Clear lower half of target left slots
     new ForCount(M, N) {void body(Int Index) {Left .delete(Index);}};                                                   // Clear upper half of left slots
