@@ -691,6 +691,8 @@ class Slots extends Program                                                     
     boolean insertBelow = false;                                                                                        // If true, then the key to be inserted should be inserted below the indicated slot, otherwise the insertion position will be determined at run time.  Setting this flag reduces the amount of code generated because the case where the key has to be inserted above the found key can be safely ignored
     boolean insertAbove = false;                                                                                        // If true, then the key to be inserted should be inserted above the indicated slot, otherwise the insertion position will be determined at run time.  Setting this flag reduces the amount of code generated because the case where the key has to be inserted above the found key can be safely ignored
 
+    Find () {}                                                                                                          // Default constructor
+
     Find set(Int Slot, Bit Lower, Bit Higher)                                                                           // Set a find result
      {slot .set(Slot); lower.set(Lower); higher.set(Higher);
       equal.set(lower.And(higher));
@@ -829,122 +831,121 @@ class Slots extends Program                                                     
 
     StringBuilder print() {return new StringBuilder(""+this);}
 
-   }
 
-  Find find (Int Key)                                                                                                   // Find a key in the slots
-   {final BitSet u = usedSlotsToKeys;
-    final Find   f = new Find();
+    Find (Int Key)                                                                                                      // Find a key in the slots
+     {final BitSet u = usedSlotsToKeys;
+//    final Find   f = new Find();
 //  f.slot.invalidate();                                                                                                // Show that nothing has been found yet
 
-    new If (empty())                                                                                                    // Nothing to find if all the slots are empty
-     {void Then()
-       {f.set(Zero, new Bit(false), new Bit(false));                                                                    // Empty
-       }
-      void Else()                                                                                                       // Not empty
-       {Int p = u.topOne();                                                                                             // Position in ones tree
-        Int l = u.lowOne (p);                                                                                           // Index of lower bound in slots
-        Int r = u.highOne(p);                                                                                           // Index of upper bound in slots
-        Int L = getSlotToKeyValue(l);                                                                                   // Value of Key at lower bound of search
-        Int R = getSlotToKeyValue(r);                                                                                   // Value of key at upper bound of search
+      new If (empty())                                                                                                  // Nothing to find if all the slots are empty
+       {void Then()
+         {set(Zero, new Bit(false), new Bit(false));                                                                    // Empty
+         }
+        void Else()                                                                                                     // Not empty
+         {final Int p = u.topOne();                                                                                     // Position in ones tree
+          final Int l = u.lowOne (p);                                                                                   // Index of lower bound in slots
+          final Int r = u.highOne(p);                                                                                   // Index of upper bound in slots
+          final Int L = getSlotToKeyValue(l);                                                                           // Value of Key at lower bound of search
+          final Int R = getSlotToKeyValue(r);                                                                           // Value of key at upper bound of search
 
-        new If (Key.eq(L))
-         {void Then()                                                                                                   // Equal to low bound of search
-           {f.set(l, new Bit(true), new Bit(true));
-           }
-          void Else()
-           {new If (Key.eq(R))                                                                                          // Equal to high bound of search
-             {void Then()
-               {f.set(r, new Bit(true), new Bit(true));
-               }
-              void Else()
-               {new For(u.logBitSize1())                                                                                // Step down through ones tree narrowing the search range as we go
-                 {void body(Int Index, Bit Continue)
-                   {new If (Key.lt(L))
-                     {void Then()
-                       {f.set(l, new Bit(true), new Bit(false));                                                        // Lower than the lower bound
-                       }
-                      void Else()
-                       {new If (Key.gt(R))
-                         {void Then()
-                           {f.set(r, new Bit(false), new Bit(true));                                                    // Higher than the upper bound
-                           }
-                          void Else()                                                                                   // Search range
-                           {new If (u.canGoLeftToOne(p))                                                                // Go left if possible  to search first part of range if it exists
-                             {void Then()
-                               {final Int lp = u.childLowOne    (p);                                                    // Upper end of left range
-                                final Int lr = u.highOne        (lp);                                                   // Index of upper end of range
-                                final Int lR = getSlotToKeyValue(lr);                                                   // Value of key at upper end of range
+          new If (Key.eq(L))
+           {void Then()                                                                                                 // Equal to low bound of search
+             {set(l, new Bit(true), new Bit(true));
+             }
+            void Else()
+             {new If (Key.eq(R))                                                                                        // Equal to high bound of search
+               {void Then()
+                 {set(r, new Bit(true), new Bit(true));
+                 }
+                void Else()
+                 {new For(u.logBitSize1())                                                                              // Step down through ones tree narrowing the search range as we go
+                   {void body(Int Index, Bit Continue)
+                     {new If (Key.lt(L))
+                       {void Then()
+                         {set(l, new Bit(true), new Bit(false));                                                        // Lower than the lower bound
+                         }
+                        void Else()
+                         {new If (Key.gt(R))
+                           {void Then()
+                             {set(r, new Bit(false), new Bit(true));                                                    // Higher than the upper bound
+                             }
+                            void Else()                                                                                 // Search range
+                             {new If (u.canGoLeftToOne(p))                                                              // Go left if possible  to search first part of range if it exists
+                               {void Then()
+                                 {final Int lp = u.childLowOne    (p);                                                  // Upper end of left range
+                                  final Int lr = u.highOne        (lp);                                                 // Index of upper end of range
+                                  final Int lR = getSlotToKeyValue(lr);                                                 // Value of key at upper end of range
 
-                                new If (Key.eq(lR))                                                                     // Found at upper end of range
-                                 {void Then()
-                                   {f.set(lr, new Bit(true), new Bit(true));                                            // Equals current upper end of range
-                                   }
-                                  void Else()                                                                           // Search new sub range
-                                   {new If (Key.lt(lR))                                                                 // Lower than upper bound
-                                     {void Then()
-                                       {p.set(lp); r.set(lr); R.set(lR);                                                // Set new upper bound of search range
-                                        Continue.set();                                                                 // Continue the search  with new bounds
-                                       }
-                                      void Else()
-                                       {new If (u.canGoRightToOne(p))                                                   // Greater than anything in the left subrange so perhaps part of right hand subrange
-                                         {void Then()
-                                           {final Int rp = u.childHighOne   (p);                                        // Low end of right range
-                                            final Int rl = u.lowOne         (rp);                                       // Index of lower end of search range
-                                            final Int rL = getSlotToKeyValue(rl);                                       // Key at lower end of search range
-                                            new If (Key.eq(rL))                                                         // Equal to lower bound on right
-                                             {void Then()
-                                               {f.set(rl, new Bit(true), new Bit(true));                                // Found equal to lower end of right sub range
-                                               }
-                                              void Else()                                                               // Continue search
-                                               {new If (Key.lt(rL))                                                     // Less than the lower bound of right sub range
-                                                 {void Then()
-                                                   {f.set(rl, new Bit(true), new Bit(false));                           // Not found and less than low end of right
-                                                   }
-                                                  void Else()                                                           // Search new range
-                                                   {p.set(rp); l.set(rl); L.set(rL);                                    // Somewhere in the right hand range of which we already know the upper limits
-                                                    Continue.set();                                                     // Continue the search
-                                                   }
-                                                 };
-                                               }
-                                             };
-                                           }
-                                         };
-                                       }
-                                     };
-                                   }
-                                 };
-                               }
-                              void Else()
-                               {new If (u.canGoRightToOne(p))                                                           // Could not go left so must have gone right
-                                 {void Then()
-                                   {p.set(u.childHighOne(p));                                                           // Move to right sub range which has the same bounds as the parent range
-                                    Continue.set();                                                                     // Continue the search
-                                   }
-                                 };
-                               }
-                             };
-                           }
-                         };
-                       }
-                     };
-                   }
-                 };
-                new If (f.slot.notValid())                                                                              // Not found so must be inside final range
-                 {void Then()
-                   {f.set(l, new Bit(false), new Bit(true));
-                   }
-                 };
-               }
-             };
-           }
-         };
-       }
-     };
-    return f;
+                                  new If (Key.eq(lR))                                                                   // Found at upper end of range
+                                   {void Then()
+                                     {set(lr, new Bit(true), new Bit(true));                                            // Equals current upper end of range
+                                     }
+                                    void Else()                                                                         // Search new sub range
+                                     {new If (Key.lt(lR))                                                               // Lower than upper bound
+                                       {void Then()
+                                         {p.set(lp); r.set(lr); R.set(lR);                                              // Set new upper bound of search range
+                                          Continue.set();                                                               // Continue the search  with new bounds
+                                         }
+                                        void Else()
+                                         {new If (u.canGoRightToOne(p))                                                 // Greater than anything in the left subrange so perhaps part of right hand subrange
+                                           {void Then()
+                                             {final Int rp = u.childHighOne   (p);                                      // Low end of right range
+                                              final Int rl = u.lowOne         (rp);                                     // Index of lower end of search range
+                                              final Int rL = getSlotToKeyValue(rl);                                     // Key at lower end of search range
+                                              new If (Key.eq(rL))                                                       // Equal to lower bound on right
+                                               {void Then()
+                                                 {set(rl, new Bit(true), new Bit(true));                                // Found equal to lower end of right sub range
+                                                 }
+                                                void Else()                                                             // Continue search
+                                                 {new If (Key.lt(rL))                                                   // Less than the lower bound of right sub range
+                                                   {void Then()
+                                                     {set(rl, new Bit(true), new Bit(false));                           // Not found and less than low end of right
+                                                     }
+                                                    void Else()                                                         // Search new range
+                                                     {p.set(rp); l.set(rl); L.set(rL);                                  // Somewhere in the right hand range of which we already know the upper limits
+                                                      Continue.set();                                                   // Continue the search
+                                                     }
+                                                   };
+                                                 }
+                                               };
+                                             }
+                                           };
+                                         }
+                                       };
+                                     }
+                                   };
+                                 }
+                                void Else()
+                                 {new If (u.canGoRightToOne(p))                                                         // Could not go left so must have gone right
+                                   {void Then()
+                                     {p.set(u.childHighOne(p));                                                         // Move to right sub range which has the same bounds as the parent range
+                                      Continue.set();                                                                   // Continue the search
+                                     }
+                                   };
+                                 }
+                               };
+                             }
+                           };
+                         }
+                       };
+                     }
+                   };
+                  new If (slot.notValid())                                                                              // Not found so must be inside final range
+                   {void Then()
+                     {set(l, new Bit(false), new Bit(true));
+                     }
+                   };
+                 }
+               };
+             }
+           };
+         }
+       };
+     }
    }
 
   Bint findGe (Int Key)                                                                                                 // Find the index of the first key in the slots that is either equal to or greater than the specified key else return invalid if there is no such key
-   {final Find f = find(Key);                                                                                           // Find the key result
+   {final Find f = new Find(Key);                                                                                       // Find the key result
     final Bint r = new Bint();                                                                                          // If the slots contains keys and one of them is greater than or equal to the search key, then return the index of that key, else return invalid
     new If (f.equal.or(f.lower))                                                                                        // Found the index of a key that is greater than or equal to the search key
      {void Then() {r.set                         (f.slot.i()) ;}                                                        // Slot index of found key
@@ -975,7 +976,7 @@ class Slots extends Program                                                     
        {i.set(Key, insertEmpty(Key), true);                                                                             // New key as slots are empty
        }
       void Else()                                                                                                       // Insert into a free slot while maintaining the order of the slots
-       {final Find f = find(Key);                                                                                       // Find nearest existing key in slots
+       {final Find f = new Find(Key);                                                                                   // Find nearest existing key in slots
         new If (f.equal)
          {void Then() {i.set(Key, f.slot.i(),    false);}                                                               // Existing key
           void Else() {i.set(Key, f.insert(Key), true);}                                                                // New key in non empty slots per find results
@@ -1713,15 +1714,15 @@ Zero:
 """);
         maxSteps(9_999_999);
         execute();
-        check(find(new Int( 5)).print(), "Find(slot=Bint(0), lower=true, higher=false, equal=false, empty=false)");
-        check(find(new Int(11)).print(), "Find(slot=Bint(0), lower=true, higher=true, equal=true, empty=false)");
-        check(find(new Int(15)).print(), "Find(slot=Bint(2), lower=true, higher=false, equal=false, empty=false)");
-        check(find(new Int(22)).print(), "Find(slot=Bint(2), lower=true, higher=true, equal=true, empty=false)");
-        check(find(new Int(25)).print(), "Find(slot=Bint(4), lower=true, higher=false, equal=false, empty=false)");
-        check(find(new Int(33)).print(), "Find(slot=Bint(4), lower=true, higher=true, equal=true, empty=false)");
-        check(find(new Int(35)).print(), "Find(slot=Bint(15), lower=true, higher=false, equal=false, empty=false)");
-        check(find(new Int(44)).print(), "Find(slot=Bint(15), lower=true, higher=true, equal=true, empty=false)");
-        check(find(new Int(45)).print(), "Find(slot=Bint(15), lower=false, higher=true, equal=false, empty=false)");
+        check(new Find(new Int( 5)).print(), "Find(slot=Bint(0), lower=true, higher=false, equal=false, empty=false)");
+        check(new Find(new Int(11)).print(), "Find(slot=Bint(0), lower=true, higher=true, equal=true, empty=false)");
+        check(new Find(new Int(15)).print(), "Find(slot=Bint(2), lower=true, higher=false, equal=false, empty=false)");
+        check(new Find(new Int(22)).print(), "Find(slot=Bint(2), lower=true, higher=true, equal=true, empty=false)");
+        check(new Find(new Int(25)).print(), "Find(slot=Bint(4), lower=true, higher=false, equal=false, empty=false)");
+        check(new Find(new Int(33)).print(), "Find(slot=Bint(4), lower=true, higher=true, equal=true, empty=false)");
+        check(new Find(new Int(35)).print(), "Find(slot=Bint(15), lower=true, higher=false, equal=false, empty=false)");
+        check(new Find(new Int(44)).print(), "Find(slot=Bint(15), lower=true, higher=true, equal=true, empty=false)");
+        check(new Find(new Int(45)).print(), "Find(slot=Bint(15), lower=false, higher=true, equal=false, empty=false)");
        }
      };
    }
@@ -1778,15 +1779,15 @@ Zero:
 """);
         maxSteps(9_999_999);
         execute();
-        check(find(new Int( 5)).print(), "Find(slot=Bint(9), lower=true, higher=false, equal=false, empty=false)");
-        check(find(new Int(11)).print(), "Find(slot=Bint(9), lower=true, higher=true, equal=true, empty=false)");
-        check(find(new Int(15)).print(), "Find(slot=Bint(11), lower=true, higher=false, equal=false, empty=false)");
-        check(find(new Int(22)).print(), "Find(slot=Bint(11), lower=true, higher=true, equal=true, empty=false)");
-        check(find(new Int(25)).print(), "Find(slot=Bint(13), lower=true, higher=false, equal=false, empty=false)");
-        check(find(new Int(33)).print(), "Find(slot=Bint(13), lower=true, higher=true, equal=true, empty=false)");
-        check(find(new Int(35)).print(), "Find(slot=Bint(15), lower=true, higher=false, equal=false, empty=false)");
-        check(find(new Int(44)).print(), "Find(slot=Bint(15), lower=true, higher=true, equal=true, empty=false)");
-        check(find(new Int(45)).print(), "Find(slot=Bint(15), lower=false, higher=true, equal=false, empty=false)");
+        check(new Find(new Int( 5)).print(), "Find(slot=Bint(9), lower=true, higher=false, equal=false, empty=false)");
+        check(new Find(new Int(11)).print(), "Find(slot=Bint(9), lower=true, higher=true, equal=true, empty=false)");
+        check(new Find(new Int(15)).print(), "Find(slot=Bint(11), lower=true, higher=false, equal=false, empty=false)");
+        check(new Find(new Int(22)).print(), "Find(slot=Bint(11), lower=true, higher=true, equal=true, empty=false)");
+        check(new Find(new Int(25)).print(), "Find(slot=Bint(13), lower=true, higher=false, equal=false, empty=false)");
+        check(new Find(new Int(33)).print(), "Find(slot=Bint(13), lower=true, higher=true, equal=true, empty=false)");
+        check(new Find(new Int(35)).print(), "Find(slot=Bint(15), lower=true, higher=false, equal=false, empty=false)");
+        check(new Find(new Int(44)).print(), "Find(slot=Bint(15), lower=true, higher=true, equal=true, empty=false)");
+        check(new Find(new Int(45)).print(), "Find(slot=Bint(15), lower=false, higher=true, equal=false, empty=false)");
        }
      };
    }
