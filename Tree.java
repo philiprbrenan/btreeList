@@ -2,6 +2,7 @@
 // Btree with stucks implemented as distributed sparse slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Ensure that the splitting key is equal to the largest key in the sub tree so that the next greater element can easily be found without the complexities of traversing.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
