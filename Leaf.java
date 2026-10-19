@@ -97,7 +97,7 @@ class Leaf extends Program implements Program.Locatable                         
   Bint     delete (Int Key) {return getDataFromKey(Key, true);}                                                         // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
   Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
-   {final Slots.Find f = slots.find(Key);                                                                               // Find the key
+   {final Slots.Find f = slots.new Find(Key);                                                                           // Find the key
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
@@ -109,7 +109,7 @@ class Leaf extends Program implements Program.Locatable                         
    }
 
   Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a leaf returning the index of the containing slot
-   {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                    // The key must not already be present
+   {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                // The key must not already be present
     final Slots.Insert i = slots.insert(Key);                                                                           // Insert key
     final Int          k = slots.getSlotToKeyIndex(i.slot.i());                                                         // Key into which the insertion was performed
     refData.putInt(k, Data);
