@@ -393,7 +393,7 @@ class Tree extends Program                                                      
     final Bint branch = new Bint("branch index");                                                                       // Index of the branch containing the key if the key was found
     final  Int   slot = new  Int("slot");                                                                               // Slot in a valid branch reference containing the key
 
-    FindBranch  (Int Key)                                                                                               // Find the specified key in a branch in the tree
+    FindBranch (Int Key)                                                                                                // Find the specified key in a branch in the tree
      {subStart("Tree.findBranch");
       final Int p = root().dup();                                                                                       // Start at root
       getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
@@ -418,20 +418,48 @@ class Tree extends Program                                                      
       subFinish();
      }
 
-
     public String toString ()                                                                                           // Print the find results
-     {if (!immediate()) stop("Can only be called in immediate mode");
-      subStart("Tree.FindBranch.toString");
+     {subStart("Tree.FindBranch.toString");
       final StringBuilder s = new StringBuilder();
       s.append("Find branch key: "+key+", valid: "+branch.b().i);
-      if (branch.b().i)                                                                                                 // Key found in a branch
-       {s.append(", slot: "+slot+"\n");
-        s.append(branch(branch.i()).print());
-       }
-      else s.append("\n");                                                                                              // Key not found
+      if (branch.b().i) s.append(", branch:"+branch.i().i()+", slot: "+slot);
+      s.append("\n");
       subFinish();
       return ""+s;
      }
+   }
+
+  final class MaximumKey                                                                                                // Maximum key under a specified branch
+   {final Int branch = new Int("branch index");                                                                         // Index of the branch containing the key if the key was found
+    final Int maxKey = new Int("maximum key");                                                                          // Maximum key
+
+    MaximumKey (Int Branch)                                                                                             // Maximum key under a specified branch
+     {subStart("Tree.MaximumKey");
+      branch.set(Branch);
+      final Int p = branch.dup();                                                                                       // Start at branch
+      getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
+
+      new For(mnl())                                                                                                    // Step down from branch to branch
+       {void body(Int Index, Bit Continue)
+         {new If (isBranch(p))                                                                                          // On a branch
+           {void Then()
+             {final Int t = branch(p).top();                                                                            // Step through top towards maximum element
+              getReadLock(t); freeReadLock(p); p.set(t); Continue.set();                                                // Step down through top to the next branch
+             };
+            void Else()                                                                                                 // We have arrived at a leaf - find the maximum element
+             {final Slots s = leaf(p).slots;                                                                            // Slots
+              final Int   i = s.usedSlotsToKeys.lastOne().i();                                                          // Index of slot referencing last key
+              maxKey.set(s.getSlotToKeyValue(i));                                                                       // Last key in leaf
+              freeReadLock(p);
+             }
+           };
+         }
+       };
+
+      subFinish();
+     }
+
+    public String toString () {return "Maximum key in branch: "+branch.i()+", key: "+maxKey.i()+"\n";}                  // Print the results
    }
 
   final class Path                                                                                                      // Record the path from the root to the leaf that should contain a key
@@ -1254,31 +1282,21 @@ Height        :    1
         final FindBranch f_2 = new FindBranch(new Int( 2)); freeReadLock(f_2.branch.i());
         final FindBranch f14 = new FindBranch(new Int(14)); freeReadLock(f14.branch.i());
         final FindBranch f_1 = new FindBranch(new Int( 1));
-        if (Ex) ok(f_8, """
-Find branch key: key=8, valid: true, slot: slot=2
-Branch at:  19 size:   3, count:   1, top:  14, level:   2
- Ref   Key  Data
-   0     8     9
-""");
-        if (Ex) ok(f_2, """
-Find branch key: key=2, valid: true, slot: slot=0
-Branch at:   9 size:   3, count:   3, top:   8, level:   1
- Ref   Key  Data
-   0     2     3
-   1     4     4
-   2     6     7
-""");
-        if (Ex) ok(f14, """
-Find branch key: key=14, valid: true, slot: slot=4
-Branch at:  14 size:   3, count:   3, top:  13, level:   1
- Ref   Key  Data
-   0    10    10
-   1    12     5
-   2    14    12
-""");
-        if (Ex) ok(f_1, """
-Find branch key: key=1, valid: false
-""");
+
+        ok(()->f_8, "Find branch key: key=8, valid: true, branch:19, slot: slot=2\n");
+        ok(()->f_2, "Find branch key: key=2, valid: true, branch:9, slot: slot=0\n");
+        ok(()->f14, "Find branch key: key=14, valid: true, branch:14, slot: slot=4\n");
+        ok(()->f_1, "Find branch key: key=1, valid: false\n");
+
+        final MaximumKey m_0 = new MaximumKey(new Int( 0));
+        final MaximumKey m_2 = new MaximumKey(new Int( 2));
+        final MaximumKey m19 = new MaximumKey(new Int(19));
+        final MaximumKey m_9 = new MaximumKey(new Int( 9));
+
+        ok(()->m_0, "Maximum key in branch: 0, key: 32\n");
+        ok(()->m_2, "Maximum key in branch: 2, key: 32\n");
+        ok(()->m19, "Maximum key in branch: 19, key: 16\n");
+        ok(()->m_9, "Maximum key in branch: 9, key: 8\n");
 
         maxSteps(9_999_999);
         execute();
