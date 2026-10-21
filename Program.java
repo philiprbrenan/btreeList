@@ -1718,7 +1718,10 @@ endmodule
        {currentPc = pc++;                                                                                               // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
         executing = i;                                                                                                  // Currently executing instruction
         jtrace    = 0;                                                                                                  // Number of java trace records produced
-        if (!suppressInstructionCoverage && i.traceTest != null) instructionCover.get(i.traceTest).count++;             // Update instruction coverage by location in Java code where instruction was generated
+
+        if (mainProgram() && !suppressInstructionCoverage && i.traceTest != null)                                       // Update instruction coverage by location in Java code where instruction was generated
+         {instructionCover.get(i.traceTest).count++;
+         }
 
         i.a();                                                                                                          // Execute the instruction
 
