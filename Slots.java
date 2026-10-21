@@ -26,7 +26,7 @@ class Slots extends Program                                                     
 
   final static class Build                                                                                              // Specification of slots
    {boolean                     immediate = true;                                                                       // Immediate execution mode
-    int                      numberOfKeys = 2;                                                                          // Number of references in the slots
+    int                      numberOfKeys = 2;                                                                          // Default number of references in the slots
     Memory.Ref              unitMemoryRef;                                                                              // Program memory to be used
     Program                        parent;                                                                              // Parent program if any
     Build.MemoryPositions memoryPositions;                                                                              // Offsets of fields describing this leaf in memory
