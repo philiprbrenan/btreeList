@@ -5,6 +5,7 @@
 // Delete of the last element of a leaf must update the point at which we last went left in the tree
 // Optimize merges by merging into the most full node from the least full node
 // Ensure that the splitting key is equal to the largest key in the sub tree so that the next greater element can easily be found without the complexities of traversing.
+// Imporve FinDLeaf to match FindBranch
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -371,7 +372,7 @@ class Tree extends Program                                                      
      }
 
     public String toString ()                                                                                           // Print the find results
-     {subStart("Tree.toString");
+     {subStart("Tree.FindLeaf.toString");
       final StringBuilder s = new StringBuilder();
       new I()
        {void a() {s.append("Find : "+key+" "+valid+"\n");}
@@ -382,6 +383,51 @@ class Tree extends Program                                                      
        {void a() {s.append(l);}
         boolean trace() {return false;}
        };
+      subFinish();
+      return ""+s;
+     }
+   }
+
+  final class FindBranch                                                                                                // Find a branch that contains a specified key
+   {final  Int    key = new  Int("key");                                                                                // Search key
+    final Bint branch = new Bint("branch index");                                                                       // Index of the branch containing the key if the key was found
+    final  Int   slot = new  Int("slot");                                                                               // Slot in a valid branch reference containing the key
+
+    FindBranch  (Int Key)                                                                                               // Find the specified key in a branch in the tree
+     {subStart("Tree.findBranch");
+      final Int p = root().dup();                                                                                       // Start at root
+      getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
+      key.set(Key);
+
+      new For(mnl())                                                                                                    // Step down from branch to branch
+       {void body(Int Index, Bit Continue)
+         {new If (isBranch(p))                                                                                          // On a branch
+           {void Then()
+             {final Branch.StepDown d = branch(p).new StepDown(Key);                                                    // Step down details
+              new If (d.eqKey)
+               {void Then() {branch.set(p); slot.set(d.slot);}                                                          // Found the matching key so terminate the search and hold a read lock on the branch so found
+                void Else() {getReadLock(d.node); freeReadLock(p); p.set(d.node); Continue.set();}                      // Step down to the next branch
+               };
+             }
+           };
+         }
+       };
+
+      if (immediate && !branch.b().v) stop("Find fell off the end of tree after this many searches:", mnl());
+      subFinish();
+     }
+
+
+    public String toString ()                                                                                           // Print the find results
+     {if (!immediate()) stop("Can only be called in immediate mode");
+      subStart("Tree.FindBranch.toString");
+      final StringBuilder s = new StringBuilder();
+      s.append("Find key: "+key+", valid: "+branch.b().i);
+      if (branch.b().i)
+       {s.append(", slot: "+slot+"\n");
+        s.append(branch(branch.i()).print());
+       }
+      else s.append("\n");
       subFinish();
       return ""+s;
      }
@@ -1203,6 +1249,10 @@ Height        :    1
 1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
 """);
 
+        final FindBranch f_8 = new FindBranch(new Int( 8)); if (Ex) say("AAAA_8", f_8);
+        final FindBranch f_2 = new FindBranch(new Int( 2)); if (Ex) say("AAAA_2", f_2);
+        final FindBranch f14 = new FindBranch(new Int(14)); if (Ex) say("AAAA14", f14);
+        final FindBranch f_1 = new FindBranch(new Int( 1)); if (Ex) say("AAAA_1", f_1);
         maxSteps(9_999_999);
         execute();
        }
@@ -2123,7 +2173,7 @@ Leaf           size:   4, count:   2
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_insertRandom32();
-    test_insertReverse();
+    test_insert();
     //test_insert_locked();
    }
 
