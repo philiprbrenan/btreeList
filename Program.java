@@ -13,7 +13,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static String                     currentProject = "Delete highest in leaf";                                    // Project currently being worked on
+ {final static String                     currentProject = "Delete highest in leaf - find maxima";                      // Project currently being worked on
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
@@ -1111,7 +1111,7 @@ public class Program extends Test                                               
       new I()
        {void    a    ()
          {if (!got.v) stop("Invalid Int being tested at:", executing().instructionLocation());
-           Test.ok(got.i(), Value.i());
+          Test.ok(got.i(), Value.i());
          }
         String v() {return "/* Int ok(Int) */";}
         boolean trace () {return false;}
@@ -1132,8 +1132,8 @@ public class Program extends Test                                               
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
     Bit    b ()      {i.bint++;          return b;   }                                                                  // Return boolean component
     Int    i ()
-     {new If (b.Flip()) {void Then() {stop("Requested int component from unset Bint");}};                               // Complain if there is no integer component to return
-      return new Int(i);
+     {if (immediate() && !b.b()) stop("Requested int component from unset Bint");                                       // Complain if there is no integer component to return
+      return i;
      }
 
     Bit       valid () {i.bint++;            return b;       }                                                          // Whether the boolean integer is valid
