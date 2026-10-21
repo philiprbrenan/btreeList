@@ -350,7 +350,7 @@ class Tree extends Program                                                      
              {set(p);                                                                                                   // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
              }
             void Else()                                                                                                 // On a branch
-             {final Branch.StepDown d = branch(p).stepDown(Key);                                                        // Step down details
+             {final Branch.StepDown d = branch(p).new StepDown(Key);                                                    // Step down details
               getReadLock(d.node); freeReadLock(p);                                                                     // Transfer the read lock to the leaf or branch stepped to so it cannot be modified while we are reading it
               p.set(d.node);                                                                                            // Step down to next level
               Continue.set();                                                                                           // Continue search
@@ -388,12 +388,12 @@ class Tree extends Program                                                      
    }
 
   final class Path                                                                                                      // Record the path from the root to the leaf that should contain a key
-   {final Int          key = new Int("key");                                                                            // Search key
-    final Int         leaf = new Int("leaf");                                                                           // Leaf that should contain the key
-    final Int         step = new Int("step");                                                                           // Current step in the path
-    final Bint       split = new Bint("split");                                                                         // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
-    final Bint    lastLeft = new Bint("last left");                                                                     // Last point at which the path went left
-    final Memory.Ref  path = mergePath.new Ref(0);                                                                      // Branches along path
+   {final Int           key = new  Int("key");                                                                          // Search key
+    final Int          leaf = new  Int("leaf");                                                                         // Leaf that should contain the key
+    final Int          step = new  Int("step");                                                                         // Current step in the path
+    final Bint        split = new Bint("split");                                                                        // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
+    final Bit         eqKey = new  Bit("equal key");                                                                    // A branch has a key that is equal to the search key
+    final Memory.Ref   path = mergePath.new Ref(0);                                                                     // Branches along path
 
     Path(Int Key)
      {subStart("Tree.Path");
@@ -412,8 +412,8 @@ class Tree extends Program                                                      
               leaf.set(p);                                                                                              // End the path on a leaf
              }
             void Else()                                                                                                 // On a branch
-             {final Branch.StepDown d = branch(p).stepDown(key);                                                        // Step down
-              new If (d.slot) {void Then() {lastLeft.set(p);}};                                                         // Last step left
+             {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down
+              eqKey.set(d.eqKey);                                                                                       // Stepped through a key equal to the search key
               path.putInt(step, p);
               step.inc();                                                                                               // Position for next step
               p.set(d.node);                                                                                            // Step down
@@ -468,7 +468,7 @@ class Tree extends Program                                                      
            {void body(Int Index)
              {final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
               final Branch c = branch(path.getInt(Index));                                                              // Child branch that should be split
-              final Branch.StepDown d = p.stepDown(key);                                                                // Step down
+              final Branch.StepDown d = p.new StepDown(key);                                                            // Step down
               final Branch l = branch();                                                                                // Branch to split into
               final Int   sk = c.splitLeft(l);                                                                          // Splitting key
 
@@ -496,7 +496,7 @@ class Tree extends Program                                                      
        {void body(Int Index)
          {final Int             i = step.Sub(Index).dec();                                                              // Index of parent branch that contains the split siblings
           final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
-          final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
+          final Branch.StepDown d = p.new StepDown(key);                                                                // Locate key slot
           final Bint            L = new Bint();                                                                         // There are four possibilities to consider
           final Int            I0 = Zero;                                                                               // Non fast integer constants
           final Int            I1 = One;                                                                                // Non fast integer constants
@@ -555,8 +555,8 @@ class Tree extends Program                                                      
      {subStart("Tree.print.path");
       final StringBuilder s = new StringBuilder();
 
-      new I() {void a() {s.setLength(0);                                      } boolean trace() {return false;}};
-      new I() {void a() {s.append("Path: "+lastLeft+"left: "+step+" steps: ");} boolean trace() {return false;}};
+      new I() {void a() {s.setLength(0);                   } boolean trace() {return false;}};
+      new I() {void a() {s.append("Path "+step+" steps: ");} boolean trace() {return false;}};
 
       new ForCount(step)
        {void body(Int Index)
@@ -643,7 +643,7 @@ class Tree extends Program                                                      
     final Leaf   l = leaf();                                                                                            // New leaf
     final Int   sk = r.splitLeft(l);                                                                                    // Split the full leaf into the new leaf
 
-    final Branch.StepDown d = P.stepDown(Key);
+    final Branch.StepDown d = P.new StepDown(Key);
 
     final Bint s = new Bint();
     new If (d.slot.valid())                                                                                             // If the leaf was reached by stepping through top then insert the new left leaf high
@@ -691,6 +691,15 @@ class Tree extends Program                                                      
             l.slots.delete(f.slot.i());                                                                                 // Remove key from leaf in tree tree
             p.mergeUp();                                                                                                // Merge leaf and nodes above
             countDec();                                                                                                 // Count deleted key
+
+            new If (p.eqKey)                                                                                            // If the key being deleted was present in a branch we should find it and replace it with the new maximum key under the key being deleted to maintain the invariant that the key in the branch is equal to the maximum key in the tree below
+             {void Then()
+               {
+// Locate the branch and slot holding the matching key if it still present
+// Locate the maximum key under the matching key
+// Replace the found matching key with the maximum key to maintain the tree invariant
+               }
+             };
            }
          };
        }
@@ -2113,7 +2122,8 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insertRandom32();
+    //test_insertRandom32();
+    test_insertReverse();
     //test_insert_locked();
    }
 
