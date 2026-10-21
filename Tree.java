@@ -409,6 +409,7 @@ class Tree extends Program                                                      
                 void Else() {getReadLock(d.node); freeReadLock(p); p.set(d.node); Continue.set();}                      // Step down to the next branch
                };
              }
+            void Else() {freeReadLock(p);}                                                                              // Stepped down to a leaf so release the read lock on the parent branch because a branch containing the key was not found
            };
          }
        };
@@ -422,12 +423,12 @@ class Tree extends Program                                                      
      {if (!immediate()) stop("Can only be called in immediate mode");
       subStart("Tree.FindBranch.toString");
       final StringBuilder s = new StringBuilder();
-      s.append("Find key: "+key+", valid: "+branch.b().i);
-      if (branch.b().i)
+      s.append("Find branch key: "+key+", valid: "+branch.b().i);
+      if (branch.b().i)                                                                                                 // Key found in a branch
        {s.append(", slot: "+slot+"\n");
         s.append(branch(branch.i()).print());
        }
-      else s.append("\n");
+      else s.append("\n");                                                                                              // Key not found
       subFinish();
       return ""+s;
      }
@@ -1249,10 +1250,36 @@ Height        :    1
 1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
 """);
 
-        final FindBranch f_8 = new FindBranch(new Int( 8)); if (Ex) say("AAAA_8", f_8);
-        final FindBranch f_2 = new FindBranch(new Int( 2)); if (Ex) say("AAAA_2", f_2);
-        final FindBranch f14 = new FindBranch(new Int(14)); if (Ex) say("AAAA14", f14);
-        final FindBranch f_1 = new FindBranch(new Int( 1)); if (Ex) say("AAAA_1", f_1);
+        final FindBranch f_8 = new FindBranch(new Int( 8)); freeReadLock(f_8.branch.i());
+        final FindBranch f_2 = new FindBranch(new Int( 2)); freeReadLock(f_2.branch.i());
+        final FindBranch f14 = new FindBranch(new Int(14)); freeReadLock(f14.branch.i());
+        final FindBranch f_1 = new FindBranch(new Int( 1));
+        if (Ex) ok(f_8, """
+Find branch key: key=8, valid: true, slot: slot=2
+Branch at:  19 size:   3, count:   1, top:  14, level:   2
+ Ref   Key  Data
+   0     8     9
+""");
+        if (Ex) ok(f_2, """
+Find branch key: key=2, valid: true, slot: slot=0
+Branch at:   9 size:   3, count:   3, top:   8, level:   1
+ Ref   Key  Data
+   0     2     3
+   1     4     4
+   2     6     7
+""");
+        if (Ex) ok(f14, """
+Find branch key: key=14, valid: true, slot: slot=4
+Branch at:  14 size:   3, count:   3, top:  13, level:   1
+ Ref   Key  Data
+   0    10    10
+   1    12     5
+   2    14    12
+""");
+        if (Ex) ok(f_1, """
+Find branch key: key=1, valid: false
+""");
+
         maxSteps(9_999_999);
         execute();
        }
