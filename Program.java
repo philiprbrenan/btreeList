@@ -2682,7 +2682,7 @@ endmodule
       final int             area;                                                                                       // The area being locked
       final String lockTraceBack;                                                                                       // The location in the code that created the lock
 
-      Lock (int Area) {area = Area; lockTraceBack = traceComment();}                                                    // Create a new lock
+      Lock (int Area) {area = Area; lockTraceBack = traceBack();}                                                       // Create a new lock
 
       public String toString() {return f("Read: %d, write: %d, area %d", reads, write ? 1 : 0, area);}                  // Print a lock
      }
