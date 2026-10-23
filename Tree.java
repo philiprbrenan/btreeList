@@ -430,8 +430,8 @@ class Tree extends Program                                                      
    }
 
   final class MaximumKey                                                                                                // Maximum key under a specified branch
-   {final Int branch = new Int("branch index");                                                                         // Index of the branch containing the key if the key was found
-    final Int maxKey = new Int("maximum key");                                                                          // Maximum key
+   {final  Int branch = new Int("branch index");                                                                        // Index of the branch containing the key if the key was found
+    final Bint maxKey = new Bint("maximum key if present");                                                             // Maximum key
 
     MaximumKey (Int Branch)                                                                                             // Maximum key under a specified branch
      {subStart("Tree.MaximumKey");
@@ -448,8 +448,8 @@ class Tree extends Program                                                      
              };
             void Else()                                                                                                 // We have arrived at a leaf - find the maximum element
              {final Slots s = leaf(p).slots;                                                                            // Slots
-              final Int   i = s.usedSlotsToKeys.lastOne().i();                                                          // Index of slot referencing last key
-              maxKey.set(s.getSlotToKeyValue(i));                                                                       // Last key in leaf
+              final Bint  i = s.usedSlotsToKeys.lastOne();                                                              // Index of slot referencing last key
+              new If (i) {void Then() {maxKey.set(s.getSlotToKeyValue(i.i()));}};                                       // Last key in leaf if there is one
               freeReadLock(p);
              }
            };
@@ -463,12 +463,12 @@ class Tree extends Program                                                      
    }
 
   final class Path                                                                                                      // Record the path from the root to the leaf that should contain a key
-   {final Int           key = new  Int("key");                                                                          // Search key
-    final Int          leaf = new  Int("leaf");                                                                         // Leaf that should contain the key
-    final Int          step = new  Int("step");                                                                         // Current step in the path
-    final Bint        split = new Bint("split");                                                                        // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
-    final Bit         eqKey = new  Bit("equal key");                                                                    // A branch has a key that is equal to the search key
-    final Memory.Ref   path = mergePath.new Ref(0);                                                                     // Branches along path
+   {final Int         key = new  Int("key");                                                                            // Search key
+    final Int        leaf = new  Int("leaf");                                                                           // Leaf that should contain the key
+    final Int        step = new  Int("step");                                                                           // Current step in the path
+    final Bint      split = new Bint("split");                                                                          // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
+    final Bit       eqKey = new  Bit("equal key");                                                                      // A branch has a key that is equal to the search key
+    final Memory.Ref path = mergePath.new Ref(0);                                                                       // Branches along path
 
     Path(Int Key)
      {subStart("Tree.Path");
@@ -478,6 +478,7 @@ class Tree extends Program                                                      
       key .set(Key);                                                                                                    // Record search key
       step.set(0);                                                                                                      // Start at the root
       mergePath.clear();                                                                                                // Clear the path
+      eqKey    .clear();                                                                                                // Clear the equal key indicator to show that so far we have not encountered a branch entry containing the search key
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
@@ -488,7 +489,7 @@ class Tree extends Program                                                      
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down
-              eqKey.set(d.eqKey);                                                                                       // Stepped through a key equal to the search key
+              new If (d.eqKey) {void Then() {eqKey.set();}};                                                            // Stepped through a key equal to the search key
               path.putInt(step, p);
               step.inc();                                                                                               // Position for next step
               p.set(d.node);                                                                                            // Step down
@@ -602,27 +603,7 @@ class Tree extends Program                                                      
            };
          }
        };
-
-      final Branch R = branch(root());
-      new If (R.slots.empty())                                                                                          // Reduce the height of the tree if the body of the root is now empty
-       {void Then()
-         {final Int t = R.top();                                                                                        // Top
-          new If (isLeaf(t))                                                                                            // Root has leaves for children
-           {void Then()
-             {final Leaf L = makeLeaf(R.getLocation().i());                                                             // Make the root into a leaf
-              final Leaf l = leaf(t);                                                                                   // Top as a leaf
-              L.copy(l);                                                                                                // Copy top into root decreasing height of tree
-              free(l);                                                                                                  // Free top as no longer needed
-             }
-            void Else()                                                                                                 // Root has branches for children
-             {final Branch b = branch(t);                                                                               // Top as a branch
-              R.copy(b);                                                                                                // Copy top into root
-              free(b);                                                                                                  // Free top as no longer needed
-             }
-           };
-          refHeight.putInt(refHeight.getInt().dec());                                                                   // Decrease the height of the tree
-         }
-       };
+      squashRoot();                                                                                                     // Reduce the height of the tree if possible
       subFinish();
      }
 
@@ -649,6 +630,31 @@ class Tree extends Program                                                      
    {final Path f = new Path(Key);                                                                                       // Find results
     return f;
    }
+
+  void squashRoot()                                                                                                     // Squash the root down if possible
+   {final Branch R = branch(root());
+    new If (R.slots.empty())                                                                                            // Reduce the height of the tree if the body of the root is now empty
+     {void Then()
+       {final Int t = R.top();                                                                                          // Top
+        new If (isLeaf(t))                                                                                              // Root has leaves for children
+         {void Then()
+           {final Leaf L = makeLeaf(R.getLocation().i());                                                               // Make the root into a leaf
+            final Leaf l = leaf(t);                                                                                     // Top as a leaf
+            L.copy(l);                                                                                                  // Copy top into root decreasing height of tree
+            free(l);                                                                                                    // Free top as no longer needed
+           }
+          void Else()                                                                                                   // Root has branches for children
+           {final Branch b = branch(t);                                                                                 // Top as a branch
+            R.copy(b);                                                                                                  // Copy top into root
+            free(b);                                                                                                    // Free top as no longer needed
+           }
+         };
+        refHeight.putInt(refHeight.getInt().dec());                                                                     // Decrease the height of the tree
+       }
+     };
+   }
+
+//D1 Public Methods                                                                                                     // Public methods for find, insert, delete etc.
 
   public void insert (Int Key, Int Data)                                                                                // Insert a key, data pair into the tree
    {subStart("Tree.insert");
@@ -769,10 +775,31 @@ class Tree extends Program                                                      
 
             new If (p.eqKey)                                                                                            // If the key being deleted was present in a branch we should find it and replace it with the new maximum key under the key being deleted to maintain the invariant that the key in the branch is equal to the maximum key in the tree below
              {void Then()
-               {
-// Locate the branch and slot holding the matching key if it still present
-// Locate the maximum key under the matching key
-// Replace the found matching key with the maximum key to maintain the tree invariant
+               {final FindBranch F = new FindBranch(Key);                                                               // Find the branch containing the key if it is still in the tree - it might have been merged out
+                new If (F.branch)
+                 {void Then()
+                   {final Branch          b = branch(F.branch.i());                                                     // Branch containing search key
+                    final Branch.StepDown d = b.new StepDown(Key);                                                      // Step down through key to sub tree referenced by the search key
+                    final MaximumKey      m = new MaximumKey(d.node);                                                   // Maximum key in sub tree becomes the new key for this slot
+
+                    new If (m.maxKey)                                                                                   // Maximum was found
+                     {void Then()
+                       {final Slots       s = b.slots;                                                                  // Slots to be updated in branch being updated
+                        final Int         i = s.getSlotToKeyIndex(F.slot);                                              // Index of slot holding key
+                        s.setSlotAndKey(F.slot, i, m.maxKey.i());                                                       // Replace the existing key with the maximum of its sub tree in order to maintain the variant that the branch key is equal to the largest key in its sub tree
+                        freeReadLock(F.branch.i());                                                                     // Free the read lock obtained by find branch
+                       }
+                      void Else()                                                                                       // No maximum key
+                       {new If (d.slot)
+                        {void Then()
+                          {b.slots.delSlotAndKey(d.slot.i());                                                           // There is no maximum key in the sub tree so the tree must be empty so we can delete it
+                           new If (F.branch.i().eq(0)) {void Then() {squashRoot();}};                                   // Try to squash the root if the root was modified a
+                          }
+                        };
+                       }
+                     };
+                   }
+                 };
                }
              };
            }
@@ -1298,6 +1325,38 @@ Height        :    1
         ok(()->m19, "Maximum key in branch: 19, key: 16\n");
         ok(()->m_9, "Maximum key in branch: 9, key: 8\n");
 
+        delete(new Int(16));
+
+        //stop(dump());
+        if (Ex) ok(dump(), """
+                                                0008                                                             0015                                                               0024                                                      |
+                                                (0,0)                                                            (0,2)                                                              (0,4)6                                                    |
+                                                [9,0]2                                                           [14,2]2                                                            [21,4]2                                                   |
+       0002          0004          0006                        0010            0012             0014                             0018             0020             0022                            0026           0028           0030         |
+       (9,0,0)       (9,0,2)       (9,0,4)8                    (14,0,0)        (14,0,2)         (14,0,4)13                       (21,0,0)         (21,0,2)         (21,0,4)18                      (6,0,0)        (6,0,2)        (6,0,4)2     |
+       [3,0]1        [4,2]1        [7,4]1                      [10,0]1         [5,2]1           [12,4]1                          [15,0]1          [11,2]1          [17,4]1                         [22,0]1        [16,2]1        [24,4]1      |
+1,2           3,4           5,6            7,8        9,10             11,12           13,14              15            17,18            19,20            21,22              23,24         25,26          27,28          29,30           31,32|
+(3,9,0)       (4,9,2)       (7,9,4)        (8,9)      (10,14,0)        (5,14,2)        (12,14,4)          (13,14)       (15,21,0)        (11,21,2)        (17,21,4)          (18,21)       (22,6,0)       (16,6,2)       (24,6,4)        (2,6)|
+""");
+
+        ok(()->mainMemoryMd5Sum(), "f7ac331ac5f050c49bc1b9ac74622ae1");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
+
+        delete(new Int(15));
+
+        //stop(dump());
+        if (Ex) ok(dump(), """
+                                                0008                                            0014                                                               0024                                                      |
+                                                (0,0)                                           (0,2)                                                              (0,4)6                                                    |
+                                                [9,0]2                                          [14,2]2                                                            [21,4]2                                                   |
+       0002          0004          0006                        0010            0012                             0018             0020             0022                            0026           0028           0030         |
+       (9,0,0)       (9,0,2)       (9,0,4)8                    (14,0,0)        (14,0,2)13                       (21,0,0)         (21,0,2)         (21,0,4)18                      (6,0,0)        (6,0,2)        (6,0,4)2     |
+       [3,0]1        [4,2]1        [7,4]1                      [10,0]1         [5,2]1                           [15,0]1          [11,2]1          [17,4]1                         [22,0]1        [16,2]1        [24,4]1      |
+1,2           3,4           5,6            7,8        9,10             11,12             13,14         17,18            19,20            21,22              23,24         25,26          27,28          29,30           31,32|
+(3,9,0)       (4,9,2)       (7,9,4)        (8,9)      (10,14,0)        (5,14,2)          (13,14)       (15,21,0)        (11,21,2)        (17,21,4)          (18,21)       (22,6,0)       (16,6,2)       (24,6,4)        (2,6)|
+""");
+
+        ok(()->mainMemoryMd5Sum(), "aa92a04167974af251a1d447f5dc4c9a");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
+
         maxSteps(9_999_999);
         execute();
        }
@@ -1481,13 +1540,13 @@ Height        :    1
         new ForCount(new Int(N))
          {void body(Int Index)
            {delete(Index.Inc());
-            if (Ex) s.append(print());
+            if (Ex) s.append(dump());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
             dumpProgramState("BBBB");
             if (immediate())
              {final int i = Index.i();
-              if (i >=  0 && i <= 18) height().ok(3);
-              if (i >= 19 && i <= 26) height().ok(2);
+              if (i >=  0 && i <= 14) height().ok(3);
+              if (i >= 16 && i <= 26) height().ok(2);
               if (i >= 27)            height().ok(1);
              }
            }
@@ -1510,103 +1569,207 @@ e7146136e874017d412b393f47ca66b8
 3c5a9a54dcc9f963243b09ca79752944
 e50d1c0c0d9928f7aba4ad37e0a17dad
 61cff5305ddd574f04e16dfd4f4fa621
-1d15b2a4b6a94db69a4cf8b12147fc4e
-c5444ed854e830a3551d0e4befe7a4e7
-4c40789ee6ebe9fea2c6730ed0bb32de
-5922a7eb7b3f0a24d04a58c8632563f0
-bcbeaaf9d6ac873453f3338df4bc9ed3
-38239a8bf485fd2724456e00cd61e42f
-e39773ec7325c7d89b750fe274243df7
-6385ff5bb82a410f35715340ccb36c20
-f2c82a35686a39c996053916dd1b535a
-95d21bd9a64884751740f7e87896d466
-99d4748b65056ccacfd98451d9cf2846
-384e39537873c257e3d26e3fcc0802d2
-55ff5b5255fd28b94898c2dd8a7ff2bf
-cf54d09bad8fa62e79f49a3f11b492b2
-055a1d0c765b2d9bcf0cd490f78bc8c4
-2a434d0989a96061fe60c3e58357064b
-7f3339bf5a5a1f8fd07ed045a50fa6b8
+c00984ac4b6485756e3763d70aa3a028
+83086f8af00005a3ed2681adab9488b6
+5b026420ca2ddb41b15b45af3e065537
+a4150f5e4ed8f991718c445dcb781584
+d1e32653e8b4bc014ce1eaf54549fd07
+4a7e39ebd0df7452aa262638ed7b6fe3
+36553d2742928b2aebf72d08d4f0c8d6
+2dbff678d4d5b27bf0036a8306ff5def
+d416a39530f623a61f7823056708b9cc
+dc14fcfd75c864c233fc148989ba47c1
+3ed7f644b01f1b23abb31054f2f45aa2
+c0a490d818b26532f1910d026166d8ca
+32c5d7be258764f658c41b0cc999edb3
+d1e2cc308f69f9de4e07e989816260f4
+8e8a345bd505e105cced183617130240
+2ec8b88e6cf77a3b16dc1b3dd4fd7809
+fa10edf1e50eebf13e7418aac38f3794
 """);
 
-        //stop(s);
-        if (Ex) ok(""+s, """
-                                               0016                                                        |
-       0004       0008          0012                          0020           0024           0028           |
-1,2,3,4    5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                                             0016                                                        |
-     0004       0008          0012                          0020           0024           0028           |
-2,3,4    5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                                           0016                                                        |
-   0004       0008          0012                          0020           0024           0028           |
-3,4    5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                                         0016                                                        |
- 0004       0008          0012                          0020           0024           0028           |
-4    5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                                    0016                                                        |
-       0008          0012                          0020           0024           0028           |
-5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                                  0016                                                        |
-     0008          0012                          0020           0024           0028           |
-6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                                0016                                                        |
-   0008          0012                          0020           0024           0028           |
-7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                              0016                                                        |
- 0008          0012                          0020           0024           0028           |
-8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                         0016                                                        |
-          0012                          0020           0024           0028           |
-9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                       0016                                                        |
-        0012                          0020           0024           0028           |
-10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                    0016                                                        |
-     0012                          0020           0024           0028           |
-11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-                 0016                                                        |
-  0012                          0020           0024           0028           |
-12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-           0016                                                        |
-                          0020           0024           0028           |
-13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-        0016                                                        |
-                       0020           0024           0028           |
-14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-     0016                                                        |
-                    0020           0024           0028           |
-15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-  0016                                                        |
-                 0020           0024           0028           |
-16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-0016                                                        |
-               0020           0024           0028           |
-    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-0016                                                     |
-            0020           0024           0028           |
-    18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-0016                                                  |
-         0020           0024           0028           |
-    19,20    21,22,23,24    25,26,27,28    29,30,31,32|
-0016                                               |
-      0020           0024           0028           |
-    20    21,22,23,24    25,26,27,28    29,30,31,32|
-0016           0024           0028           |
-    21,22,23,24    25,26,27,28    29,30,31,32|
-        0024           0028           |
-22,23,24    25,26,27,28    29,30,31,32|
-     0024           0028           |
-23,24    25,26,27,28    29,30,31,32|
-  0024           0028           |
-24    25,26,27,28    29,30,31,32|
-           0028           |
-25,26,27,28    29,30,31,32|
-        0028           |
-26,27,28    29,30,31,32|
-     0028           |
-27,28    29,30,31,32|
-  0028           |
-28    29,30,31,32|
+        stop(s);
+        if (Ex) ok(s, """
+                                                         0016                                                                    |
+                                                         (0,2)6                                                                  |
+                                                         [9,2]2                                                                  |
+       0004          0008             0012                                0020              0024              0028               |
+       (9,0,0)       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [3,0]1        [4,2]1           [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+2,3,4         5,6,7,8       9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(3,9,0)       (4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                                                         0016                                                                    |
+                                                         (0,2)6                                                                  |
+                                                         [9,2]2                                                                  |
+       0004          0008             0012                                0020              0024              0028               |
+       (9,0,0)       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [3,0]1        [4,2]1           [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+3,4           5,6,7,8       9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(3,9,0)       (4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                                                         0016                                                                    |
+                                                         (0,2)6                                                                  |
+                                                         [9,2]2                                                                  |
+       0004          0008             0012                                0020              0024              0028               |
+       (9,0,0)       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [3,0]1        [4,2]1           [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+4             5,6,7,8       9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(3,9,0)       (4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                                           0016                                                                    |
+                                           (0,2)6                                                                  |
+                                           [9,2]2                                                                  |
+       0008             0012                                0020              0024              0028               |
+       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [4,2]1           [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+5,6,7,8       9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                                           0016                                                                    |
+                                           (0,2)6                                                                  |
+                                           [9,2]2                                                                  |
+       0008             0012                                0020              0024              0028               |
+       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [4,2]1           [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+6,7,8         9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                                           0016                                                                    |
+                                           (0,2)6                                                                  |
+                                           [9,2]2                                                                  |
+       0008             0012                                0020              0024              0028               |
+       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [4,2]1           [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+7,8           9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                                           0016                                                                    |
+                                           (0,2)6                                                                  |
+                                           [9,2]2                                                                  |
+       0008             0012                                0020              0024              0028               |
+       (9,0,2)          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [4,2]1           [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+8             9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(4,9,2)       (7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                             0016                                                                    |
+                             (0,2)6                                                                  |
+                             [9,2]2                                                                  |
+          0012                                0020              0024              0028               |
+          (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+          [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+9,10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(7,9,4)           (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                           0016                                                                    |
+                           (0,2)6                                                                  |
+                           [9,2]2                                                                  |
+        0012                                0020              0024              0028               |
+        (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+        [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+10,11,12        13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(7,9,4)         (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                          0016                                                                    |
+                          (0,2)6                                                                  |
+                          [9,2]2                                                                  |
+       0012                                0020              0024              0028               |
+       (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+11,12          13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(7,9,4)        (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+                          0016                                                                    |
+                          (0,2)6                                                                  |
+                          [9,2]2                                                                  |
+       0012                                0020              0024              0028               |
+       (9,0,4)8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+       [7,4]1                              [10,0]1           [5,2]1            [12,4]1            |
+12             13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+(7,9,4)        (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+            0016                                                                    |
+            (0,2)6                                                                  |
+            [9,2]2                                                                  |
+                             0020              0024              0028               |
+8                            (6,0,0)           (6,0,2)           (6,0,4)2           |
+                             [10,0]1           [5,2]1            [12,4]1            |
+ 13,14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+ (8,9)            (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+         0016                                                                    |
+         (0,2)6                                                                  |
+         [9,2]2                                                                  |
+                          0020              0024              0028               |
+8                         (6,0,0)           (6,0,2)           (6,0,4)2           |
+                          [10,0]1           [5,2]1            [12,4]1            |
+ 14,15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+ (8,9)         (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+      0016                                                                    |
+      (0,2)6                                                                  |
+      [9,2]2                                                                  |
+                       0020              0024              0028               |
+8                      (6,0,0)           (6,0,2)           (6,0,4)2           |
+                       [10,0]1           [5,2]1            [12,4]1            |
+ 15,16      17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+ (8,9)      (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+      0016                                                                    |
+      (0,2)6                                                                  |
+      [9,2]2                                                                  |
+                       0020              0024              0028               |
+8                      (6,0,0)           (6,0,2)           (6,0,4)2           |
+                       [10,0]1           [5,2]1            [12,4]1            |
+ 16         17,18,19,20       21,22,23,24       25,26,27,28        29,30,31,32|
+ (8,9)      (10,6,0)          (5,6,2)           (12,6,4)           (2,6)      |
+           0020              0024             0028              |
+           (0,0)             (0,2)            (0,4)2            |
+           [10,0]1           [5,2]1           [12,4]1           |
+17,18,19,20       21,22,23,24      25,26,27,28       29,30,31,32|
+(10,0,0)          (5,0,2)          (12,0,4)          (2,0)      |
+        0020              0024             0028              |
+        (0,0)             (0,2)            (0,4)2            |
+        [10,0]1           [5,2]1           [12,4]1           |
+18,19,20       21,22,23,24      25,26,27,28       29,30,31,32|
+(10,0,0)       (5,0,2)          (12,0,4)          (2,0)      |
+        0020              0024             0028              |
+        (0,0)             (0,2)            (0,4)2            |
+        [10,0]1           [5,2]1           [12,4]1           |
+19,20          21,22,23,24      25,26,27,28       29,30,31,32|
+(10,0,0)       (5,0,2)          (12,0,4)          (2,0)      |
+        0020              0024             0028              |
+        (0,0)             (0,2)            (0,4)2            |
+        [10,0]1           [5,2]1           [12,4]1           |
+20             21,22,23,24      25,26,27,28       29,30,31,32|
+(10,0,0)       (5,0,2)          (12,0,4)          (2,0)      |
+           0024             0028              |
+           (0,2)            (0,4)2            |
+           [5,2]1           [12,4]1           |
+21,22,23,24      25,26,27,28       29,30,31,32|
+(5,0,2)          (12,0,4)          (2,0)      |
+        0024             0028              |
+        (0,2)            (0,4)2            |
+        [5,2]1           [12,4]1           |
+22,23,24      25,26,27,28       29,30,31,32|
+(5,0,2)       (12,0,4)          (2,0)      |
+       0024             0028              |
+       (0,2)            (0,4)2            |
+       [5,2]1           [12,4]1           |
+23,24        25,26,27,28       29,30,31,32|
+(5,0,2)      (12,0,4)          (2,0)      |
+       0024             0028              |
+       (0,2)            (0,4)2            |
+       [5,2]1           [12,4]1           |
+24           25,26,27,28       29,30,31,32|
+(5,0,2)      (12,0,4)          (2,0)      |
+           0028              |
+           (0,4)2            |
+           [12,4]1           |
+25,26,27,28       29,30,31,32|
+(12,0,4)          (2,0)      |
+        0028              |
+        (0,4)2            |
+        [12,4]1           |
+26,27,28       29,30,31,32|
+(12,0,4)       (2,0)      |
+        0028              |
+        (0,4)2            |
+        [12,4]1           |
+27,28          29,30,31,32|
+(12,0,4)       (2,0)      |
+        0028              |
+        (0,4)2            |
+        [12,4]1           |
+28             29,30,31,32|
+(12,0,4)       (2,0)      |
 29,30,31,32|
 30,31,32|
 31,32|
@@ -2217,9 +2380,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_insertRandom32();
-    test_insert();
-    //test_insert_locked();
+    test_deleteAscending();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
