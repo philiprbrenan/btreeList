@@ -2,6 +2,7 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Record where a lock was obtained to help identify where it should be released
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -1691,7 +1692,10 @@ endmodule
 // D2 Execute                                                                                                           // Execute the code in the current program
 
   void execute ()                                                                                                       // Execute the current code
-   {if (immediate() || !suppressImmediateOnly) return;                                                                  // The code has already been executed interpretively and, optionally, that is all that is required
+   {if (immediate() || !suppressImmediateOnly)                                                                          // The code has already been executed interpretively and, optionally, that is all that is required
+     {checkAllLocksHaveBeenReleased();
+      return;
+     }
     if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
 
     if ( initializedForExecution) if (mainProgram()) stop("Already executed");                                          // The idea is to produce a complete program the first time
@@ -1746,8 +1750,7 @@ endmodule
     if (mainProgram()) if (!generateVerilog) say(f("            Execution: %,12d", steps));                             // Show number of steps unless we are going to print this in during the Verilog process
 
     if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
-    if (locks.size() > 0 && mainProgram()) stop("Not all locks were released:", locks);                                 // Confirm that all locks have been released unless this is a sub program
-
+    checkAllLocksHaveBeenReleased();
     printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
 
     final GenerateVerilog g = new GenerateVerilog();                                                                    // Generate corresponding Verilog code
@@ -2674,18 +2677,19 @@ endmodule
     int size () {return locks.size();}                                                                                  // Number of locks currently open
 
     class Lock                                                                                                          // A lock on an area of memory. It is upto the user to respect the lock and to know to how much memory it applies
-     {int     reads = 0;                                                                                                // The data can have multiple readers at a given ;point in time
-      boolean write = false;                                                                                            // The data can only have one writer at a given time and there must be no readers relying on this data at this point in time
-      int      area = 0;                                                                                                // The index of the memeory area beiong lcoked.  It is up to the calling code to correctly interpret the amount of memory corresponding to this index
+     {int                  reads = 0;                                                                                   // The data can have multiple readers at a given ;point in time
+      boolean              write = false;                                                                               // The data can only have one writer at a given time and there must be no readers relying on this data at this point in time
+      final int             area;                                                                                       // The area being locked
+      final String lockTraceBack;                                                                                       // The location in the code that created the lock
 
-      public String toString()                                                                                          // Print a lock
-       {return f("Read: %d, write: %d, area ^d", reads, write ? 1 : 0, area);
-       }
+      Lock (int Area) {area = Area; lockTraceBack = traceComment();}                                                    // Create a new lock
+
+      public String toString() {return f("Read: %d, write: %d, area %d", reads, write ? 1 : 0, area);}                  // Print a lock
      }
 
     void getReadLock (Program P, int Area)                                                                              // Get a read lock on an area in memory
-     {if (!locks.containsKey(Area)) locks.put(Area, new Lock());                                                        // Create a lock description for this area
-      final Lock l = locks.get(Area); l.area = Area;                                                                    // Address lock
+     {if (!locks.containsKey(Area)) locks.put(Area, new Lock(Area));                                                    // Create a lock description for this area
+      final Lock l = locks.get(Area);                                                                                   // Address lock
       if (!l.write)                                                                                                     // There can be no writes in progress
        {l.reads++;
         P.afterLock(l);
@@ -2694,9 +2698,9 @@ endmodule
      }
 
     void getWriteLock (Program P, int Area)                                                                             // Get a read lock on an area in memory
-     {if (!P.mainProgram()) stop("Sub programs may not acquire write locks");                                             // Sub programs are designed to test the results of the main program so they are not expected to make alterations to data structures and so do not need to acquire write locks
-      if (!locks.containsKey(Area)) locks.put(Area, new Lock());                                                        // Create a lock description for this area
-      final Lock l = locks.get(Area);  l.area = Area;                                                                   // Address lock
+     {if (!P.mainProgram()) stop("Sub programs may not acquire write locks");                                           // Sub programs are designed to test the results of the main program so they are not expected to make alterations to data structures and so do not need to acquire write locks
+      if (!locks.containsKey(Area)) locks.put(Area, new Lock(Area));                                                    // Create a lock description for this area
+      final Lock l = locks.get(Area);                                                                                   // Address lock
       if (!l.write && l.reads == 0)                                                                                     // There can be no other reads or writes in progress
        {l.write = true;
         P.afterLock(l);                                                                                                 // Record another reader
@@ -2752,11 +2756,10 @@ endmodule
 
     public String toString()
      {final StringBuilder s = new StringBuilder();
-      //if (P.programName != null) s.append(f("Locks for: %s\n", P.programName));
-      s.append(f("%5s  %5s  %5s  %5s\n", "#", "Area", "Read", "Write"));
+      s.append(f("%5s  %5s  %5s  %5s  %s\n", "#", "Area", "Read", "Write", "TraceBack"));
       for(Integer L: locks.keySet())
        {final Lock l = locks.get(L);
-        s.append(f("%5d  %5d  %5d  %5d\n", L, l.area, l.reads, l.write ? 1 : 0));
+        s.append(f("%5d  %5d  %5d  %5d  %s\n", L, l.area, l.reads, l.write ? 1 : 0, l.lockTraceBack));
        }
       return ""+s;
      }
@@ -2796,6 +2799,10 @@ endmodule
 
   boolean  hasReadLock (int Area) {return locks(). hasReadLock(Area);}                                                  // Whether a specified area of memory has been read locked
   boolean hasWriteLock (int Area) {return locks().hasWriteLock(Area);}                                                  // Whether a specified area of memory has been write locked
+
+  void checkAllLocksHaveBeenReleased ()                                                                                 // Confirm that all locks have been released unless this is a sub program
+   {if (locks.size() > 0 && mainProgram()) stop("Not all locks were released:", locks);
+   }
 
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
@@ -4006,8 +4013,7 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_lock();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
