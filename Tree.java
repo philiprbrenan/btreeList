@@ -388,7 +388,7 @@ class Tree extends Program                                                      
      }
    }
 
-  final class FindLeaf                                                                                                  // Find the leaf that should contain the specified key.  The leaf is returned with a read lock on it to prevent any modifications of the leaf before the caller has had a chance to process it.  Consequently the caller must release the read lock promptly
+  class FindLeaf                                                                                                        // Find the leaf that should contain the specified key.  The leaf is returned with a read lock on it to prevent any modifications of the leaf before the caller has had a chance to process it.  Consequently the caller must release the read lock promptly
    {final  Bit valid = new Bit ("valid");                                                                               // Whether the search results are valid
     final  Int  key  = new Int ("key");                                                                                 // Search key
     final  Int  leaf = new Int ("leaf index");                                                                          // Leaf that should contain the key
@@ -402,10 +402,10 @@ class Tree extends Program                                                      
        {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {valid.set(); leaf.set(p);                                                                                                   // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
+             {valid.set(); leaf.set(p);                                                                                 // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
              }
             void Else()                                                                                                 // On a branch
-             {final Branch.StepDown d = branch(p).new StepDown(Key);                                                    // Step down details
+             {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down details
               getReadLock(d.node); freeReadLock(p);                                                                     // Transfer the read lock to the leaf or branch stepped to so it cannot be modified while we are reading it
               p.set(d.node);                                                                                            // Step down to next level
               Continue.set();                                                                                           // Continue search
@@ -433,6 +433,13 @@ class Tree extends Program                                                      
       subFinish();
       return ""+s;
      }
+
+    Branch.StepDown down(Int P) {return branch(P).new StepDown(key);}                                                   // Step down to branch indicated by a branch key greater than or equal to the search ley
+   }
+
+  final class FindLeafNext extends FindLeaf                                                                             // Find the leaf that should contain the next key after the specified key.  The leaf is returned with a read lock on it to prevent any modifications of the leaf before the caller has had a chance to process it.  Consequently the caller must release the read lock promptly
+   {FindLeafNext (Int Key) {super(Key);}                                                                                // Find the specified key in a leaf in the tree
+    Branch.StepDown down(Int P) {return branch(P).new StepDownNext(key);}                                               // Step down to branch indicated by a branch key greater than or equal to the search ley
    }
 
   final class FindBranch                                                                                                // Find a branch that contains a specified key
