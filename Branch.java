@@ -118,7 +118,7 @@ class Branch extends Program implements Program.Locatable                       
     return r;                                                                                                           // Return data associated with key
    }
 
-  final class StepDown                                                                                                  // Step down from one layer of the tree to the next lower one
+  class StepDown                                                                                                        // Step down from one layer of the tree to the next lower one
    {final Int   key = new Int();                                                                                        // The key we are stepping down with
     final Int  node = new Int();                                                                                        // The next node down
     final Bint slot = new Bint();                                                                                       // The slot used to step down.  If not set then stepped through top
@@ -130,7 +130,7 @@ class Branch extends Program implements Program.Locatable                       
       return ""+s;
      }
 
-    StepDown (Int Key)                                                                                                  // Return a reference to the next branch down that might contain the specified key
+    StepDown (Int Key)                                                                                                  // Return a reference to the next branch down whose sub tree might contain the specified key
      {key.set(Key);
       final Slots.Find f = slots.new Find(Key);  eqKey.set(f.equal);                                                    // Find result
 
@@ -139,7 +139,7 @@ class Branch extends Program implements Program.Locatable                       
          {node.set(top());
          }
         void Else()
-         {new If (f.equal.or(f.lower))                                                                                  // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
+         {new If (compare(f))                                                                                           // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
            {void Then()
              {slot.set(f.slot.i());                                                                                     // Step through slot
               node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
@@ -156,7 +156,14 @@ class Branch extends Program implements Program.Locatable                       
          }
        };
      }
-   }
+
+    Bit compare(Slots.Find F) {return F.equal.or(F.lower);}                                                             // Find a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
+   } // StepDown
+
+  class StepDownNext extends StepDown                                                                                   // Step down from one layer of the tree to the next lower one looking for the next key beyond this one
+   {StepDownNext (Int Key) {super(Key);}                                                                                // Return a reference to the next branch down whose sub tree that might contain the next key beyond the specified key
+    Bit compare(Slots.Find F) {return F.lower;}                                                                         // Find a key that is greater than the search key. Lower refers to the relative position of the search key versus the found key
+   } // StepDownNext
 
   Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
    {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in branch:", Key, print());              // The key must not already be present
