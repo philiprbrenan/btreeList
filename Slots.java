@@ -945,8 +945,8 @@ class Slots extends Program                                                     
    }
 
   final class Insert                                                                                                    // Results of an insertion
-   {final Int  key      = new Int ("key");                                                                              // The key being inserted
-    final Bint slot     = new Bint();                                                                                   // Slot index referring to the inserted key
+   {final Int      key = new Int ("key");                                                                               // The key being inserted
+    final Bint    slot = new Bint();                                                                                    // Slot index referring to the inserted key
     final Bit inserted = new Bit("inserted");                                                                           // True if the key did not exist prior to the insertion else false
 
     void set(Int Key, Int Slot, boolean Inserted) {key.set(Key); slot.set(Slot); inserted.set(Inserted);}               // Record insertion result
