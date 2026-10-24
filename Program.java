@@ -2,7 +2,6 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Record where a lock was obtained to help identify where it should be released
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
