@@ -944,16 +944,6 @@ class Slots extends Program                                                     
      }
    }
 
-  Bint findGe (Int Key)                                                                                                 // Find the index of the first key in the slots that is either equal to or greater than the specified key else return invalid if there is no such key
-   {final Find f = new Find(Key);                                                                                       // Find the key result
-    final Bint r = new Bint();                                                                                          // If the slots contains keys and one of them is greater than or equal to the search key, then return the index of that key, else return invalid
-    new If (f.equal.or(f.lower))                                                                                        // Found the index of a key that is greater than or equal to the search key
-     {void Then() {r.set                         (f.slot.i()) ;}                                                        // Slot index of found key
-      void Else() {r.copy(usedSlotsToKeys.nextOne(f.slot.i()));}                                                        // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want. Have to use copy because the value might be invalid.
-     };
-    return r;                                                                                                           // Result found if valid, if invalid greater than any key in the slots
-   }
-
   final class Insert                                                                                                    // Results of an insertion
    {final Int  key      = new Int ("key");                                                                              // The key being inserted
     final Bint slot     = new Bint();                                                                                   // Slot index referring to the inserted key
@@ -1937,76 +1927,6 @@ keys     :   11  12  13  15  16  17  18  14
               test_insert2(false);
    }
 
-  static void test_findGe(boolean Ex)
-   {sayCurrentTestName();
-    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
-     {void slotsCode()
-       {insert(new Int(11));
-        insert(new Int(22));
-        insert(new Int(33));
-        insert(new Int(44));
-        insert(new Int(55));
-        insert(new Int(66));
-        insert(new Int(77));
-        insert(new Int(88));
-
-        redistribute();
-        //stop(usedSlotsToKeys);
-        check(print(), """
-Slots    : size:  8, count:  8
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slotsKeys:    0   0   1   0   2   0   3   0   4   0   5   0   6   0   7   0
-keysSlots:    0   2   4   6   8  10  12  14   0   0   0   0   0   0   0   0
-usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .   X   .
-usedKeys :    X   X   X   X   X   X   X   X
-keys     :   11  22  33  44  55  66  77  88
-""");
-        //stop(usedSlotsToKeys);
-        ok(()->usedSlotsToKeys, """
-BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16 |  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0
-One:
-   2   16    8 |  1  1  1  1  1  1  1  1
-   3   24    4 |  1  1  1  1
-   4   28    2 |  1  1
-   5   30    1 |  1
-Zero:
-   1   31    8 |  0  0  0  0  0  0  0  0
-   2   39    4 |  0  0  0  0
-   3   43    2 |  0  0
-   4   45    1 |  0
-""");
-
-        findGe(new Int(11)).ok( 0);
-        findGe(new Int(22)).ok( 2);
-        findGe(new Int(33)).ok( 4);
-        findGe(new Int(44)).ok( 6);
-        findGe(new Int(55)).ok( 8);
-        findGe(new Int(66)).ok(10);
-        findGe(new Int(77)).ok(12);
-        findGe(new Int(88)).ok(14);
-
-        findGe(new Int(10)).ok(( 0));
-        findGe(new Int(20)).ok(( 2));
-        findGe(new Int(30)).ok(( 4));
-        findGe(new Int(40)).ok(( 6));
-        findGe(new Int(50)).ok(( 8));
-        findGe(new Int(60)).ok((10));
-        findGe(new Int(70)).ok((12));
-        findGe(new Int(80)).ok((14));
-        findGe(new Int(90)).notValid().ok(true);
-
-        maxSteps(9_999_999);
-        execute();
-       }
-     };
-   }
-
-  static void test_findGe()
-   {          test_findGe(true);
-              test_findGe(false);
-   }
-
   static void test_splitRightEven(boolean Ex)
    {sayCurrentTestName();
     final int N = 8;
@@ -2414,14 +2334,14 @@ keys     :    0   0   0   0
     if (rtg(13)) test_findRight();
     if (rtg(14)) test_insert();
     if (rtg(15)) test_insert2();
-    if (rtg(16)) test_findGe();
-    if (rtg(17)) test_splitRightEven();
-    if (rtg(18)) test_splitLeftEven();
-    if (rtg(19)) test_splitRightOdd();
-    if (rtg(20)) test_splitLeftOdd();
-    if (rtg(21)) test_clear();
-    if (rtg(22)) test_insertKnown();
-    if (rtg(23)) test_delete();
+    if (rtg(16)) test_splitRightEven();
+    if (rtg(17)) test_splitLeftEven();
+    if (rtg(18)) test_splitRightOdd();
+    if (rtg(29)) test_splitLeftOdd();
+    if (rtg(20)) test_clear();
+    if (rtg(21)) test_insertKnown();
+    if (rtg(22)) test_delete();
+    if (rtg(23)) {}
 //  test_stuck();
    }
 
