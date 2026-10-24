@@ -2,10 +2,8 @@
 // Btree with stucks implemented as distributed sparse slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Delete of the last element of a leaf must update the point at which we last went left in the tree
 // Optimize merges by merging into the most full node from the least full node
-// Ensure that the splitting key is equal to the largest key in the sub tree so that the next greater element can easily be found without the complexities of traversing.
-// Imporve FinDLeaf to match FindBranch
+// Improve FindLeaf to match FindBranch
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -333,6 +331,63 @@ class Tree extends Program                                                      
     return data;                                                                                                        // Will be set to invalid unless the key was found in which case it will contain the data associated with the key
    }
 
+  final class FirstEntry                                                                                                // Locate the first entry in the tree
+   {final  Bint leaf = new Bint ("leaf index");                                                                         // First leaf
+    final  Bint key  = new Bint ("key");                                                                                // First key in first leaf
+    final  Int  data = new  Int ("data");                                                                               // Data associated with first key
+
+    FirstEntry  ()                                                                                                      // Locate the first entry in the tree
+     {subStart("Tree.FirstEntry");
+      final Int p = root().dup();                                                                                       // Start at root
+      getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
+
+      new For(mnl())                                                                                                    // Step down from branch to branch
+       {void body(Int Index, Bit Continue)
+         {new If (isLeaf(p))                                                                                            // On a leaf
+           {void Then()
+             {leaf.set(p);                                                                                              // Record leaf
+              final Leaf  l = leaf(p);                                                                                  // Details of leaf
+              final Slots s = l.slots;                                                                                  // Slots for leaf
+              final Bint  f = s.usedSlotsToKeys.firstOne();                                                             // First used slot is the first entry
+              new If (f)
+               {void Then()
+                 {key .set(       s.getSlotToKeyValue(f.i()));                                                          // Key from first slot
+                  data.set(l.data(s.getSlotToKeyIndex(f.i())));                                                         // Data associated with key
+                 }
+               };
+             }
+            void Else()                                                                                                 // On a branch
+             {final Branch b = branch(p);                                                                               // Branch
+              final Slots  s = b.slots;                                                                                 // Slots for branch
+              final Bint   f = s.usedSlotsToKeys.firstOne();                                                            // First used slot is the first entry
+              final Int    d = new Int("down");
+              new If (f)                                                                                                // Body of branch is not empty
+               {void Then() {d.set(b.data(s.getSlotToKeyIndex(f.i())));}                                                // Step to first child
+                void Else() {d.set(b.top());}                                                                           // Step through top as there are no entries in the body of the branch
+               };
+              getReadLock(d); freeReadLock(p); p.set(d);                                                                // Lock child, unlock parent, step down
+              Continue.set();                                                                                           // Continue traverse towards a leaf
+             }
+           };
+         }
+       };
+
+      if (immediate && !leaf.valid().b()) stop("Find fell off the end of tree after this many searches:", mnl());
+      subFinish();
+     }
+
+    public String toString ()                                                                                           // Print the find results
+     {if (!immediate()) stop("Can only print first entry in immediate mode");
+      subStart("Tree.FirstEntry.toString");
+
+      final StringBuilder s = new StringBuilder("First Entry: ");
+      if (leaf.valid().b()) s.append(f("Leaf : %2d, key : %2d, data : %2d", leaf.i(), key.i(), data.i()));
+      s.append("\n");
+      subFinish();
+      return ""+s;
+     }
+   }
+
   final class FindLeaf                                                                                                  // Find the leaf that should contain the specified key.  The leaf is returned with a read lock on it to prevent any modifications of the leaf before the caller has had a chance to process it.  Consequently the caller must release the read lock promptly
    {final  Bit valid = new Bit ("valid");                                                                               // Whether the search results are valid
     final  Int  key  = new Int ("key");                                                                                 // Search key
@@ -341,14 +396,13 @@ class Tree extends Program                                                      
     FindLeaf  (Int Key)                                                                                                 // Find the specified key in a leaf in the tree
      {subStart("Tree.findLeaf");
       final Int p = root().dup();                                                                                       // Start at root
-      getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
-      start(Key);
+      getReadLock(p); key.set(Key); valid.clear();                                                                      // Lock the root so no-one can modify it while we are reading it
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {set(p);                                                                                                   // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
+             {valid.set(); leaf.set(p);                                                                                                   // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(Key);                                                    // Step down details
@@ -362,13 +416,6 @@ class Tree extends Program                                                      
 
       if (immediate && !valid.b()) stop("Find fell off the end of tree after this many searches:", mnl());
       subFinish();
-     }
-
-    void start (Int Key) {key.set(Key); valid.clear();}                                                                 // Start the find operation
-
-    void set (Int Leaf)                                                                                                 // Set the find results
-     {valid.set();
-      leaf.set(Leaf);
      }
 
     public String toString ()                                                                                           // Print the find results
@@ -1527,7 +1574,9 @@ Height        :    1
 
         new ForCount(new Int(N))
          {void body(Int Index)
-           {delete(Index.Inc());
+           {final Int k = Index.Inc();
+            final FirstEntry f = new FirstEntry(); f.key.ok(k); freeReadLock(f.leaf.i());
+            delete(k);
             if (Ex) s.append(dump());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
             dumpProgramState("BBBB");
@@ -1539,6 +1588,7 @@ Height        :    1
              }
            }
          };
+        final FirstEntry F = new FirstEntry(); F.key.valid().ok(false); freeReadLock(F.leaf.i());
 
         //stop(m);
         ok(()->m, """
@@ -2616,7 +2666,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_rootFanOut3();
+    test_deleteAscending();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
