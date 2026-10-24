@@ -84,8 +84,8 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   public Bint getLocation ()              {return at;}                                                                  // The location of this node in memory
-  Bit        empty ()                     {return slots.empty();}                                                       // Is the branch empty
-  Bit         full ()                     {return slots.full ();}                                                       // Is the branch full
+  Bit        empty ()                     {return slots.empty();}                                                       // Is the body of the branch empty
+  Bit         full ()                     {return slots.full ();}                                                       // Is the body of the branch full
   Int        count ()                     {return slots.count();}                                                       // Number of key/data pairs in the branch
   int      maxSize ()                     {return maxSize;}                                                             // Number of key/data pairs in the branch
   Int         data (Int Index)            {return refData.getInt(Index);}                                               // Get data at an index
