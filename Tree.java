@@ -460,6 +460,38 @@ class Tree extends Program                                                      
      }
    }
 
+  abstract class Traverse                                                                                               // Traverse the tree processing each key, data pair in ascending order with the  option to terminate processing after any key
+   {Traverse ()
+     {final FirstEntry f = new FirstEntry();                                                                            // Start with the first key
+      new If (f.key)
+       {void Then()
+         {final Int k = new Int("Key", f.key.i());
+          final Bit c = new Bit("Continue").clear();
+          traverse(new Int(0), f.key.i(), f.data, c);
+          freeReadLock(f.leaf.i());
+
+          new If (c)                                                                                                    // Continue if caller requests more than thr first key
+           {void Then()
+             {new For(Integer.MAX_VALUE)                                                                                // Each following key as long as the caller shows interest
+               {void body(Int Index, Bit Continue)
+                 {final NextEntry n = new NextEntry(k);
+                  new If (n.key)
+                   {void Then() {traverse(Index.Inc(), n.key.i(), n.data, Continue); k.set(n.key.i());}
+                   };
+                  freeReadLock(n.leaf.i());
+                 }
+               };
+             }
+           };
+         }
+        void Else()                                                                                                     // Free leaf even though it was empty
+         {freeReadLock(f.leaf.i());
+         }
+       };
+     }
+    abstract void traverse(Int Index, Int Key, Int Data, Bit Continue);                                                 // Override to process each key, data pair
+   }
+
   class FindLeafForKey                                                                                                  // Find the leaf that should contain the specified key.  The leaf is returned with a read lock on it to prevent any modifications of the leaf before the caller has had a chance to process it.  Consequently the caller must release the read lock promptly
    {final  Int  key  = new Int  ("key");                                                                                // Search key
     final  Bint leaf = new Bint ("leaf index");                                                                         // Leaf that should contain the key
@@ -1097,7 +1129,7 @@ class Tree extends Program                                                      
 // 1,2,3,4       5,6,7,8       9,10,11,12       13,14,15,16     17,18,19,20      21,22,23,24     25,26,27,28      29,30,31,32|
 // (3,9,0)       (4,9,2)       (7,9,4)          (8,9)           (10,6,0)         (5,6,2)         (12,6,4)         (2,6)      |
 
-  class Traverse                                                                                                        // Traverse the tree in order by maintaining a stack of outstanding actions
+  class TraverseTree                                                                                                    // Traverse the tree in order by maintaining a stack of outstanding actions
    {Slots slots(int Index, int Keys)                                                                                    // Slots for a node by index - the slots are always located starting at the second memory unit of the node
      {final int p = Index * build.nodeSize+1;
       return new Slots(new Slots.Build().numberOfKeys(Keys).memory(refNodes.step(p)).parent(program()));
@@ -1145,7 +1177,7 @@ class Tree extends Program                                                      
        }
      }
 
-    Traverse ()                                                                                                         // Traverse the tree visiting each leaf and branch in order
+    TraverseTree ()                                                                                                     // Traverse the tree visiting each leaf and branch in order
      {immediateModeCheck();
       if (isLeaf(0)) pLeaf    (0, 0, 0, 0);
       else           traverse (0, 0, 0);
@@ -1189,7 +1221,7 @@ class Tree extends Program                                                      
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
      {subStart("Tree.Print");
 
-      new Traverse()
+      new TraverseTree()
        {@Override void leaf(int Index, int Depth, int Parent, int Slot, Stack<Integer> Keys)                            // Process a leaf
          {final StringJoiner k = new StringJoiner(",");
           for(Integer i: Keys) k.add(""+i);
@@ -2745,7 +2777,7 @@ Leaf           size:   4, count:   2
     say("AAAA", s);
    }
 
-  static void test_nextKey (boolean Ex)
+  static void test_traverse (boolean Ex)
    {sayCurrentTestName();
 
     final int  N = 16;
@@ -2773,35 +2805,13 @@ Leaf           size:   4, count:   2
 (3,9,0)       (4,9,2)       (7,9,4)         (8,9)        (10,6,0)       (5,6,2)       (12,6,4)         (2,6)  |
 """);
 
-        final FindLeafForNextKey n__1 = new FindLeafForNextKey(new Int(  1)); freeReadLock(n__1.leaf.i()); n__1.leaf.i().ok( 3);
-        final FindLeafForNextKey n_10 = new FindLeafForNextKey(new Int( 10)); freeReadLock(n_10.leaf.i()); n_10.leaf.i().ok (3);
-        final FindLeafForNextKey n_11 = new FindLeafForNextKey(new Int( 11)); freeReadLock(n_11.leaf.i()); n_11.leaf.i().ok( 3);
-        final FindLeafForNextKey n_20 = new FindLeafForNextKey(new Int( 20)); freeReadLock(n_20.leaf.i()); n_20.leaf.i().ok( 4);
-        final FindLeafForNextKey n_21 = new FindLeafForNextKey(new Int( 21)); freeReadLock(n_21.leaf.i()); n_21.leaf.i().ok( 4);
-        final FindLeafForNextKey n_80 = new FindLeafForNextKey(new Int( 80)); freeReadLock(n_80.leaf.i()); n_80.leaf.i().ok(10);
-        final FindLeafForNextKey n200 = new FindLeafForNextKey(new Int(200)); freeReadLock(n200.leaf.i()); n200.leaf.i().ok( 2);
-
-        final FirstEntry f = new FirstEntry();
-        new If (f.key)
-         {void Then()
-           {final Int    k = new Int("Key", f.key.i());
-            k.ok(10);
-            new For(100)
-             {void body(Int Index, Bit Continue)
-               {final NextEntry n = new NextEntry(k);
-                new If (n.key)
-                 {void Then()
-                   {k.set(n.key.i());
-                    k.ok(Index.Add(2).mul(10));
-                    Continue.set();
-                   }
-                 };
-                freeReadLock(n.leaf.i());
-               }
-             };
+        new Traverse()
+         {void traverse(Int Index, Int Key, Int Data, Bit Continue)
+           {Key .ok(Index.Add(1).mul(10));
+            Data.ok(Index.Add(1).mul(11));
+            Continue.set();
            }
          };
-        freeReadLock(f.leaf.i());
 
         maxSteps(9_999_999);
         execute();
@@ -2809,9 +2819,9 @@ Leaf           size:   4, count:   2
      };
    }
 
-  static void test_nextKey ()
-   {          test_nextKey(true);
-              test_nextKey(false);
+  static void test_traverse ()
+   {          test_traverse(true);
+              test_traverse(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -2829,13 +2839,13 @@ Leaf           size:   4, count:   2
     if (rtg(12)) test_rootFanOut2();
     if (rtg(13)) test_rootFanOut3();
     if (rtg(14)) test_insert_locked();
-    if (rtg(15)) test_nextKey();
+    if (rtg(15)) test_traverse();
     if (rtg(16)) {}
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_nextKey();
+    test_traverse();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
