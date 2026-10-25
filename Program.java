@@ -223,7 +223,7 @@ public class Program extends Test                                               
       if (Start == null) index.zero(); else index.set(Start);                                                           // Start index
 
       if (immediate())                                                                                                  // Immediate execution
-       {for(int i : range(index.i(), End.i()))                                                                          // Iterate over the specified range
+       {for(int i = index.i(), N = End.i(); i < N; ++i)                                                                 // Iterate over the specified range
          {body(index, cont.clear());                                                                                    // Execute the loop body
           index.inc();                                                                                                  // Set the index to each element of the specified range
           if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation has been requested
@@ -267,7 +267,7 @@ public class Program extends Test                                               
       if (Start == null) index.zero(); else index.set(Start);                                                           // Start index
 
       if (immediate())                                                                                                  // Immediate execution
-       {for(int i : range(index.i(), End.i()))                                                                          // Iterate over the specified range
+       {for(int i = index.i(), N = End.i(); i < N; ++i)                                                                 // Iterate over the specified range
          {body(index);                                                                                                  // Execute the loop
           index.inc();                                                                                                  // Increment loop counter
          }
