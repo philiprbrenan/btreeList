@@ -831,20 +831,17 @@ class Slots extends Program                                                     
 
     StringBuilder print() {return new StringBuilder(""+this);}
 
-
-    Find (Int Key)                                                                                                      // Find the location of the specified search key in the slots
+    Find (Int Key)                                                                                                      // Find the location of the specified search key in the slots by stepping down from teh top of the one tree checking first the left sub tree then the right to successively narrow the range in which the equal key should appear
      {final BitSet u = usedSlotsToKeys;
-//    final Find   f = new Find();
-//  f.slot.invalidate();                                                                                                // Show that nothing has been found yet
 
       new If (empty())                                                                                                  // Nothing to find if all the slots are empty
        {void Then()
          {set(Zero, new Bit(false), new Bit(false));                                                                    // Empty
          }
         void Else()                                                                                                     // Not empty
-         {final Int p = u.topOne();                                                                                     // Position in ones tree
-          final Int l = u.lowOne (p);                                                                                   // Index of lower bound in slots
-          final Int r = u.highOne(p);                                                                                   // Index of upper bound in slots
+         {final Int p = u.topOne();                                                                                     // Position in ones tree - start at the top
+          final Int l = u.lowOne (p);                                                                                   // Index of lower bound in slots - start at the slot referring to the lowest key
+          final Int r = u.highOne(p);                                                                                   // Index of upper bound in slots - start at the slot referring to the highest key
           final Int L = getSlotToKeyValue(l);                                                                           // Value of Key at lower bound of search
           final Int R = getSlotToKeyValue(r);                                                                           // Value of key at upper bound of search
 
@@ -860,12 +857,12 @@ class Slots extends Program                                                     
                 void Else()
                  {new For(u.logBitSize1())                                                                              // Step down through ones tree narrowing the search range as we go
                    {void body(Int Index, Bit Continue)
-                     {new If (Key.lt(L))
+                     {new If (Key.lt(L))                                                                                // Search key is less than the lower bound
                        {void Then()
                          {set(l, new Bit(true), new Bit(false));                                                        // Lower than the lower bound
                          }
-                        void Else()
-                         {new If (Key.gt(R))
+                        void Else()                                                                                     // Search key is equal to or greater than the lower bound
+                         {new If (Key.gt(R))                                                                            // Search key is greater then the upper bound
                            {void Then()
                              {set(r, new Bit(false), new Bit(true));                                                    // Higher than the upper bound
                              }
@@ -942,7 +939,72 @@ class Slots extends Program                                                     
          }
        };
      }
-   }
+   } // Find
+
+  final class FindGe                                                                                                    // Find the slot referencing the first key greater or equal to a search key
+   {final Bint slot = new Bint();                                                                                       // Slot found  containing the first key greater than or equal to a specified key if such a key exists
+
+    FindGe (Int Key)                                                                                                    // Find the slot referencing the first key greater or equal to a search key
+     {final BitSet u = usedSlotsToKeys;
+
+      new If (empty().Flip())                                                                                           // Nothing to find if all the slots are empty
+       {void Then()                                                                                                     // Not empty
+         {final Int p = u.topOne();                                                                                     // Position in ones tree - start at the top
+          final Int l = u.lowOne (p);                                                                                   // Index of lower bound in slots - start at the slot referring to the lowest key
+          final Int r = u.highOne(p);                                                                                   // Index of upper bound in slots - start at the slot referring to the highest key
+          final Int L = getSlotToKeyValue(l);                                                                           // Value of Key at lower bound of search
+          final Int R = getSlotToKeyValue(r);                                                                           // Value of key at upper bound of search
+          new If (Key.le(L))
+           {void Then()                                                                                                 // Less than or equal to lowest key in the slots so this is the slot referring to the smallest key greater than or equal to the search key as there are no smaller keys available
+             {slot.set(l);
+             }
+            void Else()
+             {new If (Key.eq(R))                                                                                        // Equal to the greatest key in the slots so there cannot be a smaller key that is greater than or equal to the search key
+               {void Then() {slot.set(r);}
+                void Else()
+                 {new If (Key.gt(R))                                                                                    // Greater than greatest key in the slots so there is no key in the slots that is greater then or equal to the search key
+                   {void Then() {}
+                    void Else()
+                     {new For(u.logBitSize())                                                                           // Step down through ones tree narrowing the search range as we go
+                       {void body(Int Index, Bit Continue)
+                         {new If (u.canGoLeftToOne(p))                                                                  // Search the left child range if possible
+                           {void Then()
+                             {final Int lp = u.childLowOne    (p);                                                      // Upper end of left child range
+                              final Int lr = u.highOne        (lp);                                                     // Index of upper end of left child range
+                              final Int lR = getSlotToKeyValue(lr);                                                     // Value of key at upper end of left child range
+
+                              new If (Key.eq(lR))                                                                       // Found at upper end of left child range
+                               {void Then() {slot.set(lr);}                                                             // Equals current upper end of range
+                                void Else()                                                                             // Search sub ranges below left child range
+                                 {new If (Key.lt(lR))                                                                   // Lower than upper bound of left child
+                                   {void Then() {p.set(lp); slot.set(p);}                                               // Make the left child the new parent of the search
+                                    void Else() {p.set(u.childHighOne(p));}                                             // The search key is greater than the left child range, yet we know it is within the parent range, so it must be in the upper child range
+                                   };
+                                  Continue.set();                                                                       // Continue the search
+                                 }
+                               };
+                             }
+                            void Else()                                                                                 // No left child, but within parent range so must be in right child range
+                             {p.set(u.childHighOne(p)); slot.set(p);                                                    // The search key is greater than the left child range, yet we know it is within the parent range, so it must be in the upper child range
+                              Continue.set();                                                                           // Continue the search
+                             }
+                           };
+                         }
+                       };
+                     }
+                   };
+                 }
+               };
+             }
+           };
+         }
+       };
+     }
+
+    public String toString ()
+     {return "FindGe(" + "slot=" + slot + ")";
+     }
+   } // FindGe
 
   final class Insert                                                                                                    // Results of an insertion
    {final Int      key = new Int ("key");                                                                               // The key being inserted
@@ -1722,6 +1784,73 @@ Zero:
               test_find(false);
    }
 
+  static void test_findGe(boolean Ex)
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+     {void slotsCode()
+       {putSlotToKeys(new Int( 0), One);
+        putSlotToKeys(new Int( 2), new Int(3));
+        putSlotToKeys(new Int( 4), new Int(5));
+        putSlotToKeys(new Int(15), Zero);
+                                                 count().ok(0);
+        putKey       (new Int( 1), new Int(11)); count().ok(1);
+        putKey       (new Int( 3), new Int(22)); count().ok(2);
+        putKey       (new Int( 5), new Int(33)); count().ok(3);
+        putKey       (new Int( 0), new Int(44)); count().ok(4);
+
+        final Slots s = this;
+        //stop(s);
+        check(print(), """
+Slots    : size:  8, count:  4
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    1   0   3   0   5   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:   15   0   0   2   0   4   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   .   X   .   X   .   .   .   .   .   .   .   .   .   .   X
+usedKeys :    X   X   .   X   .   X   .   .
+keys     :   44  11   0  22   0  33   0   0
+""");
+
+       //stop(s.usedSlotsToKeys);
+       ok(()->s.usedSlotsToKeys, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   1    0   16 |  1  0  1  0  1  0  0  0  0  0  0  0  0  0  0  1
+One:
+   2   16    8 |  1  1  1  0  0  0  0  1
+   3   24    4 |  1  1  0  1
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  0  0  0  0  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
+""");
+
+        final FindGe f_1 = new FindGe(new Int( 1)); f_1.slot.ok(0);
+        final FindGe f10 = new FindGe(new Int(10)); f10.slot.ok(0);
+        final FindGe f11 = new FindGe(new Int(11)); f11.slot.ok(0);
+        final FindGe f12 = new FindGe(new Int(12)); f12.slot.ok(2);
+        final FindGe f21 = new FindGe(new Int(21)); f21.slot.ok(2);
+        final FindGe f22 = new FindGe(new Int(22)); f22.slot.ok(2);
+        final FindGe f23 = new FindGe(new Int(23)); f23.slot.ok(4);
+        final FindGe f32 = new FindGe(new Int(32)); f32.slot.ok(4);
+        final FindGe f33 = new FindGe(new Int(33)); f33.slot.ok(4);
+        final FindGe f34 = new FindGe(new Int(34)); f34.slot.ok(15);
+        final FindGe f43 = new FindGe(new Int(43)); f43.slot.ok(15);
+        final FindGe f44 = new FindGe(new Int(44)); f44.slot.ok(15);
+        final FindGe f45 = new FindGe(new Int(45)); f45.slot.notValid().ok();
+
+        maxSteps(9_999_999);
+        execute();
+       }
+     };
+   }
+
+  static void test_findGe()
+   {          test_findGe(true);
+              test_findGe(false);
+   }
+
   static void test_findRight(boolean Ex)                                                                                // Same as find but with the slots on the right
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
@@ -2331,22 +2460,23 @@ keys     :    0   0   0   0
     if (rtg(10)) test_mergeFromRightOdd();
     if (rtg(11)) test_mergeFromLeftOdd();
     if (rtg(12)) test_find();
-    if (rtg(13)) test_findRight();
-    if (rtg(14)) test_insert();
-    if (rtg(15)) test_insert2();
-    if (rtg(16)) test_splitRightEven();
-    if (rtg(17)) test_splitLeftEven();
-    if (rtg(18)) test_splitRightOdd();
-    if (rtg(29)) test_splitLeftOdd();
-    if (rtg(20)) test_clear();
-    if (rtg(21)) test_insertKnown();
-    if (rtg(22)) test_delete();
-    if (rtg(23)) {}
+    if (rtg(13)) test_findGe();
+    if (rtg(14)) test_findRight();
+    if (rtg(15)) test_insert();
+    if (rtg(16)) test_insert2();
+    if (rtg(17)) test_splitRightEven();
+    if (rtg(18)) test_splitLeftEven();
+    if (rtg(29)) test_splitRightOdd();
+    if (rtg(20)) test_splitLeftOdd();
+    if (rtg(21)) test_clear();
+    if (rtg(22)) test_insertKnown();
+    if (rtg(23)) test_delete();
 //  test_stuck();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    //test_findGe();
    }
 
 // perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList"
