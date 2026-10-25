@@ -832,7 +832,7 @@ class Slots extends Program                                                     
     StringBuilder print() {return new StringBuilder(""+this);}
 
 
-    Find (Int Key)                                                                                                      // Find a key in the slots
+    Find (Int Key)                                                                                                      // Find the location of the specified search key in the slots
      {final BitSet u = usedSlotsToKeys;
 //    final Find   f = new Find();
 //  f.slot.invalidate();                                                                                                // Show that nothing has been found yet
@@ -870,7 +870,7 @@ class Slots extends Program                                                     
                              {set(r, new Bit(false), new Bit(true));                                                    // Higher than the upper bound
                              }
                             void Else()                                                                                 // Search range
-                             {new If (u.canGoLeftToOne(p))                                                              // Go left if possible  to search first part of range if it exists
+                             {new If (u.canGoLeftToOne(p))                                                              // Go left if possible to search first part of range if it exists
                                {void Then()
                                  {final Int lp = u.childLowOne    (p);                                                  // Upper end of left range
                                   final Int lr = u.highOne        (lp);                                                 // Index of upper end of range
