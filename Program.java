@@ -566,6 +566,7 @@ public class Program extends Test                                               
        };
       return this;
      }
+    Bit ok () {return ok(true);}                                                                                        // Default for ok is that the value of the bit is "true"
 
     Bit ok (Bit Value)                                                                                                  // Memory trace from Java makes this test redundant in Verilog if the Verilog trace matches the Java trace  and so there will be an empty instruction generated in the Verilog to "regulate the service"
      {final Bit got = this;
