@@ -136,8 +136,15 @@ public class Program extends Test                                               
   void parentProgramCheck () {if (program() != program().program()) stop("Parent program not set to parent program");}  // Check that code is being written to the expected program
   Locks             locks () {return program().locks;}                                                                  // Locks are global
   boolean     mainProgram () {return subProgramOf == null;}                                                             // A main program rather than a sub program
-  void      afterLock (Locks.Lock Lock)  {}                                                                         // Called after each lock operation executed in the current program so that the current state of play can be checked programmatically
+  void          afterLock (Locks.Lock Lock)  {}                                                                         // Called after each lock operation executed in the current program so that the current state of play can be checked programmatically
   Stack<Program> subPrograms () {return program().subPrograms;}                                                         // Address the sub programs dependent on this program
+
+  void immediateModeCheck ()                                                                                            // Check that code is being executed in immediate mode
+   {final String m = "Immediate mode only, cannot be run in delayed execution mode";
+    if (!immediate())
+     {if (executing != null && executing.traceBack != null) stop(m+" from: "+executing.traceBack); else stop(m);
+     }
+   }
 
   void ai ()                                                                                                            // An executing program cannot be extended by adding new data or instructions
    {final I      i = executing();
