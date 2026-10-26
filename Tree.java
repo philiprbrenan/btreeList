@@ -198,9 +198,9 @@ class Tree extends Program                                                      
            {void Then() {f.constant(count().ge(leafFanOut));}                                                           // The amount of fanout requested for leaves close to the root
             void Else() {f.constant(F);}                                                                                // For other levels use the normal definition of full
            };
-          return f;
+          return f.constant();
          }
-        return F;                                                                                                       // Revert to normal definition of full - i.e. when the branch is actually full
+        return F.constant();                                                                                            // Revert to normal definition of full - i.e. when the branch is actually full
        }
 
       Int mergeLimit ()                                                                                                 // Maximum size of merge
@@ -239,9 +239,9 @@ class Tree extends Program                                                      
            {void Then() {f.constant(count().gt(branchFanOut));}                                                         // The amount of fan out requested for branches close to the root
             void Else() {f.constant(F);}                                                                                // For other levels use the normal definition of full
            };
-          return f;
+          return f.constant();
          }
-        return F;                                                                                                       // Revert to normal definition of full - i.e. when the branch is actually full
+        return F.constant();                                                                                            // Revert to normal definition of full - i.e. when the branch is actually full
        }
 
       Int mergeLimit ()                                                                                                 // Maximum size of merge
