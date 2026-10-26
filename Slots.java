@@ -719,8 +719,8 @@ class Slots extends Program                                                     
     Int insert(Int Key)                                                                                                 // Insert a key into the slots in light of the find result and return the slot chosen. The slots are assumed to be not empty.
      {final Int  P = new Int();                                                                                         // The slot into which the key was inserted
       final Find f = this;                                                                                              // Find nearest existing key in slots
-      final Bint K = usedKeys.firstZero();                                                                              // Position for key in key slots
-      final Int  s = new Int(f.slot.i());                                                                               // Nearest existing key slot
+      final Bint K = usedKeys.firstZero().dup();                                                                        // Position for key in key slots
+      final Int  s = new Int(f.slot.i()).dup();                                                                         // Nearest existing key slot
       final Int  p = locateNearestFreeSlotToKey(s, f.lower).dup();                                                      // Start at absolute position of nearest free slot
 
       if (immediate() && empty().b()) stop("Insert after find requires a non empty set of slots");                      // The slots must have at least one element
@@ -837,11 +837,11 @@ class Slots extends Program                                                     
          {set(Zero, new Bit(false), new Bit(false));                                                                    // Empty
          }
         void Else()                                                                                                     // Not empty
-         {final Int p = u.topOne();                                                                                     // Position in ones tree - start at the top
-          final Int l = u.lowOne (p);                                                                                   // Index of lower bound in slots - start at the slot referring to the lowest key
-          final Int r = u.highOne(p);                                                                                   // Index of upper bound in slots - start at the slot referring to the highest key
-          final Int L = getSlotToKeyValue(l);                                                                           // Value of Key at lower bound of search
-          final Int R = getSlotToKeyValue(r);                                                                           // Value of key at upper bound of search
+         {final Int p = u.topOne().dup();                                                                                     // Position in ones tree - start at the top
+          final Int l = u.lowOne (p).dup();                                                                                   // Index of lower bound in slots - start at the slot referring to the lowest key
+          final Int r = u.highOne(p).dup();                                                                                   // Index of upper bound in slots - start at the slot referring to the highest key
+          final Int L = getSlotToKeyValue(l).dup();                                                                           // Value of Key at lower bound of search
+          final Int R = getSlotToKeyValue(r).dup();                                                                           // Value of key at upper bound of search
 
           new If (Key.eq(L))
            {void Then()                                                                                                 // Equal to low bound of search
