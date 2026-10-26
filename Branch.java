@@ -72,7 +72,7 @@ class Branch extends Program implements Program.Locatable                       
     refTop        = unitMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
     refLevel      = unitMemoryRef.step(m.posLevel);                                                                     // Level of this branch in the tree.  The first layer of branches above the leaves has level one, the next layer level two and so on, all the way up to the root
     refData       = unitMemoryRef.step(m.posData);                                                                      // Slots in use
-    if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
+    if (build.at != null) at.constant(build.at);                                                                        // The location of the leaf if supplied
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).memory(refSlots).parent(program()));              // Slots for branch
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
    }
