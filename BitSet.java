@@ -173,7 +173,7 @@ public class BitSet extends Program                                             
 
   void setOnePath (Int Index)                                                                                           // Set bits along the path from the indexed bit to the root of the ones tree
    {subStart("Bitset.setOnePath");
-    final Int p = parentOne(Index);                                                                                     // Position in ones tree
+    final Int p = parentOne(Index).dup();                                                                               // Position in ones tree
     new For(logBitSize())                                                                                               // Set bits along the path to the root of the ones tree
      {void body(Int Index, Bit Continue)
        {new If (getBitNC(p).flip())                                                                                     // Is the bit not already set
@@ -187,12 +187,12 @@ public class BitSet extends Program                                             
 
   void clearOnePath (Int Index)                                                                                         // Clear bits along the path to the root of the ones tree if both children are zero
    {subStart("Bitset.clearOnePath");
-    final Int p = parentOne(Index);                                                                                     // Position in ones tree
+    final Int p = parentOne(Index).dup();                                                                               // Position in ones tree
     new For(logBitSize())
      {void body(Int Index, Bit Continue)
        {new If (getBitNC(p))                                                                                            // Bit might need to be cleared
          {void Then()
-           {final Int q = childLowOne(p);
+           {final Int q = childLowOne(p).dup();
             new If (getBitNC(q).flip())                                                                                 // Both child bits are clear so the parent should be clear as well
              {void Then()
                {new If (getBitNC(q.inc()).flip())
@@ -210,8 +210,8 @@ public class BitSet extends Program                                             
 
   private void setZeroPath (Int Index)                                                                                  // There is a one in the actual bits below this position in the zeros tree
    {subStart("Bitset.setZeroPath");
-    final Int p = parentZero(Index);                                                                                    // Parent position in zeros tree
-    final Int q = childLowZero(p);                                                                                      // Children in actual bits
+    final Int p = parentZero(Index).dup();                                                                              // Parent position in zeros tree
+    final Int q = childLowZero(p).dup();                                                                                // Children in actual bits
     new If (getBitNC(q))                                                                                                // Both actual bits are one so the parent must be zero indicating no zeros
      {void Then()
        {new If (getBitNC(q.inc()))
@@ -221,7 +221,7 @@ public class BitSet extends Program                                             
 
             new For(logBitSize1())                                                                                      // Remaining possible parents
              {void body(Int Index, Bit Continue)
-               {final Int q = childLowZero(p);                                                                          // Children of parent
+               {final Int q = childLowZero(p).dup();                                                                    // Children of parent
                 new If (getBitNC(q))                                                                                    // Both children are zero so the parent must be zero also
                  {void Then()
                    {new If (getBitNC(q.inc()))
@@ -245,7 +245,7 @@ public class BitSet extends Program                                             
 
   private void clearZeroPath (Int Index)                                                                                // There is a zero in the actual bits under this position in the zeros tree
    {subStart("Bitset.clearZeroPath");
-    final Int p = parentZero(Index);                                                                                    // Position in zeros tree
+    final Int p = parentZero(Index).dup();                                                                              // Position in zeros tree
     new For(logBitSize())
      {void body(Int Index, Bit Continue)
        {new If (getBitNC(p))                                                                                            // The bit is not already set
@@ -312,7 +312,7 @@ public class BitSet extends Program                                             
    } // Translate from Zeros tree to Ones tree
   Int      oneToZero (Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r.constant();} // Translate from Ones tree to Zeros tree
 
-  Int   childHighOne (Int Pos) {return childLowOne(Pos).inc().constant();}                                              // Step to the corresponding child high bit index from this parent bit index
+  Int   childHighOne (Int Pos) {return childLowOne(Pos).Inc().constant();}                                              // Step to the corresponding child high bit index from this parent bit index
   Int    childLowOne (Int Pos) {return Pos.Dec().up().sub(topOne()).constant();}                                        // Step to the corresponding child low  bit index from this parent bit index
   Int      parentOne (Int Pos) {return Pos.Add(topOne()).add(2).down().constant();}                                     // Step to the corresponding parent bit index for this child bit index
 
@@ -779,7 +779,7 @@ public class BitSet extends Program                                             
 
   public Int countAllOnes ()                                                                                            // Count ones in bitset
    {subStart("Bitset.countAllOnes");
-    final Int  c = new Int(0);                                                                                          // Count
+    final Int  c = new Int("c").set(0);                                                                                 // Count
     final Bint p = firstOne().dup();                                                                                    // Position in bitset starting at first one
     new For(size())                                                                                                     // Step from one to one
      {void body(Int Index, Bit Continue)
@@ -804,7 +804,7 @@ public class BitSet extends Program                                             
 
   public Int countAllZeros()                                                                                            // Count zeros in bitset
    {subStart("Bitset.countAllZeros");
-    final Int  c = new Int(0);                                                                                          // Count
+    final Int  c = new Int("c").set(0);                                                                                 // Count
     final Bint p = firstZero().dup();
     new For(size())
      {void body(Int Index, Bit Continue)
@@ -886,7 +886,7 @@ public class BitSet extends Program                                             
    {sayCurrentTestName();
     final BitSet b = testBits(Ex, 32);
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
-    for (int i : s) b.set(b.new Int(i));
+    for (int i : s) b.set(b.new Int("b", i));
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
    1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
