@@ -357,8 +357,9 @@ public class Program extends Test                                               
     boolean        nd = false;                                                                                          // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
     final int      id = program().nextBitId++;                                                                          // Unique id for Bit
     final boolean top = callerName() == "code";                                                                         // A declaration at the top level
-          boolean  in = false;                                                                                          // An input wire if true and named and at the top
-          boolean out = false;                                                                                          // An output register if true and named and at the top
+    boolean        in = false;                                                                                          // An input wire if true and named and at the top
+    boolean       out = false;                                                                                          // An output register if true and named and at the top
+    private boolean constant = false;                                                                                   // A  constant if true and this should not be modified
     boolean      fast = false;                                                                                          // Make this bit into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
     String       name = null;                                                                                           // The name of the variable
 
@@ -374,6 +375,7 @@ public class Program extends Test                                               
 
     boolean      b ()            {x(); return i;}
     void         x ()            {if (!v) variableNotSet("Bit", name);}                                                 // Check a value has been set for the boolean
+    Bit   constant ()            {constant = true; return this;}                                                        // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
     Bit        set ()            {return ie(Ops.set,  true); }                                                          // Boolean operations which modify the target
     Bit        set (boolean I)   {return ie(Ops.set,  I);    }
@@ -605,7 +607,7 @@ public class Program extends Test                                               
     final boolean      top = callerName() == "code";                                                                    // A declaration at the top level
           boolean       in = false;                                                                                     // An input wire: named at the top and set by the constructor to a constant
           boolean      out = false;                                                                                     // An output register named at the top and set by the constructor to the value of a variable
-          boolean constant = false;                                                                                     // A  constant if true and this should not be modified
+    private boolean constant = false;                                                                                   // A  constant if true and this should not be modified
     final String traceBack = suppressIntegerUsageStatistics ? null : traceBack();                                       // Location of this integer
     int nr0, nr1, nr2, nw, dup, reads, writes, bint;                                                                    // Number of reads and writes via instruction processing, number of duplications, number of reads and writes outside instructions
     final boolean     fast;                                                                                             // Make this integer into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
@@ -1147,6 +1149,7 @@ public class Program extends Test                                               
     Bit       valid () {i.bint++;            return b;       }                                                          // Whether the boolean integer is valid
     Bit    notValid () {i.bint++;            return b.Flip();}                                                          // Whether the boolean integer is invalid
     Bint invalidate () {i.bint++; b.clear(); return this;    }                                                          // Mark the integer as invalid after all
+    Bint   constant () {i.constant(); b.constant(); return this;}                                                       // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
     Bint () {}                                                                                                          // Constructors
     Bint (String Name) {i.name = b.name = Name;}
