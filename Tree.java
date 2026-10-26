@@ -3,7 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Optimize merges by merging into the most full node from the least full node
-// Everywhere we record a key in a search results class mark it as constant
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -322,14 +321,14 @@ class Tree extends Program                                                      
        {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {leaf.set(p); leaf.constant();                                                                             // Record leaf
+             {leaf.constant(p);                                                                                         // Record leaf
               final Leaf  l = leaf(p);                                                                                  // Details of leaf
               final Slots s = l.slots;                                                                                  // Slots for leaf
               final Bint  f = s.usedSlotsToKeys.firstOne();                                                             // First used slot is the first entry
               new If (f)
                {void Then()
-                 {key .set(       s.getSlotToKeyValue(f.i()));  key .constant();                                        // Key from first slot
-                  data.set(l.data(s.getSlotToKeyIndex(f.i()))); data.constant();                                        // Data associated with key
+                 {key .constant(       s.getSlotToKeyValue(f.i()));                                                     // Key from first slot
+                  data.constant(l.data(s.getSlotToKeyIndex(f.i())));                                                    // Data associated with key
                  }
                };
              }
@@ -379,14 +378,14 @@ class Tree extends Program                                                      
        {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {leaf.set(p); leaf.constant();                                                                             // Record leaf
+             {leaf.constant(p);                                                                                         // Record leaf
               final Leaf  l = leaf(p);                                                                                  // Details of leaf
               final Slots s = l.slots;                                                                                  // Slots for leaf
               final Bint  f = s.usedSlotsToKeys.lastOne();                                                              // Last used slot is the last entry
               new If (f)
                {void Then()
-                 {key .set(       s.getSlotToKeyValue(f.i()));   key .constant();                                       // Key from last slot
-                  data.set(l.data(s.getSlotToKeyIndex(f.i())));  data.constant();                                       // Data associated with key
+                 {key .constant(       s.getSlotToKeyValue(f.i()));                                                     // Key from last slot
+                  data.constant(l.data(s.getSlotToKeyIndex(f.i())));                                                    // Data associated with key
                  }
                };
              }
@@ -431,11 +430,11 @@ class Tree extends Program                                                      
          {final Leaf           l = leaf(f.leaf.i());
           final Slots          s = l.slots;
           final Slots.FindGe   n = s.new FindGe(f.key);
-          leaf.set(f.leaf.i()); leaf.constant();
+          leaf.constant(f.leaf.i());
           new If (n.slot)
            {void Then()
-             {key .set(       s.getSlotToKeyValue(n.slot.i()));  key .constant();                                       // Key from last slot
-              data.set(l.data(s.getSlotToKeyIndex(n.slot.i()))); data.constant();                                       // Data associated with key
+             {key .constant(       s.getSlotToKeyValue(n.slot.i()));                                                    // Key from last slot
+              data.constant(l.data(s.getSlotToKeyIndex(n.slot.i())));                                                   // Data associated with key
              }
            };
          }
@@ -471,7 +470,7 @@ class Tree extends Program                                                      
 
           new If (c)                                                                                                    // Continue if caller requests more than thr first key
            {void Then()
-             {new For(Integer.MAX_VALUE)                                                                                // Each following key as long as the caller shows interest
+             {new Until()                                                                                               // Each following key as long as the caller shows interest
                {void body(Int Index, Bit Continue)
                  {final NextEntry n = new NextEntry(k);
                   new If (n.key)
@@ -498,13 +497,13 @@ class Tree extends Program                                                      
     FindLeafForKey (Int Key)                                                                                            // Find the specified key in a leaf in the tree
      {subStart("Tree."+title());
       final Int p = root().dup();                                                                                       // Start at root
-      getReadLock(p); key.set(Key); key.constant();                                                                     // Lock the root so no-one can modify it while we are reading it
+      getReadLock(p); key.constant(Key);                                                                                // Lock the root so no-one can modify it while we are reading it
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {leaf.set(p); leaf.constant();                                                                             // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
+             {leaf.constant(p);                                                                                         // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down details
@@ -586,7 +585,7 @@ class Tree extends Program                                                      
 
     MaximumKey (Int Branch)                                                                                             // Maximum key under a specified branch
      {subStart("Tree.MaximumKey");
-      branch.set(Branch); branch.constant();
+      branch.constant(Branch);
       final Int p = branch.dup();                                                                                       // Start at branch
       getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
 
@@ -600,7 +599,7 @@ class Tree extends Program                                                      
             void Else()                                                                                                 // We have arrived at a leaf - find the maximum element
              {final Slots s = leaf(p).slots;                                                                            // Slots
               final Bint  i = s.usedSlotsToKeys.lastOne();                                                              // Index of slot referencing last key
-              new If (i) {void Then() {maxKey.set(s.getSlotToKeyValue(i.i()));  maxKey.constant();}};                   // Last key in leaf if there is one
+              new If (i) {void Then() {maxKey.constant(s.getSlotToKeyValue(i.i()));}};                                  // Last key in leaf if there is one
               freeReadLock(p);
              }
            };
@@ -638,7 +637,7 @@ class Tree extends Program                                                      
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
              {valid.set();                                                                                              // Reached a leaf
-              leaf.set(p); leaf.constant();                                                                             // End the path on a leaf
+              leaf.constant(p);                                                                                         // End the path on a leaf
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down
@@ -818,7 +817,7 @@ class Tree extends Program                                                      
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
            {final Int k = L.slots.getSlotToKeyIndex(f.slot.i());                                                        // Key slot
-            data.set(L.data(k)); data.constant();                                                                       // Data associated with key
+            data.constant(L.data(k));                                                                                   // Data associated with key
            }
          };
         freeReadLock(l.leaf.i());                                                                                       // Safe to free the read lock on the leaf because we have the data associated with the key
