@@ -295,7 +295,7 @@ class Branch extends Program implements Program.Locatable                       
 
         final Int lt = left .top();                                                                                     // Left top
         final Int Rt = Right.top();                                                                                     // Right top
-        left.copyMergeData(Right, new Int(maxSize).sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
+        left.copyMergeData(Right, new Int(maxSize).Sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
         left.top(Rt);                                                                                                   // Set right top
         left.data(lc, lt);                                                                                              // Place left top in left data values
         ls.mergeFromRightOdd(Rs, Sk);                                                                                   // Merge the slots
