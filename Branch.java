@@ -116,14 +116,14 @@ class Branch extends Program implements Program.Locatable                       
         if (Delete) slots.delete(f.slot.i());                                                                           // Delete the key if requested
        }
      };
-    return r;                                                                                                           // Return data associated with key
+    return r.constant();                                                                                                // Return data associated with key
    }
 
   class StepDown                                                                                                        // Step down from one layer of the tree to the next lower one
-   {final Int   key = new Int();                                                                                        // The key we are stepping down with
-    final Int  node = new Int();                                                                                        // The next node down
-    final Bint slot = new Bint();                                                                                       // The slot used to step down.  If not set then stepped through top
-    final Bit eqKey = new Bit();                                                                                        // Indicates whether the search key was equal to the key being stepped through -if not it must have been less than
+   {final Int   key = new Int ("key");                                                                                  // The key we are stepping down with
+    final Int  node = new Int ("node");                                                                                 // The next node down
+    final Bint slot = new Bint("slot");                                                                                 // The slot used to step down.  If not set then stepped through top
+    final Bit eqKey = new Bit ("eqKey");                                                                                // Indicates whether the search key was equal to the key being stepped through -if not it must have been less than
 
     public String toString ()
      {final StringBuilder s = new StringBuilder();
@@ -132,24 +132,23 @@ class Branch extends Program implements Program.Locatable                       
      }
 
     StepDown (Int Key)                                                                                                  // Return a reference to the next branch down whose sub tree might contain the specified key
-     {key.set(Key).constant();
+     {key.constant(Key);
       final Slots.Find f = slots.new Find(Key);  eqKey.set(f.equal);                                                    // Find result
       new If (f.empty)                                                                                                  // Found the index of a key that is greater than or equal to the search key
        {void Then()                                                                                                     // Step through top because the body of the branch is empty
-         {node.constant(top());
+         {node.set(top());
          }
         void Else()
          {new If (f.equal.or(f.lower))                                                                                  // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
            {void Then()
-             {slot.constant(f.slot.i());                                                                                     // Step through slot
-              node.constant(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
+             {slot.set(f.slot.i());                                                                                     // Step through slot
+              node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
              }
             void Else()                                                                                                 // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
              {final Bint n = slots.usedSlotsToKeys.nextOne(f.slot.i());
-                                                                                                                        // Copy the slot found if there was one
               new If (n.valid())
-               {void Then() {node.constant(data(slots.getSlotToKeyIndex(n.i()))); slot.constant(n.i());}                          // Node at next level down
-                void Else() {node.constant(top());}                                                                          // No next key so step down through top
+               {void Then() {node.set(data(slots.getSlotToKeyIndex(n.i()))); slot.set(n.i());}                          // Node at next level down
+                void Else() {node.set(top());}                                                                          // No next key so step down through top
                };
              }
            };
@@ -348,7 +347,7 @@ class Branch extends Program implements Program.Locatable                       
 
   void iterate (Iterator Iterator)                                                                                      // Iterate over a leaf
    {subStart("Branch.print");
-    final Bint f = slots.usedSlotsToKeys.firstOne();
+    final Bint f = slots.usedSlotsToKeys.firstOne().dup();
     new If (f)
      {void Then()
        {new For(maxSize)
