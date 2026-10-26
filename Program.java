@@ -1456,7 +1456,7 @@ public class Program extends Test                                               
       int     getInt (int I) {                                        return units[I+offset.i()];}                      // Get an integer immediately when debugging
       boolean getBit (int I) {final int i = getInt(I / Integer.SIZE); return Test.getBit(i, I % Integer.SIZE);}         // Get a boolean  immediately when debugging
 
-        public String toString () {final StringBuilder s = saySb("Ref: " , offset.i()); return ""+s;}                     // Print memory reference
+        public String toString () {final StringBuilder s = saySb("Ref: " , offset.i()); return ""+s;}                   // Print memory reference
      } // Ref
 
 //D2 Dump memory                                                                                                        // Dump or print memory
