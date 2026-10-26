@@ -692,7 +692,7 @@ class Slots extends Program                                                     
     Find () {}                                                                                                          // Default constructor
 
     Find set(Int Slot, Bit Lower, Bit Higher)                                                                           // Set a find result
-     {slot .constant(Slot); lower.constant(Lower); higher.constant(Higher);
+     {slot .set(Slot); lower.constant(Lower); higher.constant(Higher);
       equal.constant(lower.And(higher));
       empty.constant(lower.Or (higher).flip());
       insertBelow = false;                                                                                              // Determine whether to insert above or below at runtime
@@ -700,11 +700,11 @@ class Slots extends Program                                                     
      }
 
     Find set(Int Slot, boolean InsertBelow)                                                                             // Set a find result showing that a key should be inserted in the slot above (false) or below(true) below the indicated slot
-     {slot .constant(Slot);
+     {slot .set(Slot);
       equal.constant(false);
       empty.constant(false);
-      if (InsertBelow) {lower.constant(true);  higher.constant(false); insertBelow = true;  insertAbove = false;}                 // Insist on an insert below the found key
-      else             {lower.constant(false); higher.constant(true);  insertBelow = false; insertAbove = true; }                 // Insist on an insert above the found key
+      if (InsertBelow) {lower.constant(true);  higher.constant(false); insertBelow = true;  insertAbove = false;}       // Insist on an insert below the found key
+      else             {lower.constant(false); higher.constant(true);  insertBelow = false; insertAbove = true; }       // Insist on an insert above the found key
       return this;
      }
 
@@ -819,7 +819,7 @@ class Slots extends Program                                                     
          }
        };
 
-      return P;                                                                                                         // Slot into which the key was inserted
+      return P.constant();                                                                                              // Slot into which the key was inserted
      }
 
     public String toString ()
