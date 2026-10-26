@@ -66,7 +66,7 @@ class Leaf extends Program implements Program.Locatable                         
     refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
     refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = unitMemoryRef.step(m.posData);                                                                      // Slots in use
-    if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
+    if (build.at != null) at.constant(build.at);                                                                        // The location of the leaf if supplied
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).memory(refSlots).parent(program()));              // Slots for leaf
     leafCode();                                                                                                         // Generate machine code if any assembler code has been supplied
    }
@@ -101,7 +101,7 @@ class Leaf extends Program implements Program.Locatable                         
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot.i())));                                                     // Get data associated with key
+       {r.constant(refData.getInt(slots.getSlotToKeyIndex(f.slot.i())));                                                     // Get data associated with key
         if (Delete) slots.delete(f.slot.i());                                                                           // Delete the key if requested
        }
      };
@@ -238,7 +238,7 @@ class Leaf extends Program implements Program.Locatable                         
 
     new If (l)
      {void Then()
-       {final Int i = new Int().set(l);
+       {final Int i = new Int().constant(l);
         new If (i.gt(0))
          {void Then()                                                                                                   // Print the index if it is not the root
            {new I() {void a() {s.append(f(" at: %3d", i.i()));} boolean trace() {return false;}};
