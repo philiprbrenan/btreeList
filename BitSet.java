@@ -310,11 +310,11 @@ public class BitSet extends Program                                             
      };
     return r.constant();
    } // Translate from Zeros tree to Ones tree
-  Int      oneToZero (Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
+  Int      oneToZero (Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r.constant();} // Translate from Ones tree to Zeros tree
 
-  Int   childHighOne (Int Pos) {return childLowOne(Pos).inc();}                                                         // Step to the corresponding child high bit index from this parent bit index
-  Int    childLowOne (Int Pos) {return Pos.Dec().up().sub(topOne());}                                                   // Step to the corresponding child low  bit index from this parent bit index
-  Int      parentOne (Int Pos) {return Pos.Add(topOne()).add(2).down();}                                                // Step to the corresponding parent bit index for this child bit index
+  Int   childHighOne (Int Pos) {return childLowOne(Pos).inc().constant();}                                              // Step to the corresponding child high bit index from this parent bit index
+  Int    childLowOne (Int Pos) {return Pos.Dec().up().sub(topOne()).constant();}                                        // Step to the corresponding child low  bit index from this parent bit index
+  Int      parentOne (Int Pos) {return Pos.Add(topOne()).add(2).down().constant();}                                     // Step to the corresponding parent bit index for this child bit index
 
   Int   childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}                                        // Step to low child in zeros tree
   Int  childHighZero (Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}                                        // Step to high child in zeros tree
@@ -646,7 +646,7 @@ public class BitSet extends Program                                             
     if (immediate()) checkInActual(Start);
     final Bint Next = new Bint();                                                                                       // Invalid indicates not found
     final Int  p    = new Int(Start);                                                                                   // Start position
-    final Int  Q    = p.Inc();
+    final Int  Q    = p.Inc().constant();
 
     new If (Q.le(limitUpperZero(p)))                                                                                    // Adjacent bit exists
      {void Then()                                                                                                       // Found the adjacent bit to the right
@@ -655,7 +655,7 @@ public class BitSet extends Program                                             
            {p.set(parentZero(p));                                                                                       // Move int zeros tree
             new For(logBitSize())                                                                                       // Traverse down through the tree to the root
              {void body(Int I, Bit C)
-               {final Int q = p.Inc();                                                                                  // Next bit over
+               {final Int q = p.Inc().constant();                                                                       // Next bit over
 
                 new If (q.le(limitUpperZero(p)))                                                                        // Found adjacent bit set to one to the right of the path up from the start bit
                  {void Then()                                                                                           // Found the adjacent bit to the right
@@ -706,7 +706,7 @@ public class BitSet extends Program                                             
     final Int  p    = new Int(Start);                                                                                   // Start position in body of bitset
     new If (p.gt(0))                                                                                                    // Not at the start of bitset
      {void Then()
-       {final Int q = p.Dec();                                                                                          // Position to left
+       {final Int q = p.Dec().constant();                                                                               // Position to left
         new If (getBitNC(q).flip())                                                                                     // Adjacent zero
          {void Then()
            {Prev.set(q);
@@ -717,7 +717,7 @@ public class BitSet extends Program                                             
                {p.set(parentZero(p));                                                                                   // Every bit has a parent except the topmost bit in the tree but the loop will terminated on count before then
                 new If (pos_zero(p).gt(0))                                                                              // At start of row
                  {void Then()                                                                                           // At start of row - not found
-                   {final Int Q = p.Dec();                                                                                            // Position to left
+                   {final Int Q = p.Dec().constant();                                                                   // Position to left
                     new If (getBitNC(Q).flip())                                                                         // Found a one
                      {void Then() {Prev.set(highZero(Q));}                                                              // Reached a one so we turn over and head back up the tree going as high as possible
                       void Else() {ContinueUp.set();}                                                                   // Continue the search for a one
@@ -768,7 +768,6 @@ public class BitSet extends Program                                             
                }
              };
            }
-          // boolean fast() {return true;}
          };
        }
      };
