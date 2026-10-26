@@ -1181,6 +1181,13 @@ public class Program extends Test                                               
       return this;
      }
 
+    Bint dup ()                                                                                                         // Duplicate a bit integer preserving its state
+     {final Bint d = new Bint(i.name);
+      d.b.set(b());
+      new If (this) {void Then() {d.i.set(i());}};                                                                      // Set the integer value if if the bit integer is valid
+      return d;
+     }
+
     Bint ok (boolean Value) {new I() {void a() {Test.ok(b.b(), Value);} boolean trace() {return false;}}; return this;} // Test the boolean value of the boolean integer
     Bint ok (int     Value) {new I() {void a() {Test.ok(i.i(), Value);} boolean trace() {return false;}}; return this;} // Test the integer value of the boolean integer
     Bint ok (Int Value) {new I() {void a() {Test.ok(i.i(), Value.i());} boolean trace() {return false;}}; return this;} // Test the integer value of the boolean integer
@@ -1188,6 +1195,7 @@ public class Program extends Test                                               
     void     stop (Object...O)                                                                                          // Conditionally print a message if false and stop
      {new If (this) {void Then() {new I() {void a() {Test.stop(O);} boolean trace() {return false;}};}};
      }
+
     void elseStop (Object...O)                                                                                          // Conditionally print a message if true and stop
      {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);} boolean trace() {return false;}};}};
      }
