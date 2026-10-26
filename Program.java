@@ -653,7 +653,9 @@ public class Program extends Test                                               
     String  in2v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read2Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String   onv ()       {return fast ? "fastInts["+cawci+"]" : intMemory().writeInt();}                               // Verilog name of integer to be written into memeory or into the fast integers array
     Int constant ()       {constant = true; return this;}                                                               // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-    Int constant (Int I)  {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Int constant (int  I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Int constant (Int  I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Int constant (Bint I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
     Int variable ()       {constant = false; return this;}                                                              // Remove constant setting
 
     enum Ops                                                                                                            // Possible integer operations
@@ -4064,8 +4066,7 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_Until();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
