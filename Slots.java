@@ -164,7 +164,7 @@ class Slots extends Program                                                     
      {void Then()
        {final Bint p = usedSlotsToKeys.prevZero(Position);                                                              // Prev free slot
         final Bint n = usedSlotsToKeys.nextZero(Position);                                                              // Next free slot
-        final Bit d = new Bit(false);                                                                                   // Done when set
+        final Bit  d = new Bit(false);                                                                                  // Done when set
 
         new If (p.valid())                                                                                              // Previous is valid
          {void Then()
@@ -204,7 +204,7 @@ class Slots extends Program                                                     
        }
      };
     subFinish();
-    return r;
+    return r.constant();
    }
 
   Int locateNearestFreeSlotToKey (Int Position) {return locateNearestFreeSlotToKey(Position, new Bit(false));}          // Locate the nearest free slot favoring a higher slot over a lower one if they are both the same  distance away
@@ -215,7 +215,7 @@ class Slots extends Program                                                     
     I.elseStop("No room for key");                                                                                      // No more keys slots available
     new If (I) {void Then() {usedKeys.set(I.i());}};                                                                    // Show that the key as having been allocated
     subFinish();
-    return I.i();
+    return I.i().constant();
    }
 
   void setSlots (int...Slots)                                                                                           // Set slots for testing
@@ -398,8 +398,7 @@ class Slots extends Program                                                     
     left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
     Right.copy(left);                                                                                                   // Duplicate left into right
 
-//  final Int sk = left.getSlotToKeyValue(M.Dec()).Add(left.getSlotToKeyValue(M)).down();                               // Splitting key is half the two middle keys
-    final Int sk = left.getSlotToKeyValue(M.Dec());                                                                     // The splitting key is always equal to the largest element in its sub tree
+    final Int sk = left.getSlotToKeyValue(M.Dec()).constant();                                                          // The splitting key is always equal to the largest element in its sub tree
 
     new ForCount(M)    {void body(Int Index) {Right.delete(Index);}};                                                   // Clear lower half of target right slots
     new ForCount(M, N) {void body(Int Index) {left .delete(Index);}};                                                   // Clear upper half of left slots
@@ -419,8 +418,7 @@ class Slots extends Program                                                     
     right.compactSlotsLeft();                                                                                           // Compacting the source on the right will not affect the order of the keys
     Left.copy(right);                                                                                                   // Duplicate right into left
 
-//  final Int sk = right.getSlotToKeyValue(M.Dec()).Add(right.getSlotToKeyValue(M)).down();                             // Splitting key is half the two middle keys
-    final Int sk = right.getSlotToKeyValue(M.Dec());                                                                    // The splitting key is always equal to the largest element in its sub tree
+    final Int sk = right.getSlotToKeyValue(M.Dec()).constant();                                                         // The splitting key is always equal to the largest element in its sub tree
 
     new ForCount(M)    {void body(Int Index) {right.delete(Index);}};                                                   // Clear lower half of target left slots
     new ForCount(M, N) {void body(Int Index) {Left .delete(Index);}};                                                   // Clear upper half of left slots
@@ -514,7 +512,7 @@ class Slots extends Program                                                     
        }
      };
     subFinish();
-    return r;
+    return r.constant();
    }
 
   Bit mergeFromLeftEven (Slots Left) {return mergeFromLeftEven(Left, (S, t, s)->{});}                                   // Merge the specified slots from the right
@@ -547,7 +545,7 @@ class Slots extends Program                                                     
        }
      };
     subFinish();
-    return r;
+    return r.constant();
    }
 
 //D5 Odd                                                                                                                // Merge slots with an odd maximum number of keys and insert the splitting key/  The process of compacting the keys can optionally be observed to align other data structures with the slots
@@ -584,7 +582,7 @@ class Slots extends Program                                                     
        }
      };
     subFinish();
-    return r;
+    return r.constant();
    }
 
   Bit mergeFromLeftOdd (Slots Left, Int Sk) {return mergeFromLeftOdd(Left, Sk, (S, t, s)->{});}                         // Merge the specified slots from the right without observing the key compaction process
@@ -619,7 +617,7 @@ class Slots extends Program                                                     
        }
      };
     subFinish();
-    return r;
+    return r.constant();
    }
 
 //D4 Shift                                                                                                              // Shift the slots to the left/down one position or up/right one position
@@ -694,28 +692,28 @@ class Slots extends Program                                                     
     Find () {}                                                                                                          // Default constructor
 
     Find set(Int Slot, Bit Lower, Bit Higher)                                                                           // Set a find result
-     {slot .set(Slot); lower.set(Lower); higher.set(Higher);
-      equal.set(lower.And(higher));
-      empty.set(lower.Or (higher).flip());
+     {slot .constant(Slot); lower.constant(Lower); higher.constant(Higher);
+      equal.constant(lower.And(higher));
+      empty.constant(lower.Or (higher).flip());
       insertBelow = false;                                                                                              // Determine whether to insert above or below at runtime
       return this;
      }
 
     Find set(Int Slot, boolean InsertBelow)                                                                             // Set a find result showing that a key should be inserted in the slot above (false) or below(true) below the indicated slot
-     {slot .set(Slot);
-      equal.set(false);
-      empty.set(false);
-      if (InsertBelow) {lower.set(true);  higher.set(false); insertBelow = true;  insertAbove = false;}                 // Insist on an insert below the found key
-      else             {lower.set(false); higher.set(true);  insertBelow = false; insertAbove = true; }                 // Insist on an insert above the found key
+     {slot .constant(Slot);
+      equal.constant(false);
+      empty.constant(false);
+      if (InsertBelow) {lower.constant(true);  higher.constant(false); insertBelow = true;  insertAbove = false;}                 // Insist on an insert below the found key
+      else             {lower.constant(false); higher.constant(true);  insertBelow = false; insertAbove = true; }                 // Insist on an insert above the found key
       return this;
      }
 
     void copy(Find Source)                                                                                              // Copy a find result
      {slot  .copy(Source.slot);
-      lower .set(Source.lower);
-      higher.set(Source.higher);
-      equal .set(Source.equal);
-      empty .set(Source.empty);
+      lower .constant(Source.lower);
+      higher.constant(Source.higher);
+      equal .constant(Source.equal);
+      empty .constant(Source.empty);
      }
 
     Int insert(Int Key)                                                                                                 // Insert a key into the slots in light of the find result and return the slot chosen. The slots are assumed to be not empty.
@@ -723,7 +721,7 @@ class Slots extends Program                                                     
       final Find f = this;                                                                                              // Find nearest existing key in slots
       final Bint K = usedKeys.firstZero();                                                                              // Position for key in key slots
       final Int  s = new Int(f.slot.i());                                                                               // Nearest existing key slot
-      final Int  p = locateNearestFreeSlotToKey(s, f.lower);                                                            // Absolute position of nearest free slot
+      final Int  p = locateNearestFreeSlotToKey(s, f.lower).dup();                                                      // Start at absolute position of nearest free slot
 
       if (immediate() && empty().b()) stop("Insert after find requires a non empty set of slots");                      // The slots must have at least one element
 
