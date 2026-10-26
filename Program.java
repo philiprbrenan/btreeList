@@ -621,7 +621,7 @@ public class Program extends Test                                               
     final boolean      top = callerName() == "code";                                                                    // A declaration at the top level
           boolean       in = false;                                                                                     // An input wire: named at the top and set by the constructor to a constant
           boolean      out = false;                                                                                     // An output register named at the top and set by the constructor to the value of a variable
-    private boolean constant = false;                                                                                   // A  constant if true and this should not be modified
+          boolean constant = false;                                                                                     // A  constant if true and this should not be modified
     final String traceBack = suppressIntegerUsageStatistics ? null : traceBack();                                       // Location of this integer
     int nr0, nr1, nr2, nw, dup, reads, writes, bint;                                                                    // Number of reads and writes via instruction processing, number of duplications, number of reads and writes outside instructions
     final boolean     fast;                                                                                             // Make this integer into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
@@ -795,7 +795,7 @@ public class Program extends Test                                               
      }
 
     void W (boolean Start, boolean Finish)                                                                              // Optionally start and optionally Finish a write cycle
-     {if (constant) stop("Attempting to modify a constant integer");                                                    // Check that we are not about to update a constant
+     {if (constant) stop("Attempting to modify a constant integer:", name);                                             // Check that we are not about to update a constant
       if (fast) return;                                                                                                 // Bypass for integers held in registers
       final Int     w = this;                                                                                           // Set index locating the integer to be written to
       final Memory  M = intMemory();
@@ -1155,8 +1155,8 @@ public class Program extends Test                                               
 //D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the Verilog representationOperations on integer values
 
   final class Bint                                                                                                      // An integer that can be specified as valid or invalid
-   {private final Bit b = new Bit(false);                                                                               // Whether the associated integer is valid or invalid
-    private final Int i = new Int();                                                                                    // The integer component
+   {private final Bit b = new Bit("b", false);                                                                          // Whether the associated integer is valid or invalid
+    private final Int i = new Int("i");                                                                                 // The integer component
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
     Bit    b ()      {i.bint++;          return b;   }                                                                  // Return boolean component
     Int    i ()
