@@ -133,7 +133,7 @@ class Tree extends Program                                                      
   Int      allocate ()                                                                                                  // Allocate a leaf or a branch using the first free node on the free chain
    {final Bint A = freeChain.firstOne();                                                                                // First element on free chain
     A.elseStop("No more leaves or branches available for allocation");                                                  // Out of memory check
-    final Int a = new Int("index").constant(A);                                                                         // First element on free chain
+    final Int a = new Int("index").set(A).constant();                                                                   // First element on free chain
     freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
     final Int c = freeChain.count();
     return a;
@@ -554,7 +554,7 @@ class Tree extends Program                                                      
            {void Then()
              {final Branch.StepDown d = branch(p).new StepDown(Key);                                                    // Step down details
               new If (d.eqKey)
-               {void Then() {branch.constant(p); slot.constant(d.slot);}                                                // Found the matching key so terminate the search and hold a read lock on the branch so found
+               {void Then() {branch.constant(p); slot.set(d.slot).constant();}                                          // Found the matching key so terminate the search and hold a read lock on the branch so found
                 void Else() {getReadLock(d.node); freeReadLock(p); p.set(d.node); Continue.set();}                      // Step down to the next branch
                };
              }
