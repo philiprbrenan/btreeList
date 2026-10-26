@@ -174,7 +174,7 @@ class Leaf extends Program implements Program.Locatable                         
         left .slots.compactKeysLeft ((S, t, s)->{left .data(t, left .data(s));});
         Right.slots.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
 
-        left.copyMergeData(Right, new Int(maxSize).sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
+        left.copyMergeData(Right, new Int(maxSize).Sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
         left.slots.mergeFromRightEven(Right.slots);                                                                     // Merge the slots
        }
      };
