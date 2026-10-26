@@ -132,24 +132,24 @@ class Branch extends Program implements Program.Locatable                       
      }
 
     StepDown (Int Key)                                                                                                  // Return a reference to the next branch down whose sub tree might contain the specified key
-     {key.set(Key);
+     {key.set(Key).constant();
       final Slots.Find f = slots.new Find(Key);  eqKey.set(f.equal);                                                    // Find result
       new If (f.empty)                                                                                                  // Found the index of a key that is greater than or equal to the search key
        {void Then()                                                                                                     // Step through top because the body of the branch is empty
-         {node.set(top());
+         {node.constant(top());
          }
         void Else()
-         {new If (f.equal.or(f.lower))                                                                                           // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
+         {new If (f.equal.or(f.lower))                                                                                  // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
            {void Then()
-             {slot.set(f.slot.i());                                                                                     // Step through slot
-              node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
+             {slot.constant(f.slot.i());                                                                                     // Step through slot
+              node.constant(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
              }
             void Else()                                                                                                 // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
              {final Bint n = slots.usedSlotsToKeys.nextOne(f.slot.i());
                                                                                                                         // Copy the slot found if there was one
               new If (n.valid())
-               {void Then() {node.set(data(slots.getSlotToKeyIndex(n.i()))); slot.set(n.i());}                          // Node at next level down
-                void Else() {node.set(top());}                                                                          // No next key so step down through top
+               {void Then() {node.constant(data(slots.getSlotToKeyIndex(n.i()))); slot.constant(n.i());}                          // Node at next level down
+                void Else() {node.constant(top());}                                                                          // No next key so step down through top
                };
              }
            };
