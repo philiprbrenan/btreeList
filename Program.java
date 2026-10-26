@@ -27,6 +27,7 @@ public class Program extends Test                                               
   final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
+  final static boolean          suppressConstantChecking =!true;                                                        // Constant checking adds extra instructions which should not be present in the final version
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
@@ -387,7 +388,7 @@ public class Program extends Test                                               
 
     boolean      b ()            {x(); return i;}
     void         x ()            {if (!v) variableNotSet("Bit", name);}                                                 // Check a value has been set for the boolean
-    Bit   constant ()            {new I() {void a() {constant = true;} boolean trace() {return false;}}; return this;}  // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Bit   constant ()            {if (!suppressConstantChecking) new I() {void a() {constant = true;} boolean trace() {return false;}}; return this;}  // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
     Bit   constant (boolean I)   {set(I); constant(); return this;}                                                     // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
     Bit   constant (Bit     I)   {set(I); constant(); return this;}                                                     // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
@@ -628,7 +629,7 @@ public class Program extends Test                                               
     final int       fastId;                                                                                             // Unique id for fast integer
 
     Int ()           {ai(); fast = false; fastId = -1; del(0);         ints().push(this);}                              // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for Java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has been already been established by successfully executing the tests associated with the Java version . The integers used in the Java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
-    Int (int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this);}                              // Set the new integer to a known value at this point in the code
+    Int (int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this); constant = true;}             // Set the new integer to a known value at this point in the code
     Int (Int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this);}                              // Set the new integer to a specified value at this point in the code
 
     Int (String Name)        {this();  name = Name; out = top;}                                                         // Constructor with name supplied. Output register if it is at the top
@@ -652,11 +653,11 @@ public class Program extends Test                                               
     String  in1v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read1Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String  in2v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read2Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String   onv ()       {return fast ? "fastInts["+cawci+"]" : intMemory().writeInt();}                               // Verilog name of integer to be written into memeory or into the fast integers array
-    Int constant ()       {new I() {void a() {constant = true;} boolean trace() {return false;}}; return this;}         // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Int constant ()       {if (!suppressConstantChecking) new I() {void a() {constant = true;} boolean trace() {return false;}}; return this;}         // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
     Int constant (int  I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
     Int constant (Int  I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
     Int constant (Bint I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-    Int variable ()       {new I() {void a() {constant = false;} boolean trace() {return false;}}; return this;}        // Remove constant setting
+    Int variable ()       {if (!suppressConstantChecking) new I() {void a() {constant = false;} boolean trace() {return false;}}; return this;}        // Remove constant setting
 
     enum Ops                                                                                                            // Possible integer operations
      {abs, add, add2, dec, del, div, down, eq,  ez,   ge,  gt, inc, le, lt,
@@ -2860,7 +2861,7 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Bit b = new Bit("b", true);
-        final Int a = new Int("a", 1);
+        final Int a = new Int("a").set(1);
         new If (b)
          {void Then() {a.set(2);}
           void Else() {a.set(3);}
@@ -2882,7 +2883,7 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Bit b = new Bit("b", true);
-        final Int a = new Int("a", 1);
+        final Int a = new Int("a").set(1);
         new If (b.Flip())
          {void Then() {a.set(2);}
           void Else() {a.set(3);}
@@ -3071,7 +3072,7 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int("a").set(1);
-        final Int b = new Int("b",  0);
+        final Int b = new Int("b").set(0);
         final Int N = new Int("N", 10);
         final StringBuilder s = new StringBuilder();
         new For(N)
@@ -3114,7 +3115,7 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int("a").set(0);
-        final Int b = new Int("b", 1);
+        final Int b = new Int("b").set(1);
         final Int c = new Int("c", true);
         final Int N = new Int("N", 10);
         final StringBuilder s = new StringBuilder();
@@ -3181,7 +3182,7 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int("a", 0);
+       {final Int a = new Int("a").set(0);
         final StringBuilder s = new StringBuilder();
               a.ok(0);
         a.inc().ok(1);
@@ -3776,7 +3777,7 @@ writeIntEnable =        0
               void Else()
                {new If (b)
                  {void Then() {}
-                  void Else() {final Int i = new Int(10); i.inc(); i.ok(11); a.inc(); a.ok(Index.Add(11));}
+                  void Else() {final Int i = new Int("a").set(10); i.inc(); i.ok(11); a.inc(); a.ok(Index.Add(11));}
                  };
                }
              };
@@ -3874,7 +3875,7 @@ writeIntEnable =        0
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int("a", 1);
+       {final Int a = new Int("a").set(1);
         a.add(2);
         a.ok(3);
         execute();
@@ -3892,7 +3893,7 @@ writeIntEnable =        0
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new FastInt("a");
-        final Int b = new     Int("b", 0);
+        final Int b = new     Int("b").set(0);
         a.ez().ok(true);
         a.nz().ok(false);
         b.ez().ok(true);
@@ -3919,7 +3920,7 @@ writeIntEnable =        0
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int("a", 1);
+       {final Int a = new Int("a").set(1);
         final Int b = new Int("b", 2);
         a.Up  () .ok(2);
         a.Up  (2).ok(4);
@@ -3963,7 +3964,7 @@ writeIntEnable =        0
    {sayCurrentTestName();
     final Program Q = new Program(new Build().name("Q"))
      {void code()
-       {final Int a = new Int("a", 0);
+       {final Int a = new Int("a").set(0);
         final Int l = new Int("l", 2);
         final Int L = new Int("L", 3);
         getWriteLock(l);
@@ -3981,7 +3982,7 @@ writeIntEnable =        0
      };
     final Program P = new Program(new Build().subProgramOf(Q).name("P"))
      {void code()
-       {final Int a = new Int("a", 0);
+       {final Int a = new Int("a").set(0);
         final Int l = new Int("l", 2);
         getReadLock(l);
         a.inc();
