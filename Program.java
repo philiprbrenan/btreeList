@@ -224,7 +224,9 @@ public class Program extends Test                                               
 
       if (immediate())                                                                                                  // Immediate execution
        {for(int i = index.i(), N = End.i(); i < N; ++i)                                                                 // Iterate over the specified range
-         {body(index, cont.clear());                                                                                    // Execute the loop body
+         {index.constant();                                                                                             // Make the index a constant
+          body(index, cont.clear());                                                                                    // Execute the loop body
+          index.variable();                                                                                             // Make the index a variable again
           index.inc();                                                                                                  // Set the index to each element of the specified range
           if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation has been requested
          }
@@ -238,7 +240,9 @@ public class Program extends Test                                               
           String v()   {return "if ("+bitMemory().writeInt()+" != 0) pc <= "+cawci+"; else pc <= pc + 1;";}             // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
           int traces() {return 0;}
          };
+        index.constant();                                                                                               // Make the index a constant
         body(index, cont.clear());                                                                                      // Execute the loop body
+        index.variable();                                                                                               // Make the index a variable again
         index.inc();                                                                                                    // Increment loop counter
         cont.T();                                                                                                       // Load continue
         final I E = new I(false)
@@ -268,7 +272,9 @@ public class Program extends Test                                               
 
       if (immediate())                                                                                                  // Immediate execution
        {for(int i = index.i(), N = End.i(); i < N; ++i)                                                                 // Iterate over the specified range
-         {body(index);                                                                                                  // Execute the loop
+         {index.constant();                                                                                             // Make the index a constant
+          body(index);                                                                                                  // Execute the loop
+          index.variable();                                                                                             // Make the index a variable again
           index.inc();                                                                                                  // Increment loop counter
          }
        }
@@ -281,7 +287,9 @@ public class Program extends Test                                               
           String v()   {return "if ("+bitMemory().writeInt()+" != 0) pc <= "+cawci+"; else pc <= pc + 1;";}             // Terminate the loop when the index is out of range. The if statement relies on the side effect of the previous instruction having set the target boolean value
           int traces() {return 0;}
          };
+        index.constant();                                                                                               // Make the index a constant
         body(index);                                                                                                    // Execute the loop
+        index.variable();                                                                                               // Make the index a variable again
         index.inc();                                                                                                    // Increment loop counter
         final I E = new I(false)                                                                                        // Restart loop
          {void   a()   {program().pc = start.offset;}
@@ -302,6 +310,10 @@ public class Program extends Test                                               
 
     boolean fast () {return false;}                                                                                     // Override for a fast integer as index - but be careful - fast integers quickly increase the die area
    } // ForCount
+
+  abstract class Until  extends For                                                                                     // Keep going until we are told to stop
+   {Until () {super(Integer.MAX_VALUE);}                                                                                // Set a high upper limit
+   } // Until
 
 //D2 If                                                                                                                 // If then else
 
@@ -376,6 +388,8 @@ public class Program extends Test                                               
     boolean      b ()            {x(); return i;}
     void         x ()            {if (!v) variableNotSet("Bit", name);}                                                 // Check a value has been set for the boolean
     Bit   constant ()            {constant = true; return this;}                                                        // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Bit   constant (boolean I)   {set(I); constant(); return this;}                                                     // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Bit   constant (Bit     I)   {set(I); constant(); return this;}                                                     // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
     Bit        set ()            {return ie(Ops.set,  true); }                                                          // Boolean operations which modify the target
     Bit        set (boolean I)   {return ie(Ops.set,  I);    }
@@ -639,6 +653,8 @@ public class Program extends Test                                               
     String  in2v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read2Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String   onv ()       {return fast ? "fastInts["+cawci+"]" : intMemory().writeInt();}                               // Verilog name of integer to be written into memeory or into the fast integers array
     Int constant ()       {constant = true; return this;}                                                               // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Int constant (Int I)  {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Int variable ()       {constant = false; return this;}                                                              // Remove constant setting
 
     enum Ops                                                                                                            // Possible integer operations
      {abs, add, add2, dec, del, div, down, eq,  ez,   ge,  gt, inc, le, lt,
@@ -1150,6 +1166,7 @@ public class Program extends Test                                               
     Bit    notValid () {i.bint++;            return b.Flip();}                                                          // Whether the boolean integer is invalid
     Bint invalidate () {i.bint++; b.clear(); return this;    }                                                          // Mark the integer as invalid after all
     Bint   constant () {i.constant(); b.constant(); return this;}                                                       // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Bint   constant (Int I) {set(I); i.constant(); b.constant(); return this;}                                          // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
     Bint () {}                                                                                                          // Constructors
     Bint (String Name) {i.name = b.name = Name;}
@@ -3987,6 +4004,29 @@ writeIntEnable =        0
               test_push(false);
    }
 
+  static void test_Until (boolean Ex)
+   {sayCurrentTestName();
+    final int            N = 10;
+    final Stack<Integer> S = new Stack<>();
+    new Program(new Build().immediate(Ex))
+     {void code()
+       {new Until()
+         {void body(Int Index, Bit Continue)
+           {push(S, ()->Index.i());
+            Continue.set(Index.lt(10));
+           }
+         };
+        execute();
+       }
+     };
+    ok(S, "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
+   }
+
+  static void test_Until()
+   {          test_Until(true);
+              test_Until(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_ifThen();
     test_ifElse();
@@ -4020,10 +4060,12 @@ writeIntEnable =        0
     test_maxMin();
     test_lock();
     test_push();
+    test_Until();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_Until();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
