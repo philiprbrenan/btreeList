@@ -135,8 +135,8 @@ class Tree extends Program                                                      
     A.elseStop("No more leaves or branches available for allocation");                                                  // Out of memory check
     final Int a = new Int("index").set(A).constant();                                                                   // First element on free chain
     freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
-    final Int c = freeChain.count();
-    return a;
+    //final Int c = freeChain.count();
+    return a.constant();
    }
 
   void free (Locatable Free)                                                                                            // Free a leaf or a branch and invalidate its contents
@@ -144,7 +144,7 @@ class Tree extends Program                                                      
     freeChain.set(a.i());
    }
 
-  Bit isAllocated (Int Node) {return freeChain.getBit(Node).Flip();}                                                    // Check whether a node is allocated
+  Bit isAllocated (Int Node) {return freeChain.getBit(Node).Flip().constant();}                                         // Check whether a node is allocated
 
   Int nodeAddress  (Int Node)                                                                                           // Convert an index to a byte address of node in memory
    {if (immediate())
@@ -162,8 +162,8 @@ class Tree extends Program                                                      
    }
 
   Int         root () {return Zero;}                                                                                    // The root is always at node zero
-  Bit   isRootLeaf () {return checkType(root(), BranchOrLeaf.leaf);}                                                    // Whether the root is a leaf
-  Bit isRootBranch () {return checkType(root(), BranchOrLeaf.branch);}                                                  // Whether the root is a branch
+  Bit   isRootLeaf () {return checkType(root(), BranchOrLeaf.leaf  ).constant();}                                       // Whether the root is a leaf
+  Bit isRootBranch () {return checkType(root(), BranchOrLeaf.branch).constant();}                                       // Whether the root is a branch
   Int       height () {final Int h = refHeight.getInt(); h.name = "Height"; return h.constant();}                       // Height of tree
 
   Bit checkType (Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
@@ -171,7 +171,7 @@ class Tree extends Program                                                      
     final Int t = unitMemory.getInt(a);
     final Bit r = new Bit(false);
     new If (t.eq(Type.value())) {void Then() {r.set(true);}};
-    return r;
+    return r.constant();
    }
 
   void setType (Int Node, BranchOrLeaf Type)                                                                            // Set the type of a node
@@ -179,8 +179,8 @@ class Tree extends Program                                                      
     unitMemory.putInt(a, new Int(Type.value()));
    }
 
-  Bit isBranch (Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                // Whether the indexed node a branch
-  Bit   isLeaf (Int Node) {return checkType(Node, BranchOrLeaf.leaf  );}                                                // Whether the indexed node a leaf
+  Bit isBranch (Int Node) {return checkType(Node, BranchOrLeaf.branch).constant();}                                     // Whether the indexed node a branch
+  Bit   isLeaf (Int Node) {return checkType(Node, BranchOrLeaf.leaf  ).constant();}                                     // Whether the indexed node a leaf
 
   Leaf leaf (Int Node) {return leaf(Node, true);}                                                                       // Index an existing leaf in memory            confirming that it really is a leaf
   Leaf leaf (Int Node, boolean Check)                                                                                   // Index an existing leaf in memory optionally confirming that it really is a leaf
