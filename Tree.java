@@ -133,7 +133,7 @@ class Tree extends Program                                                      
   Int      allocate ()                                                                                                  // Allocate a leaf or a branch using the first free node on the free chain
    {final Bint A = freeChain.firstOne();                                                                                // First element on free chain
     A.elseStop("No more leaves or branches available for allocation");                                                  // Out of memory check
-    final Int a = new Int("index") .set(A);                                                                             // First element on free chain
+    final Int a = new Int("index").constant(A);                                                                         // First element on free chain
     freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
     final Int c = freeChain.count();
     return a;
@@ -190,13 +190,13 @@ class Tree extends Program                                                      
 
     return new Leaf(build.leaf.parent(program()).memory(r).at(Node))                                                    // Base leaf at the indexed address
      {Bit full()                                                                                                        // Whether the branch should be regarded as full or not
-       {final Bit F = super.full();                                                                                     // Normal result of full
+       {final Bit F = super.full().constant();                                                                          // Normal result of full
         if (leafFanOut > 0)                                                                                             // Leaf fan out has been requested
          {final Int h = tree.height();                                                                                  // Make leaves close to the root small to reduce queuing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
           final Bit f = new Bit("Full", false);                                                                         // Whether the leaf is full under the criterion of root fan out
           new If (h.le(rootFanLevels))                                                                                  // Close enough to the root
-           {void Then() {f.set(count().ge(leafFanOut));}                                                                // The amount of fanout requested for leaves close to the root
-            void Else() {f.set(F);}                                                                                     // For other levels use the normal definition of full
+           {void Then() {f.constant(count().ge(leafFanOut));}                                                           // The amount of fanout requested for leaves close to the root
+            void Else() {f.constant(F);}                                                                                // For other levels use the normal definition of full
            };
           return f;
          }
@@ -236,8 +236,8 @@ class Tree extends Program                                                      
          {final Int d = tree.height().Dec().sub(level());                                                               // Make branches close to the root small to reduce queuing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
           final Bit f = new Bit("Full", false);                                                                         // Whether the branch is full under the criterion of root fan out
           new If (d.le(rootFanLevels))                                                                                  // Close enough to the root
-           {void Then() {f.set(count().gt(branchFanOut));}                                                              // The amount of fan out requested for branches close to the root
-            void Else() {f.set(F);}                                                                                     // For other levels use the normal definition of full
+           {void Then() {f.constant(count().gt(branchFanOut));}                                                         // The amount of fan out requested for branches close to the root
+            void Else() {f.constant(F);}                                                                                // For other levels use the normal definition of full
            };
           return f;
          }
@@ -250,9 +250,8 @@ class Tree extends Program                                                      
          {final Int h = tree.height();                                                                                  // Make branches close to the root small to reduce queuing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
           new If (h.le(rootFanLevels)) {void Then() {m.min(branchFanOut);}};                                            // Close enough to the root to branch request fan out
          }
-        return m;                                                                                                       // Revert to normal definition of full - i.e. when the branch is actually full
+        return m.constant();                                                                                            // Revert to normal definition of full - i.e. when the branch is actually full
        }
-
      };
    }
 
@@ -338,8 +337,8 @@ class Tree extends Program                                                      
               final Bint   f = s.usedSlotsToKeys.firstOne();                                                            // First used slot is the first entry
               final Int    d = new Int("down");
               new If (f)                                                                                                // Body of branch is not empty
-               {void Then() {d.set(b.data(s.getSlotToKeyIndex(f.i())));}                                                // Step to first child
-                void Else() {d.set(b.top());}                                                                           // Step through top as there are no entries in the body of the branch
+               {void Then() {d.constant(b.data(s.getSlotToKeyIndex(f.i())));}                                           // Step to first child
+                void Else() {d.constant(b.top());}                                                                      // Step through top as there are no entries in the body of the branch
                };
               getReadLock(d); freeReadLock(p); p.set(d);                                                                // Lock child, unlock parent, step down
               Continue.set();                                                                                           // Continue traverse towards a leaf
@@ -547,7 +546,7 @@ class Tree extends Program                                                      
      {subStart("Tree.findBranch");
       final Int p = root().dup();                                                                                       // Start at root
       getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
-      key.set(Key);
+      key.constant(Key);
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
@@ -555,7 +554,7 @@ class Tree extends Program                                                      
            {void Then()
              {final Branch.StepDown d = branch(p).new StepDown(Key);                                                    // Step down details
               new If (d.eqKey)
-               {void Then() {branch.set(p); slot.set(d.slot);}                                                          // Found the matching key so terminate the search and hold a read lock on the branch so found
+               {void Then() {branch.constant(p); slot.constant(d.slot);}                                                // Found the matching key so terminate the search and hold a read lock on the branch so found
                 void Else() {getReadLock(d.node); freeReadLock(p); p.set(d.node); Continue.set();}                      // Step down to the next branch
                };
              }
@@ -627,7 +626,7 @@ class Tree extends Program                                                      
       final Int p = root().dup();                                                                                       // Start at root
       final Bit valid = new Bit(false);                                                                                 // Whether a leaf was reached
 
-      key .set(Key);                                                                                                    // Record search key
+      key .constant(Key);                                                                                               // Record search key
       step.set(0);                                                                                                      // Start at the root
       mergePath.clear();                                                                                                // Clear the path
       eqKey    .clear();                                                                                                // Clear the equal key indicator to show that so far we have not encountered a branch entry containing the search key
@@ -928,7 +927,7 @@ class Tree extends Program                                                      
         final Slots.Find f = R.slots.new Find(Key);                                                                     // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
-           {data.set(R.data(R.slots.getSlotToKeyValue(f.slot.i())));                                                    // Data associated with key
+           {data.constant(R.data(R.slots.getSlotToKeyValue(f.slot.i())));                                               // Data associated with key
             R.slots.delete(f.slot.i());                                                                                 // Remove key from leaf comprising tree
             countDec();                                                                                                 // Count deleted key
            }
@@ -940,7 +939,7 @@ class Tree extends Program                                                      
         final Slots.Find f = l.slots.new Find(Key);                                                                     // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
-           {data.set(l.data(l.slots.getSlotToKeyValue(f.slot.i())));                                                    // Data associated with key
+           {data.constant(l.data(l.slots.getSlotToKeyValue(f.slot.i())));                                               // Data associated with key
             l.slots.delete(f.slot.i());                                                                                 // Remove key from leaf in tree tree
             p.mergeUp();                                                                                                // Merge leaf and nodes above
             countDec();                                                                                                 // Count deleted key
@@ -969,7 +968,7 @@ class Tree extends Program                                                      
                         };
                        }
                      };
-                    freeReadLock(F.branch.i());                                                                        // Free the read lock obtained by find branch
+                    freeReadLock(F.branch.i());                                                                         // Free the read lock obtained by find branch
                    }
                  };
                }
@@ -1016,7 +1015,7 @@ class Tree extends Program                                                      
      {void Then()
        {P.slots.delete(Left);                                                                                           // The left sibling can now be freed
         free(l);
-        m.set();
+        m.constant();
        }
      };
     subFinish();
@@ -1025,7 +1024,7 @@ class Tree extends Program                                                      
 
   Bit mergeLeftBranchIntoRightSibling (Branch Parent, Int Left, Branch Right)                                           // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {subStart("Tree.mergeLeftBranchIntoRightSibling");
-    final Bit    m = new Bit(false);                                                                                     // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Bit    m = new Bit(false);                                                                                    // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(Left)));                                                   // Left branch of merge
     final Int    k = P.slots.getSlotToKeyValue(Left);                                                                   // The parent key for the left sibling
@@ -1033,7 +1032,7 @@ class Tree extends Program                                                      
      {void Then()                                                                                                       // The left sibling can now be freed
        {P.slots.delete(Left);                                                                                           // Remove from parent
         free(l);                                                                                                        // Free left branch
-        m.set();                                                                                                        // Success
+        m.constant();                                                                                                   // Success
        }
      };
     subFinish();
@@ -1052,16 +1051,16 @@ class Tree extends Program                                                      
          {void Then() {l.set(P.data(P.slots.getSlotToKeyIndex(R.i())));}
           void Else() {l.set(P.top());}
          };
-        m.set(mergeLeftLeafIntoRightSibling(P, Left, leaf(l)));                                                         // Merge sibling leaves
+        m.constant(mergeLeftLeafIntoRightSibling(P, Left, leaf(l)));                                                    // Merge sibling leaves
        }
       void Else()                                                                                                       // Merge last two branches
        {final Bint R = P.slots.usedSlotsToKeys.nextOne(Left);                                                           // Right sibling via next valid slot
 
         new If (R)                                                                                                      // Next slot exists and so references the right sibling
-         {void Then() {l.set(P.data(P.slots.getSlotToKeyIndex(R.i())));}                                                // Next sibling is in the body of the parent
-          void Else() {l.set(P.top());}                                                                                 // Next sibling is top
+         {void Then() {l.constant(P.data(P.slots.getSlotToKeyIndex(R.i())));}                                           // Next sibling is in the body of the parent
+          void Else() {l.constant(P.top());}                                                                            // Next sibling is top
          };
-        m.set(mergeLeftBranchIntoRightSibling(P, Left, branch(l)));                                                     // Merge sibling branches
+        m.constant(mergeLeftBranchIntoRightSibling(P, Left, branch(l)));                                                // Merge sibling branches
        }
      };
     subFinish();
