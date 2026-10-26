@@ -136,19 +136,19 @@ class Branch extends Program implements Program.Locatable                       
       final Slots.Find f = slots.new Find(Key);  eqKey.set(f.equal);                                                    // Find result
       new If (f.empty)                                                                                                  // Found the index of a key that is greater than or equal to the search key
        {void Then()                                                                                                     // Step through top because the body of the branch is empty
-         {node.set(top());
+         {node.constant(top());
          }
         void Else()
          {new If (f.equal.or(f.lower))                                                                                  // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
            {void Then()
-             {slot.set(f.slot.i());                                                                                     // Step through slot
-              node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
+             {slot.constant(f.slot.i());                                                                                     // Step through slot
+              node.constant(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
              }
             void Else()                                                                                                 // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
              {final Bint n = slots.usedSlotsToKeys.nextOne(f.slot.i());
               new If (n.valid())
-               {void Then() {node.set(data(slots.getSlotToKeyIndex(n.i()))); slot.set(n.i());}                          // Node at next level down
-                void Else() {node.set(top());}                                                                          // No next key so step down through top
+               {void Then() {node.constant(data(slots.getSlotToKeyIndex(n.i()))); slot.constant(n.i());}                // Node at next level down
+                void Else() {node.constant(top());}                                                                     // No next key so step down through top
                };
              }
            };
@@ -174,20 +174,20 @@ class Branch extends Program implements Program.Locatable                       
          {stop("Slot should be set but is empty:", BelowSlot, slots);
          }
         final Slots.Find f = slots.new Find().set(BelowSlot.i(), true);                                                 // Construct the find to indicate how and where to perform the insertion as if we had just done a find
-        r.set(f.insert(Key));                                                                                           // Insert knowing the insertion slot in advance
+        r.constant(f.insert(Key));                                                                                           // Insert knowing the insertion slot in advance
         final Int k = slots.getSlotToKeyIndex(r);
         refData.putInt(k, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
        }
       void Else()                                                                                                       // No below slot supplied so insert in the middle if empty otherwise at the end
        {new If (slots.empty())                                                                                          // Easy insert as the slots are empty
          {void Then()
-           {r.set(slots.insertEmpty(Key));                                                                              // Insert immediately in the center
+           {r.constant(slots.insertEmpty(Key));                                                                              // Insert immediately in the center
             refData.putInt(Data);                                                                                       // Place data in the location that corresponds to the key slot used to complete the insertion
            }
           void Else()                                                                                                   // Insert above the last key, which is known to exist because the slots are not empty
            {final Int l = slots.locateLastUsedSlot().i();
             final Slots.Find f = slots.new Find().set(l, false);                                                        // Construct the find to indicate how and where to perform the insertion as if we had just done a find
-            r.set(f.insert(Key));                                                                                       // Insert knowing the insertion slot in advance
+            r.constant(f.insert(Key));                                                                                       // Insert knowing the insertion slot in advance
             final Int k = slots.getSlotToKeyIndex(r);
             refData.putInt(k, Data);                                                                                    // Place data in the location that corresponds to the key slot used to complete the insertion
            }
@@ -201,13 +201,14 @@ class Branch extends Program implements Program.Locatable                       
    {subStart("Branch.insertEmpty");
     if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
-    r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
+    r.constant(slots.insertEmpty(Key));                                                                                 // Insert immediately in the center
     refData.putInt(Data);                                                                                               // Place data in first key slot
     subFinish();
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
 
 //D1 Compact, Split, Merge                                                                                              // Compact, split or merge branches
+
 //D2 Compact                                                                                                            // Compact a branch to the left or right
 
   void compactLeft ()                                                                                                   // Compact a branch to the left
@@ -228,18 +229,14 @@ class Branch extends Program implements Program.Locatable                       
 
   private Int splittingKey ()                                                                                           // Splitting key for a branch assuming that the branch has been compacted to the right
    {subStart("Branch.splittingKey");
-//  if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
-//  final Int r = slots.getSlotToKeyValue(new Int(maxSize/2));
-    final Int r = slots.getSlotToKeyValue(count().down());
+    final Int r = slots.getSlotToKeyValue(count().down()).constant();
     subFinish();
     return r;
    }
 
   Int splitRight (Branch Right)                                                                                         // Split a full branch rightwards into a supplied branch and return the splitting key
    {subStart("Branch.splitRight");
-//  if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
-//  if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
     if (immediate() && count().i() < 2) stop("Branch must have at least two children before it can be split");          // The branch must have sufficient entries
     final Branch L = this, R = Right;
     R.slots.initializeMemory();                                                                                         // Clear the target
@@ -249,20 +246,18 @@ class Branch extends Program implements Program.Locatable                       
     L .top(L.data(sk));                                                                                                 // Left top is data from splitting key
     R.refLevel.copy(L.refLevel, 1);                                                                                     // Copy the level of the left branch into the level of the right branch
     subFinish();
-    return L.slots.getKeyValue(sk);                                                                                     // Splitting key
+    return L.slots.getKeyValue(sk).constant();                                                                          // Splitting key
    }
 
   Int splitLeft (Branch Left)                                                                                           // Split a full branch leftwards into a supplied branch and return the splitting key
    {subStart("Branch.mergeRight");
-//  if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
-//  if (immediate() && full().flip().b()) stop("Branch not full");                                                      // The branch must be full
     if (immediate() && count().i() < 2) stop("Branch must have at least two children before it can be split");          // The branch must have sufficient entries
     final Branch L = Left, R = this;
     L.slots.initializeMemory();                                                                                         // Clear target
     L.refData.copy(R.refData, R.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     final Int sk = R.slots.splitLeftOdd(L.slots);                                                                       // Split the slots  and get the index of the splitting key
     L .top(R.data(sk));                                                                                                 // Left top is data from splitting key
-    final Int r = R.slots.getKeyValue(sk);                                                                              // Splitting key
+    final Int r = R.slots.getKeyValue(sk).constant();                                                                   // Splitting key
     L.refLevel.copy(R.refLevel, 1);                                                                                     // Copy the level of the right branch into the level of the left branch
     subFinish();
     return r;                                                                                                           // Splitting key
@@ -287,7 +282,7 @@ class Branch extends Program implements Program.Locatable                       
     final Branch left = this;
     final Int      lc = left .count().constant();
     final Int      rc = Right.count().constant();
-    final Bit      r  = new Bit().clear();
+    final Bit       r = new Bit().clear();
 
     new If (lc.Add(rc).lt(mergeLimit()))
      {void Then()
@@ -307,7 +302,7 @@ class Branch extends Program implements Program.Locatable                       
        }
      };
     subFinish();
-    return r;
+    return r.constant();
    }
 
   Bit mergeLeft (Branch Left, Int Sk)                                                                                   // Merge the specified branch into the left of this branch separating the two by the specified splitting key
@@ -334,7 +329,7 @@ class Branch extends Program implements Program.Locatable                       
        }
      };
     subFinish();
-    return r;
+    return r.constant();
    }
 
   int splitSize () {return maxSize()>>>1;}                                                                              // Size of a split branch
