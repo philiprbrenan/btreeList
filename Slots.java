@@ -502,8 +502,8 @@ class Slots extends Program                                                     
          }
         new ForCount (N.Sub(rc), N)                                                                                     // Merge right into left
          {void body(Int Index)
-           {final Int k = Right.getSlotToKeyIndex(Index);                                                               // Index of key from right
-            final Int K = Right.getKeyValue(k);                                                                         // Value of key from right
+           {final Int k = Right.getSlotToKeyIndex(Index).constant();                                                    // Index of key from right
+            final Int K = Right.getKeyValue(k).constant();                                                              // Value of key from right
             left.setSlotAndKey(Index, k, K);                                                                            // Reinsert right key into left in same position
            }
          };
@@ -725,21 +725,21 @@ class Slots extends Program                                                     
 
       if (immediate() && empty().b()) stop("Insert after find requires a non empty set of slots");                      // The slots must have at least one element
 
-      final Bit rd = new Bit(false);                                                                                    // Block extends far enough up   to require a redistribution to create new insertion points within it.  Might it be possible to do this locally without having to redistribute through the entire set of slots?
+      final Bit rd = new Bit(false);                                                                                    // Block extends far enough up to require a redistribution to create new insertion points within it.  Might it be possible to do this locally without having to redistribute through the entire set of slots?
       new If (s.ge(p))
-       {void Then() {rd.set(s.Sub(p).ge(redistributionWidth()));}
-        void Else() {rd.set(p.Sub(s).ge(redistributionWidth()));}
+       {void Then() {rd.constant(s.Sub(p).ge(redistributionWidth()));}
+        void Else() {rd.constant(p.Sub(s).ge(redistributionWidth()));}
        };
 
       new If (rd)                                                                                                       // Redistribution required
        {void Then()
-         {final Int b = new Int(getSlotToKeyIndex(f.slot.i()));                                                         // Index of the key before redistribution
+         {final Int b = getSlotToKeyIndex(f.slot.i());                                                                  // Index of the key before redistribution
           redistribute();                                                                                               // Redistribute slots
-          final Int a = new Int(getKeyToSlotIndex(b));                                                                  // Recover new position of slot referring to the found key
+          final Int a = getKeyToSlotIndex(b).constant();                                                                // Recover new position of slot referring to the found key
           K.copy(usedKeys.firstZero());                                                                                 // Position for key in key slots
           f.set(a, f.lower, f.higher);                                                                                  // Locate key in redistributed slots
-          s.set(f.slot.i());                                                                                            // Nearest existing key slot
-          p.set(locateNearestFreeSlotToKey(s, f.lower));                                                                // Absolute position of nearest free slot
+          s.constant(f.slot.i());                                                                                       // Nearest existing key slot
+          p.constant(locateNearestFreeSlotToKey(s, f.lower));                                                           // Absolute position of nearest free slot
          }
        };
 
@@ -752,8 +752,7 @@ class Slots extends Program                                                     
                  {final Bint L = usedSlotsToKeys.prevOne(p);                                                            // Previous used slot
                   final Int  l = new Int();                                                                             // Previous used slot
                   new If (L.notValid()) {void Then() {l.set(0);} void Else() {l.set(L).inc();}};                        // Last zero
-                  final Int m = l.add(p).down();                                                                        // Middle zero between lower and upper limit of zeros
-                  setSlotAndKey(P.set(m), K.i(), Key);                                                                  // Insert key in the middle zero
+                  setSlotAndKey(P.set(l.add(p).down()), K.i(), Key);                                                    // Insert key in the middle zero
                  }
                 void Else()                                                                                             // Previous free slot has intervening occupied slots
                  {//Improvements Distribute block across any adjacent zeros
@@ -796,8 +795,7 @@ class Slots extends Program                                                     
                  {final Bint U = usedSlotsToKeys.nextOne(p);                                                            // Next used slot
                   final Int  u = new Int();                                                                             // Next used slot
                   new If (U.notValid()) {void Then() {u.set(numberOfSlotsToKeys());} void Else() {u.set(U);}};          // Last zero
-                  final Int m = u.add(p).down();                                                                        // Middle zero between lower and upper limit of zeros
-                  setSlotAndKey(P.set(m), K.i(), Key);                                                                  // Insert key in the middle zero
+                  setSlotAndKey(P.set(u.add(p).down()), K.i(), Key);                                                    // Insert key in the middle zero
                  }
                 void Else()                                                                                             // Next free slot has intervening occupied slots
                  {final Int k = s.Inc();                                                                                // Insert at this index
