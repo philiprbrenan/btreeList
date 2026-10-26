@@ -159,7 +159,7 @@ class Slots extends Program                                                     
   Int locateNearestFreeSlotToKey (Int Position, Bit FavorLow)                                                           // Absolute position of the nearest free slot to the indicated position.  There will always be one as there are always more slots than keys. Prev will be true if the previous free slot is closest, else false if the next free slot is closest.
    {subStart("Slots.locateNearestFreeSlotToKey");
     final Slots slots = this;                                                                                           // Slots to search
-    final Int       r = new Int("radius", 0);                                                                           // Search radius
+    final Int       r = new Int("radius").set(0);                                                                       // Search radius
     new If (getSlotToKeysInUse(Position))                                                                               // The slot is in use as expected
      {void Then()
        {final Bint p = usedSlotsToKeys.prevZero(Position);                                                              // Prev free slot
@@ -945,7 +945,7 @@ class Slots extends Program                                                     
 
       new If (empty().Flip())                                                                                           // Nothing to find if all the slots are empty
        {void Then()                                                                                                     // Not empty
-         {final Int p = u.topOne();                                                                                     // Position in ones tree - start at the top
+         {final Int p = u.topOne().dup();                                                                               // Position in ones tree - start at the top
           final Int l = u.lowOne (p);                                                                                   // Index of lower bound in slots - start at the slot referring to the lowest key
           final Int r = u.highOne(p);                                                                                   // Index of upper bound in slots - start at the slot referring to the highest key
           final Int L = getSlotToKeyValue(l);                                                                           // Value of Key at lower bound of search
@@ -1550,9 +1550,9 @@ keys     :    0   0   4   3
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r));
         new ForCount(2)
          {void body(Int Index)
-           {final Int kr = new Int(), kl = new Int(0);
+           {final Int kr = new Int("kr"), kl = new Int("kl").set(0);
             new If (Index.eq(Zero)) {void Then() {kr.set(3); kl.set(2);}};
-            new If (Index.eq(One)) {void Then() {kr.set(4); kl.set(1);}};
+            new If (Index.eq(One))  {void Then() {kr.set(4); kl.set(1);}};
             r.insert(kr); l.insert(kl);
            }
          };
