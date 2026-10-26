@@ -105,13 +105,13 @@ class Leaf extends Program implements Program.Locatable                         
         if (Delete) slots.delete(f.slot.i());                                                                           // Delete the key if requested
        }
      };
-    return r;                                                                                                           // Return data associated with key
+    return r.constant();                                                                                                // Return data associated with key
    }
 
   Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a leaf returning the index of the containing slot
    {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                // The key must not already be present
     final Slots.Insert i = slots.insert(Key);                                                                           // Insert key
-    final Int          k = slots.getSlotToKeyIndex(i.slot.i());                                                         // Key into which the insertion was performed
+    final Int          k = slots.getSlotToKeyIndex(i.slot.i()).constant();                                              // Key into which the insertion was performed
     refData.putInt(k, Data);
     return i;                                                                                                           // Return the slot in the leaf in which the key, data pair was inserted
    }
@@ -137,7 +137,7 @@ class Leaf extends Program implements Program.Locatable                         
     final Leaf left = this;                                                                                             // Current leaf is on the left
     Right.slots.initializeMemory();                                                                                     // Clear target
     Right.refData.copy(left.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
-    return left.slots.splitRightEven(Right.slots);                                                                      // Split the slots
+    return left.slots.splitRightEven(Right.slots).constant();                                                           // Split the slots
    }
 
   Int splitLeft (Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf and return the splitting key value
@@ -146,7 +146,7 @@ class Leaf extends Program implements Program.Locatable                         
     final Leaf right = this;                                                                                            // Current leaf is on the right
     Left.slots.initializeMemory();                                                                                      // Clear target
     Left.refData.copy(right.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
-    return right.slots.splitLeftEven(Left.slots);                                                                       // Split the slots
+    return right.slots.splitLeftEven(Left.slots).constant();                                                            // Split the slots
    }
 
 //D2 Merge                                                                                                              // Merge two leaves
@@ -178,7 +178,7 @@ class Leaf extends Program implements Program.Locatable                         
         left.slots.mergeFromRightEven(Right.slots);                                                                     // Merge the slots
        }
      };
-    return r;
+    return r.constant();
    }
 
   Bit mergeLeft(Leaf Left)                                                                                              // Merge the leaf into the right of this leaf
@@ -199,7 +199,7 @@ class Leaf extends Program implements Program.Locatable                         
         right.slots.mergeFromLeftEven(Left.slots);                                                                      // Merge the slots
        }
      };
-    return r;
+    return r.constant();
    }
 
   int splitSize () {return maxSize()>>>1;}                                                                              // Size of a split leaf
@@ -211,13 +211,13 @@ class Leaf extends Program implements Program.Locatable                         
    }
 
   void iterate(Iterator Iterator)                                                                                       // Iterate over a leaf
-   {final Bint f = slots.usedSlotsToKeys.firstOne();
+   {final Bint f = slots.usedSlotsToKeys.firstOne().dup();
     new If (f.valid())
      {void Then()
        {new For(maxSize)
          {void body(Int Index, Bit Continue)
            {final Int i = f.i();
-            final Int k = slots.getSlotToKeyValue(i), d = data(slots.getSlotToKeyIndex(i));
+            final Int k = slots.getSlotToKeyValue(i).constant(), d = data(slots.getSlotToKeyIndex(i)).constant();
             new I() {void a() {Iterator.process(k, d);}  boolean trace() {return false;}};
             f.copy(slots.usedSlotsToKeys.nextOne(i));
             Continue.set(f.valid());
