@@ -15,7 +15,7 @@ import java.nio.file.*;
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "constants";                                                 // Project currently being worked on
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
@@ -120,8 +120,8 @@ public class Program extends Test                                               
     pcConstant      = p ? new TreeMap<>()              : program().pcConstant;                                          // Instruction equivalence set identified by program counter
     intMemory       = p ? new Memory(0, "Ints", false) : program().intMemory;                                           // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
     bitMemory       = p ? new Memory(0, "Bits", false) : program().bitMemory;                                           // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
-    Zero            = new Int(0).constant();                                                                            // Integer constant zero
-    One             = new Int(1).constant();                                                                            // Integer constant one
+    Zero            = new Int(0);                                                                                       // Integer constant zero
+    One             = new Int(1);                                                                                       // Integer constant one
 
     unitMemory      = Build.size         != null ? new Memory(Build.size, "program", false) :                           // Memory associated with program if any
                       Build.subProgramOf != null ? Build.subProgramOf.unitMemory            : null;                     // Share the memory of the indicated program
@@ -653,11 +653,23 @@ public class Program extends Test                                               
     String  in1v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read1Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String  in2v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read2Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String   onv ()       {return fast ? "fastInts["+cawci+"]" : intMemory().writeInt();}                               // Verilog name of integer to be written into memeory or into the fast integers array
-    Int constant ()       {if (!suppressConstantChecking) new I() {void a() {constant = true;} boolean trace() {return false;}}; return this;}         // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
     Int constant (int  I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
     Int constant (Int  I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
     Int constant (Bint I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-    Int variable ()       {if (!suppressConstantChecking) new I() {void a() {constant = false;} boolean trace() {return false;}}; return this;}        // Remove constant setting
+
+    Int constant ()                                                                                                     // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+     {if (!suppressConstantChecking)
+       {new I() {void a() {constant = true;} boolean trace() {return false;}};
+       }
+      return this;
+     }
+
+    Int variable ()                                                                                                     // Remove constant setting making it possible to update the integer
+     {if (!suppressConstantChecking)
+       {new I() {void a() {constant = false;} boolean trace() {return false;}};
+       }
+      return this;
+     }
 
     enum Ops                                                                                                            // Possible integer operations
      {abs, add, add2, dec, del, div, down, eq,  ez,   ge,  gt, inc, le, lt,
@@ -1343,7 +1355,7 @@ public class Program extends Test                                               
        {void   a() {
          if (x && ints.units[r.id] == r.i()) wastedReads.inc(traceBack);
          if (x) ints.units[r.id] = r.i(); ints.writeIntEnable        = false; jTrace(f("%8d getInt4 disable write",  currentPc()));}
-        String v() {return               ints.writeIntEnable() + " <= 0;" +   vTrace(  "%8d getInt4 disable write", "pc"         );}
+        String v() {return                ints.writeIntEnable() + " <= 0;" +  vTrace(  "%8d getInt4 disable write", "pc"         );}
        };
       return r;
      }
@@ -1727,6 +1739,13 @@ endmodule
     return suppressInstructionTracing ? ""+s : "`ifndef SYNTHESIS "+s+" `endif";
    }
 
+  String currentInstructionLocation()                                                                                   // Show the current instruction location
+   {if (immediate()) return traceBack();
+    final I i = executing();
+    if (i != null) return i.instructionLocation();
+    return "";
+   }
+
 // D2 Execute                                                                                                           // Execute the code in the current program
 
   void execute ()                                                                                                       // Execute the current code
@@ -1917,8 +1936,8 @@ cd {f}; yosys -q {y}                                                            
   void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpJavaMemoryInDecimal());}               // Dump all the memories
 
   void initializeJavaVars()                                                                                             // Initialize Java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the Verilog version
-   {for (Int i : ints()) {i.i(0);      i.v = false;}
-    for (Bit b : bits()) {b.i = false; b.v = false;}
+   {for (Int i : ints()) {i.i(0);      i.v = false; i.constant = false;}
+    for (Bit b : bits()) {b.i = false; b.v = false; b.constant = false;}
    }
 
   void dumpJavaVariables ()                                                                                             // Dump all memories and variables to the Java trace file
