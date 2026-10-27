@@ -692,28 +692,28 @@ class Slots extends Program                                                     
     Find () {}                                                                                                          // Default constructor
 
     Find set(Int Slot, Bit Lower, Bit Higher)                                                                           // Set a find result
-     {slot .set(Slot); lower.constant(Lower); higher.constant(Higher);
-      equal.constant(lower.And(higher));
-      empty.constant(lower.Or (higher).flip());
+     {slot .set(Slot); lower.set(Lower); higher.set(Higher);
+      equal.set(lower.And(higher));
+      empty.set(lower.Or (higher).flip());
       insertBelow = false;                                                                                              // Determine whether to insert above or below at runtime
       return this;
      }
 
     Find set(Int Slot, boolean InsertBelow)                                                                             // Set a find result showing that a key should be inserted in the slot above (false) or below(true) below the indicated slot
      {slot .set(Slot);
-      equal.constant(false);
-      empty.constant(false);
-      if (InsertBelow) {lower.constant(true);  higher.constant(false); insertBelow = true;  insertAbove = false;}       // Insist on an insert below the found key
-      else             {lower.constant(false); higher.constant(true);  insertBelow = false; insertAbove = true; }       // Insist on an insert above the found key
+      equal.set(false);
+      empty.set(false);
+      if (InsertBelow) {lower.set(true);  higher.set(false); insertBelow = true;  insertAbove = false;}                 // Insist on an insert below the found key
+      else             {lower.set(false); higher.set(true);  insertBelow = false; insertAbove = true; }                 // Insist on an insert above the found key
       return this;
      }
 
     void copy(Find Source)                                                                                              // Copy a find result
      {slot  .copy(Source.slot);
-      lower .constant(Source.lower);
-      higher.constant(Source.higher);
-      equal .constant(Source.equal);
-      empty .constant(Source.empty);
+      lower .set(Source.lower);
+      higher.set(Source.higher);
+      equal .set(Source.equal);
+      empty .set(Source.empty);
      }
 
     Int insert(Int Key)                                                                                                 // Insert a key into the slots in light of the find result and return the slot chosen. The slots are assumed to be not empty.
@@ -727,19 +727,19 @@ class Slots extends Program                                                     
 
       final Bit rd = new Bit(false);                                                                                    // Block extends far enough up to require a redistribution to create new insertion points within it.  Might it be possible to do this locally without having to redistribute through the entire set of slots?
       new If (s.ge(p))
-       {void Then() {rd.constant(s.Sub(p).ge(redistributionWidth()));}
-        void Else() {rd.constant(p.Sub(s).ge(redistributionWidth()));}
+       {void Then() {rd.set(s.Sub(p).ge(redistributionWidth()));}
+        void Else() {rd.set(p.Sub(s).ge(redistributionWidth()));}
        };
 
       new If (rd)                                                                                                       // Redistribution required
        {void Then()
          {final Int b = getSlotToKeyIndex(f.slot.i());                                                                  // Index of the key before redistribution
           redistribute();                                                                                               // Redistribute slots
-          final Int a = getKeyToSlotIndex(b).constant();                                                                // Recover new position of slot referring to the found key
+          final Int a = getKeyToSlotIndex(b);                                                                           // Recover new position of slot referring to the found key
           K.copy(usedKeys.firstZero());                                                                                 // Position for key in key slots
           f.set(a, f.lower, f.higher);                                                                                  // Locate key in redistributed slots
-          s.constant(f.slot.i());                                                                                       // Nearest existing key slot
-          p.constant(locateNearestFreeSlotToKey(s, f.lower));                                                           // Absolute position of nearest free slot
+          s.set(f.slot.i());                                                                                            // Nearest existing key slot
+          p.set(locateNearestFreeSlotToKey(s, f.lower));                                                                // Absolute position of nearest free slot
          }
        };
 
