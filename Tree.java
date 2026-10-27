@@ -320,7 +320,7 @@ class Tree extends Program                                                      
        {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {leaf.constant(p);                                                                                         // Record leaf
+             {leaf.set(p);                                                                                              // Record leaf
               final Leaf  l = leaf(p);                                                                                  // Details of leaf
               final Slots s = l.slots;                                                                                  // Slots for leaf
               final Bint  f = s.usedSlotsToKeys.firstOne();                                                             // First used slot is the first entry
@@ -377,7 +377,7 @@ class Tree extends Program                                                      
        {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {leaf.constant(p);                                                                                         // Record leaf
+             {leaf.set(p);                                                                                              // Record leaf
               final Leaf  l = leaf(p);                                                                                  // Details of leaf
               final Slots s = l.slots;                                                                                  // Slots for leaf
               final Bint  f = s.usedSlotsToKeys.lastOne();                                                              // Last used slot is the last entry
@@ -429,7 +429,7 @@ class Tree extends Program                                                      
          {final Leaf           l = leaf(f.leaf.i());
           final Slots          s = l.slots;
           final Slots.FindGe   n = s.new FindGe(f.key);
-          leaf.constant(f.leaf.i());
+          leaf.set(f.leaf.i());
           new If (n.slot)
            {void Then()
              {key .set(       s.getSlotToKeyValue(n.slot.i()));                                                         // Key from last slot
@@ -502,7 +502,7 @@ class Tree extends Program                                                      
        {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {leaf.constant(p);                                                                                         // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
+             {leaf.set(p);                                                                                              // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down details
