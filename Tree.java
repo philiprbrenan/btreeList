@@ -598,7 +598,7 @@ class Tree extends Program                                                      
             void Else()                                                                                                 // We have arrived at a leaf - find the maximum element
              {final Slots s = leaf(p).slots;                                                                            // Slots
               final Bint  i = s.usedSlotsToKeys.lastOne();                                                              // Index of slot referencing last key
-              new If (i) {void Then() {maxKey.set(s.getSlotToKeyValue(i.i()));}};                                  // Last key in leaf if there is one
+              new If (i) {void Then() {maxKey.set(s.getSlotToKeyValue(i.i()));}};                                       // Last key in leaf if there is one
               freeReadLock(p);
              }
            };
@@ -626,7 +626,7 @@ class Tree extends Program                                                      
       final Int p = root().dup();                                                                                       // Start at root
       final Bit valid = new Bit(false);                                                                                 // Whether a leaf was reached
 
-      key .set(Key);                                                                                               // Record search key
+      key .set(Key);                                                                                                    // Record search key
       step.set(0);                                                                                                      // Start at the root
       mergePath.clear();                                                                                                // Clear the path
       eqKey    .clear();                                                                                                // Clear the equal key indicator to show that so far we have not encountered a branch entry containing the search key
@@ -636,7 +636,7 @@ class Tree extends Program                                                      
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
              {valid.set();                                                                                              // Reached a leaf
-              leaf.set(p);                                                                                         // End the path on a leaf
+              leaf.set(p);                                                                                              // End the path on a leaf
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down
@@ -2740,7 +2740,7 @@ Leaf           size:   4, count:   2
 
   static void test_rootFanOut3 ()
    {          test_rootFanOut3(true);
-            //test_rootFanOut3(false);                                                                                 // Github keeps running out of memory
+            //test_rootFanOut3(false);                                                                                  // Github keeps running out of memory
    }
 
   static void test_insert_locked ()
