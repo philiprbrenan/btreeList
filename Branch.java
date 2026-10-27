@@ -265,7 +265,7 @@ class Branch extends Program implements Program.Locatable                       
 
 //D2 Merge                                                                                                              // Merge two branches
 
-  Int mergeLimit() {return new Int(maxSize());}                                                                         // Combined branch size limit for a merge
+  Int mergeLimit () {return new Int(maxSize());}                                                                        // Combined branch size limit for a merge
 
   private void copyMergeData (Branch Source, Int Start, Int End)                                                        // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {subStart("Branch.copyMergeData");
