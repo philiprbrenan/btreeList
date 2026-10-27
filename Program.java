@@ -201,7 +201,7 @@ public class Program extends Test                                               
       return e;
      }
 
-    public String toString()                                                                                            // Print counts
+    public String toString ()                                                                                           // Print counts
      {final StringBuilder s = new StringBuilder();
 
       for (Map.Entry<String, Counter> e : entries())                                                                    // Descending order of count
@@ -384,7 +384,7 @@ public class Program extends Test                                               
 
     boolean      b ()            {x(); return i;}
     void         x ()            {if (!v) variableNotSet("Bit", name);}                                                 // Check a value has been set for the boolean
-    Bit   constant ()            {if (isExecuting() && !immediate()) stop("Cannot change to a constant while executing in delayed mode"); constant = true; return this;}                                                        // Mark as a constant
+    Bit   constant ()            {constant = true; return this;}                                                        // Mark as a constant
 
     Bit        set ()            {return ie(Ops.set,  true); }                                                          // Boolean operations which modify the target
     Bit        set (boolean I)   {return ie(Ops.set,  I);    }
@@ -413,7 +413,7 @@ public class Program extends Test                                               
     int        pc () {return currentPc();}                                                                              // Address of instruction
     void setValid () {v = true;}                                                                                        // Mark a bit as valid
 
-    String registerName(int R)                                                                                          // Register name for bit memory name from number
+    String registerName (int R)                                                                                         // Register name for bit memory name from number
      {return switch (R)
        {case 0  -> bitMemory().read0Int();
         case 1  -> bitMemory().read1Int();
@@ -450,12 +450,12 @@ public class Program extends Test                                               
            };
          }
        }
-      abstract void loadValue(boolean V);                                                                               // Override to record the value of the variable
+      abstract void loadValue (boolean V);                                                                              // Override to record the value of the variable
      } // LoadSourceOrTarget
 
     void S ()                                                                                                           // Address source boolean value and load its value
      {new LoadSourceOrTarget("S", this, 1, true)
-       {void loadValue(boolean V) {sourceBit  (V);}
+       {void loadValue(boolean V) {sourceBit(V);}
        };
      }
 
@@ -476,7 +476,8 @@ public class Program extends Test                                               
       new I()                                                                                                           // Lower  right enable - which could be merged with the next instruction
        {void   a()
          {if (!x) M.units[M.readWriteIndex] = M.writeInt;
-                           M.writeIntEnable = false;        jTrace(f("%8d Disable write bit", currentPc()));}           // Finished write in Java
+                           M.writeIntEnable = false;        jTrace(f("%8d Disable write bit", currentPc()));            // Finished write in Java
+         }
         String v() {return M.writeIntEnable() + " <= 0; "+  vTrace(  "%8d Disable write bit", "pc");}                   // Finishes write in Verilog
        };
      }
@@ -648,8 +649,8 @@ public class Program extends Test                                               
     String  in2v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read2Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String   onv ()       {return fast ? "fastInts["+cawci+"]" : intMemory().writeInt();}                               // Verilog name of integer to be written into memeory or into the fast integers array
 
-    Int constant ()       {if (isExecuting() && !immediate()) stop("Cannot dynamically change from a constant to a variable while executing in delayed mode"); constant = true;  return this;}                                                              // Mark as a constant
-    Int variable ()       {if (isExecuting() && !immediate()) stop("Cannot dynamically change from a variable to a constant while executing in delayed mode"); constant = false; return this;}                                                             // Mark as a variable
+    Int constant ()       {constant = true;  return this;}                                                              // Mark as a constant
+    Int variable ()       {constant = false; return this;}                                                              // Mark as a variable
 
     enum Ops                                                                                                            // Possible integer operations
      {abs, add, add2, dec, del, div, down, eq,  ez,   ge,  gt, inc, le, lt,
@@ -664,9 +665,9 @@ public class Program extends Test                                               
     Int   del (int  I) {return ie(Ops.del,  I);}
     Int   div (int  I) {return ie(Ops.div , I);}
     Int   div (Int  I) {return ie(Ops.div , I);}
-    Int   down()       {return ie(Ops.down   );}
-    Int   down(int I)  {return ie(Ops.down, I);}
-    Int   down(Int I)  {return ie(Ops.down, I);}
+    Int  down ()       {return ie(Ops.down   );}
+    Int  down (int I)  {return ie(Ops.down, I);}
+    Int  down (Int I)  {return ie(Ops.down, I);}
     Int   inc ()       {return ie(Ops.inc    );}
     Int   max (int  I) {return ie(Ops.max,  I);}
     Int   max (Int  I) {return ie(Ops.max,  I);}
@@ -680,12 +681,12 @@ public class Program extends Test                                               
     Int   set (int  I) {return ie(Ops.set , I);}
     Int   set (Int  I) {return ie(Ops.set , I);}
     Int   set (Bint I) {return ie(Ops.set , I.i());}
-    Int   sqrt()       {return ie(Ops.sqrt   );}
+    Int  sqrt ()       {return ie(Ops.sqrt   );}
     Int   sub (int  I) {return ie(Ops.sub , I);}
     Int   sub (Int  I) {return ie(Ops.sub , I);}
-    Int   up  ()       {return ie(Ops.up     );}
-    Int   up  (int I)  {return ie(Ops.up,   I);}
-    Int   up  (Int I)  {return ie(Ops.up,   I);}
+    Int    up ()       {return ie(Ops.up     );}
+    Int    up (int I)  {return ie(Ops.up,   I);}
+    Int    up (Int I)  {return ie(Ops.up,   I);}
     Int  zero ()       {return ie(Ops.zero   );}
 
     Int ie (Ops Op)                                                                                                     // Create an instruction that can either be executed immediately one by one or later en masse
@@ -712,7 +713,7 @@ public class Program extends Test                                               
       return this;                                                                                                      // The current integer
      }
 
-    String registerName(int R)                                                                                          // Register name for integer memory name from number
+    String registerName (int R)                                                                                         // Register name for integer memory name from number
      {return switch (R)
        {case 0  -> intMemory().read0Int();
         case 1  -> intMemory().read1Int();
@@ -721,7 +722,7 @@ public class Program extends Test                                               
        };
      }
 
-    void incUsage(int R)                                                                                                // Show how a register was used
+    void incUsage (int R)                                                                                               // Show how a register was used
      {switch (R)
        {case 0  -> nr0++;
         case 1  -> nr1++;
@@ -1205,14 +1206,14 @@ public class Program extends Test                                               
 
 //D2 Do nothing                                                                                                         // But do it very well
 
-  I nop()                                                                                                               // Do nothing
+  I nop ()                                                                                                              // Do nothing
    {return new I()
      {void   a() {                     jTrace(f("%8d NOP", currentPc()));}
       String v() {return "/* NOP */" + vTrace(  "%8d NOP", "pc"        );}
      };
    }
 
-  <T> I push(Stack<T> S, Supplier<T> T)                                                                                 // Push something onto a stack of somethings inside an instruction
+  <T> I push (Stack<T> S, Supplier<T> T)                                                                                // Push something onto a stack of somethings inside an instruction
    {return new I()
      {void        a() {S.push(T.get());}
       boolean trace() {return false;}
@@ -1698,7 +1699,7 @@ endmodule
     void set () {offset = program().code.size();}                                                                       // Reassign the label to an instruction
    } // Label
 
-  void appendJavaTrace(String Message) {appendFile(traceFiles.java$(), Message);}                                       // Append to the Java trace file
+  void appendJavaTrace (String Message) {appendFile(traceFiles.java$(), Message);}                                      // Append to the Java trace file
 
   void jTrace (String Message)                                                                                          // Trace a Java instruction by writing a message to the Java trace file unless the instruction has suppressed tracing
    {++program().jtrace;                                                                                                 // Count trace records written
@@ -1719,7 +1720,7 @@ endmodule
     return suppressInstructionTracing ? ""+s : "`ifndef SYNTHESIS "+s+" `endif";
    }
 
-  String currentInstructionLocation()                                                                                   // Show the current instruction location
+  String currentInstructionLocation ()                                                                                  // Show the current instruction location
    {if (immediate()) return traceBack();
     final I i = executing();
     if (i != null) return i.instructionLocation();
@@ -1864,7 +1865,7 @@ cd {f}; yosys -q {y}                                                            
      }
    }
 
-  void initializeInstructionCoverage()                                                                                  // Initialize instruction coverage by location in Java code of each new instruction encountered
+  void initializeInstructionCoverage ()                                                                                 // Initialize instruction coverage by location in Java code of each new instruction encountered
    {for (I i: program().code)
      {if (!instructionCover.containsKey(i.traceTest)) instructionCover.put(i.traceTest, new Counter());                 // Only initialize if we have not seen this instruction before and have already started recording execution counts for it
      }
@@ -1887,14 +1888,14 @@ cd {f}; yosys -q {y}                                                            
      {final int location;                                                                                               // Location in program of dump
       final String title;                                                                                               // Title of dump
 
-      Location(int Location, String Title)
+      Location (int Location, String Title)
        {location = Location; title = Title;
         locations.push(this);
        }
 
-      String called() {return f("dumpLocation_"+location+"(); ");}                                                      // The name of the dump location
+      String called () {return f("dumpLocation_"+location+"(); ");}                                                      // The name of the dump location
 
-      String define()                                                                                                   // Define a dump location
+      String define ()                                                                                                   // Define a dump location
        {final String n = called();
         if (defined.contains(n)) return ""; else defined.add(n);                                                        // The dump routine should only be defined once
         return  substitute("""
@@ -1915,7 +1916,7 @@ cd {f}; yosys -q {y}                                                            
   void initializeJavaMemory () {for(Memory m : memories()) for (int i = 0, N = m.size(); i < N;++i) m.units[i] = 0;}    // Clear all of memory to zero
   void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpJavaMemoryInDecimal());}               // Dump all the memories
 
-  void initializeJavaVars()                                                                                             // Initialize Java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the Verilog version
+  void initializeJavaVars ()                                                                                             // Initialize Java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the Verilog version
    {for (Int i : ints()) {i.i(0);      i.v = false;}
     for (Bit b : bits()) {b.i = false; b.v = false;}
    }
@@ -2125,13 +2126,13 @@ cd {f}; yosys -q {y}                                                            
      }
    }
 
-  static void executionStatistics()                                                                                     // Execution statistics
+  static void executionStatistics ()                                                                                     // Execution statistics
    {if (suppressExecutionStatistics) return;                                                                            // Suppress print if necessary
     if (wastedReads .size() > 0) say("Wasted Reads:\n",  wastedReads);
     if (wastedWrites.size() > 0) say("Wasted Writes:\n", wastedWrites);
    }
 
-  void printProgramExecutionStatistics()                                                                                // Execution statistics for prgram
+  void printProgramExecutionStatistics ()                                                                                // Execution statistics for prgram
    {//printReadWriteUsage();                                                                                            // Print read write usage of integers
     //printExecutionCoverageForTest();                                                                                  // Print details of which instructions were executed and which were not
     //say(f("%d integers, %d fast integers, %d bits", nextIntId, nextFastIntId, nextBitId));                            // Numbers of variables
@@ -2159,17 +2160,17 @@ cd {f}; yosys -q {y}                                                            
     final VerilogArrays.Array   pcConstantArray;                                                                        // Instruction to variable or memory used by the instruction. Mapped to read only memory so that Yosys does not expand them into registers. Prefetched one instruction in advance to keep the main instruction loop fully occupied except at branches where a one instruction wait has to be inserted to allow the prefetch loop to get ahead again.
     final VerilogArrays.Array   pcMatchSetArray;                                                                        // Constants in instructions identified by program counter as above.
 
-    void put(final String Verilog)                                                                                      // Write some Verilog
+    void put (final String Verilog)                                                                                     // Write some Verilog
      {try {out.write(Verilog);}
       catch(Exception e) {stop("Unable to write to file:", codeFile, e, fullTraceBack(e));}
      }
 
-    String message()                                                                                                    // Message describing statistics
+    String message ()                                                                                                   // Message describing statistics
      {return f("%s:  %30s  %,9d execution,  %3d after,  %,9d before, %7.4f percent",
                dateTime,  source+"."+name, execSteps, instructionSets, codeSize, percent());
      }
 
-    String json()                                                                                                       // Json describing statistics
+    String json ()                                                                                                      // Json describing statistics
      {final StringBuilder s = new StringBuilder();
       s.append(f(("'log': 'verilogStatistics', 'dateTime': %s, 'sourceFile': %s, 'testName': %s,"+
                 " 'executionSteps': %8d, 'instructions': %4d, 'codeSize': %8d, 'percent': %9.4f").replaceAll("'", "\""),
@@ -2186,7 +2187,7 @@ cd {f}; yosys -q {y}                                                            
       return ""+s;
      }
 
-    double percent()                                                                                                    // Percentage reduction in program size after compression based on interior Verilog for each instruction
+    double percent ()                                                                                                   // Percentage reduction in program size after compression based on interior Verilog for each instruction
      {final int m = instructionSets, c = code.size();
       return 100 * (c - m) / (double)c;
      }
@@ -2392,7 +2393,7 @@ endmodule
       return h + m + t;
      }
 
-    void createFastInts()                                                                                               // Create an array of integers to represent any fast integers used by the program
+    void createFastInts ()                                                                                              // Create an array of integers to represent any fast integers used by the program
      {put(s("""
   integer fastInts_i;                                                                                                   // Declare index for fast integers
   reg[31:0] fastInts[{n}];                                                                                              // Declare fast integers
@@ -2540,7 +2541,7 @@ if __name__ == "__main__":
 
 //D2 Yosys                                                                                                              // Generate Yosys commands
 
-    String generateYosys()                                                                                              // Tcl to drive Yosys
+    String generateYosys ()                                                                                             // Tcl to drive Yosys
      {final StringBuilder s = new StringBuilder();                                                                      // Generated code
       s.append(substitute("""
 read_verilog -sv -D SYNTHESIS {n}.v                                                                                     # Yosys code to confirm the Verilog can be synthesised
@@ -2562,7 +2563,7 @@ check
     return ""+s;
    }
 
-  String removeTracing(String V)                                                                                        // Remove tracing if necessary
+  String removeTracing (String V)                                                                                       // Remove tracing if necessary
    {return suppressInstructionTracing ? V.replaceAll("(?s)\\$fdisplay.*?;", "")
                                          .replaceAll("(?s)\\$fflush.*?;"  , "") : V;
    }
@@ -2671,7 +2672,7 @@ check
         writeFile(verilogTestIncludesFolder.file(name).v$(), s);
        }
 
-      String module()                                                                                                   // Create a Verilog module to represent a memory
+      String module ()                                                                                                  // Create a Verilog module to represent a memory
        {writeInHex();                                                                                                   // Write hex representation of array
         final StringBuilder s = new StringBuilder();
         s.append(substitute("""
@@ -2908,7 +2909,7 @@ endmodule
        {final Int a = new FastInt("a");
         final Int b = new FastInt("b");
         final Int c = new FastInt("b");
-        final Int N = new Int("N", 4);
+        final Int N = new     Int("N", 4);
         new ForCount(N)
          {void body(Int Index)
            {a.inc();
