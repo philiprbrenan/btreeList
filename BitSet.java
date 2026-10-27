@@ -60,7 +60,7 @@ public class BitSet extends Program                                             
     Build    memory (Program.Memory.Ref Ref)     { memoryRef = Ref;       return this;}                                 // Memory for bitset
     Build    parent (Program Parent)             {    parent = Parent;    return this;}                                 // Parent program for code
 
-    int units()                                                                                                         // Units needed for the bitset, the bitset trees and the count field
+    int units ()                                                                                                        // Units needed for the bitset, the bitset trees and the count field
      {final int s = Memory.bitsPerUnit();
       return (s - 1 + 3 * nextPowerOfTwo(bitSize)) / s + (trackCount ? 1 : 0);                                          // The  bit set plus the ones and zeros trees which are one less in size than the bitset
      }
@@ -75,7 +75,7 @@ public class BitSet extends Program                                             
    }
 
   @SuppressWarnings("this-escape")
-  public BitSet(Build Build)                                                                                            // Constructor
+  public BitSet (Build Build)                                                                                            // Constructor
    {super(Build.build());
     build            = Build;
     bitSize          = nextPowerOfTwo(build.bitSize);                                                                   // Record size
@@ -279,7 +279,7 @@ public class BitSet extends Program                                             
    {if (immediate() && Pos.i() < size()) checkInActual(Pos); else checkInOnesTree(Pos);
    }
 
-  void checkInZerosTree(Int Pos)                                                                                        // Check that we are in the zeros tree
+  void checkInZerosTree (Int Pos)                                                                                       // Check that we are in the zeros tree
    {if (immediate())
      {final int a = base_zero(), b = a + bitSize, P = Pos.i();
       if (P < a) stop("Position is below zeros tree:", P, a);
@@ -518,7 +518,7 @@ public class BitSet extends Program                                             
 
 //D1 Locate Ones                                                                                                        // Find the first, last, next, previous bit set to one
 
-  public Bint firstOne ()                                                                                                // Find the index of the first set bit
+  public Bint firstOne ()                                                                                               // Find the index of the first set bit
    {subStart("Bitset.firstOne");
     final Int  p = new Int("p", 0);                                                                                     // Offset of first bit
     final Bint r = new Bint();                                                                                          // Result
@@ -531,7 +531,7 @@ public class BitSet extends Program                                             
     return r.constant();                                                                                                // Result is valid if found
    }
 
-  public Bint lastOne ()                                                                                                 // Find the index of the last set bit
+  public Bint lastOne ()                                                                                                // Find the index of the last set bit
    {subStart("Bitset.lastOne");
     final Int  p = new Int(size()-1);                                                                                   // Offset of last bit
     final Bint r = new Bint();                                                                                          // Result
@@ -543,14 +543,14 @@ public class BitSet extends Program                                             
     return r.constant();                                                                                                // Result is valid if found
    }
 
-  public Bint nextOne (Int Start)                                                                                        // Find the index of the next set bit above the specified start bit. This is the most heavily used routine by far
+  public Bint nextOne (Int Start)                                                                                       // Find the index of the next set bit above the specified start bit. This is the most heavily used routine by far
    {subStart("Bitset.nextOne");
     checkInActual(Start);
     if (immediate()) checkInActual(Start);
     final Bint Next = new Bint();                                                                                       // Next one if any
     final Int  p    = new Int(Start);                                                                                   // Start position
 
-    new For(logBitSize ())                                                                                               // Traverse down through the tree to the root
+    new For(logBitSize ())                                                                                              // Traverse down through the tree to the root
      {void body(Int I, Bit C)
        {final Int q = p.Inc();                                                                                          // Next bit over
         new If (q.le(limitUpperOne(p)))                                                                                 // Found adjacent bit set to one to the right of the path up from the start bit
@@ -585,7 +585,7 @@ public class BitSet extends Program                                             
     return Next.constant();                                                                                             // Result is valid if found
    }
 
-  public Bint prevOne (Int Start)                                                                                        // Find the index of the previous set bit below the specified bit
+  public Bint prevOne (Int Start)                                                                                       // Find the index of the previous set bit below the specified bit
    {subStart("Bitset.nextOne");
     if (immediate()) checkInActual(Start);
     final Bint Prev = new Bint();                                                                                       // Invalid indicates not found
@@ -615,7 +615,7 @@ public class BitSet extends Program                                             
 
 //D1 Locate Zeros                                                                                                       // Find the first, last, next, previous bit set to zero
 
-  public Bint firstZero ()                                                                                               // Find the index of the first set bit
+  public Bint firstZero ()                                                                                              // Find the index of the first set bit
    {subStart("Bitset.firstZero");
     final Int  p = Zero;
     final Bint r = new Bint();                                                                                          // Result
@@ -627,7 +627,7 @@ public class BitSet extends Program                                             
     return r.constant();                                                                                                // Result is valid if found
    }
 
-  public Bint lastZero ()                                                                                                // Find the index of the last set bit
+  public Bint lastZero ()                                                                                               // Find the index of the last set bit
    {subStart("Bitset.lastZero");
     final Int  p = new Int(size()-1);
     final Bint r = new Bint();                                                                                          // Result
@@ -639,7 +639,7 @@ public class BitSet extends Program                                             
     return r.constant();                                                                                                // Result is valid if found
    }
 
-  public Bint nextZero (Int Start)                                                                                       // Find the index of the next clear  bit above the specified bit
+  public Bint nextZero (Int Start)                                                                                      // Find the index of the next clear  bit above the specified bit
    {subStart("Bitset.nextZero");
     checkInActual(Start);
 
@@ -698,7 +698,7 @@ public class BitSet extends Program                                             
     return Next.constant();                                                                                             // Result is valid if found
    }
 
-  public Bint prevZero (Int Start)                                                                                       // Find the index of the previous set bit below the specified bit
+  public Bint prevZero (Int Start)                                                                                      // Find the index of the previous set bit below the specified bit
    {subStart("Bitset.prevZero");
     checkInActual(Start);
     if (immediate()) checkInActual(Start);
@@ -802,7 +802,7 @@ public class BitSet extends Program                                             
     return c.constant();                                                                                                // Return count
    };
 
-  public Int countAllZeros()                                                                                            // Count zeros in bitset
+  public Int countAllZeros ()                                                                                           // Count zeros in bitset
    {subStart("Bitset.countAllZeros");
     final Int  c = new Int("c").set(0);                                                                                 // Count
     final Bint p = firstZero().dup();
