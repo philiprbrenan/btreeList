@@ -71,7 +71,7 @@ class Leaf extends Program implements Program.Locatable                         
     leafCode();                                                                                                         // Generate machine code if any assembler code has been supplied
    }
 
-  Leaf initializeMemory()                                                                                               // Initialize slots and data associated with the leaf
+  Leaf initializeMemory ()                                                                                              // Initialize slots and data associated with the leaf
    {clear();                                                                                                            // Clear backing memory
     return this;
    }
@@ -151,7 +151,7 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D2 Merge                                                                                                              // Merge two leaves
 
-  Int mergeLimit() {return new Int(maxSize());}                                                                         // Combined leaf size limit for a merge
+  Int mergeLimit () {return new Int(maxSize());}                                                                        // Combined leaf size limit for a merge
 
   private void copyMergeData (Leaf Source, Int Start, Int End)                                                          // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {new ForCount (Start, End)
@@ -181,7 +181,7 @@ class Leaf extends Program implements Program.Locatable                         
     return r.constant();
    }
 
-  Bit mergeLeft(Leaf Left)                                                                                              // Merge the leaf into the right of this leaf
+  Bit mergeLeft (Leaf Left)                                                                                             // Merge the leaf into the right of this leaf
    {final Leaf right = this;
     final Int    lc  = Left .count().constant();
     final Int    rc  = right.count().constant();
@@ -210,7 +210,7 @@ class Leaf extends Program implements Program.Locatable                         
    {void process(Int Key, Int Data);
    }
 
-  void iterate(Iterator Iterator)                                                                                       // Iterate over a leaf
+  void iterate (Iterator Iterator)                                                                                      // Iterate over a leaf
    {final Bint f = slots.usedSlotsToKeys.firstOne().dup();
     new If (f.valid())
      {void Then()
