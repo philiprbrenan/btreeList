@@ -1158,11 +1158,11 @@ public class Program extends Test                                               
       return i;
      }
 
-    Bit       valid () {i.bint++;            return b;       }                                                          // Whether the boolean integer is valid
-    Bit    notValid () {i.bint++;            return b.Flip();}                                                          // Whether the boolean integer is invalid
-    Bint invalidate () {i.bint++; b.clear(); return this;    }                                                          // Mark the integer as invalid after all
-    Bint   constant () {i.constant(); b.constant(); return this;}                                                       // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-    Bint   constant (Int I) {set(I); i.constant(); b.constant(); return this;}                                          // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Bit       valid ()      {i.bint++;                           return b;       }                                      // Whether the boolean integer is valid
+    Bit    notValid ()      {i.bint++;                           return b.Flip();}                                      // Whether the boolean integer is invalid
+    Bint invalidate ()      {i.bint++; b.clear();                return this;    }                                      // Mark the integer as invalid after all
+    //Bint   constant ()      {        i.constant(); b.constant(); return this;    }                                      // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    //Bint   constant (Int I) {set(I); i.constant(); b.constant(); return this;    }                                      // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
     Bint () {}                                                                                                          // Constructors
     Bint (String Name) {i.name = b.name = Name;}
