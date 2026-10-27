@@ -101,7 +101,7 @@ class Leaf extends Program implements Program.Locatable                         
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.constant(refData.getInt(slots.getSlotToKeyIndex(f.slot.i())));                                                     // Get data associated with key
+       {r.constant(refData.getInt(slots.getSlotToKeyIndex(f.slot.i())));                                                // Get data associated with key
         if (Delete) slots.delete(f.slot.i());                                                                           // Delete the key if requested
        }
      };
