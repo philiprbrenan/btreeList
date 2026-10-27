@@ -86,7 +86,7 @@ class Slots extends Program                                                     
     slotsCode();                                                                                                        // Generate machine code if any assembler code has been supplied
    }
 
-  Slots initializeMemory()                                                                                              // Initialize memory
+  Slots initializeMemory ()                                                                                             // Initialize memory
    {unitMemoryRef.clear(build.size());
     return this;
    }
@@ -112,14 +112,14 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  void putKey(Int Index, Int Key)                                                                                       // Set a key
+  void putKey (Int Index, Int Key)                                                                                      // Set a key
    {subStart("Slots.putKey");
     refKeys .putInt(Index, Key);
     usedKeys.set   (Index, true);
     subFinish();
    }
 
-  void delKey(Int Index)                                                                                                // Clear a key
+  void delKey (Int Index)                                                                                               // Clear a key
    {subStart("Slots.delKey");
     refKeys.putInt(Index, Zero);                                                                                        // Clear the key by zeroing it - this is not strictly necessary - it does make tests neater
     usedKeys.set  (Index, false);
@@ -622,7 +622,7 @@ class Slots extends Program                                                     
 
 //D4 Shift                                                                                                              // Shift the slots to the left/down one position or up/right one position
 
-  void shiftUpOne(Int Position, Int Width)                                                                              // Shift up the specified slots by one position to create a free space at the specified position
+  void shiftUpOne (Int Position, Int Width)                                                                             // Shift up the specified slots by one position to create a free space at the specified position
    {subStart("Slots.shiftUpOne");
     new ForCount(Width)                                                                                                 // Move the indicated slots up one position
      {void body(Int Index)
@@ -634,7 +634,7 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  void shiftDownOne(Int Position, Int Width)                                                                            // Shift down the specified slots by one position to create a free space at the specified position. Position is at the right end of the block to be moved
+  void shiftDownOne (Int Position, Int Width)                                                                           // Shift down the specified slots by one position to create a free space at the specified position. Position is at the right end of the block to be moved
    {final Slots slots = this;
     subStart("Slots.shiftDownOne");
     new ForCount(Width)                                                                                                 // Move the indicated slots up one position
@@ -691,7 +691,7 @@ class Slots extends Program                                                     
 
     Find () {}                                                                                                          // Default constructor
 
-    Find set(Int Slot, Bit Lower, Bit Higher)                                                                           // Set a find result
+    Find set (Int Slot, Bit Lower, Bit Higher)                                                                          // Set a find result
      {slot .set(Slot); lower.set(Lower); higher.set(Higher);
       equal.set(lower.And(higher));
       empty.set(lower.Or (higher).flip());
@@ -699,7 +699,7 @@ class Slots extends Program                                                     
       return this;
      }
 
-    Find set(Int Slot, boolean InsertBelow)                                                                             // Set a find result showing that a key should be inserted in the slot above (false) or below(true) below the indicated slot
+    Find set (Int Slot, boolean InsertBelow)                                                                            // Set a find result showing that a key should be inserted in the slot above (false) or below(true) below the indicated slot
      {slot .set(Slot);
       equal.set(false);
       empty.set(false);
@@ -708,7 +708,7 @@ class Slots extends Program                                                     
       return this;
      }
 
-    void copy(Find Source)                                                                                              // Copy a find result
+    void copy (Find Source)                                                                                             // Copy a find result
      {slot  .copy(Source.slot);
       lower .set(Source.lower);
       higher.set(Source.higher);
@@ -716,7 +716,7 @@ class Slots extends Program                                                     
       empty .set(Source.empty);
      }
 
-    Int insert(Int Key)                                                                                                 // Insert a key into the slots in light of the find result and return the slot chosen. The slots are assumed to be not empty.
+    Int insert (Int Key)                                                                                                // Insert a key into the slots in light of the find result and return the slot chosen. The slots are assumed to be not empty.
      {final Int  P = new Int();                                                                                         // The slot into which the key was inserted
       final Find f = this;                                                                                              // Find nearest existing key in slots
       final Bint K = usedKeys.firstZero().dup();                                                                        // Position for key in key slots
@@ -825,7 +825,7 @@ class Slots extends Program                                                     
              ", equal=" + equal + ", empty=" + empty + ')';
      }
 
-    StringBuilder print() {return new StringBuilder(""+this);}
+    StringBuilder print () {return new StringBuilder(""+this);}
 
     Find (Int Key)                                                                                                      // Find the location of the specified search key in the slots by stepping down from teh top of the one tree checking first the left sub tree then the right to successively narrow the range in which the equal key should appear
      {final BitSet u = usedSlotsToKeys;
@@ -1007,7 +1007,7 @@ class Slots extends Program                                                     
     final Bint    slot = new Bint();                                                                                    // Slot index referring to the inserted key
     final Bit inserted = new Bit("inserted");                                                                           // True if the key did not exist prior to the insertion else false
 
-    void set(Int Key, Int Slot, boolean Inserted) {key.set(Key); slot.set(Slot); inserted.set(Inserted);}               // Record insertion result
+    void set (Int Key, Int Slot, boolean Inserted) {key.set(Key); slot.set(Slot); inserted.set(Inserted);}              // Record insertion result
 
     public String toString ()
      {final StringBuilder s = new StringBuilder();                                                                      // Print insertion result
