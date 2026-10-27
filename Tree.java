@@ -653,7 +653,7 @@ class Tree extends Program                                                      
       subFinish();
      }
 
-    void splitPoint()                                                                                                   // Locate the split point: the uppermost full branch directly connected to the leaf by intervening full branches which will have to be split from the top back down to the parent of the leaf to permit the splitting of a full leaf
+    void splitPoint ()                                                                                                  // Locate the split point: the uppermost full branch directly connected to the leaf by intervening full branches which will have to be split from the top back down to the parent of the leaf to permit the splitting of a full leaf
      {subStart("Tree.splitPoint");
       final Int u = new Int();                                                                                          // Location of split point
       new For(step)                                                                                                     // Number of steps in path
@@ -671,7 +671,7 @@ class Tree extends Program                                                      
       subFinish();
      }
 
-    void splitDown()                                                                                                    // Split from the splitting top most splitting branch if such a branch exists
+    void splitDown ()                                                                                                   // Split from the splitting top most splitting branch if such a branch exists
      {subStart("Tree.splitDown");
       new If (split)                                                                                                    // The top most branch to split
        {void Then()
@@ -716,7 +716,7 @@ class Tree extends Program                                                      
       subFinish();
      }
 
-    void mergeUp()                                                                                                      // Merge up from the leaf to the splitting point
+    void mergeUp ()                                                                                                     // Merge up from the leaf to the splitting point
      {subStart("Tree.mergeUp");
 
       new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
@@ -725,22 +725,18 @@ class Tree extends Program                                                      
           final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
           final Branch.StepDown d = p.new StepDown(key);                                                                // Locate key slot
           final Bint            L = new Bint();                                                                         // There are four possibilities to consider
-          final Int            I0 = Zero;                                                                               // Non fast integer constants
-          final Int            I1 = One;                                                                                // Non fast integer constants
-          final Int            I2 = new Int(2);                                                                         // Non fast integer constants
-          final Int            I3 = new Int(3);                                                                         // Non fast integer constants
           new ForCount(4)                                                                                               // Locate the left sibling
            {void body(Int Index)
-             {new If (Index.eq(I0))                                                                                     // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
+             {new If (Index.eq(0))                                                                                     // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
                {void Then()             {L.copy(mergeLeftLeft(  p, d.slot));}
                 void Else()
-                 {new If (Index.eq(I1))
+                 {new If (Index.eq(1))
                    {void Then()         {L.copy(mergeRightRight(p, d.slot));}
                     void Else()
-                     {new If (Index.eq(I2))
+                     {new If (Index.eq(2))
                        {void Then()     {L.copy(mergeLeft(      p, d.slot));}
                         void Else()
-                         {new If (Index.eq(I3))
+                         {new If (Index.eq(3))
                            {void Then() {L.copy(mergeRight(     p, d.slot));}
                            };
                          }
@@ -758,7 +754,7 @@ class Tree extends Program                                                      
       subFinish();
      }
 
-    String print()                                                                                                      // Print the path
+    String print ()                                                                                                     // Print the path
      {immediateModeCheck();
       subStart("Tree.print.path");
       final StringBuilder s = new StringBuilder("Path "+step+" steps: ");
@@ -779,7 +775,7 @@ class Tree extends Program                                                      
     return f;
    }
 
-  void squashRoot()                                                                                                     // Squash the root down if possible
+  void squashRoot ()                                                                                                    // Squash the root down if possible
    {final Branch R = branch(root());
     new If (R.slots.empty())                                                                                            // Reduce the height of the tree if the body of the root is now empty
      {void Then()
@@ -1180,7 +1176,7 @@ class Tree extends Program                                                      
       else           traverse (0, 0, 0);
      }
 
-    void pLeaf(int Index, int Depth, int Parent, int ParentSlot)                                                        // Process a leaf
+    void pLeaf (int Index, int Depth, int Parent, int ParentSlot)                                                       // Process a leaf
      {final Slots         slots = slots(Index, maxLeafSize);
       final Stack<Integer> keys = new Stack<>();
       for(int i = 0; i < maxLeafSize*2; ++i) if (slots.getSlotToKeysInUse(i)) keys.push(slots.getSlotToKeyValue(i));
@@ -1215,7 +1211,7 @@ class Tree extends Program                                                      
   final class Print                                                                                                     // Print the tree
    {final Stack<StringBuilder> P = new Stack<>();
 
-    Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
+    Print (boolean Context)                                                                                             // Print the tree optionally supplying the context of each branch and leaf
      {subStart("Tree.Print");
 
       new TraverseTree()
@@ -1264,14 +1260,14 @@ class Tree extends Program                                                      
       subFinish();
      }
 
-    void pad(int level)                                                                                                 // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
+    void pad (int level)                                                                                                // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
      {for (int i = P.size(); i < level; ++i) P.push(clearStringBuilder(new StringBuilder()));                           // Make sure we have a full deck of strings
       int m = 0;                                                                                                        // Maximum length
       for (StringBuilder s : P) m = m < s.length() ? s.length() : m;                                                    // Find maximum length
       for (StringBuilder s : P) if (s.length() < m) s.append(" ".repeat(m - s.length()));                               // Pad each string to the length of the longest string
      }
 
-    StringBuilder printCollapsed()                                                                                      // Collapse horizontal representation into a string
+    StringBuilder printCollapsed ()                                                                                     // Collapse horizontal representation into a string
      {final StringBuilder t = new StringBuilder();                                                                      // Print the lines of the tree that are not blank
       pad(0);
       for  (StringBuilder s : P)
