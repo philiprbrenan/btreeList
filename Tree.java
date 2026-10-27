@@ -204,7 +204,7 @@ class Tree extends Program                                                      
        }
 
       Int mergeLimit ()                                                                                                 // Maximum size of merge
-       {final Int m = new Int("maxSize", maxSize());                                                                    // Full size
+       {final Int m = new Int("maxSize").set(maxSize());                                                                // Full size
         if (leafFanOut > 0)                                                                                             // Leaf fan out has been requested
          {final Int h = tree.height();                                                                                  // Make leaves close to the root small to reduce queuing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
           new If (h.le(rootFanLevels)) {void Then() {m.min(leafFanOut);}};                                              // Close enough to the root to  leaf request fan out
@@ -245,7 +245,7 @@ class Tree extends Program                                                      
        }
 
       Int mergeLimit ()                                                                                                 // Maximum size of merge
-       {final Int m = new Int("maxSize", maxSize());                                                                    // Full size
+       {final Int m = new Int("maxSize").set(maxSize());                                                                // Full size
         if (branchFanOut > 0)                                                                                           // Branch fan out has been requested
          {final Int h = tree.height();                                                                                  // Make branches close to the root small to reduce queuing for the root branch when operating multiple parallel readers. This does waste siomemmeory, but not much over the entire tree whilst the reduced queuing at the root is expected to be a significant improvement
           new If (h.le(rootFanLevels)) {void Then() {m.min(branchFanOut);}};                                            // Close enough to the root to branch request fan out
@@ -270,7 +270,7 @@ class Tree extends Program                                                      
   StringBuilder dumpTree ()                                                                                             // Dump the tree
    {subStart("Tree.dumpTree");
     final StringBuilder s = new StringBuilder();
-    final Int           f = new Int(numberOfNodes()).sub(freeChain.count());
+    final Int           f = new Int(numberOfNodes()).Sub(freeChain.count());
     new I()                                                                                                             // Dump the tree statistics
      {void a()
        {s.setLength(0);
@@ -1582,7 +1582,7 @@ Height        :    1
      {void treeCode()
        {new ForCount(new Int(N))
          {void body(Int Index)
-           {insert(new Int(N).sub(Index), Index);
+           {insert(new Int(N).Sub(Index), Index);
             dumpProgramState("AAAA");
            }
          };
@@ -1978,7 +1978,7 @@ fa10edf1e50eebf13e7418aac38f3794
 
         new ForCount(new Int(N))
          {void body(Int Index)
-           {delete(new Int(N).sub(Index));
+           {delete(new Int(N).Sub(Index));
 
             if (Ex) s.append(dump());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
@@ -2842,7 +2842,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert();
+    test_rootFanOut2();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
