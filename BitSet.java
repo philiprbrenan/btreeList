@@ -528,7 +528,7 @@ public class BitSet extends Program                                             
       void Else() {r.copy(nextOne(p));}                                                                                 // Find then next set bit if there is one. Use copy because the result might be invalid showing that there is no first one
      };
     subFinish();
-    return r.constant();                                                                                                // Result is valid if found
+    return r;                                                                                                           // Result is valid if found
    }
 
   public Bint lastOne ()                                                                                                // Find the index of the last set bit
@@ -540,7 +540,7 @@ public class BitSet extends Program                                             
       void Else() {r.copy(prevOne(p));}                                                                                 // Use copy because the result might be invalid showing that there is no last one
      };
     subFinish();
-    return r.constant();                                                                                                // Result is valid if found
+    return r;                                                                                                           // Result is valid if found
    }
 
   public Bint nextOne (Int Start)                                                                                       // Find the index of the next set bit above the specified start bit. This is the most heavily used routine by far
@@ -582,7 +582,7 @@ public class BitSet extends Program                                             
        };
      }
     subFinish();
-    return Next.constant();                                                                                             // Result is valid if found
+    return Next;                                                                                                        // Result is valid if found
    }
 
   public Bint prevOne (Int Start)                                                                                       // Find the index of the previous set bit below the specified bit
@@ -610,7 +610,7 @@ public class BitSet extends Program                                             
       // boolean fast() {return true;}
      };
     subFinish();
-    return Prev.constant();                                                                                             // Result is valid if found
+    return Prev;                                                                                                        // Result is valid if found
    }
 
 //D1 Locate Zeros                                                                                                       // Find the first, last, next, previous bit set to zero
@@ -624,7 +624,7 @@ public class BitSet extends Program                                             
       void Else() {r.set(p);          }
      };
     subFinish();
-    return r.constant();                                                                                                // Result is valid if found
+    return r;                                                                                                           // Result is valid if found
    }
 
   public Bint lastZero ()                                                                                               // Find the index of the last set bit
@@ -636,7 +636,7 @@ public class BitSet extends Program                                             
       void Else() {r.set(p);           }
      };
     subFinish();
-    return r.constant();                                                                                                // Result is valid if found
+    return r;                                                                                                           // Result is valid if found
    }
 
   public Bint nextZero (Int Start)                                                                                      // Find the index of the next clear  bit above the specified bit
@@ -695,7 +695,7 @@ public class BitSet extends Program                                             
        };
      }
     subFinish();
-    return Next.constant();                                                                                             // Result is valid if found
+    return Next;                                                                                                        // Result is valid if found
    }
 
   public Bint prevZero (Int Start)                                                                                      // Find the index of the previous set bit below the specified bit
@@ -732,7 +732,7 @@ public class BitSet extends Program                                             
        }
      };
     subFinish();
-    return Prev.constant();
+    return Prev;
    }
 
 //D1 Statistics                                                                                                         // Count the number of ones or zero bits in a bit set
