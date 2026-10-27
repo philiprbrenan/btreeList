@@ -132,23 +132,23 @@ class Branch extends Program implements Program.Locatable                       
      }
 
     StepDown (Int Key)                                                                                                  // Return a reference to the next branch down whose sub tree might contain the specified key
-     {key.constant(Key);
+     {key.set(Key);                                                                                                     // Record the search key
       final Slots.Find f = slots.new Find(Key);  eqKey.set(f.equal);                                                    // Find result
       new If (f.empty)                                                                                                  // Found the index of a key that is greater than or equal to the search key
        {void Then()                                                                                                     // Step through top because the body of the branch is empty
-         {node.constant(top());
+         {node.set(top());
          }
         void Else()
          {new If (f.equal.or(f.lower))                                                                                  // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
            {void Then()
-             {slot.constant(f.slot.i());                                                                                     // Step through slot
-              node.constant(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
+             {slot.set(f.slot.i());                                                                                     // Step through slot
+              node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
              }
             void Else()                                                                                                 // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
              {final Bint n = slots.usedSlotsToKeys.nextOne(f.slot.i());
               new If (n.valid())
-               {void Then() {node.constant(data(slots.getSlotToKeyIndex(n.i()))); slot.constant(n.i());}                // Node at next level down
-                void Else() {node.constant(top());}                                                                     // No next key so step down through top
+               {void Then() {node.set(data(slots.getSlotToKeyIndex(n.i()))); slot.set(n.i());}                          // Node at next level down
+                void Else() {node.set(top());}                                                                          // No next key so step down through top
                };
              }
            };
@@ -174,20 +174,20 @@ class Branch extends Program implements Program.Locatable                       
          {stop("Slot should be set but is empty:", BelowSlot, slots);
          }
         final Slots.Find f = slots.new Find().set(BelowSlot.i(), true);                                                 // Construct the find to indicate how and where to perform the insertion as if we had just done a find
-        r.constant(f.insert(Key));                                                                                           // Insert knowing the insertion slot in advance
+        r.set(f.insert(Key));                                                                                           // Insert knowing the insertion slot in advance
         final Int k = slots.getSlotToKeyIndex(r);
         refData.putInt(k, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
        }
       void Else()                                                                                                       // No below slot supplied so insert in the middle if empty otherwise at the end
        {new If (slots.empty())                                                                                          // Easy insert as the slots are empty
          {void Then()
-           {r.constant(slots.insertEmpty(Key));                                                                              // Insert immediately in the center
+           {r.set(slots.insertEmpty(Key));                                                                              // Insert immediately in the center
             refData.putInt(Data);                                                                                       // Place data in the location that corresponds to the key slot used to complete the insertion
            }
           void Else()                                                                                                   // Insert above the last key, which is known to exist because the slots are not empty
            {final Int l = slots.locateLastUsedSlot().i();
             final Slots.Find f = slots.new Find().set(l, false);                                                        // Construct the find to indicate how and where to perform the insertion as if we had just done a find
-            r.constant(f.insert(Key));                                                                                       // Insert knowing the insertion slot in advance
+            r.set(f.insert(Key));                                                                                       // Insert knowing the insertion slot in advance
             final Int k = slots.getSlotToKeyIndex(r);
             refData.putInt(k, Data);                                                                                    // Place data in the location that corresponds to the key slot used to complete the insertion
            }
@@ -201,7 +201,7 @@ class Branch extends Program implements Program.Locatable                       
    {subStart("Branch.insertEmpty");
     if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
-    r.constant(slots.insertEmpty(Key));                                                                                 // Insert immediately in the center
+    r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
     refData.putInt(Data);                                                                                               // Place data in first key slot
     subFinish();
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
