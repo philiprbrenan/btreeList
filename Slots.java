@@ -835,11 +835,11 @@ class Slots extends Program                                                     
          {set(Zero, new Bit(false), new Bit(false));                                                                    // Empty
          }
         void Else()                                                                                                     // Not empty
-         {final Int p = u.topOne().dup();                                                                                     // Position in ones tree - start at the top
-          final Int l = u.lowOne (p).dup();                                                                                   // Index of lower bound in slots - start at the slot referring to the lowest key
-          final Int r = u.highOne(p).dup();                                                                                   // Index of upper bound in slots - start at the slot referring to the highest key
-          final Int L = getSlotToKeyValue(l).dup();                                                                           // Value of Key at lower bound of search
-          final Int R = getSlotToKeyValue(r).dup();                                                                           // Value of key at upper bound of search
+         {final Int p = u.topOne().dup();                                                                               // Position in ones tree - start at the top
+          final Int l = u.lowOne (p).dup();                                                                             // Index of lower bound in slots - start at the slot referring to the lowest key
+          final Int r = u.highOne(p).dup();                                                                             // Index of upper bound in slots - start at the slot referring to the highest key
+          final Int L = getSlotToKeyValue(l).dup();                                                                     // Value of Key at lower bound of search
+          final Int R = getSlotToKeyValue(r).dup();                                                                     // Value of key at upper bound of search
 
           new If (Key.eq(L))
            {void Then()                                                                                                 // Equal to low bound of search
