@@ -241,9 +241,7 @@ public class Program extends Test                                               
           String v()   {return "if ("+bitMemory().writeInt()+" != 0) pc <= "+cawci+"; else pc <= pc + 1;";}             // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
           int traces() {return 0;}
          };
-        index.constant();                                                                                               // Make the index a constant
         body(index, cont.clear());                                                                                      // Execute the loop body
-        index.variable();                                                                                               // Make the index a variable again
         index.inc();                                                                                                    // Increment loop counter
         cont.T();                                                                                                       // Load continue
         final I E = new I(false)
@@ -288,9 +286,7 @@ public class Program extends Test                                               
           String v()   {return "if ("+bitMemory().writeInt()+" != 0) pc <= "+cawci+"; else pc <= pc + 1;";}             // Terminate the loop when the index is out of range. The if statement relies on the side effect of the previous instruction having set the target boolean value
           int traces() {return 0;}
          };
-        index.constant();                                                                                               // Make the index a constant
         body(index);                                                                                                    // Execute the loop
-        index.variable();                                                                                               // Make the index a variable again
         index.inc();                                                                                                    // Increment loop counter
         final I E = new I(false)                                                                                        // Restart loop
          {void   a()   {program().pc = start.offset;}
@@ -383,14 +379,12 @@ public class Program extends Test                                               
     Bit (String Name, Bit     I) {this(I); name = Name; out = top;}                                                     // Output register if its value is unknown at the start and is at the top
 
     Bit ()                       {ai();  del(false);     bits().push(this);}                                            // Constructors. Set newly constructed integers to invalid and minus one
-    Bit (boolean I)              {ai();  ie(Ops.set, I); bits().push(this);}
+    Bit (boolean I)              {ai();  ie(Ops.set, I); bits().push(this); constant();}                                // Constant because a constant was supplied during construction
     Bit (Bit     I)              {ai();  ie(Ops.set, I); bits().push(this);}
 
     boolean      b ()            {x(); return i;}
     void         x ()            {if (!v) variableNotSet("Bit", name);}                                                 // Check a value has been set for the boolean
-    Bit   constant ()            {if (!suppressConstantChecking) new I() {void a() {constant = true;} boolean trace() {return false;}}; return this;}  // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-    Bit   constant (boolean I)   {set(I); constant(); return this;}                                                     // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-    Bit   constant (Bit     I)   {set(I); constant(); return this;}                                                     // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Bit   constant ()            {if (isExecuting() && !immediate()) stop("Cannot change to a constant while executing in delayed mode"); constant = true; return this;}                                                        // Mark as a constant
 
     Bit        set ()            {return ie(Ops.set,  true); }                                                          // Boolean operations which modify the target
     Bit        set (boolean I)   {return ie(Ops.set,  I);    }
@@ -629,7 +623,7 @@ public class Program extends Test                                               
     final int       fastId;                                                                                             // Unique id for fast integer
 
     Int ()           {ai(); fast = false; fastId = -1; del(0);         ints().push(this);}                              // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for Java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has been already been established by successfully executing the tests associated with the Java version . The integers used in the Java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
-    Int (int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this); constant = true;}             // Set the new integer to a known value at this point in the code
+    Int (int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this); constant();}                  // Set the new integer to a known value at this point in the code
     Int (Int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this);}                              // Set the new integer to a specified value at this point in the code
 
     Int (String Name)        {this();  name = Name; out = top;}                                                         // Constructor with name supplied. Output register if it is at the top
@@ -653,60 +647,46 @@ public class Program extends Test                                               
     String  in1v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read1Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String  in2v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read2Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String   onv ()       {return fast ? "fastInts["+cawci+"]" : intMemory().writeInt();}                               // Verilog name of integer to be written into memeory or into the fast integers array
-    Int constant (int  I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-    Int constant (Int  I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-    Int constant (Bint I) {set(I); constant(); return this;}                                                            // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
 
-    Int constant ()                                                                                                     // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-     {if (!suppressConstantChecking)
-       {new I() {void a() {constant = true;} boolean trace() {return false;}};
-       }
-      return this;
-     }
-
-    Int variable ()                                                                                                     // Remove constant setting making it possible to update the integer
-     {if (!suppressConstantChecking)
-       {new I() {void a() {constant = false;} boolean trace() {return false;}};
-       }
-      return this;
-     }
+    Int constant ()       {if (isExecuting() && !immediate()) stop("Cannot dynamically change from a constant to a variable while executing in delayed mode"); constant = true;  return this;}                                                              // Mark as a constant
+    Int variable ()       {if (isExecuting() && !immediate()) stop("Cannot dynamically change from a variable to a constant while executing in delayed mode"); constant = false; return this;}                                                             // Mark as a variable
 
     enum Ops                                                                                                            // Possible integer operations
      {abs, add, add2, dec, del, div, down, eq,  ez,   ge,  gt, inc, le, lt,
       max, min, mod,  mul, neg, ne,  nz,   set, sqrt, sub, up, zero
      };
 
-    Int   set (int  I) {return ie(Ops.set , I);}
-    Int   set (Int  I) {return ie(Ops.set , I);}
-    Int   set (Bint I) {return ie(Ops.set , I.i());}
+    Int   abs ()       {return ie(Ops.abs    );}
     Int   add (int  I) {return ie(Ops.add , I);}
     Int   add (Int  I) {return ie(Ops.add , I);}
     Int  add2 (Int  I) {return ie(Ops.add2, I);}
-    Int   sub (int  I) {return ie(Ops.sub , I);}
-    Int   sub (Int  I) {return ie(Ops.sub , I);}
-    Int   mul (int  I) {return ie(Ops.mul , I);}
-    Int   mul (Int  I) {return ie(Ops.mul , I);}
+    Int   dec ()       {return ie(Ops.dec    );}
+    Int   del (int  I) {return ie(Ops.del,  I);}
     Int   div (int  I) {return ie(Ops.div , I);}
     Int   div (Int  I) {return ie(Ops.div , I);}
-    Int   mod (int  I) {return ie(Ops.mod , I);}
-    Int   mod (Int  I) {return ie(Ops.mod , I);}
-    Int   inc ()       {return ie(Ops.inc    );}
-    Int   dec ()       {return ie(Ops.dec    );}
-    Int   up  ()       {return ie(Ops.up     );}
-    Int   up  (int I)  {return ie(Ops.up,   I);}
-    Int   up  (Int I)  {return ie(Ops.up,   I);}
     Int   down()       {return ie(Ops.down   );}
     Int   down(int I)  {return ie(Ops.down, I);}
     Int   down(Int I)  {return ie(Ops.down, I);}
-    Int   sqrt()       {return ie(Ops.sqrt   );}
-    Int   neg ()       {return ie(Ops.neg    );}
-    Int   abs ()       {return ie(Ops.abs    );}
-    Int  zero ()       {return ie(Ops.zero   );}
-    Int   del (int  I) {return ie(Ops.del,  I);}
+    Int   inc ()       {return ie(Ops.inc    );}
     Int   max (int  I) {return ie(Ops.max,  I);}
     Int   max (Int  I) {return ie(Ops.max,  I);}
     Int   min (int  I) {return ie(Ops.min , I);}
     Int   min (Int  I) {return ie(Ops.min , I);}
+    Int   mod (int  I) {return ie(Ops.mod , I);}
+    Int   mod (Int  I) {return ie(Ops.mod , I);}
+    Int   mul (int  I) {return ie(Ops.mul , I);}
+    Int   mul (Int  I) {return ie(Ops.mul , I);}
+    Int   neg ()       {return ie(Ops.neg    );}
+    Int   set (int  I) {return ie(Ops.set , I);}
+    Int   set (Int  I) {return ie(Ops.set , I);}
+    Int   set (Bint I) {return ie(Ops.set , I.i());}
+    Int   sqrt()       {return ie(Ops.sqrt   );}
+    Int   sub (int  I) {return ie(Ops.sub , I);}
+    Int   sub (Int  I) {return ie(Ops.sub , I);}
+    Int   up  ()       {return ie(Ops.up     );}
+    Int   up  (int I)  {return ie(Ops.up,   I);}
+    Int   up  (Int I)  {return ie(Ops.up,   I);}
+    Int  zero ()       {return ie(Ops.zero   );}
 
     Int ie (Ops Op)                                                                                                     // Create an instruction that can either be executed immediately one by one or later en masse
      {T(Op);                                                                                                            // Load target if necessary
@@ -868,7 +848,7 @@ public class Program extends Test                                               
       v = true;
       switch (Op)
        {case set  -> {     targetInt(              I);}
-        case del  -> {     targetInt(              I); v = false;}                                                      // Mark the integer as having no defined value
+        case del  -> {     targetInt(              I); v = false;  constant = false;}                                   // Mark the integer as having no defined value
         case add  -> {x(); targetInt(targetInt() + I);}
         case sub  -> {x(); targetInt(targetInt() - I);}
         case mul  -> {x(); targetInt(targetInt() * I);}
@@ -1936,8 +1916,8 @@ cd {f}; yosys -q {y}                                                            
   void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpJavaMemoryInDecimal());}               // Dump all the memories
 
   void initializeJavaVars()                                                                                             // Initialize Java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the Verilog version
-   {for (Int i : ints()) {i.i(0);      i.v = false; i.constant = false;}
-    for (Bit b : bits()) {b.i = false; b.v = false; b.constant = false;}
+   {for (Int i : ints()) {i.i(0);      i.v = false;}
+    for (Bit b : bits()) {b.i = false; b.v = false;}
    }
 
   void dumpJavaVariables ()                                                                                             // Dump all memories and variables to the Java trace file
