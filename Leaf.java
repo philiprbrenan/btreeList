@@ -238,7 +238,7 @@ class Leaf extends Program implements Program.Locatable                         
 
     new If (l)
      {void Then()
-       {final Int i = new Int().constant(l);
+       {final Int i = new Int("i").set(l);
         new If (i.gt(0))
          {void Then()                                                                                                   // Print the index if it is not the root
            {new I() {void a() {s.append(f(" at: %3d", i.i()));} boolean trace() {return false;}};
