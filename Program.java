@@ -15,7 +15,7 @@ import java.nio.file.*;
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "constants";                                                 // Project currently being worked on
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
@@ -2780,7 +2780,7 @@ endmodule
     void   demoteWriteToRead (Program P, int Area)                                                                      // Demote a write lock to a read lock
      {if (!locks.containsKey(Area)) stop("No write lock to demote to a read lock for area:", Area);                     // Check that there is a lock for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
-      if (l.reads != 0) stop("Cannot demote the a read lock:", l);                            // There must be exactly one read lock for this area
+      if (l.reads != 0) stop("Cannot demote the a read lock:", l);                                                      // There must be exactly one read lock for this area
       if (l.write) stop("Memory area is already write locked:", l);                                                     // The area is already write locked
       l.write = true;                                                                                                   // Apply the write lock
       l.reads = 0;                                                                                                      // Free the write lock
