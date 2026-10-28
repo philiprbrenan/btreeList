@@ -126,15 +126,16 @@ public class Program extends Test                                               
     Zero            = new Int(0);                                                                                       // Integer constant zero
     One             = new Int(1);                                                                                       // Integer constant one
 
-    unitMemory      = Build.size         != null ? new Memory(Build.size, "program", false) :                           // Memory associated with program if any
-                      Build.testProgramParent != null ? Build.testProgramParent.unitMemory            : null;           // Share the memory of the indicated program
-    locks           = Build.testProgramParent != null ? Build.testProgramParent.locks                 : new Locks();    // Share the memory locks of the indicated program or create a set of local memory locks
+    unitMemory      = Build.size              != null ? new Memory(Build.size, "program", false) :                      // Memory associated with program if any
+                      Build.testProgramParent != null ? Build.testProgramParent.unitMemory       : null;                // Share the memory of the indicated program
+    locks           = Build.testProgramParent != null ? Build.testProgramParent.locks            : new Locks();         // Share the memory locks of the indicated program or create a set of local memory locks
 
     if (Build.afterLock)                                                                                                // Create the test program
      {final Program main = this;
-      testProgram = new Program(new Build().testProgramParent(main).name("Test"))
+      testProgram = new Program(new Build().testProgramParent(main).name("Test").immediate(false))                      // The test program cannot be run in immediate mode because we only want it to run on demand to perform tests against another program
        {void code()
-         {main.afterLockTestProgram();
+         {say("AAAA", immediate());
+           if (!immediate()) main.afterLockTestProgram();
          }
        };
      }
