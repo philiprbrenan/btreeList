@@ -38,13 +38,13 @@ class Tree extends Program                                                      
     Integer   rootFanLevels;
     Integer      leafFanOut;
     Integer    branchFanOut;
-    Boolean         execute;
     BitSet.Build  freeChain;
     Branch.Build     branch;
     Leaf  .Build       leaf;
     int unitsNeededForNodes;                                                                                            // Bytes needed for all the nodes
     int  unitsNeededForFree;                                                                                            // Bytes needed for free chain
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
+    boolean afterLock;                                                                                                  // Request after  lock testing - supply code for thie test program via the "testProgram" overrideable
 
     Build     immediate (boolean Immediate    ) {immediate     = Immediate;     return this;}
     Build   maxLeafSize (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
@@ -53,7 +53,7 @@ class Tree extends Program                                                      
     Build rootFanLevels (int     Levels       ) {rootFanLevels = Levels;        return this;}
     Build    leafFanOut (int     LeafFanOut   ) {leafFanOut    = LeafFanOut;    return this;}
     Build  branchFanOut (int     BranchFanOut ) {branchFanOut  = BranchFanOut;  return this;}
-    Build       execute (boolean Execute      ) {execute       = Execute;       return this;}
+    Build     afterLock ()                      {afterLock     = true;          return this;}
 
     Program.Build build()                                                                                               // Describe the program used to execute the tree algorithm
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -69,6 +69,7 @@ class Tree extends Program                                                      
 
       p.memory(   size());
       p.immediate(immediate);
+      p.afterLock           = afterLock;
       return p;
      }
 
@@ -347,8 +348,9 @@ class Tree extends Program                                                      
          }
        };
 
-      if (immediate && !leaf.valid().b()) stop("Find fell off the end of tree after this many searches:", mnl());
-      subFinish();
+stop("BBBB", mnl());
+      if (immediate() && !leaf.valid().b()) stop("Find fell off the end of tree after this many searches:", mnl());
+      subFinish("Tree.FirstEntry");
      }
 
     public String toString ()                                                                                           // Print the find results
@@ -2743,8 +2745,8 @@ Leaf           size:   4, count:   2
    {sayCurrentTestName();
     final Stack<StringBuilder> s = new Stack<>();
 
-    final int  N = 2;
-    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N))
+    final int N = 2;
+    new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).afterLock())
      {void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
@@ -2754,19 +2756,19 @@ Leaf           size:   4, count:   2
          };
 
         maxSteps(9_999_999);
+        execute();
        }
-      void afterLock(Locks.Lock L)
-       {for (Program P : subPrograms())
-         {P.execute();
-         }
+      void afterLockTestProgram()
+       {//push(s, ()->print());
+        new I() {void a() {say("AAAA");} boolean trace() {return false;}};
+        new Traverse()
+         {void traverse(Int Index, Int Key, Int Data, Bit Continue)
+           {new I() {void a() {say("AAAA", Index, Key, Data);} boolean trace() {return false;}};
+            Continue.set();
+           }
+         };
        }
      };
-    final Program P = new Program(new Program.Build().subProgramOf(t))
-     {void code()
-       {push(s, ()->t.print());
-       }
-     };
-    t.execute();
     say("AAAA", s);
    }
 
@@ -2776,7 +2778,13 @@ Leaf           size:   4, count:   2
     final int  N = 16;
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeCode()
-       {new ForCount(One, new Int(N+1))
+       {new Traverse()
+         {void traverse(Int Index, Int Key, Int Data, Bit Continue)
+           {if (immediate()) stop("Tree should be empty");
+           }
+         };
+
+         new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index.Mul(10), Index.Mul(11));
             dumpProgramState("AAAA");
@@ -2838,7 +2846,8 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_rootFanOut2();
+    //test_traverse();
+    test_insert_locked();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
