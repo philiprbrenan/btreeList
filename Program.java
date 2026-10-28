@@ -2,6 +2,7 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Only the main program should be allowed to update memory -i.e. a writer must acquire a write lock which only main programs are allowed to do
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -131,8 +132,10 @@ public class Program extends Test                                               
 
     if (Build.afterLock)                                                                                                // Create the test program
      {final Program main = this;
-       testProgram = new Program(new Build().testProgramParent(main).name("Test"))
-       {void code() {main.afterLockTestProgram();}
+      testProgram = new Program(new Build().testProgramParent(main).name("Test"))
+       {void code()
+         {main.afterLockTestProgram();
+         }
        };
      }
 
@@ -1797,7 +1800,7 @@ endmodule
     if (steps >= maxSteps) stop("Out of steps after step:", steps);                                                     // Show ran out of steps
     if (mainProgram()) if (!generateVerilog) say(f("            Execution: %,12d", steps));                             // Show number of steps unless we are going to print this in during the Verilog process
 
-    if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
+    if (mainProgram() && subs .size() > 0) stop("Subroutine starts contains:",  subs);                                  // Confirm that all subroutine opens had matching closes
     checkAllLocksHaveBeenReleased();
     printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
 
