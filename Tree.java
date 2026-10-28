@@ -348,7 +348,6 @@ class Tree extends Program                                                      
          }
        };
 
-stop("BBBB", mnl());
       if (immediate() && !leaf.valid().b()) stop("Find fell off the end of tree after this many searches:", mnl());
       subFinish("Tree.FirstEntry");
      }
