@@ -18,7 +18,7 @@ my $folder      = fpd $home, $repo;                                             
 my $shaFile     = fpe $folder, q(sha);                                                                                  # Sh256 file sums for each known file to detect changes
 my $wf          = q(.github/workflows/main.yml);                                                                        # Work flow on Ubuntu - compile and test
 my $wfcpd       = q(.github/workflows/cpd.yml);                                                                         # Work flow on Ubuntu - copy paste detection
-my @ext         = qw(c java pl md png);                                                                                 # Extensions of files to upload to github
+my @ext         = qw(c java pl md png gds);                                                                                 # Extensions of files to upload to github
 my @containers  = (                                                                                                     # Containers to use to run the java code once through each set of EDA tools as it is difficult to combine them in one image
 #[qw(or ghcr.io/philiprbrenan/or_github:latest)],                                                                       # Open ram container - but not in use as OpenRam can only produce small memories
  [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);                                                                      # Silicon compiler
