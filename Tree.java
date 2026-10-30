@@ -38,6 +38,7 @@ class Tree extends Program                                                      
     Integer   rootFanLevels;
     Integer      leafFanOut;
     Integer    branchFanOut;
+    String             name;
     BitSet.Build  freeChain;
     Branch.Build     branch;
     Leaf  .Build       leaf;
@@ -54,6 +55,7 @@ class Tree extends Program                                                      
     Build    leafFanOut (int     LeafFanOut   ) {leafFanOut    = LeafFanOut;    return this;}
     Build  branchFanOut (int     BranchFanOut ) {branchFanOut  = BranchFanOut;  return this;}
     Build     afterLock ()                      {afterLock     = true;          return this;}
+    Build          name (String Name)           {name          = Name;          return this;}
 
     Program.Build build()                                                                                               // Describe the program used to execute the tree algorithm
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -67,9 +69,10 @@ class Tree extends Program                                                      
       unitsNeededForFree    = freeChain.units();
       memoryPositions       = new MemoryPositions();
 
-      p.memory(   size());
+      if (name != null) p.name(name);                                                                                   // Optional name of program containing tree code
+      if (afterLock)    p.afterLock();                                                                                  // Request after lock testing
+      p.memory(size());                                                                                                 // Describe program used by tree code
       p.immediate(immediate);
-      p.afterLock           = afterLock;
       return p;
      }
 
@@ -121,6 +124,7 @@ class Tree extends Program                                                      
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
     leaf();                                                                                                             // Initialize the root as a leaf
     refHeight.putInt(One);                                                                                              // Current height of the tree
+    if (!immediate && Build.afterLock) createAfterLockTestProgram();                                                    // Create test program to test locking
     treeCode();
    }
 
@@ -2740,12 +2744,12 @@ Leaf           size:   4, count:   2
             //test_rootFanOut3(false);                                                                                  // Github keeps running out of memory
    }
 
-  static void test_insert_locked ()
+  static void test_insert_locked (boolean Ex)
    {sayCurrentTestName();
-    final Stack<StringBuilder> s = new Stack<>();
+    final Stack<Integer> s = new Stack<>();
 
     final int N = 2;
-    new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).afterLock())
+    new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).afterLock().immediate(Ex).name("main"))
      {void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
@@ -2757,18 +2761,24 @@ Leaf           size:   4, count:   2
         maxSteps(9_999_999);
         execute();
        }
-      void afterLockTestProgram()
-       {//push(s, ()->print());
-        new I() {void a() {say("AAAA");} boolean trace() {return false;}};
+      void afterLockTestProgram(Program P)
+       {say("AAAA1111", immediate(), traceBack());
+        say("BBBB1111", dumpTree());
         new Traverse()
          {void traverse(Int Index, Int Key, Int Data, Bit Continue)
-           {new I() {void a() {say("AAAA", Index, Key, Data);} boolean trace() {return false;}};
+           {P.new I() {void a() {say("BBBB", Index, Key, Data);} boolean trace() {return false;}};
+            push(s, ()->Key.i());
             Continue.set();
            }
          };
        }
      };
-    say("AAAA", s);
+    say("CCCC", s);
+   }
+
+  static void test_insert_locked ()
+   {          test_insert_locked(true);
+              test_insert_locked(false);
    }
 
   static void test_traverse (boolean Ex)
@@ -2846,7 +2856,7 @@ Leaf           size:   4, count:   2
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_traverse();
-    test_insert_locked();
+    test_insert_locked(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
