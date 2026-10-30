@@ -2779,7 +2779,8 @@ say("BBBB", dumpTree());
        {final Build b = build.clone().name("test").testProgramParent(this);
         new Tree(b)
          {void treeCode()
-           {say("CCCC", dumpTree());
+           {say("CCCC111", programName);
+            say("CCCC222", dumpTree());
             new Traverse()
              {void traverse(Int Index, Int Key, Int Data, Bit Continue)
                {say("DDDD", Index, Key, Data);
@@ -2873,8 +2874,8 @@ say("BBBB", dumpTree());
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_traverse();
-    test_insert_locked(true);
+    test_deleteAscending(false);
+    //test_insert_locked(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
