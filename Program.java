@@ -126,8 +126,8 @@ public class Program extends Test                                               
     Zero            = new Int(0);                                                                                       // Integer constant zero
     One             = new Int(1);                                                                                       // Integer constant one
 
-    unitMemory      = Build.size              != null ? new Memory(Build.size, "program", false) :                      // Memory associated with program if any
-                      Build.testProgramParent != null ? Build.testProgramParent.unitMemory       : null;                // Share the memory of the indicated program
+    unitMemory      = Build.testProgramParent != null ? Build.testProgramParent.unitMemory       :                      // Share the memory of the indicated program
+                      Build.size              != null ? new Memory(Build.size, "program", false) : null;                // Memory associated with program if any
     locks           = Build.testProgramParent != null ? Build.testProgramParent.locks            : new Locks();         // Share the memory locks of the indicated program or create a set of local memory locks
     if (afterLock && !immediate) afterLockTestProgram();                                                                // Create the program to tests locks once if we are in delayed execution mode
     code();                                                                                                             // Load or execute the code associated with this program
