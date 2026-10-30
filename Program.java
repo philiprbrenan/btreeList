@@ -14,9 +14,9 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static String                     currentProject = "constants";                                                 // Project currently being worked on
+ {final static String                     currentProject = "testing via subprograms";                                   // Project currently being worked on
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
@@ -49,6 +49,7 @@ public class Program extends Test                                               
   final Memory                                unitMemory;                                                               // Optional memory associated with the program
   final Locks                                      locks;                                                               // Locks held over areas of memory
   final boolean                                immediate;                                                               // Execute immediately if true else generate machine code and execute later
+  final boolean                                afterLock;                                                               // Whether this program has requested after lock testing
   final        Stack<Memory>                    memories;                                                               // Memories used by this program and its dependent programs
   final        Stack<Int>                           ints;                                                               // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
   final        Stack<Bit>                           bits;                                                               // Bit variables processed in the same way as ints.
@@ -71,8 +72,6 @@ public class Program extends Test                                               
   Program                              testProgramParent;                                                               // Parent of test program
   I                                            executing = null;                                                        // Instruction currently being executed
   I                                            compiling = null;                                                        // Instruction currently being compiled
-  int                                           exitCode = 0;                                                           // A non zero exit code indicates the program failed in some way
-  boolean                                        exitBit = true;                                                        // This field is set to indicate whether a sub program succeeded or not.  Being blocked by failing to get a lock is considered a success because the locking worled to prevent an incorrect result. Only if the sub program passes all the locks but fails to get the expected result should the execution of the sub program be considered a failure
   int                                           maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
   int                                              steps = 0;                                                           // Number of instruction steps executed so far during the latest execution of this program
   int                                                 pc;                                                               // Program counter indicating the instruction to be executed after the current one
@@ -105,6 +104,7 @@ public class Program extends Test                                               
 
   Program (Build Build)                                                                                                 // Construct
    {immediate       = Build.immediate;                                                                                  // Immediate or delayed execution
+    afterLock       = Build.afterLock;                                                                                  // After lock testing requested
     parentProgram   = Build.parent == null ? this : Build.parent;                                                       // Parent program that will contain the code
     if (Build.testProgramParent != null) Build.testProgramParent.testProgram = this;                                    // Record this program as the test program for the  indicated program
     testProgramParent = Build.testProgramParent != null ? Build.testProgramParent : null;                               // Record sub program of parent program
@@ -129,17 +129,7 @@ public class Program extends Test                                               
     unitMemory      = Build.size              != null ? new Memory(Build.size, "program", false) :                      // Memory associated with program if any
                       Build.testProgramParent != null ? Build.testProgramParent.unitMemory       : null;                // Share the memory of the indicated program
     locks           = Build.testProgramParent != null ? Build.testProgramParent.locks            : new Locks();         // Share the memory locks of the indicated program or create a set of local memory locks
-
-    if (Build.afterLock)                                                                                                // Create the test program
-     {final Program main = this;
-      testProgram = new Program(new Build().testProgramParent(main).name("Test").immediate(false))                      // The test program cannot be run in immediate mode because we only want it to run on demand to perform tests against another program
-       {void code()
-         {say("AAAA", immediate());
-           if (!immediate()) main.afterLockTestProgram();
-         }
-       };
-     }
-
+    if (afterLock && !immediate) createAfterLockTestProgram();                                                         // Create the program to tests locks once if we are in delayed execution mode
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -603,16 +593,6 @@ public class Program extends Test                                               
           Test.ok(got.b(), Value.b());
          }
         String v() {return "/* Bit ok(Bit) */";}
-        int traces () {return 0;}
-       };
-      return this;
-     }
-
-    Bit exit ()                                                                                                         // Set the exit bit to show whether a sub program reached this point in the code and produced the expected result
-     {final Bit b = this;
-      new I()
-       {void a()   {exitBit = b.v && b.i;}                                                                              // Valid exit bit
-        String v() {return "/* exit bit */";}
         int traces () {return 0;}
        };
       return this;
@@ -1754,7 +1734,7 @@ endmodule
     if (!initializedForExecution) if (mainProgram()) traceFiles.delete_java();                                          // Clear Java trace file at first execution of main program
     if (!initializedForExecution) if (mainProgram()) dumpProgramState("Finished");                                      // Dump program state at end of execution
 
-    currentPc   = pc = exitCode = 0; exitBit = true;                                                                    // Reset program counter to start of program
+    currentPc   = pc = 0;                                                                                               // Reset program counter to start of program
     final int N = codeSize();                                                                                           // Number of instructions
 
     intMemory().reallocate(nextIntId);                                                                                  // Resize integer memory now we know how big to make it
@@ -1792,9 +1772,10 @@ endmodule
 
         executing = null;                                                                                               // Show no instruction currently being executed
        }
-      catch(Exception e)
-       {if (executing == null) stop("Exception:", e, "while executing:", traceBack(e));
-        else stop("Exception:", e, "\nin instruction:", executing.traceBack, "\nwhile executing:", traceBack(e));
+      catch(HaltSubProgram H) {break;}
+      catch(Exception E)
+       {if (executing == null) stop("Exception:", E, "while executing:", traceBack(E));
+        else stop("Exception:", E, "\nin instruction:", executing.traceBack, "\nwhile executing:", traceBack(E));
        }
      }
 
@@ -2738,50 +2719,48 @@ endmodule
       public String toString() {return f("Read: %d, write: %d, area %d", reads, write ? 1 : 0, area);}                  // Print a lock
      }
 
-    void getReadLock (int Area)                                                                                         // Get a read lock on an area in memory
+    void getReadLock (Program P, int Area)                                                                              // Get a read lock on an area in memory
      {if (!locks.containsKey(Area)) locks.put(Area, new Lock(Area));                                                    // Create a lock description for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
       if (!l.write)                                                                                                     // There can be no writes in progress
        {l.reads++;
-        callTestProgram();                                                                                              // Run the test program if possible
+        P.callAfterLockTestProgram();                                                                                   // Run the test program if possible
        }
-      else if (testProgram != null)
-       {testProgram.exitCode = 1; testProgram.exitBit = true; testProgram.pc = -1;
-       }
+      else throw new HaltSubProgram("CCCC");                                                                            // Stop the test program if it cannot get a read lock. The purpose of the test program is not to modify memory but to ascertain that the program that is not write locked is coherent - to do this it needs, at most, the ability to obtain read locks
      }
 
-    void getWriteLock (int Area)                                                                                        // Get a read lock on an area in memory
+    void getWriteLock (Program P, int Area)                                                                             // Get a read lock on an area in memory
      {if (!locks.containsKey(Area)) locks.put(Area, new Lock(Area));                                                    // Create a lock description for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
       if (!l.write && l.reads == 0)                                                                                     // There can be no other reads or writes in progress
        {l.write = true;
-        callTestProgram();                                                                                              // Run the test program if possible
+        P.callAfterLockTestProgram();                                                                                   // Run the test program if possible
        }
       else if (l.write) stop("Write block for this area has already been acquired:", l);                                // There can be no other writes in progress
       else stop("Presence of read locks prevents the acquisition of a write lock for this area:", l);                   // There can be no read locks for this area
      }
 
-    void    freeReadLock (int Area)                                                                                     // Free a read lock if it exists or complain if it does not
+    void    freeReadLock (Program P, int Area)                                                                          // Free a read lock if it exists or complain if it does not
      {if (!locks.containsKey(Area)) stop("No lock to free for area:", Area);                                            // Create a lock description for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
       if (l.write) stop("Attempting to free a write lock not a read lock:", l);
       if (l.reads <= 0) stop("Not a valid read lock:", l);
       --l.reads;                                                                                                        // Free the read lock if it exists else complain that there is no read lock to free as this would seem to be caused by programming error
       if (l.reads == 0) locks.remove(Area);                                                                             // Remove lock if no locks remain for this area
-      callTestProgram();                                                                                                // Run the test program if possible
+      P.callAfterLockTestProgram();                                                                                       // Run the test program if possible
      }
 
-    void   freeWriteLock (int Area)                                                                                     // Free a write lock on an area in memory if it exists or complain if it does not
+    void   freeWriteLock (Program P, int Area)                                                                          // Free a write lock on an area in memory if it exists or complain if it does not
      {if (!locks.containsKey(Area)) stop("No lock to free for area:", Area);                                            // Check that there is a lock for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
       if (l.reads > 0) stop("Attempting to free a read lock not a write lock:", l);                                     // There must be no read locks present
       if (!l.write) stop("Memory area not write locked:", l);                                                           // There must be a write lock to free
       l.write = false;                                                                                                  // Free the write lock
       locks.remove(Area);                                                                                               // No locks remain for this area
-      callTestProgram();                                                                                                // Run the test program if possible
+      callAfterLockTestProgram();                                                                                       // Run the test program if possible
      }
 
-    void   promoteReadToWrite (int Area)                                                                                // Promote a single read lock to a write lock
+    void   promoteReadToWrite (Program P, int Area)                                                                     // Promote a single read lock to a write lock
      {if (!locks.containsKey(Area)) stop("No read lock to promote to a write lock for area:", Area);                    // Check that there is a lock for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
       if (l.reads != 1) stop("Only a single read lock can be promoted to a write lock:", l);                            // There must be exactly one read lock for this area
@@ -2789,10 +2768,10 @@ endmodule
       l.write = true;                                                                                                   // Apply the write lock
       l.reads = 0;                                                                                                      // Free the write lock
       locks.remove(Area);                                                                                               // No locks remain for this area
-      callTestProgram();                                                                                                // Run the test program if possible
+      P.callAfterLockTestProgram();                                                                                       // Run the test program if possible
      }
 
-    void   demoteWriteToRead (int Area)                                                                                 // Demote a write lock to a read lock
+    void   demoteWriteToRead (Program P, int Area)                                                                      // Demote a write lock to a read lock
      {if (!locks.containsKey(Area)) stop("No write lock to demote to a read lock for area:", Area);                     // Check that there is a lock for this area
       final Lock l = locks.get(Area);                                                                                   // Address lock
       if (l.reads != 0) stop("Cannot demote the a read lock:", l);                                                      // There must be exactly one read lock for this area
@@ -2800,7 +2779,7 @@ endmodule
       l.write = true;                                                                                                   // Apply the write lock
       l.reads = 0;                                                                                                      // Free the write lock
       locks.remove(Area);                                                                                               // No locks remain for this area
-      callTestProgram();                                                                                                // Run the test program if possible
+      P.callAfterLockTestProgram();                                                                                       // Run the test program if possible
      }
 
     boolean  hasReadLock (int Area) {return locks.containsKey(Area) && locks.get(Area).reads > 0;}                      // Whether a specified area of memory has been read locked
@@ -2818,32 +2797,36 @@ endmodule
    }
 
   void getReadLock (Int Area)                                                                                           // Create an instruction to get a read lock
-   {new I()
-     {void        a () {locks().getReadLock(Area.i());}                                                                 // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
+   {final Program p = this;
+    new I()
+     {void        a () {locks().getReadLock(p, Area.i());}                                                              // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
       String      v () {return "/* getReadLock */";}
       boolean trace () {return false;}
      };
    }
 
   void freeReadLock (Int Area)                                                                                          // Create an instruction to free a read lock
-   {new I()
-     {void        a () {locks().freeReadLock(Area.i());}                                                                // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
+   {final Program p = this;
+    new I()
+     {void        a () {locks().freeReadLock(p, Area.i());}                                                             // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
       String      v () {return "/* freeReadLock */";}
       boolean trace () {return false;}
      };
    }
 
   void getWriteLock (Int Area)                                                                                          // Create an instruction to get a write lock
-   {new I()
-     {void        a () {locks().getWriteLock(Area.i());}                                                                // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
+   {final Program p = this;
+    new I()
+     {void        a () {locks().getWriteLock(p, Area.i());}                                                             // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
       String      v () {return "/* getWriteLock */";}
       boolean trace () {return false;}
      };
    }
 
   void freeWriteLock (Int Area)                                                                                         // Create an instruction to free a write lock
-   {new I()
-     {void        a () {locks().freeWriteLock(Area.i());}                                                               // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
+   {final Program p = this;
+    new I()
+     {void        a () {locks().freeWriteLock(p, Area.i());}                                                            // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
       String      v () {return "/* freeWriteLock */";}
       boolean trace () {return false;}
      };
@@ -2856,14 +2839,32 @@ endmodule
    {if (locks.size() > 0 && mainProgram()) stop("Not all locks were released:", locks);
    }
 
-  void callTestProgram ()                                                                                               // Call the test program if it exists
-   {if (testProgram != null)
-     {testProgram.execute();
-      ok(testProgram.exitBit);
+  static class HaltSubProgram extends RuntimeException                                                                  // Exception used to halt sub programs
+   {private static final long serialVersionUID = 1L;
+    HaltSubProgram (String Message) {super(Message);}
+   }
+
+  void createAfterLockTestProgram ()                                                                                    // Call the test program if it exists
+   {final Program main = this;
+    testProgram = new Program(new Build().testProgramParent(main).name("Test").immediate(main.immediate()))
+     {void code()
+       {try
+         {say("BBBB");
+          main.afterLockTestProgram(this);
+         }
+        catch(HaltSubProgram H) {}                                                                                      // Sub program used for lock testing was halted because it could not acquire a lock
+       }
+     };
+   }
+
+  void callAfterLockTestProgram ()                                                                                      // Create or call the test program depending on execution mode
+   {say("CCCC callAfterLockProgram:", programName, afterLock);
+    if (afterLock)                                                                                                      // The test program was defined without requesting after lock processing
+     {if (immediate()) createAfterLockTestProgram(); else testProgram.execute();
      }
    }
 
-  void afterLockTestProgram () {}                                                                                       // Override this method to provide the code to be run by the test program after each lock operation
+  void afterLockTestProgram (Program P) {}                                                                              // Override this method to provide the code to be run by the test program after each lock operation. use the program parameter to ensure that the generated code goes in the test program not the program  under test and that integers and bits belong to the test program not the program under test
 
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
@@ -3983,30 +3984,39 @@ writeIntEnable =        0
               test_maxMin(false);
    }
 
-  static void test_lock ()
+  static void test_lock (boolean Ex)
    {sayCurrentTestName();
-    new Program(new Build().afterLock())
+    final Stack<Character> s = new Stack<>();
+    new Program(new Build().afterLock().name("main").immediate(Ex))
      {void code()
        {final Int a = new Int("a").set(0);
         final Int l = new Int("l", 2);
         final Int L = new Int("L", 3);
+        getReadLock(l);
+        freeReadLock(l);
         getWriteLock(l);
         getWriteLock(L);
         a.inc();
         freeWriteLock(L);
         freeWriteLock(l);
-        ok(()->testProgram.exitBit, "true");
         execute();
        }
-      void afterLockTestProgram()
-       {final Int a = new Int("a").set(0);
-        final Int l = new Int("l", 2);
-        getReadLock(l);
+      void afterLockTestProgram(Program P)
+       {final Int a = P.new Int("a").set(0);
+        final Int l = P.new Int("l", 2);
+        P.push(s, ()->'a');
+        P.getReadLock(l);
+        P.push(s, ()->'b');
         a.inc();
-        freeReadLock(l);
-        a.eq(1).exit();
+        P.freeReadLock(l);
        }
      };
+    ok(s, "[a, b, a, b, a, a, a, a, b]");
+   }
+
+  static void test_lock()
+   {          test_lock(true);
+              test_lock(false);
    }
 
   static void test_push (boolean Ex)
