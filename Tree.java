@@ -27,35 +27,37 @@ class Tree extends Program                                                      
 
 //D1 Construction                                                                                                       // Construct and layout a tree
 
-  final static class Build                                                                                              // Parameters describing a tree
-   {boolean       immediate = true;                                                                                     // Immediate execution mode
-    int          branchSize;                                                                                            // Size of a branch
-    int            leafSize;                                                                                            // Size of a leaf
-    int            nodeSize;                                                                                            // Size of a node: a leaf or a branch whichever is bigger. By using fixed size memory allocation we greatly simplify memory allocation - so it is worth adjusting the branch and leaf sizes to be as equal as possible.
-    Integer     maxLeafSize;
-    Integer   maxBranchSize;
-    Integer   numberOfNodes;
-    Integer   rootFanLevels;
-    Integer      leafFanOut;
-    Integer    branchFanOut;
-    String             name;
-    BitSet.Build  freeChain;
-    Branch.Build     branch;
-    Leaf  .Build       leaf;
-    int unitsNeededForNodes;                                                                                            // Bytes needed for all the nodes
-    int  unitsNeededForFree;                                                                                            // Bytes needed for free chain
+  final static class Build implements Cloneable                                                                         // Parameters describing a tree
+   {boolean         immediate = true;                                                                                   // Immediate execution mode
+    int            branchSize;                                                                                          // Size of a branch
+    int              leafSize;                                                                                          // Size of a leaf
+    int              nodeSize;                                                                                          // Size of a node: a leaf or a branch whichever is bigger. By using fixed size memory allocation we greatly simplify memory allocation - so it is worth adjusting the branch and leaf sizes to be as equal as possible.
+    Integer       maxLeafSize;
+    Integer     maxBranchSize;
+    Integer     numberOfNodes;
+    Integer     rootFanLevels;
+    Integer        leafFanOut;
+    Integer      branchFanOut;
+    String               name;
+    Program testProgramParent;                                                                                          // Share the memory and memory locks of this program
+    BitSet.Build    freeChain;
+    Branch.Build       branch;
+    Leaf  .Build         leaf;
+    int   unitsNeededForNodes;                                                                                          // Bytes needed for all the nodes
+    int    unitsNeededForFree;                                                                                          // Bytes needed for free chain
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
     boolean afterLock;                                                                                                  // Request after  lock testing - supply code for thie test program via the "testProgram" overrideable
 
-    Build     immediate (boolean Immediate    ) {immediate     = Immediate;     return this;}
-    Build   maxLeafSize (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
-    Build maxBranchSize (int     MaxBranchSize) {maxBranchSize = MaxBranchSize; return this;}
-    Build numberOfNodes (int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
-    Build rootFanLevels (int     Levels       ) {rootFanLevels = Levels;        return this;}
-    Build    leafFanOut (int     LeafFanOut   ) {leafFanOut    = LeafFanOut;    return this;}
-    Build  branchFanOut (int     BranchFanOut ) {branchFanOut  = BranchFanOut;  return this;}
-    Build     afterLock ()                      {afterLock     = true;          return this;}
-    Build          name (String Name)           {name          = Name;          return this;}
+    Build         immediate (boolean Immediate    ) {immediate     = Immediate;     return this;}
+    Build       maxLeafSize (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
+    Build     maxBranchSize (int     MaxBranchSize) {maxBranchSize = MaxBranchSize; return this;}
+    Build     numberOfNodes (int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
+    Build     rootFanLevels (int     Levels       ) {rootFanLevels = Levels;        return this;}
+    Build        leafFanOut (int     LeafFanOut   ) {leafFanOut    = LeafFanOut;    return this;}
+    Build      branchFanOut (int     BranchFanOut ) {branchFanOut  = BranchFanOut;  return this;}
+    Build         afterLock ()                      {afterLock     = true;          return this;}
+    Build              name (String Name)           {name          = Name;          return this;}
+    Build testProgramParent (Program    Parent)     {testProgramParent = Parent;    return this;}
 
     Program.Build build()                                                                                               // Describe the program used to execute the tree algorithm
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -71,6 +73,7 @@ class Tree extends Program                                                      
 
       if (name != null) p.name(name);                                                                                   // Optional name of program containing tree code
       if (afterLock)    p.afterLock();                                                                                  // Request after lock testing
+      if (testProgramParent != null) p.testProgramParent(testProgramParent);                                            // Defining the program to do after lock testing
       p.memory(size());                                                                                                 // Describe program used by tree code
       p.immediate(immediate);
       return p;
@@ -85,6 +88,16 @@ class Tree extends Program                                                      
      }
 
     int size () {return memoryPositions.size;}                                                                          // Bytes needed for the slots
+
+    public Build clone()                                                                                                // Clone a build  specification
+     {try
+       {final Build b = (Build) super.clone();
+        b.afterLock = false;                                                                                            // Avoid infinite recursione of test programs
+        return b;
+       }
+      catch (CloneNotSupportedException E) {stop(E, traceBack());}
+      return null;                                                                                                      // Unreachable but never-the-less required by java
+     }
    }
 
   Tree(Build Build)                                                                                                     // Create the tree
@@ -97,10 +110,10 @@ class Tree extends Program                                                      
     leafFanOut    = Build.leafFanOut    == null ?  0 : min(Build.leafFanOut,   maxLeafSize);                            // Fan out at leaf if requested
     branchFanOut  = Build.branchFanOut  == null ?  0 : min(Build.branchFanOut, maxBranchSize);                          // Fan out at branch if requested
 
-    final String m  = "The maximum ";
-    final String m1 = m + "leaf size must be 2 or more, not: "   +maxLeafSize;
-    final String m2 = m + "branch size must be 3 or more, not: " +maxBranchSize;
-    final String m3 = m + "branch size must be odd, not: "       +maxBranchSize;
+    final String  m  = "The maximum ";
+    final String  m1 = m + "leaf size must be 2 or more, not: "   +maxLeafSize;
+    final String  m2 = m + "branch size must be 3 or more, not: " +maxBranchSize;
+    final String  m3 = m + "branch size must be odd, not: "       +maxBranchSize;
 
     final boolean b1 = maxLeafSize       <  2;                                                                          // Size checks
     final boolean b2 = maxBranchSize     <  3;
@@ -109,22 +122,22 @@ class Tree extends Program                                                      
     if (b1 && !b2 && !b3) stop(m1); else if (b1) say(m1);                                                               // Check parameters and describe any errors
     if (b2        && !b3) stop(m2); else if (b2) say(m2);
     if (b3              ) stop(m3);
-    build         = Build;                                                                                              // Keep the build for future reference
-    sizeOfNode    = build.nodeSize;                                                                                     // Size of a node in the tree
+    build            = Build;                                                                                           // Keep the build for future reference
+    sizeOfNode       = build.nodeSize;                                                                                  // Size of a node in the tree
 
     final Memory.Ref unitMemoryRef = unitMemory.new Ref(0);                                                             // Memory used by tree
-    refNodes       = unitMemoryRef.step(build.memoryPositions.posNodes);                                                // Memory for nodes
-    refFreeChain   = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                            // Memory for free chain
-    refCount       = unitMemoryRef.step(build.memoryPositions.posCount);                                                // Memory for key count
-    refHeight      = unitMemoryRef.step(build.memoryPositions.posHeight);                                               // Memory for height of tree
+    refNodes         = unitMemoryRef.step(build.memoryPositions.posNodes);                                              // Memory for nodes
+    refFreeChain     = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                          // Memory for free chain
+    refCount         = unitMemoryRef.step(build.memoryPositions.posCount);                                              // Memory for key count
+    refHeight        = unitMemoryRef.step(build.memoryPositions.posHeight);                                             // Memory for height of tree
 
-    mergePath      = new Memory(mnl(), "tree", false);                                                                  // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    mergePath        = new Memory(mnl(), "tree", false);                                                                // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
     leaf();                                                                                                             // Initialize the root as a leaf
     refHeight.putInt(One);                                                                                              // Current height of the tree
-    if (!immediate && Build.afterLock) createAfterLockTestProgram();                                                    // Create test program to test locking
+    if (!immediate && afterLock) afterLockTestProgram();                                                                // Create program to test locking
     treeCode();
    }
 
@@ -2754,6 +2767,7 @@ Leaf           size:   4, count:   2
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
+say("BBBB", dumpTree());
             find(Index);
            }
          };
@@ -2761,19 +2775,23 @@ Leaf           size:   4, count:   2
         maxSteps(9_999_999);
         execute();
        }
-      void afterLockTestProgram(Program P)
-       {say("AAAA1111", immediate(), traceBack());
-        say("BBBB1111", dumpTree());
-        new Traverse()
-         {void traverse(Int Index, Int Key, Int Data, Bit Continue)
-           {P.new I() {void a() {say("BBBB", Index, Key, Data);} boolean trace() {return false;}};
-            push(s, ()->Key.i());
-            Continue.set();
+      void afterLockTestProgram()
+       {final Build b = build.clone().name("test").testProgramParent(this);
+        new Tree(b)
+         {void treeCode()
+           {say("CCCC", dumpTree());
+            new Traverse()
+             {void traverse(Int Index, Int Key, Int Data, Bit Continue)
+               {say("DDDD", Index, Key, Data);
+                push(s, ()->Key.i());
+                Continue.set();
+               }
+             };
            }
          };
        }
      };
-    say("CCCC", s);
+    say("EEEE", s);
    }
 
   static void test_insert_locked ()
