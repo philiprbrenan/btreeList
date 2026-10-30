@@ -129,7 +129,7 @@ public class Program extends Test                                               
     unitMemory      = Build.size              != null ? new Memory(Build.size, "program", false) :                      // Memory associated with program if any
                       Build.testProgramParent != null ? Build.testProgramParent.unitMemory       : null;                // Share the memory of the indicated program
     locks           = Build.testProgramParent != null ? Build.testProgramParent.locks            : new Locks();         // Share the memory locks of the indicated program or create a set of local memory locks
-    if (afterLock && !immediate) createAfterLockTestProgram();                                                         // Create the program to tests locks once if we are in delayed execution mode
+    if (afterLock && !immediate) afterLockTestProgram();                                                                // Create the program to tests locks once if we are in delayed execution mode
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -2844,27 +2844,17 @@ endmodule
     HaltSubProgram (String Message) {super(Message);}
    }
 
-  void createAfterLockTestProgram ()                                                                                    // Call the test program if it exists
-   {final Program main = this;
-    testProgram = new Program(new Build().testProgramParent(main).name("Test").immediate(main.immediate()))
-     {void code()
-       {try
-         {say("BBBB");
-          main.afterLockTestProgram(this);
-         }
-        catch(HaltSubProgram H) {}                                                                                      // Sub program used for lock testing was halted because it could not acquire a lock
-       }
-     };
-   }
-
   void callAfterLockTestProgram ()                                                                                      // Create or call the test program depending on execution mode
-   {say("CCCC callAfterLockProgram:", programName, afterLock);
+   {say("AAAAA callAfterLockProgram:", programName, afterLock);
     if (afterLock)                                                                                                      // The test program was defined without requesting after lock processing
-     {if (immediate()) createAfterLockTestProgram(); else testProgram.execute();
+     {try
+       {if (immediate()) afterLockTestProgram(); else testProgram.execute();
+       }
+      catch (HaltSubProgram H) {}
      }
    }
 
-  void afterLockTestProgram (Program P) {}                                                                              // Override this method to provide the code to be run by the test program after each lock operation. use the program parameter to ensure that the generated code goes in the test program not the program  under test and that integers and bits belong to the test program not the program under test
+  void afterLockTestProgram () {}                                                                                       // Override this method to provide the code to be run by the test program after each lock operation. use the program parameter to ensure that the generated code goes in the test program not the program  under test and that integers and bits belong to the test program not the program under test
 
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
@@ -4001,14 +3991,19 @@ writeIntEnable =        0
         freeWriteLock(l);
         execute();
        }
-      void afterLockTestProgram(Program P)
-       {final Int a = P.new Int("a").set(0);
-        final Int l = P.new Int("l", 2);
-        P.push(s, ()->'a');
-        P.getReadLock(l);
-        P.push(s, ()->'b');
-        a.inc();
-        P.freeReadLock(l);
+
+      @Override void afterLockTestProgram ()                                                                                 // Call the test program if it exists
+       {final Program P = new Program(new Build().testProgramParent(this).name("Test").immediate(Ex))                   // In immediate mode the program will be executed  immediately.  IN delayed mode the program will have slotted itself intyo the parent progean and cvan bve excuted dorectly.
+         {void code()
+           {final Int a = new Int("a").set(0);
+            final Int l = new Int("l", 2);
+            push(s, ()->'a');
+            getReadLock(l);
+            push(s, ()->'b');
+            a.inc();
+            freeReadLock(l);
+           }
+         };
        }
      };
     ok(s, "[a, b, a, b, a, a, a, a, b]");
