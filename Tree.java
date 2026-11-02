@@ -155,6 +155,7 @@ class Tree extends Program                                                      
      {if (Node.gt(new Int(numberOfNodes)).b()) stop("Node too big:",                                     Node);         // Check in range
       if (freeChain.getBit(Node).b()) stop("Attempting to access a branch or leaf that has been freed:", Node);         // Complain if the node has been freed and not reallocated
      }
+    getLock(Node);                                                                                                      // Lock the node so only the caller can use it.
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
    }
 
@@ -318,7 +319,7 @@ class Tree extends Program                                                      
     FirstEntry  ()                                                                                                      // Locate the first entry in the tree
      {subStart("Tree.FirstEntry");
       final Int p = root().dup();                                                                                       // Start at root
-      getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
+      getLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
@@ -344,7 +345,7 @@ class Tree extends Program                                                      
                {void Then() {d.set(b.data(s.getSlotToKeyIndex(f.i())));}                                                // Step to first child
                 void Else() {d.set(b.top());}                                                                           // Step through top as there are no entries in the body of the branch
                };
-              getReadLock(d); freeReadLock(p); p.set(d);                                                                // Lock child, unlock parent, step down
+              getLock(d); freeLock(p); p.set(d);                                                                // Lock child, unlock parent, step down
               Continue.set();                                                                                           // Continue traverse towards a leaf
              }
            };
@@ -375,7 +376,7 @@ class Tree extends Program                                                      
     LastEntry  ()                                                                                                       // Locate the last entry in the tree
      {subStart("Tree.LastEntry");
       final Int p = root().dup();                                                                                       // Start at root
-      getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
+      getLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
@@ -397,7 +398,7 @@ class Tree extends Program                                                      
               final Slots  s = b.slots;                                                                                 // Slots for branch
               final Bint   f = s.usedSlotsToKeys.firstOne();                                                            // Last used slot is the last entry
               final Int    d = b.top();                                                                                 // Step through top as there are no entries in the body of the branch
-              getReadLock(d); freeReadLock(p); p.set(d);                                                                // Lock child, unlock parent, step down
+              getLock(d); freeLock(p); p.set(d);                                                                // Lock child, unlock parent, step down
               Continue.set();                                                                                           // Continue traverse towards a leaf
              }
            };
@@ -469,7 +470,7 @@ class Tree extends Program                                                      
          {final Int k = new Int("Key", f.key.i());
           final Bit c = new Bit("Continue").clear();
           traverse(new Int(0), f.key.i(), f.data, c);
-          freeReadLock(f.leaf.i());
+          freeLock(f.leaf.i());
 
           new If (c)                                                                                                    // Continue if caller requests more than thr first key
            {void Then()
@@ -479,14 +480,14 @@ class Tree extends Program                                                      
                   new If (n.key)
                    {void Then() {traverse(Index.Inc(), n.key.i(), n.data, Continue); k.set(n.key.i());}
                    };
-                  freeReadLock(n.leaf.i());
+                  freeLock(n.leaf.i());
                  }
                };
              }
            };
          }
         void Else()                                                                                                     // Free leaf even though it was empty
-         {freeReadLock(f.leaf.i());
+         {freeLock(f.leaf.i());
          }
        };
      }
@@ -500,7 +501,7 @@ class Tree extends Program                                                      
     FindLeafForKey (Int Key)                                                                                            // Find the specified key in a leaf in the tree
      {subStart("Tree."+title());
       final Int p = root().dup();                                                                                       // Start at root
-      getReadLock(p); key.set(Key);                                                                                     // Lock the root so no-one can modify it while we are reading it
+      getLock(p); key.set(Key);                                                                                     // Lock the root so no-one can modify it while we are reading it
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
@@ -510,7 +511,7 @@ class Tree extends Program                                                      
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down details
-              getReadLock(d.node); freeReadLock(p);                                                                     // Transfer the read lock to the leaf or branch stepped to so it cannot be modified while we are reading it
+              getLock(d.node); freeLock(p);                                                                     // Transfer the read lock to the leaf or branch stepped to so it cannot be modified while we are reading it
               p.set(d.node);                                                                                            // Step down to next level
               Continue.set();                                                                                           // Continue search
              }
@@ -549,7 +550,7 @@ class Tree extends Program                                                      
     FindBranch (Int Key)                                                                                                // Find the specified key in a branch in the tree
      {subStart("Tree.findBranch");
       final Int p = root().dup();                                                                                       // Start at root
-      getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
+      getLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
       key.set(Key);
 
       new For(mnl())                                                                                                    // Step down from branch to branch
@@ -559,10 +560,10 @@ class Tree extends Program                                                      
              {final Branch.StepDown d = branch(p).new StepDown(Key);                                                    // Step down details
               new If (d.eqKey)
                {void Then() {branch.set(p); slot.set(d.slot);}                                                          // Found the matching key so terminate the search and hold a read lock on the branch so found
-                void Else() {getReadLock(d.node); freeReadLock(p); p.set(d.node); Continue.set();}                      // Step down to the next branch
+                void Else() {getLock(d.node); freeLock(p); p.set(d.node); Continue.set();}                      // Step down to the next branch
                };
              }
-            void Else() {freeReadLock(p);}                                                                              // Stepped down to a leaf so release the read lock on the parent branch because a branch containing the key was not found
+            void Else() {freeLock(p);}                                                                              // Stepped down to a leaf so release the read lock on the parent branch because a branch containing the key was not found
            };
          }
        };
@@ -590,20 +591,20 @@ class Tree extends Program                                                      
      {subStart("Tree.MaximumKey");
       branch.set(Branch);
       final Int p = branch.dup();                                                                                       // Start at branch
-      getReadLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
+      getLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
          {new If (isBranch(p))                                                                                          // On a branch
            {void Then()
              {final Int t = branch(p).top();                                                                            // Step through top towards maximum element
-              getReadLock(t); freeReadLock(p); p.set(t); Continue.set();                                                // Step down through top to the next branch
+              getLock(t); freeLock(p); p.set(t); Continue.set();                                                // Step down through top to the next branch
              };
             void Else()                                                                                                 // We have arrived at a leaf - find the maximum element
              {final Slots s = leaf(p).slots;                                                                            // Slots
               final Bint  i = s.usedSlotsToKeys.lastOne();                                                              // Index of slot referencing last key
               new If (i) {void Then() {maxKey.set(s.getSlotToKeyValue(i.i()));}};                                       // Last key in leaf if there is one
-              freeReadLock(p);
+              freeLock(p);
              }
            };
          }
@@ -819,7 +820,7 @@ class Tree extends Program                                                      
             data.set(L.data(k));                                                                                        // Data associated with key
            }
          };
-        freeReadLock(l.leaf.i());                                                                                       // Safe to free the read lock on the leaf because we have the data associated with the key
+        freeLock(l.leaf.i());                                                                                       // Safe to free the read lock on the leaf because we have the data associated with the key
        }
      };
 
@@ -878,7 +879,7 @@ class Tree extends Program                                                      
             countInc();                                                                                                 // Count inserted key
            }
          };
-        freeReadLock(f.leaf.i());                                                                                       // Release the read lock on the leaf obtained by find leaf
+        freeLock(f.leaf.i());                                                                                       // Release the read lock on the leaf obtained by find leaf
        }
      };
     subFinish();
@@ -968,7 +969,7 @@ class Tree extends Program                                                      
                         };
                        }
                      };
-                    freeReadLock(F.branch.i());                                                                         // Free the read lock obtained by find branch
+                    freeLock(F.branch.i());                                                                         // Free the read lock obtained by find branch
                    }
                  };
                }
@@ -1139,7 +1140,7 @@ class Tree extends Program                                                      
      }
 
     void traverse (int Index, int Parent, int Depth)                                                                    // Traverse the branch at the indicated index
-     {if (hasWriteLock(Index)) return;                                                                                  // Skip the parts of the tree that have write locks so we cans ee their effects
+     {if (locks().hasLock(Index)) return;                                                                               // Skip the parts of the tree that have been locked so we can see the effects of locking
       final Slots          s = slots(Index, maxBranchSize);                                                             // Slots for branch
       final Memory.Ref nodes = refNodes.step(Index*build.nodeSize + 1 + s.build.size());                                // Array of child nodes
       final int            t = refNodes.step(Index*build.nodeSize + build.branch.memoryPositions.posTop  ).getInt(0);   // Top reference
@@ -1461,12 +1462,12 @@ Height        :    1
 1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
 """);
 
-        final FirstEntry F   = new FirstEntry(); freeReadLock(F.leaf.i()); F.leaf.ok(3);
-        final LastEntry  L   = new  LastEntry(); freeReadLock(L.leaf.i()); L.leaf.ok(2);
+        final FirstEntry F   = new FirstEntry(); freeLock(F.leaf.i()); F.leaf.ok(3);
+        final LastEntry  L   = new  LastEntry(); freeLock(L.leaf.i()); L.leaf.ok(2);
 
-        final FindBranch f_8 = new FindBranch(new Int( 8)); freeReadLock(f_8.branch.i());
-        final FindBranch f_2 = new FindBranch(new Int( 2)); freeReadLock(f_2.branch.i());
-        final FindBranch f14 = new FindBranch(new Int(14)); freeReadLock(f14.branch.i());
+        final FindBranch f_8 = new FindBranch(new Int( 8)); freeLock(f_8.branch.i());
+        final FindBranch f_2 = new FindBranch(new Int( 2)); freeLock(f_2.branch.i());
+        final FindBranch f14 = new FindBranch(new Int(14)); freeLock(f14.branch.i());
         final FindBranch f_1 = new FindBranch(new Int( 1));
 
         ok(()->f_8, "Find branch key: key=8, valid: true, branch:19, slot: slot=2\n");
@@ -1484,8 +1485,8 @@ Height        :    1
         ok(()->m19, "Branch: 19,  maximum key: 16\n");
         ok(()->m_9, "Branch:  9,  maximum key:  8\n");
 
-        final FindLeafForNextKey n_1 = new FindLeafForNextKey(new Int(1)); freeReadLock(n_1.leaf.i()); n_1.leaf.i().ok(3);
-        final FindLeafForNextKey n_2 = new FindLeafForNextKey(new Int(2)); freeReadLock(n_2.leaf.i()); n_2.leaf.i().ok(4);
+        final FindLeafForNextKey n_1 = new FindLeafForNextKey(new Int(1)); freeLock(n_1.leaf.i()); n_1.leaf.i().ok(3);
+        final FindLeafForNextKey n_2 = new FindLeafForNextKey(new Int(2)); freeLock(n_2.leaf.i()); n_2.leaf.i().ok(4);
 
         delete(new Int(16));
 
@@ -1702,7 +1703,7 @@ Height        :    1
         new ForCount(new Int(N))
          {void body(Int Index)
            {final Int k = Index.Inc();
-            final FirstEntry f = new FirstEntry(); f.key.ok(k); freeReadLock(f.leaf.i());
+            final FirstEntry f = new FirstEntry(); f.key.ok(k); freeLock(f.leaf.i());
             delete(k);
             if (Ex) s.append(dump());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
@@ -1715,7 +1716,7 @@ Height        :    1
              }
            }
          };
-        final FirstEntry F = new FirstEntry(); F.key.valid().ok(false); freeReadLock(F.leaf.i());
+        final FirstEntry F = new FirstEntry(); F.key.valid().ok(false); freeLock(F.leaf.i());
 
         //stop(m);
         ok(()->m, """
@@ -2747,7 +2748,7 @@ Leaf           size:   4, count:   2
    {sayCurrentTestName();
     final Stack<String> s = new Stack<>();
 
-    final int N = 16;
+    final int N = 2;
     new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).afterLock())
      {void treeCode()
        {new ForCount(One, new Int(N+1))
@@ -2756,6 +2757,10 @@ Leaf           size:   4, count:   2
             find(Index);
            }
          };
+        if (N == 2) ok(s, """
+[[1]
+, [1,2]
+]""");
         if (N == 16) ok(s, """
 [[1]
 , [1,2]
