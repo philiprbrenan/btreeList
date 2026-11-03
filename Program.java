@@ -1679,27 +1679,21 @@ endmodule
 
       Lock    lockFor (int Area) {return locks.get(Area);}                                                              // Get the lock associated with an area
 
-      public String dump()                                                                                              // Dump locks with trace back details
-       {final StringBuilder s = new StringBuilder();
-        s.append(f("%5s  %5s  %5s  %s\n", "#", "Area", "Trans", "TraceBack"));
-        int i = 0;
-        for(Integer L: locks.keySet())
-         {final Lock l = locks.get(L);
-          s.append(f("%5d  %5d  %5d  %s\n", ++i, L, l.transactionId, l.lockTraceBack));
-         }
-        return ""+s;
-       }
-
-      public String toString()                                                                                          // Print locks compactly
-       {final StringBuilder s = new StringBuilder();
+      public String print(boolean TraceBack)                                                                            // Dump locks with optional trace back details
+       {if (size() == 0) return "";
+        final StringBuilder s = new StringBuilder();
         s.append(f("%5s  %5s  %5s\n", "#", "Area", "Trans"));
         int i = 0;
         for(Integer L: locks.keySet())
          {final Lock l = locks.get(L);
-          s.append(f("%5d  %5d  %5d  %s\n", ++i, L, l.transactionId));
+          s.append(f("%5d  %5d  %5d\n", ++i, L, l.transactionId, l.lockTraceBack));
+          if (TraceBack) s.append(f("  %5d", l.lockTraceBack));
          }
         return ""+s;
        }
+
+      public String toString () {return ""+print(false);}                                                               // Print locks compactly
+      public String     dump () {return ""+print(true);}                                                                // Dump locks with trace back details
      }
    } // Memory
 
@@ -4027,7 +4021,7 @@ writeIntEnable =        0
         getLock(Zero);
         final Int c = m.getInt(a);
         c.ok(1);
-        say("AAAA", locks.dump());
+        ok(printLocks(), "");
         freeLock(Zero);
        }
      };
