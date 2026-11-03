@@ -25,7 +25,6 @@ public class Test                                                               
   final static long                             start = System.nanoTime();                                              // Start time
   final static String                      github_job = System.getenv("GITHUB_JOB");                                    // The job being run on github
   final static String               github_commit_sha = System.getenv("GITHUB_SHA");                                    // Github commit sha if running as a github action
-  final static Stack<String>            sayThisOrStop = new Stack<>();                                                  // The next says should say this or else we should stop
   final static TreeSet<String>           filesWritten = new TreeSet<>();                                                // Files written
   final static TreeSet<String>          testsExecuted = new TreeSet<>();                                                // Tests executed
   final static TreeMap<String,Integer> testsStartHere = new TreeMap<>();                                                // The line number at which the tests start in each file so we can separate code written to test and code written to be tested
@@ -38,6 +37,7 @@ public class Test                                                               
   static final TreeMap<String, Integer> coverage = new TreeMap<>();                                                     // Count of how many times each line has been executed
   static String                        testGroup = null;                                                                // Tests can be split into groups so that they can be run in parallel
 
+  static boolean         stopShouldThrowStopTest = false;                                                               // Stop should through an exception rather than actually stopping - useful during testing to confirm that errors are detected
   static int                   currentTestNumber = 0;                                                                   // Current test being run
   static long                    currentTestTime = System.nanoTime();                                                   // Time current test started
 
@@ -1130,9 +1130,9 @@ public class Test                                                               
 
 //D1 Printing                                                                                                           // Print log messages
 
-  static void sayf (String format, Object...O)                                                                          // Say something under the control of a format string
-   {System.err.println(String.format(format, O));
-    return;
+  static class StopTest extends RuntimeException                                                                        // Exception used to halt tests
+   {private static final long serialVersionUID = 1L;
+    StopTest (String Message) {super(Message);}
    }
 
   static StringBuilder saySb (Object...O)                                                                               // Say something into a string builder
@@ -1156,133 +1156,46 @@ public class Test                                                               
 
   static void say (Object...O)                                                                                          // Say something
    {final StringBuilder b = saySb(O);                                                                                   // Print as a series of whitespace separated items
-
-    if (sayThisOrStop.size() > 0)                                                                                       // Convert the say into a stop if the expected message does not eventuate
-     {final String act = b.toString() .replace("\n", "\\n").trim();                                                     // Message we actually got
-      final String exp = sayThisOrStop.removeFirst().replace("\n","\\n").trim();                                        // Message we expected
-      if (!act.startsWith(exp))                                                                                         // Expected message does not match what we have got
-       {stop("Actual message does not equal expected message:\n"+
-          "Actual  :"+act+" length("+act.length()+")\n"+
-          "Expected:"+exp+" length("+exp.length()+")\n");
-       }
-     }
-
-    else if (b.length() > 0) System.err.println(b.toString());
+    if (b.length() > 0) System.err.println(b.toString());
    }
 
-  static StringBuilder say (StringBuilder b, Object...O)                                                                // Say something in a string builder
-   {for (int i = 0; i < O.length; i++)
-     {if (i > 0) b.append(" ");
-      b.append(O[i]);
-     }
-    b.append('\n');
-    return b;
-   }
-
-  static void ddd(Object...O)                                                                                           // Debug something
-   {final int W = 10;                                                                                                   // Width of traceback
-    if (O.length == 0)
-     {System.err.println(traceDdd());                                                                                   // Nothing to say
-      return;
-     }
-
-    final StringBuilder b = new StringBuilder();                                                                        // Concatenate objects as strings
-    for (int i = 0; i < O.length; i++)
-     {final Object o = O[i];
-      if (i > 0) b.append(' ');
-      b.append(o);
-     }
-    while (b.length() > 0)                                                                                              // Remove trailing white space
-     {final int  l = b.length();
-      final char c = b.charAt(l-1);
-      if (!Character.isWhitespace(c)) break;
-      b.setLength(l - 1);
-     }
-
-    StringBuilder p = new StringBuilder(traceDdd());                                                                    // Create traceback line prefix
-    p.append(" ".repeat(W - p.length() % W));
-    final int     w = p.length();
-    final String[]s = b.toString().split("\n");                                                                         // Print first line with line position and message in a format understood by Geany with a re of: ([a-zA-Z0-9./]):(\d+)
-    System.err.println(p.toString()+" "+s[0]);
-
-    for (int i=1; i < s.length; i++) System.err.println(" ".repeat(w)+" "+s[i]);                                        // Any following lines are indented to match the first line
+  static void sayf (String format, Object...O)                                                                          // Say something under the control of a format string
+   {System.err.println(String.format(format, O));
+    return;
    }
 
   static void err (Object...O)                                                                                          // Say something and provide an error trace.
-   {final boolean testing = sayThisOrStop.size() > 0;                                                                   // We are testing something that would normally stop the system
-    say(O);
-    if (!testing) System.err.println(traceBack());
-   }
-
-  static void sayTest (Object...O) {errTest(O);}                                                                        // Say something about the current test
-
-  static void errTest (Object...O)                                                                                      // Say something about the current test
    {say(O);
-    final String t = testLine();
-    if (t != null) System.err.println(t);
+    System.err.println(traceBack());
    }
 
   static void stop (Object...O)                                                                                         // Say something, provide an error trace and stop
-   {final boolean sos = sayThisOrStop.size() > 0;                                                                       // Say or stop checking in effect
-    say(O);
-    if (sos)
-     {throw new RuntimeException("Stopping after say an error message");
-     }
-    else
-     {System.err.println(traceBack());
-      System.exit(1);
-     }
-   }
+   {final StringBuilder m = saySb(O);                                                                                   // Print as a series of whitespace separated items
+    if (stopShouldThrowStopTest) throw new StopTest(""+m);                                                              // Throw rather than stop if so requested
 
-  static void sayThisOrStop (Object...O)                                                                                // The next things to be said
-   {sayThisOrStop.clear();
-    for (Object o : O) sayThisOrStop.push(o.toString());
-   }
-
-//  private static void ii(Object s, Object[] a)
-//   {final Object[] b = new Object[a.length + 1];
-//    b[0] = s;
-//    System.arraycopy(a, 0, b, 1, a.length);
-//    say(b);
-//   }
-
-//  static void squeezeVerticalSpaces(Stack<StringBuilder>S)                                                            // Squeeze common vertical spaces out of a stack of string builders
-//   {final int collapse = 3;
-//    int m = 0; for(StringBuilder s: S) if (s.length() > m) m = s.length();                                            // Maximum length
-//
-//    for(int j = 0; j < S.size(); j++)                                                                                 // Pad each row to the maximum length
-//     {S.elementAt(j).append(" ".repeat(m - S.elementAt(j).length()));
-//     }
-//
-//    columns: for(int i = m; i >= collapse; i--)                                                                       // Each column working backwards through each string
-//     {for(StringBuilder s: S)                                                                                         // Check there are two spaces that can be squeezed to one in all rows in this column
-//       {if (!s.substring(i-collapse, i).equals(" ".repeat(collapse)))
-//         {continue columns;
-//         }
-//       }
-//
-//      for(int j = 0; j < S.size(); j++)                                                                               // Squeeze common spaces in column
-//       {final String s = S.elementAt(j).toString();
-//        S.setElementAt
-//         (new StringBuilder
-//           (s.substring(0, i-collapse)+s.substring(i-collapse+1)), j);
-//       }
-//     }
-//
-//    for(int j = 0; j < S.size(); j++)                                                                                 // Remove trailing padding
-//     {final StringBuilder s = S.elementAt(j);
-//      for(;s.length() > 0 && s.charAt(s.length()-1) == ' ';)
-//       {s.setLength(s.length()-1);
-//       }
-//     }
-//   }
-
-  static void testStop (Object...O)                                                                                     // Say something during a test, show the location in the test and stop
-   {say(O);
-    System.err.println(positionInTest());
+    if (m.length() > 0) System.err.println(""+m);
+    System.err.println(traceBack());
     System.exit(1);
    }
 
+  static interface Stoppable                                                                                            // Intercept a stop request
+   {void action();
+   }
+
+  static void stopTest (Stoppable Action, String StartsWith)                                                                // Run a test that is expected to stop and, instead,  captureteh stop message and test it
+   {final boolean s = stopShouldThrowStopTest;
+    stopShouldThrowStopTest = true;
+    try
+     {Action.action();
+     }
+    catch(StopTest E)
+     {final String m = E.getMessage();
+      if (ok(m.startsWith(StartsWith))) {} else {say("expected:\n", m);}
+     }
+    finally
+     {stopShouldThrowStopTest = s;
+     }
+   }
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
@@ -1567,31 +1480,6 @@ public class Test                                                               
     ok(minInt(null, 2, null, 3), 2);
    }
 
-  static void test_string()                                                                                             // Confirm an error message
-   {String e = """
-AAAAA
-BBBBB
-CCCCC
-""";
-    String g = """
-AAAAA
-BBDBB
-CCCCC
-""";
-
-
-    sayThisOrStop("""
-Character 2, expected=D= got=B=
-0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----
-AAAAA
-BBBBB
-  ^
-CCCCC
-""");
-
-    ok(e, g); --testsFailed;
-   }
-
   static void test_longest_line()
    {ok(longestLine(""),      0);
     ok(longestLine("A"),     1);
@@ -1614,8 +1502,9 @@ CCCCC
     ok(readFile(a),  "[Hello, World]");
     final Stack<Path> f = findFiles(p);
     ok(findFiles(p), "[/tmp/z/z/aaa.txt, /tmp/z/z/bbb.txt]");
-    sayThisOrStop("Delete request would delete 2 files, which is more than the specified limit of: 1");
-    try {deleteAllFiles(p, 1);} catch(Exception e) {}
+
+    stopTest(()->deleteAllFiles(p, 1), "Delete request would delete 2 files, which is more than the specified limit of: 1");
+
     ok(findFiles(p), "[/tmp/z/z/aaa.txt, /tmp/z/z/bbb.txt]");
     deleteAllFiles(p, 2);
     ok(findFiles(p), "[]");
