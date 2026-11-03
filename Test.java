@@ -1172,10 +1172,11 @@ public class Test                                                               
   static void stop (Object...O)                                                                                         // Say something, provide an error trace and stop
    {final StringBuilder m = saySb(O);                                                                                   // Print as a series of whitespace separated items
     if (stopShouldThrowStopTest) throw new StopTest(""+m);                                                              // Throw rather than stop if so requested
-
-    if (m.length() > 0) System.err.println(""+m);
-    System.err.println(traceBack());
-    System.exit(1);
+    else
+     {if (m.length() > 0) System.err.println(""+m);
+      System.err.println(traceBack());
+      System.exit(1);
+     }
    }
 
   static interface Stoppable                                                                                            // Intercept a stop request
@@ -1184,13 +1185,13 @@ public class Test                                                               
 
   static void stopTest (Stoppable Action, String StartsWith)                                                                // Run a test that is expected to stop and, instead,  captureteh stop message and test it
    {final boolean s = stopShouldThrowStopTest;
-    stopShouldThrowStopTest = true;
     try
-     {Action.action();
+     {stopShouldThrowStopTest = true;
+      Action.action();
      }
     catch(StopTest E)
      {final String m = E.getMessage();
-      if (ok(m.startsWith(StartsWith))) {} else {say("expected:\n", m);}
+      if (ok(m.startsWith(StartsWith))) {} else {stopShouldThrowStopTest = false; say("got:\n", m);}
      }
     finally
      {stopShouldThrowStopTest = s;
