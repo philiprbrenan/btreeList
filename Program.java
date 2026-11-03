@@ -4021,8 +4021,12 @@ writeIntEnable =        0
         getLock(Zero);
         final Int c = m.getInt(a);
         c.ok(1);
-        ok(printLocks(), "");
+        ok(printLocks(), """
+    #   Area  Trans
+    1      0      0
+""");
         freeLock(Zero);
+        ok(printLocks(), "");
        }
      };
    }
