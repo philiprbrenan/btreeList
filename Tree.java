@@ -17,6 +17,7 @@ class Tree extends Program                                                      
   final int         numberOfNodes;                                                                                      // Maximum number of leaves plus branches in this tree
   final int maximumNumberOfLevels;                                                                                      // Maximum number of levels in tree to prevent runaways while debugging
   final int            sizeOfNode;                                                                                      // The size of each node in the tree: a node must be able to hold a branch or a leaf
+  final int      logTwoSizeOfNode;                                                                                      // LOg two of the size of a node
   final Memory.Ref       refNodes;                                                                                      // The nodes associated with this tree
   final Memory.Ref   refFreeChain;                                                                                      // The free chain for this tree
   final Memory.Ref       refCount;                                                                                      // The number of keys in this tree
@@ -64,14 +65,15 @@ class Tree extends Program                                                      
       leaf                  = new Leaf   .Build().maxSize(maxLeafSize)  ; leaf     .build();                            // Size of a leaf
       leafSize              = leaf.size();
       branchSize            = branch.size();
-      nodeSize              = max(branchSize, leafSize);
+      nodeSize              = nextPowerOfTwo(max(branchSize, leafSize));                                                // Next power of two to make it easy to find teh node we are inf or a given address and hence set locking
       unitsNeededForNodes   = numberOfNodes * nodeSize;
       unitsNeededForFree    = freeChain.units();
       memoryPositions       = new MemoryPositions();
 
       if (name != null) p.name(name);                                                                                   // Optional name of program containing tree code
-      if (afterLock)    p.afterLock();                                                                                  // Request after lock testing
-      p.memory(size());                                                                                                 // Describe program used by tree code
+      if (afterLock)    p.afterLock();                                                                                  // After lock testing if requested
+      p.validateLocks();                                                                                                // Validate locks
+      p.memory(size());                                                                                                 // Amount of main memory needed  by program.  The main memory will ultimately be preserved over program executions to allow the database to persist.
       p.immediate(immediate);
       return p;
      }
@@ -89,18 +91,18 @@ class Tree extends Program                                                      
 
   Tree(Build Build)                                                                                                     // Create the tree
    {super(Build.build());
-    maxLeafSize   = Build.maxLeafSize   == null ?  4 : Build.maxLeafSize;                                               // The maximum number of entries in a leaf
-    maxBranchSize = Build.maxBranchSize == null ?  3 : Build.maxBranchSize;                                             // The maximum number of entries in a branch
-    numberOfNodes = Build.numberOfNodes == null ? 99 : Build.numberOfNodes;                                             // The maximum number of leaves and branches combined
+    maxLeafSize      = Build.maxLeafSize   == null ?  4 : Build.maxLeafSize;                                            // The maximum number of entries in a leaf
+    maxBranchSize    = Build.maxBranchSize == null ?  3 : Build.maxBranchSize;                                          // The maximum number of entries in a branch
+    numberOfNodes    = Build.numberOfNodes == null ? 99 : Build.numberOfNodes;                                          // The maximum number of leaves and branches combined
     maximumNumberOfLevels = logTwo(numberOfNodes);                                                                      // The maximum number of levels needed to step down through the tree because it is so well balanced
-    rootFanLevels = Build.rootFanLevels == null ?  0 : Build.rootFanLevels;                                             // Number of levels including the root to be subjected to root fan out
-    leafFanOut    = Build.leafFanOut    == null ?  0 : min(Build.leafFanOut,   maxLeafSize);                            // Fan out at leaf if requested
-    branchFanOut  = Build.branchFanOut  == null ?  0 : min(Build.branchFanOut, maxBranchSize);                          // Fan out at branch if requested
+    rootFanLevels    = Build.rootFanLevels == null ?  0 : Build.rootFanLevels;                                          // Number of levels including the root to be subjected to root fan out
+    leafFanOut       = Build.leafFanOut    == null ?  0 : min(Build.leafFanOut,   maxLeafSize);                         // Fan out at leaf if requested
+    branchFanOut     = Build.branchFanOut  == null ?  0 : min(Build.branchFanOut, maxBranchSize);                       // Fan out at branch if requested
 
-    final String m  = "The maximum ";
-    final String m1 = m + "leaf size must be 2 or more, not: "   +maxLeafSize;
-    final String m2 = m + "branch size must be 3 or more, not: " +maxBranchSize;
-    final String m3 = m + "branch size must be odd, not: "       +maxBranchSize;
+    final String  m  = "The maximum ";
+    final String  m1 = m + "leaf size must be 2 or more, not: "   +maxLeafSize;
+    final String  m2 = m + "branch size must be 3 or more, not: " +maxBranchSize;
+    final String  m3 = m + "branch size must be odd, not: "       +maxBranchSize;
 
     final boolean b1 = maxLeafSize       <  2;                                                                          // Size checks
     final boolean b2 = maxBranchSize     <  3;
@@ -109,21 +111,26 @@ class Tree extends Program                                                      
     if (b1 && !b2 && !b3) stop(m1); else if (b1) say(m1);                                                               // Check parameters and describe any errors
     if (b2        && !b3) stop(m2); else if (b2) say(m2);
     if (b3              ) stop(m3);
-    build         = Build;                                                                                              // Keep the build for future reference
-    sizeOfNode    = build.nodeSize;                                                                                     // Size of a node in the tree
+    build            = Build;                                                                                           // Keep the build for future reference
+    sizeOfNode       = build.nodeSize;                                                                                  // Size of a node in the tree
+    logTwoSizeOfNode = nextPowerOfTwo(build.nodeSize);                                                                  // Size of a node in the tree
 
     final Memory.Ref unitMemoryRef = unitMemory.new Ref(0);                                                             // Memory used by tree
-    refNodes       = unitMemoryRef.step(build.memoryPositions.posNodes);                                                // Memory for nodes
-    refFreeChain   = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                            // Memory for free chain
-    refCount       = unitMemoryRef.step(build.memoryPositions.posCount);                                                // Memory for key count
-    refHeight      = unitMemoryRef.step(build.memoryPositions.posHeight);                                               // Memory for height of tree
+    refNodes         = unitMemoryRef.step(build.memoryPositions.posNodes);                                              // Memory for nodes
+    refFreeChain     = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                          // Memory for free chain
+    refCount         = unitMemoryRef.step(build.memoryPositions.posCount);                                              // Memory for key count
+    refHeight        = unitMemoryRef.step(build.memoryPositions.posHeight);                                             // Memory for height of tree
 
-    mergePath      = new Memory(mnl(), "tree", false);                                                                  // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    mergePath        = new Memory(mnl(), "tree", false);                                                                // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
+    getLock(build.memoryPositions.posFreeChain);                                                                        // Lock free chain
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
-    leaf();                                                                                                             // Initialize the root as a leaf
     refHeight.putInt(One);                                                                                              // Current height of the tree
+
+    leaf();                                                                                                             // Initialize the root as a leaf
+    freeAllLocks();                                                                                                     // Unlock free chain and the root
+
     treeCode();
    }
 
@@ -133,6 +140,11 @@ class Tree extends Program                                                      
   int maxBranchSize () {return maxBranchSize;}                                                                          // Maximum size of a branch
   int numberOfNodes () {return numberOfNodes;}                                                                          // Maximum number of nodes in tree
   int           mnl () {return maximumNumberOfLevels;}                                                                  // Maximum number of levels
+
+  int addressToAreaLock(int Address)                                                                                    // Overridable convert an address in memory to a lock index
+   {if (Address < build.memoryPositions.posNodes) return Address >>> logTwoSizeOfNode;                                  // Lock number is normally the index of the node
+    return numberOfNodes;                                                                                               // Free chaion and tree size accessed via this lock
+   }
 
   Int      allocate ()                                                                                                  // Allocate a leaf or a branch using the first free node on the free chain
    {final Bint A = freeChain.firstOne();                                                                                // First element on free chain
@@ -2869,7 +2881,7 @@ Leaf           size:   4, count:   2
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_traverse();
-    test_insert_locked();
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
