@@ -164,9 +164,9 @@ public class Program extends Test                                               
 
   void ai ()                                                                                                            // An executing program cannot be extended by adding new data or instructions
    {final I      i = executing();
-    final String m = immediate() ? "immediate" : "delayed";
     if (i != null)
-     {stop("Allocation within an instruction while executing program", programName, "in", m, "mode:",
+     {final String m = immediate() ? "immediate" : "delayed";
+      stop("Allocation within an instruction while executing program", programName, "in", m, "mode:",
             i.traceBack, "====");
      }
    }
@@ -1453,19 +1453,6 @@ public class Program extends Test                                               
 
     Memory putBit (Int I, Bit K) {putBit(I.Div(Integer.SIZE), I.Mod(Integer.SIZE), K); return this;}                    // Set the bit at the bit indexed position
 
-    void validateLock (Int I)                                                                                           // Confirm that the memory to be accessed has been locked if needed
-     {if (!immediate() || readOnly || lockSize < 0) return;                                                             // This memory is never locked
-
-      final int area = I.i() >>> lockSize;                                                                              // Lock for this memory area
-      final Locks.Lock l = locks().locks.get(area);                                                                     // Get the lock for this memory area
-      if (l == null) stop("Accessing unlocked memory area:", area);                                                     // Memory must be locked before it can be used
-      if (l.transactionId != transactionId)                                                                             // Terminate if an attempt is made to free a lock owned by another transaction
-       {if (executeAfterLock) throw new HaltAfterLockTestProgram("CCCC Halted");                                        // Terminate the test program if it cannot get a lock. The purpose of the test program is to read through memory to confirm that it is coherent
-        stop("Unable to access memory locked by a different transaction.  Memory area:", area,                          // Terminate if an attempt is made to free a lock owned by another transaction
-           "This transaction: ", transactionId(), "Locked by transaction:", l.transactionId);
-       }
-     }
-
 //D2 Memory references                                                                                                  // References to byte memory
 
     final class Ref                                                                                                     // Reference into memory
@@ -1647,6 +1634,11 @@ endmodule
          }
 
         public String toString() {return f("Locked area %d, at:\n%s", area, lockTraceBack);}                            // Print a lock
+
+        String lockFailTransaction(String Message)                                                                      // Explain why a lock failed due to conflicting transactions ids - a lock can only be satisfied or freed if it is in the same transaction as the one that obtained the lock
+         {return ""+saySb(Message, "Memory area:", area, "was locked by transaction:", transactionId,
+                                                          "but this is transaction: ", transactionId());
+         }
        }
 
       void    getLock (int Area)                                                                                        // Get a lock on an area in memory
@@ -1656,9 +1648,8 @@ endmodule
           callAfterLockCheck();                                                                                         // Run the test program if possible
          }
         else if (l.transactionId != transactionId())                                                                    // Lock exists but is owned by a different process
-         {if (executeAfterLock) throw new HaltAfterLockTestProgram("CCCC Halted");                                      // Terminate the test program if it cannot get a lock. The purpose of the test program is to read through memory to confirm that it is coherent
-          stop("Memory already locked by a different transaction.  Memory area:", Area,                                 // Terminate main program if it cannot get the lock
-           "This transaction: ", transactionId(), "Locked by transaction:", l.transactionId);
+         {if (executeAfterLock) throw new HaltAfterLockTestProgram("getLock");                                          // Terminate the test program if it cannot get a lock. The purpose of the test program is to read through memory to confirm that it is coherent
+          stop(l.lockFailTransaction("Memory already locked by a different transaction."));                              // Terminate main program if it cannot get the lock
          }
        }
 
@@ -1666,8 +1657,7 @@ endmodule
        {final Lock l = lockFor(Area);
         if (l == null) stop("No lock to free for area:", Area);                                                         // Create a lock description for this area
         if (l.transactionId != transactionId())                                                                         // Lock exists but is owned by a different process
-         {stop("Unable to free memory lock obtained by a different transaction.  Memory area:", Area,                   // Terminate if an attempt is made to free a lock owned by another transaction
-           "This transaction: ", transactionId(), "Locked by transaction:", l.transactionId);
+         {stop(l.lockFailTransaction("Unable to free memory lock obtained by a different transaction."));               // Terminate if an attempt is made to free a lock owned by another transaction
          }
         locks.remove(Area);                                                                                             // Remove lock
         callAfterLockCheck();                                                                                           // Run the test program if possible
@@ -1694,6 +1684,18 @@ endmodule
 
       public String toString () {return ""+print(false);}                                                               // Print locks compactly
       public String     dump () {return ""+print(true);}                                                                // Dump locks with trace back details
+     }
+
+    void validateLock (Int I)                                                                                           // Confirm that the memory to be accessed has been locked if needed
+     {if (!immediate() || readOnly || lockSize < 0) return;                                                             // This memory is never locked
+
+      final int area = I.i() >>> lockSize;                                                                              // Lock for this memory area
+      final Locks.Lock l = locks().lockFor(area);                                                                       // Get the lock for this memory area
+      if (l == null) stop("Cannot access unlocked memory area:", area);                                                 // Memory must be locked before it can be used
+      if (l.transactionId != transactionId)                                                                             // Terminate if an attempt is made to free a lock owned by another transaction
+       {if (executeAfterLock) throw new HaltAfterLockTestProgram("Locks");                                              // Terminate the test program if it cannot get a lock. The purpose of the test program is to read through memory to confirm that it is coherent
+        stop(l.lockFailTransaction("Unable to access memory locked by a different transaction."));                        // Terminate if an attempt is made to free a lock owned by another transaction
+       }
      }
    } // Memory
 
@@ -4012,12 +4014,22 @@ writeIntEnable =        0
         final Int a = new Int("a", 1);
         final Int b = new Int("b", 2);
 
-        stopTest(()->m.putInt(a, a), "Accessing unlocked memory area: 0");
+        stopTest(()->m.putInt(a, a), "Cannot access unlocked memory area: 0");
         getLock(Zero);
         m.putInt(a, a);
         freeLock(Zero);
 
-        stopTest(()->m.getInt(a), "Accessing unlocked memory area: 0");
+        getLock(Zero);
+        transactionId(1);
+        stopTest(()->m.putInt(a, a), "Unable to access memory locked by a different transaction. Memory area: 0 was locked by transaction: 0 but this is transaction: 1");
+        stopTest(()->freeLock(Zero), "Unable to free memory lock obtained by a different transaction. Memory area: 0 was locked by transaction: 0 but this is transaction: 1");
+        executing(null);                                                                                                // Clean up after previous stop - this is an unfortunate side effect which is not worth fixing because stopping should not occur in the production chip
+        stopTest(()->m.getInt(a),    "Unable to access memory locked by a different transaction. Memory area: 0 was locked by transaction: 0 but this is transaction: 1");
+        stopTest(()->freeLock(Zero), "Unable to free memory lock obtained by a different transaction. Memory area: 0 was locked by transaction: 0 but this is transaction: 1");
+        executing(null);                                                                                                // Clean up after previous stop - this is an unfortunate side effect which is not worth fixing because stopping should not occur in the production chip
+        transactionId(0);
+        freeLock(Zero);
+
         getLock(Zero);
         final Int c = m.getInt(a);
         c.ok(1);
