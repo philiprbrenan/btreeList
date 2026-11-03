@@ -2,9 +2,10 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Memory acquires locks automatically.  The caller may also establish some locks ahead of time. Locks have to be freed explicitly when the caller judges that the locked memory can be safely released
+// Memory access check locks automatically so teh caller has to arrange toget and free them to match
 // Change unitMemory to mainMemory
 // Log changes to memory so that the changes can be undone - needs locking for full implementation
+// Remove testSubProgram as we are checking locks automatically now
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -68,6 +69,7 @@ public class Program extends Test                                               
   final Int                                          One;                                                               // Integer constant one
   final String                               programName;                                                               // Name of program to assist in debugging multi program executions
   final boolean                                afterLock;                                                               // Whether after lock testing should be run - implies immediate mode if present
+  final boolean                            validateLocks;                                                               // Validate locks during memory accesses
   final Build                                      build;                                                               // Build parameter list used to construct the program
   Program                                    testProgram;                                                               // Test program which is to run after each lock action to conform that the underlying data structures that are accessible are coherent
   Program                              testProgramParent;                                                               // Parent of test program
@@ -95,18 +97,18 @@ public class Program extends Test                                               
   static class Build                                                                                                    // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
     boolean       afterLock;                                                                                            // Request after  lock testing - supply code for thie test program via the "testProgram" overrideable
+    boolean   validateLocks;                                                                                            // Validate locks during memory accesses
     Program   parentProgram;                                                                                            // Parent program
     Program testProgramParent;                                                                                          // Share the memory and memory locks of this program
     Integer            size;                                                                                            // Memory allocated by this program
-    Integer        lockSize = 1;                                                                                        // Size of the area of memory locked by a single lock expressed as a power of two
     String             name;                                                                                            // Name of the program for debuggung purtposes - a program is not required to have a name
 
     Build         immediate ()                  {immediate         = true;      return this;}
     Build         immediate (boolean Immediate) {immediate         = Immediate; return this;}
     Build         afterLock ()                  {afterLock         = true;      return this;}
     Build         afterLock (boolean AfterLock) {afterLock         = AfterLock; return this;}
+    Build     validateLocks ()                  {validateLocks     = true;      return this;}
     Build            memory (int          Size) {size              = Size;      return this;}
-    Build            memory (int Size, int Lock){size = Size; lockSize = Lock;  return this;}
     Build            parent (Program    Parent) {parentProgram     = Parent;    return this;}
     Build testProgramParent (Program    Parent) {testProgramParent = Parent;    return this;}
     Build              name (String       Name) {name              = Name;      return this;}
@@ -115,6 +117,7 @@ public class Program extends Test                                               
   Program (Build Build)                                                                                                 // Construct
    {build           = Build;
     afterLock       = Build.afterLock;                                                                                  // Run a test program in immediate mode immediately after each lock operation
+    validateLocks   = Build.validateLocks;                                                                              // Validate locks during memory accesses
     immediate       = Build.immediate || afterLock;                                                                     // Immediate or delayed execution. If after lock testing is in progress immediate mode is required
     parentProgram   = Build.parentProgram == null ? this : Build.parentProgram;                                         // Parent program that will contain the code
     if (Build.testProgramParent != null) Build.testProgramParent.testProgram = this;                                    // Record this program as the test program for the  indicated program
@@ -138,7 +141,7 @@ public class Program extends Test                                               
     One             = new Int(1);                                                                                       // Integer constant one
 
     unitMemory      = Build.testProgramParent != null ? Build.testProgramParent.unitMemory :                            // Share the memory of the indicated program
-                      Build.size              != null ? new Memory(Build.size, "program", false, Build.lockSize) : null;// Memory associated with program if any
+                      Build.size              != null ? new Memory(Build.size, "program", false) : null;                // Memory associated with program if any
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -1231,31 +1234,28 @@ public class Program extends Test                                               
 
   class Memory                                                                                                          // Memory made of units
    {final String name;                                                                                                  // Optional name for the memory
-    private final int       id;                                                                                         // Unique identifier for this memory
-    final Locks          locks;                                                                                         // Locks held over areas of memory
-    private final int lockSize;                                                                                         // Memory is locked in blocks of size this power of two.  A power of -1 indicates no locking but this should only be used during development
-    private boolean   readOnly;                                                                                         // Read only memory if true
-    private int []       units;                                                                                         // Bytes of main memory
-    int                read0Int = 0;                                                                                    // Integer read from memory via first  virtual read port
-    int                read1Int = 0;                                                                                    // Integer read from memory via second virtual read port
-    int                read2Int = 0;                                                                                    // Integer read from memory via third  virtual read port
-    int                writeInt = 0;                                                                                    // Integer to write into memory
-    int          readWriteIndex = 0;                                                                                    // Index at which to read an integer via first  virtual read port and also the index with which to write into memory
-    boolean      writeIntEnable = false;                                                                                // Enable write for an integer
+    final int          id;                                                                                              // Unique identifier for this memory
+    final Locks     locks;                                                                                              // Locks held over areas of memory
+    boolean      readOnly;                                                                                              // Read only memory if true
+    int []          units;                                                                                              // Bytes of main memory
+    int           read0Int = 0;                                                                                         // Integer read from memory via first  virtual read port
+    int           read1Int = 0;                                                                                         // Integer read from memory via second virtual read port
+    int           read2Int = 0;                                                                                         // Integer read from memory via third  virtual read port
+    int           writeInt = 0;                                                                                         // Integer to write into memory
+    int     readWriteIndex = 0;                                                                                         // Index at which to read an integer via first  virtual read port and also the index with which to write into memory
+    boolean writeIntEnable = false;                                                                                     // Enable write for an integer
 
     void reallocate (final int Size) {units = new int[Size];}                                                           // Resize the memory
 
     static int bitsPerUnit () {return Integer.SIZE;}                                                                    // Bits per memory unit
 
-    Memory (int Length, String Name, boolean ReadOnly, int LockSize)                                                    // Create and clear some memory
-     {name = Name; readOnly = ReadOnly; lockSize = LockSize;
+    Memory (int Length, String Name, boolean ReadOnly)                                                                  // Create and clear some memory
+     {name = Name; readOnly = ReadOnly;
       locks = new Locks();                                                                                              // Locks for this memory
       units = new int[Length];
       for(int i = 0; i < Length; ++i) units[i] = 0;                                                                     // Clear memory. In Verilog this is done using readmemh in an initial block. For a real chip perhaps an instruction to do this?
       final Stack<Memory> m = memories(); id = m.size(); m.push(this);                                                  // Give the memory a unique identifier and save it in the main program
      }
-
-    Memory (int Length, String Name, boolean ReadOnly) {this(Length, Name, ReadOnly, -1);}                              // Create and clear some memory that is never locked
 
     int              size ()         {return units.length;}                                                             // Size of memory
     String              i ()         {return ""+id;}                                                                    // Number of memory a string for use in writing Verilog
@@ -1687,14 +1687,13 @@ endmodule
      }
 
     void validateLock (Int I)                                                                                           // Confirm that the memory to be accessed has been locked if needed
-     {if (!immediate() || readOnly || lockSize < 0) return;                                                             // This memory is never locked
-
-      final int area = I.i() >>> lockSize;                                                                              // Lock for this memory area
-      final Locks.Lock l = locks().lockFor(area);                                                                       // Get the lock for this memory area
-      if (l == null) stop("Cannot access unlocked memory area:", area);                                                 // Memory must be locked before it can be used
+     {if (!validateLocks) return;                                                                                       // Only validate locks if requested
+      final int        a = addressToAreaLock(I.i());                                                                    // Lock for this memory area
+      final Locks.Lock l = locks().lockFor(a);                                                                          // Get the lock for this memory area
+      if (l == null) stop("Cannot access unlocked memory area:", a);                                                    // Memory must be locked before it can be used
       if (l.transactionId != transactionId)                                                                             // Terminate if an attempt is made to free a lock owned by another transaction
        {if (executeAfterLock) throw new HaltAfterLockTestProgram("Locks");                                              // Terminate the test program if it cannot get a lock. The purpose of the test program is to read through memory to confirm that it is coherent
-        stop(l.lockFailTransaction("Unable to access memory locked by a different transaction."));                        // Terminate if an attempt is made to free a lock owned by another transaction
+        stop(l.lockFailTransaction("Unable to access memory locked by a different transaction."));                      // Terminate if an attempt is made to free a lock owned by another transaction
        }
      }
    } // Memory
@@ -1708,6 +1707,8 @@ endmodule
     for (Memory m : memories()) if (m != intMemory() && m != bitMemory) j.add(md5Sum(m.units));
     return "{"+j+"}";
    }
+
+  int addressToAreaLock(int Address) {return Address;}                                                                  // Overridable convert an address in memory to a lock index
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -2804,19 +2805,37 @@ endmodule
      } // Array
    } // VerilogArrays
 
-//D1 Lock testing
+//D1 Set Locks
 
-  Int getLock (Int Area)                                                                                                // Create an instruction to get a lock
+  int getLock (int Area)                                                                                                // Create an instruction to get a lock for a transaction
    {new I()
-     {void        a () {locks().getLock(Area.i());}                                                                     // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
+     {void        a () {locks().getLock(Area);}                                                                         // For the moment we are stopping but eventually we should spin for a bit hoping to get the lock
       String      v () {return "/* getLock */";}
+      boolean trace () {return false;}
+     };
+    return Area;
+   }
+
+  Int getLock (Int Area)                                                                                                // Create an instruction to get a lock for a transaction
+   {new I()
+     {void        a () {locks().getLock(Area.i());}
+      String      v () {return "/* getLock */";}
+      boolean trace () {return false;}
+     };
+    return Area;
+   }
+
+  int freeLock (int Area)                                                                                               // Create an instruction to free a lock held by a transaction
+   {new I()
+     {void        a () {locks().freeLock(Area);}
+      String      v () {return "/* freeLock */";}
       boolean trace () {return false;}
      };
     callAfterLockTestProgram();
     return Area;
    }
 
-  Int freeLock (Int Area)                                                                                               // Create an instruction to free a lock
+  Int freeLock (Int Area)                                                                                               // Create an instruction to free a lock held by a transaction
    {new I()
      {void        a () {locks().freeLock(Area.i());}
       String      v () {return "/* freeLock */";}
@@ -2826,13 +2845,31 @@ endmodule
     return Area;
    }
 
+  void freeAllLocks ()                                                                                                  // Create an instruction to free all the locks held by a transaction
+   {new I()
+     {void        a ()                                                                                                  // Search for locks created by the current transaction
+       {final int t = transactionId();
+        final TreeMap<Integer,Memory.Locks.Lock> L = locks().locks;
+        for (Integer i : L.keySet())
+         {final Memory.Locks.Lock l = L.get(i);
+          if (l.transactionId == t) freeLock(l.area);
+         }
+       }
+      String      v () {return "/* freeAllLocks */";}
+      boolean trace () {return false;}
+     };
+    callAfterLockTestProgram();
+   }
+
   String  dumpLocks () {return locks().dump();}                                                                         // Dump the locks
   String printLocks () {return locks().toString();}                                                                     // Print the locks
 
   boolean ignoreLockRequest () {return program().afterLock && program().executeAfterLock;}                              // Ignore lock request because we are executing a lock test sub program whcuih might terminate early leaving locks still acquired that are no longer required
 
   void checkAllLocksHaveBeenReleased ()                                                                                 // Confirm that all locks have been released unless this is a sub program
-   {if (locks().size() > 0 && mainProgram()) stop("Not all locks were released:", locks().dump());
+   {if (unitMemory == null) return;                                                                                     // No memory to lock
+    final Memory.Locks L = locks();
+    if (L != null && L.size() > 0 && mainProgram()) stop("Not all locks were released:", L.dump());
    }
 
   static class HaltAfterLockTestProgram extends RuntimeException                                                        // Exception used to halt sub programs
@@ -2841,19 +2878,20 @@ endmodule
    }
 
   void callAfterLockCheck ()                                                                                            // Flag that a lock has been obtained or released while excuting the main program, not the lock test sub program, to indicate that the coherency of the unlocked parts of memory should be tested
-   {requestAfterLock = program().afterLock && !program().executeAfterLock;
+   {requestAfterLock = program().afterLock && locks().size() == 0 && !program().executeAfterLock;                       // After lock testing must have been enabled, there must be no locks outstanding and the after lock program must not already be executing
    }
 
   void callAfterLockTestProgram()                                                                                       // Call the test program in immediate mode
-   {if (program().afterLock && program().requestAfterLock)                                                              // Only call if we have just executed a lock command and we are not already running the test program
-     {final boolean Immediate = program().immediate;                                                                    // Save immediate or delayed mode so that we can run the test program in immediate mode and then restore the prior mode
-      program().immediate = program().executeAfterLock = true;                                                          // The test program is always run in immediate mode so that full diagnostics are available
+   {final Program P = program();                                                                                        // The main program
+    if (!P.executeAfterLock)
+     {final boolean Immediate = P.immediate;                                                                            // Save immediate or delayed mode so that we can run the test program in immediate mode and then restore the prior mode
+      P.immediate = P.executeAfterLock = true;                                                                          // The test program is always run in immediate mode so that full diagnostics are available
       try {afterLockTestProgram();} catch(HaltAfterLockTestProgram H) {}                                                // The test program will halt if it cannot get a needed lock. Ther is no point in waiting because this program will be rerun later when the lock is freed.
       executing(null);                                                                                                  // The halt will have occurred during instruction execution so we need to show that an instruction is nolonger being executed
-      program().immediate = Immediate;                                                                                  // Restore prior immediate mode
-      program().executeAfterLock = false;                                                                               // No longer executing an after lock check
+      P.immediate = Immediate;                                                                                          // Restore prior immediate mode
+      P.executeAfterLock = false;                                                                                       // No longer executing an after lock check
+      P.requestAfterLock = false;                                                                                       // Reset for next after lock check
      }
-    if (program().afterLock) program().requestAfterLock = false;                                                        // Reset for next after lock check
    }
 
   void afterLockTestProgram () {}                                                                                       // Override this method to provide the code to be run by the test program after each lock operation. use the program parameter to ensure that the generated code goes in the test program not the program  under test and that integers and bits belong to the test program not the program under test
@@ -3979,7 +4017,7 @@ writeIntEnable =        0
   static void test_lock ()
    {sayCurrentTestName();
     final Stack<Character> s = new Stack<>();
-    new Program(new Build().name("main").afterLock())
+    new Program(new Build().name("main").afterLock().memory(0))
      {void code()
        {final Int a = new Int("a").set(0);
         final Int l = new Int("l", 2);
@@ -4002,42 +4040,42 @@ writeIntEnable =        0
         s.push('1');
        }
      };
-    ok(s, "[0, 0, 1, 0, 1, 0, 0, 1, 0, 1]");
+    ok(s, "[0, 1, 0, 1, 0, 1]");
    }
 
   static void test_lockedMemory ()
    {sayCurrentTestName();
     final Stack<Character> s = new Stack<>();
-    new Program(new Build().name("main").memory(8,1).immediate(true))
+    new Program(new Build().name("main").memory(8).immediate(true))
      {void code()
-       {final Memory m = new Memory(8, "main", false, 1);
+       {final Memory m = unitMemory;
         final Int a = new Int("a", 1);
         final Int b = new Int("b", 2);
 
-        stopTest(()->m.putInt(a, a), "Cannot access unlocked memory area: 0");
-        getLock(Zero);
+        stopTest(()->m.putInt(a, a), "Cannot access unlocked memory area: 1");
+        getLock(a);
         m.putInt(a, a);
-        freeLock(Zero);
+        freeLock(a);
 
-        getLock(Zero);
+        getLock(a);
         transactionId(1);
-        stopTest(()->m.putInt(a, a), "Unable to access memory locked by a different transaction. Memory area: 0 was locked by transaction: 0 but this is transaction: 1");
-        stopTest(()->freeLock(Zero), "Unable to free memory lock obtained by a different transaction. Memory area: 0 was locked by transaction: 0 but this is transaction: 1");
+        stopTest(()->m.putInt(a, a), "Unable to access memory locked by a different transaction. Memory area: 1 was locked by transaction: 0 but this is transaction: 1");
+        stopTest(()->freeLock(a),    "Unable to free memory lock obtained by a different transaction. Memory area: 1 was locked by transaction: 0 but this is transaction: 1");
         executing(null);                                                                                                // Clean up after previous stop - this is an unfortunate side effect which is not worth fixing because stopping should not occur in the production chip
-        stopTest(()->m.getInt(a),    "Unable to access memory locked by a different transaction. Memory area: 0 was locked by transaction: 0 but this is transaction: 1");
-        stopTest(()->freeLock(Zero), "Unable to free memory lock obtained by a different transaction. Memory area: 0 was locked by transaction: 0 but this is transaction: 1");
+        stopTest(()->m.getInt(a),    "Unable to access memory locked by a different transaction. Memory area: 1 was locked by transaction: 0 but this is transaction: 1");
+        stopTest(()->freeLock(a),    "Unable to free memory lock obtained by a different transaction. Memory area: 1 was locked by transaction: 0 but this is transaction: 1");
         executing(null);                                                                                                // Clean up after previous stop - this is an unfortunate side effect which is not worth fixing because stopping should not occur in the production chip
         transactionId(0);
-        freeLock(Zero);
+        freeLock(a);
 
-        getLock(Zero);
+        getLock(a);
         final Int c = m.getInt(a);
         c.ok(1);
         ok(printLocks(), """
     #   Area  Trans
-    1      0      0
+    1      1      0
 """);
-        freeLock(Zero);
+        freeLock(a);
         ok(printLocks(), "");
        }
      };
@@ -4125,8 +4163,8 @@ writeIntEnable =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_lockedMemory();
+   {oldTests();
+    //test_lockedMemory();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
