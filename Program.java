@@ -1679,13 +1679,24 @@ endmodule
 
       Lock    lockFor (int Area) {return locks.get(Area);}                                                              // Get the lock associated with an area
 
-      public String toString()
+      public String dump()                                                                                              // Dump locks with trace back details
        {final StringBuilder s = new StringBuilder();
-        s.append(f("%5s  %5s  %s\n", "#", "Area", "TraceBack"));
+        s.append(f("%5s  %5s  %5s  %s\n", "#", "Area", "Trans", "TraceBack"));
         int i = 0;
         for(Integer L: locks.keySet())
          {final Lock l = locks.get(L);
-          s.append(f("%5d  %5d  %s\n", ++i, L, l.lockTraceBack));
+          s.append(f("%5d  %5d  %5d  %s\n", ++i, L, l.transactionId, l.lockTraceBack));
+         }
+        return ""+s;
+       }
+
+      public String toString()                                                                                          // Print locks compactly
+       {final StringBuilder s = new StringBuilder();
+        s.append(f("%5s  %5s  %5s\n", "#", "Area", "Trans"));
+        int i = 0;
+        for(Integer L: locks.keySet())
+         {final Lock l = locks.get(L);
+          s.append(f("%5d  %5d  %5d  %s\n", ++i, L, l.transactionId));
          }
         return ""+s;
        }
@@ -2819,10 +2830,13 @@ endmodule
     return Area;
    }
 
-  boolean ignoreLockRequest () {return program().afterLock && program().executeAfterLock;}                               // Ignore lock request because we are executing a lock test sub program whcuih might terminate early leaving locks still acquired that are no longer required
+  String  dumpLocks () {return locks().dump();}                                                                         // Dump the locks
+  String printLocks () {return locks().toString();}                                                                     // Print the locks
+
+  boolean ignoreLockRequest () {return program().afterLock && program().executeAfterLock;}                              // Ignore lock request because we are executing a lock test sub program whcuih might terminate early leaving locks still acquired that are no longer required
 
   void checkAllLocksHaveBeenReleased ()                                                                                 // Confirm that all locks have been released unless this is a sub program
-   {if (locks().size() > 0 && mainProgram()) stop("Not all locks were released:", locks());
+   {if (locks().size() > 0 && mainProgram()) stop("Not all locks were released:", locks().dump());
    }
 
   static class HaltAfterLockTestProgram extends RuntimeException                                                        // Exception used to halt sub programs
@@ -4003,10 +4017,17 @@ writeIntEnable =        0
        {final Memory m = new Memory(8, "main", false, 1);
         final Int a = new Int("a", 1);
         final Int b = new Int("b", 2);
+
+        stopTest(()->m.putInt(a, a), "Accessing unlocked memory area: 0");
         getLock(Zero);
         m.putInt(a, a);
+        freeLock(Zero);
+
+        stopTest(()->m.getInt(a), "Accessing unlocked memory area: 0");
+        getLock(Zero);
         final Int c = m.getInt(a);
         c.ok(1);
+        say("AAAA", locks.dump());
         freeLock(Zero);
        }
      };
