@@ -79,7 +79,6 @@ class Branch extends Program implements Program.Locatable                       
 
   Branch initializeMemory ()                                                                                            // Initialize slots and data associated with the branch
    {clear();                                                                                                            // Clear backing memory
-    //slots.initializeMemory();                                                                                         // Initialize slots
     return this;
    }
 
@@ -101,6 +100,9 @@ class Branch extends Program implements Program.Locatable                       
   Branch    branch ()                     {return this;}                                                                // This branch
 
   void  branchCode ()                     {}                                                                            // Override this method to provide code for testing the branch
+
+  void   lockBranch() { getLock(at.i());}                                                                               // Lock a branch
+  void unlockBranch() {freeLock(at.i());}                                                                               // Unlock a branch
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a branch
 
