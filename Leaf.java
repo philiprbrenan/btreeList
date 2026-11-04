@@ -75,7 +75,11 @@ class Leaf extends Program implements Program.Locatable                         
    {clear();                                                                                                            // Clear backing memory
     return this;
    }
+
   void leafCode () {}                                                                                                   // Override this method to provide code for testing the leaf
+
+  void   lockLeaf() { getLock(at.i());}                                                                                 // Lock a leaf
+  void unlockLeaf() {freeLock(at.i());}                                                                                 // Unlock a leaf
 
   public Bint getLocation () {return at;}                                                                               // The location of this node in memory
 
