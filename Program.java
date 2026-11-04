@@ -2,10 +2,9 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Memory access check locks automatically so teh caller has to arrange toget and free them to match
+// Memory access check locks automatically so the caller has to arrange to get and free them before/after with appropriate granularity
 // Change unitMemory to mainMemory
 // Log changes to memory so that the changes can be undone - needs locking for full implementation
-// Remove testSubProgram as we are checking locks automatically now
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -1313,6 +1312,7 @@ public class Program extends Test                                               
       if (readOnly) stop("Target memory is read only and so can not be cleared even in part");
       final Int z = Zero;
 
+debug = true;
       new ForCount (Start, Start.Add(Width))
        {void body(Int Index)
          {putInt(Index, z);
@@ -1648,8 +1648,11 @@ endmodule
           callAfterLockCheck();                                                                                         // Run the test program if possible
          }
         else if (l.transactionId != transactionId())                                                                    // Lock exists but is owned by a different process
-         {if (executeAfterLock) throw new HaltAfterLockTestProgram("getLock");                                          // Terminate the test program if it cannot get a lock. The purpose of the test program is to read through memory to confirm that it is coherent
-          stop(l.lockFailTransaction("Memory already locked by a different transaction."));                              // Terminate main program if it cannot get the lock
+         {if (executeAfterLock) throw new HaltAfterLockTestProgram("getLock1");                                         // Terminate the test program if it cannot get a lock. The purpose of the test program is to read through memory to confirm that it is coherent
+          stop(l.lockFailTransaction("Memory already locked by a different transaction."));                             // Terminate main program if it cannot get the lock
+         }
+        else                                                                                                            // Lock already exists so it is pointless to reacquire it
+         {stop("Memory already locked, area:", l.area, "transaction:", l.transactionId, "at:", l.lockTraceBack, "====");// Lock already exists so it is pointless to reacquire it
          }
        }
 
@@ -1689,6 +1692,7 @@ endmodule
     void validateLock (Int I)                                                                                           // Confirm that the memory to be accessed has been locked if needed
      {if (!validateLocks) return;                                                                                       // Only validate locks if requested
       final int        a = addressToAreaLock(I.i());                                                                    // Lock for this memory area
+if (debug) say("AAAA", I.i(), a);
       final Locks.Lock l = locks().lockFor(a);                                                                          // Get the lock for this memory area
       if (l == null) stop("Cannot access unlocked memory area:", a);                                                    // Memory must be locked before it can be used
       if (l.transactionId != transactionId)                                                                             // Terminate if an attempt is made to free a lock owned by another transaction
@@ -2848,12 +2852,14 @@ endmodule
   void freeAllLocks ()                                                                                                  // Create an instruction to free all the locks held by a transaction
    {new I()
      {void        a ()                                                                                                  // Search for locks created by the current transaction
-       {final int t = transactionId();
-        final TreeMap<Integer,Memory.Locks.Lock> L = locks().locks;
-        for (Integer i : L.keySet())
+       {final int t = transactionId();                                                                                  // Current transaction
+        final TreeMap<Integer,Memory.Locks.Lock> L = locks().locks;                                                     // Locks
+        final Stack<Integer> I = new Stack<>();                                                                         // Locks to be freed
+        for (Integer i : L.keySet())                                                                                    // Find locks owned by the current transaction
          {final Memory.Locks.Lock l = L.get(i);
-          if (l.transactionId == t) freeLock(l.area);
+          if (l.transactionId == t) I.push(l.area);
          }
+        for (Integer i : I) locks().freeLock(i);                                                                        // Free locks owned by current transaction
        }
       String      v () {return "/* freeAllLocks */";}
       boolean trace () {return false;}
