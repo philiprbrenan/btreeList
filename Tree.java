@@ -123,13 +123,13 @@ class Tree extends Program                                                      
 
     mergePath        = new Memory(mnl(), "tree", false);                                                                // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
-    getLock(build.memoryPositions.posFreeChain);                                                                        // Lock free chain
+    lockFreeChain();                                                                                                    // Lock free chain
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
     refHeight.putInt(One);                                                                                              // Current height of the tree
+    unlockFreeChain();                                                                                                  // Unlock free chain
 
     leaf();                                                                                                             // Initialize the root as a leaf
-    freeAllLocks();                                                                                                     // Unlock free chain and the root
 
     treeCode();
    }
@@ -142,16 +142,22 @@ class Tree extends Program                                                      
   int           mnl () {return maximumNumberOfLevels;}                                                                  // Maximum number of levels
 
   int addressToAreaLock(int Address)                                                                                    // Overridable convert an address in memory to a lock index
-   {if (Address < build.memoryPositions.posNodes) return Address >>> logTwoSizeOfNode;                                  // Lock number is normally the index of the node
+   {if (debug) say("BBBB", Address, build.memoryPositions.posNodes);
+
+     if (Address < build.memoryPositions.posNodes) return Address >>> logTwoSizeOfNode;                                  // Lock number is normally the index of the node
     return numberOfNodes;                                                                                               // Free chaion and tree size accessed via this lock
    }
 
+  void   lockFreeChain () { getLock(addressToAreaLock(build.memoryPositions.posFreeChain));}                            // Lock free chain
+  void unlockFreeChain () {freeLock(addressToAreaLock(build.memoryPositions.posFreeChain));}                            // Unlock free chain
+
   Int      allocate ()                                                                                                  // Allocate a leaf or a branch using the first free node on the free chain
-   {final Bint A = freeChain.firstOne();                                                                                // First element on free chain
+   {lockFreeChain();
+    final Bint A = freeChain.firstOne();                                                                                // First element on free chain
     A.elseStop("No more leaves or branches available for allocation");                                                  // Out of memory check
     final Int a = new Int("index").set(A);                                                                              // First element on free chain
     freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
-    //final Int c = freeChain.count();
+    unlockFreeChain();
     return a;
    }
 
@@ -165,7 +171,9 @@ class Tree extends Program                                                      
   Int nodeAddress  (Int Node)                                                                                           // Convert an index to a byte address of node in memory
    {if (immediate())
      {if (Node.gt(new Int(numberOfNodes)).b()) stop("Node too big:",                                     Node);         // Check in range
+      lockFreeChain();
       if (freeChain.getBit(Node).b()) stop("Attempting to access a branch or leaf that has been freed:", Node);         // Complain if the node has been freed and not reallocated
+      unlockFreeChain();
      }
     getLock(Node);                                                                                                      // Lock the node so only the caller can use it.
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
@@ -235,6 +243,7 @@ class Tree extends Program                                                      
    {final Leaf l = leaf(Node, false);
     l.initializeMemory();
     setType(Node, BranchOrLeaf.leaf);
+    l.unlockLeaf();
     return l;
    }
 
