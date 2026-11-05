@@ -78,8 +78,16 @@ class Leaf extends Program implements Program.Locatable                         
 
   void leafCode () {}                                                                                                   // Override this method to provide code for testing the leaf
 
-  void   lockLeaf() { getLock(at.i());}                                                                                 // Lock a leaf
-  void unlockLeaf() {freeLock(at.i());}                                                                                 // Unlock a leaf
+  void   lockLeaf () { getLock(at.i());}                                                                                // Lock a leaf
+  void unlockLeaf () {freeLock(at.i());}                                                                                // Unlock a leaf
+  void assertLeafIsLocked ()                                                                                            // Confirm the leaf is locked
+   {final Program.Memory.Locks.Lock l = lockDetails(at.ii());
+    if (l == null) stop("Leaf is supposed to be locked but is unlocked, leaf at:", at.i());
+   }
+  void assertLeafIsUnLocked ()                                                                                          // Confirm the leaf is locked
+   {final Program.Memory.Locks.Lock l = lockDetails(at.ii());
+    if (l != null) stop("Leaf supposed to be unlocked but is locked, leaf at:", l.area, "locked at:", l.lockTraceBack);
+   }
 
   public Bint getLocation () {return at;}                                                                               // The location of this node in memory
 
@@ -91,7 +99,7 @@ class Leaf extends Program implements Program.Locatable                         
   int        data (int Index)            {return refData.getInt(Index);}                                                // Get data at an index
   void       data (Int Index, Int Value) {refData.putInt(Index, Value);}                                                // Set the data at the specified index
   int bytesNeeded ()                     {return build.size();}                                                         // Number of bytes needed to contain a leaf
-  void      clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                          // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
+  void      clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                          // Clear memory associated with the leaf
 
   void       copy (Leaf Source) {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                              // Copy one leaf into another leaf
 
