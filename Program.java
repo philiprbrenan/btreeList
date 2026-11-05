@@ -1,4 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
@@ -125,22 +126,22 @@ public class Program extends Test                                               
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
-    code            = p ? new Stack<>()                : program().code;                                                // Machine code instructions
-    labels          = p ? new Stack<>()                : program().labels;                                              // Labels for instructions in this process
-    blackBoxes      = p ? new Stack<>()                : program().blackBoxes;                                          // Black box files created
-    memories        = p ? new Stack<>()                : program().memories;                                            // Memories used by this program and its dependent programs
-    ints            = p ? new Stack<>()                : program().ints;                                                // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
-    bits            = p ? new Stack<>()                : program().bits;                                                // Bit variables processed in the same way as ints.
-    dumpLocations   = p ? new DumpLocations()          : program().dumpLocations;                                       // Locations in the code at which dumps have been requested
-    verilogArrays   = p ? new VerilogArrays()          : program().verilogArrays;                                       // Verilog read only array definitions that are mapped to Read Only Memory to prevent Yosys from expanding them.
-    pcConstant      = p ? new TreeMap<>()              : program().pcConstant;                                          // Instruction equivalence set identified by program counter
-    intMemory       = p ? new Memory(0, "Ints", false) : program().intMemory;                                           // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
-    bitMemory       = p ? new Memory(0, "Bits", false) : program().bitMemory;                                           // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    code            = p ? new Stack<>()                                 : program().code;                               // Machine code instructions
+    labels          = p ? new Stack<>()                                 : program().labels;                             // Labels for instructions in this process
+    blackBoxes      = p ? new Stack<>()                                 : program().blackBoxes;                         // Black box files created
+    memories        = p ? new Stack<>()                                 : program().memories;                           // Memories used by this program and its dependent programs
+    ints            = p ? new Stack<>()                                 : program().ints;                               // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
+    bits            = p ? new Stack<>()                                 : program().bits;                               // Bit variables processed in the same way as ints.
+    dumpLocations   = p ? new DumpLocations()                           : program().dumpLocations;                      // Locations in the code at which dumps have been requested
+    verilogArrays   = p ? new VerilogArrays()                           : program().verilogArrays;                      // Verilog read only array definitions that are mapped to Read Only Memory to prevent Yosys from expanding them.
+    pcConstant      = p ? new TreeMap<>()                               : program().pcConstant;                         // Instruction equivalence set identified by program counter
+    intMemory       = p ? new Memory(0, "Ints", new Memory.ReadWrite()) : program().intMemory;                          // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    bitMemory       = p ? new Memory(0, "Bits", new Memory.ReadWrite()) : program().bitMemory;                          // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
     Zero            = new Int(0);                                                                                       // Integer constant zero
     One             = new Int(1);                                                                                       // Integer constant one
 
     unitMemory      = Build.testProgramParent != null ? Build.testProgramParent.unitMemory :                            // Share the memory of the indicated program
-                      Build.size              != null ? new Memory(Build.size, "program", false) : null;                // Memory associated with program if any
+                      Build.size              != null ? new Memory(Build.size, "program", new Memory.ReadWrite()):null; // Memory associated with program if any
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -1162,16 +1163,15 @@ public class Program extends Test                                               
     private final Int i = new Int();                                                                                    // The integer component
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
     Bit    b ()      {i.bint++;          return b;   }                                                                  // Return boolean component
+    int   ii ()      {                   return i().i();}                                                               // Return integer value if available
     Int    i ()
      {if (immediate() && !b.b()) stop("Requested int component from unset Bint");                                       // Complain if there is no integer component to return
       return i;
      }
 
-    Bit       valid ()      {i.bint++;                           return b;       }                                      // Whether the boolean integer is valid
-    Bit    notValid ()      {i.bint++;                           return b.Flip();}                                      // Whether the boolean integer is invalid
-    Bint invalidate ()      {i.bint++; b.clear();                return this;    }                                      // Mark the integer as invalid after all
-    //Bint   constant ()      {        i.constant(); b.constant(); return this;    }                                      // Mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
-    //Bint   constant (Int I) {set(I); i.constant(); b.constant(); return this;    }                                      // Set and mark as a constant.  Ideally a Java int should be used as the constant but as constant does take a slot in the program counter constant array which might already be occupied for a given instruction necessitating a less efficient use of a constant Int.
+    Bit       valid ()      {i.bint++;            return b;       }                                                     // Whether the boolean integer is valid
+    Bit    notValid ()      {i.bint++;            return b.Flip();}                                                     // Whether the boolean integer is invalid
+    Bint invalidate ()      {i.bint++; b.clear(); return this;    }                                                     // Mark the integer as invalid after all
 
     Bint () {}                                                                                                          // Constructors
     Bint (String Name) {i.name = b.name = Name;}
@@ -1248,13 +1248,21 @@ public class Program extends Test                                               
 
     static int bitsPerUnit () {return Integer.SIZE;}                                                                    // Bits per memory unit
 
-    Memory (int Length, String Name, boolean ReadOnly)                                                                  // Create and clear some memory
-     {name = Name; readOnly = ReadOnly;
+    Memory (int Length, String Name, Writability Writability)                                                           // Create and clear some memory
+     {name = Name; readOnly = Writability.readOnly();
       locks = new Locks();                                                                                              // Locks for this memory
       units = new int[Length];
       for(int i = 0; i < Length; ++i) units[i] = 0;                                                                     // Clear memory. In Verilog this is done using readmemh in an initial block. For a real chip perhaps an instruction to do this?
       final Stack<Memory> m = memories(); id = m.size(); m.push(this);                                                  // Give the memory a unique identifier and save it in the main program
      }
+
+    static abstract class          Writability {boolean readWrite() {return false;} boolean readOnly()  {return true ;}}// Read, write status of memory
+    static class ReadOnly  extends Writability {boolean readWrite() {return false;} boolean readOnly()  {return true ;}}// Read, only memory
+    static class ReadWrite extends Writability {boolean readWrite() {return true ;} boolean readOnly()  {return false;}}// Read, write memory
+
+    static abstract class          Permanence  {boolean permanent() {return true ;} boolean temporary() {return true; }}// Permanent or temporary memory
+    static class Permanent extends Permanence  {boolean permanent() {return true ;} boolean temporary() {return false;}}// Permanent memory
+    static class Temporary extends Permanence  {boolean permanent() {return false;} boolean temporary() {return true; }}// Temporary memory
 
     int              size ()         {return units.length;}                                                             // Size of memory
     String              i ()         {return ""+id;}                                                                    // Number of memory a string for use in writing Verilog
@@ -1312,7 +1320,6 @@ public class Program extends Test                                               
       if (readOnly) stop("Target memory is read only and so can not be cleared even in part");
       final Int z = Zero;
 
-debug = true;
       new ForCount (Start, Start.Add(Width))
        {void body(Int Index)
          {putInt(Index, z);
@@ -1692,7 +1699,6 @@ endmodule
     void validateLock (Int I)                                                                                           // Confirm that the memory to be accessed has been locked if needed
      {if (!validateLocks) return;                                                                                       // Only validate locks if requested
       final int        a = addressToAreaLock(I.i());                                                                    // Lock for this memory area
-if (debug) say("AAAA", I.i(), a);
       final Locks.Lock l = locks().lockFor(a);                                                                          // Get the lock for this memory area
       if (l == null) stop("Cannot access unlocked memory area:", a);                                                    // Memory must be locked before it can be used
       if (l.transactionId != transactionId)                                                                             // Terminate if an attempt is made to free a lock owned by another transaction
@@ -1712,7 +1718,7 @@ if (debug) say("AAAA", I.i(), a);
     return "{"+j+"}";
    }
 
-  int addressToAreaLock(int Address) {return Address;}                                                                  // Overridable convert an address in memory to a lock index
+  int addressToAreaLock(int Address) {say("PPPP1111 Address to area lock in program");return Address;}                                                                  // Overridable convert an address in memory to a lock index
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -2870,13 +2876,19 @@ endmodule
   String  dumpLocks () {return locks().dump();}                                                                         // Dump the locks
   String printLocks () {return locks().toString();}                                                                     // Print the locks
 
-  boolean ignoreLockRequest () {return program().afterLock && program().executeAfterLock;}                              // Ignore lock request because we are executing a lock test sub program whcuih might terminate early leaving locks still acquired that are no longer required
+  boolean ignoreLockRequest     ()         {return program().afterLock && program().executeAfterLock;}                  // Ignore lock request because we are executing a lock test sub program whcuih might terminate early leaving locks still acquired that are no longer required
+  boolean           hasLock     (int Area) {return lockDetails(Area) != null;}                                          // Get details of a lock
+  Memory.Locks.Lock lockDetails (int Area) {return locks().locks.get(Area);}                                            // Get details of a lock
 
   void checkAllLocksHaveBeenReleased ()                                                                                 // Confirm that all locks have been released unless this is a sub program
    {if (unitMemory == null) return;                                                                                     // No memory to lock
     final Memory.Locks L = locks();
     if (L != null && L.size() > 0 && mainProgram()) stop("Not all locks were released:", L.dump());
    }
+
+  abstract class LockedStatus                {boolean locked() {return false;} boolean unlocked() {return true;}}       // Lock status indicator
+  class AlreadyLocked   extends LockedStatus {boolean locked() {return true;}  boolean unlocked() {return false;}}      // Show that an area has already been locked
+  class NotYetLocked    extends LockedStatus {}                                                                         // Show that an area has not been locked yet
 
   static class HaltAfterLockTestProgram extends RuntimeException                                                        // Exception used to halt sub programs
    {private static final long serialVersionUID = 1L;
@@ -3424,7 +3436,7 @@ writeIntEnable =        0
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Memory m = new Memory(2, "test memory name", false);
+       {final Memory m = new Memory(2, "test memory name", new Memory.ReadWrite());
         final Int a = new Int("a"); a.set(2); m.putInt(One, a);
         dumpProgramState("aaaa");
         scDieAreaX = 500; scDieAreaY = 500;
