@@ -6,6 +6,7 @@
 // Memory access check locks automatically so the caller has to arrange to get and free them before/after with appropriate granularity
 // Change unitMemory to mainMemory
 // Log changes to memory so that the changes can be undone - needs locking for full implementation
+// Change hasLock to isLocked
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
