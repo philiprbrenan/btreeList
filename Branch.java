@@ -144,7 +144,8 @@ class Branch extends Program implements Program.Locatable                       
      }
 
     StepDown (Int Key)                                                                                                  // Return a reference to the next branch down whose sub tree might contain the specified key
-     {key.set(Key);                                                                                                     // Record the search key
+     {assertBranchIsLocked();                                                                                           // The branch we are searching must already be locked
+      key.set(Key);                                                                                                     // Record the search key
       final Slots.Find f = slots.new Find(Key);  eqKey.set(f.equal);                                                    // Find result
       new If (f.empty)                                                                                                  // Found the index of a key that is greater than or equal to the search key
        {void Then()                                                                                                     // Step through top because the body of the branch is empty
@@ -166,6 +167,7 @@ class Branch extends Program implements Program.Locatable                       
            };
          }
        };
+      getLock(node);                                                                                                    // Lock the node we have stepped to
      }
    } // StepDown
 
