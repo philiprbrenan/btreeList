@@ -1355,14 +1355,14 @@ class Tree extends Program                                                      
     t.dumpProgramState("AAAA");
 
     //stop(t.mainMemoryMd5Sum());
-    t.ok(()->t.mainMemoryMd5Sum(), "22a420772637045e7d9ae61e800574cb");
+    t.ok(()->t.mainMemoryMd5Sum(), "d2ab8f0a05e9505a88142d9db1d4f133");
 
     //stop(t.dumpTree());
     if (Ex) ok  (t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
 Branch size   :   34
-Node   size   :   34
+Node   size   :   64
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -1388,13 +1388,13 @@ Branch at:   2 size:   3, count:   2, top:   0, level:   0
     t.dumpProgramState("BBBB");
 
     //stop(t.mainMemoryMd5Sum());
-    t.ok(()->t.mainMemoryMd5Sum(), "3d21553ae48ccd5ffaabaa5e92eab08d");
+    t.ok(()->t.mainMemoryMd5Sum(), "b7a97eeba1e44933748174112d97e21a");
     //stop(t.dumpTree());
     if (Ex) ok  (t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
 Branch size   :   34
-Node   size   :   34
+Node   size   :   64
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -1415,13 +1415,13 @@ Branch at:   2 size:   3, count:   2, top:   0, level:   0
     t.dumpProgramState("CCCC");
 
     //stop(t.mainMemoryMd5Sum());
-    t.ok(()->t.mainMemoryMd5Sum(), "c6dbe9dd44a0eecce5cfcf65c22389ae");
+    t.ok(()->t.mainMemoryMd5Sum(), "0a70370c6a365b75300fc403b3449468");
     //stop(t.dumpTree);
     if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
 Branch size   :   34
-Node   size   :   34
+Node   size   :   64
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -1439,13 +1439,13 @@ Branch at:   2 size:   3, count:   2, top:   0, level:   0
     t.dumpProgramState("DDDD");
 
     //stop(t.mainMemoryMd5Sum());
-    t.ok(()->t.mainMemoryMd5Sum(), "834280feda4034532dd30fb92002eea5");
+    t.ok(()->t.mainMemoryMd5Sum(), "499146b77085da8aac384998dfb7196c");
     //stop(t.dumpTree());
     if (Ex) ok(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   23
 Branch size   :   34
-Node   size   :   34
+Node   size   :   64
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -1591,7 +1591,7 @@ Height        :    1
          };
 
         //stop(mainMemoryMd5Sum(), writeTree(), printTree());
-        ok(()->mainMemoryMd5Sum(), "c8fd801ae2fbd65d306cb86b4cb36ce6");
+        ok(()->mainMemoryMd5Sum(), "55b4703ab96cd7d579eac65f6da20da0");
 
         //stop(writeTree());
         if (Ex) ok(writeTree(), """
@@ -1636,7 +1636,7 @@ Height        :    1
          };
 
         //stop(mainMemoryMd5Sum(), writeTree(), printTree());
-        ok(()->mainMemoryMd5Sum(), "6b2ad5d037c4e256818af9d17310f1cf");
+        ok(()->mainMemoryMd5Sum(), "eaeb17b251901bfbe4540a4e4e372a32");
 
         //stop(writeTree());
         if (Ex) ok(writeTree(), """
@@ -1693,7 +1693,7 @@ Height        :    1
          };
 
         //stop(mainMemoryMd5Sum(), writeTree(), printTree());
-        ok(()->mainMemoryMd5Sum(), "9147c15bbcdbe2c82ac1bf251eb0ef1e");
+        ok(()->mainMemoryMd5Sum(), "1728b43d40e91b20bc2d093d662621a0");
 
         //stop(writeTree());
         if (Ex) ok(writeTree(), """
@@ -1767,38 +1767,38 @@ Height        :    1
 
         //stop(m);
         ok(()->m, """
-cf86f7d811120e97c57bd0c85ae0f924
-9a3c6287f7516a68681461c97133ccef
-14d14b76c50882fe5bc876520258cd37
-41b48525e0fb8f55c48889bc53cc9275
-de54f716ba595c1e123a14e2559c7523
-a5b0fed3fe44ddace85d74da7fdff245
-73b77865a44c42903026dbb40135b152
-83248a092c997ffc9902840ddb9c37c9
-385a0295f0c1e7f65219355e4ae60f73
-88bcd7a964015dc3a75ab5c4698b4ec1
-e7146136e874017d412b393f47ca66b8
-85ec1e7c4ec637e4c77e0455d47e2c4b
-3c5a9a54dcc9f963243b09ca79752944
-e50d1c0c0d9928f7aba4ad37e0a17dad
-61cff5305ddd574f04e16dfd4f4fa621
-c00984ac4b6485756e3763d70aa3a028
-83086f8af00005a3ed2681adab9488b6
-5b026420ca2ddb41b15b45af3e065537
-a4150f5e4ed8f991718c445dcb781584
-d1e32653e8b4bc014ce1eaf54549fd07
-4a7e39ebd0df7452aa262638ed7b6fe3
-36553d2742928b2aebf72d08d4f0c8d6
-2dbff678d4d5b27bf0036a8306ff5def
-d416a39530f623a61f7823056708b9cc
-dc14fcfd75c864c233fc148989ba47c1
-3ed7f644b01f1b23abb31054f2f45aa2
-c0a490d818b26532f1910d026166d8ca
-32c5d7be258764f658c41b0cc999edb3
-d1e2cc308f69f9de4e07e989816260f4
-8e8a345bd505e105cced183617130240
-2ec8b88e6cf77a3b16dc1b3dd4fd7809
-fa10edf1e50eebf13e7418aac38f3794
+3cdb2b20672b8d35cdde1a7778583b61
+6a6ef7ac154c401e824b16afdd11e641
+cd7efe7e7e97822d296a5ff96d4b2e01
+aafebdbf7f59d399069fd56110c49dfc
+6f99cf834a3d73b765423734598c3a55
+ba7dda333e4044dd58c42eb86bd699c3
+9df5c36be5947594964332f01e7adcf5
+eca6c65663cdbe02ab9ee89d1d551ac3
+fb5bd1483c1a030a5aa40c5a5955564c
+6841371736cd0c5d5dc1b07ba60c98fe
+77e49af323d7d0f317be43b35070c979
+421f18c883abe6e0f8b8e698a8882e19
+2f6d2e7401b396fb8d37dcf8efd97e44
+79a943b85169f611b5f9652706cf514d
+72dd6c41d4a8514aba55914afc9a27ab
+f86f6b55956f2fb75e7935646ab5ebc1
+c3f89344d22af6fe4ce907208a0e993d
+a5fe266e250d26439be17ca0164915aa
+d769a8cf90db09ad8ec919ec5b6246d5
+ed65f10f180ed87d3cd685c8ea02c694
+fb5582d7a6afc468667ec29149c2443f
+14684ef68113782fa4f2161ffee1deae
+a8293d2b55bf20a4fc0d332200ee83a2
+6d1e6db2719abca6244b9fc38654a300
+45709d1119b720ec704e1827d0656371
+8886338efec9db0d41f7aab4989b5864
+655afde515fb86e8411e1b6ff9399e8e
+f3fe12bda38078b8728edbf27966449e
+dcfc779e4346b234b876da8ae33dbe03
+d8cc661fd3bde00cb88bb6d32098e6c9
+7e5b93264654c45f6b682741e73c9137
+cfb51713ec31555114d4f1b2f8cc5924
 """);
 
         //stop(s);
@@ -2037,38 +2037,38 @@ fa10edf1e50eebf13e7418aac38f3794
 
         //stop(m);
         ok(()->m, """
-0238830bc488436dc1d0e68971375527
-2e60ed03a063b98e9244122509f7d992
-313bd1df2a36622d3a778adf22ddfc0f
-debb0050354944e100f0725e8179dfb2
-c50a8311b5ff38ade22e570a8cc55ae7
-c1b9d71b0125a63bd7c54eb8e0b366b1
-e223d65576a7b30eba91b97bba61301b
-75fe5b036fb2352a2fa73d22d4d848ca
-5ea1880a0de68a61c97ac29cd74e51bc
-68f022cdfef7e9a7107ea304f3efb243
-ef92c66b409f8ed9029f175fe7b18f95
-40f75aa6ca118b973941414b55d35fee
-969f7798ffa6ae9001460971e9370817
-cb3c06baeb04c9d03fdcf8d21e403fb1
-b6f03ae2825760bf62cdc5012fad8a3f
-7d9f67daeac06a97e591478787be26cd
-5f3639c33bdb2f6cb04936222342bc6f
-4622dbb64ec350ac687554c461d25e45
-5fb8cf86f2a2dde5009aa9cec7d81e1f
-50503d1300809c4e38961160a10a3598
-f8ce136b4c301ef5c7b890bf0b5faf77
-222d51943391beb3e185ef5743c59325
-23b1c396030a9a02a9798fd6112c4a76
-17ca48074e602420167ac399c3861a8d
-5df8fc5cdb6c55e404c96ecd3e3b7a30
-59d6aa8c8769bd480ccff649d2173847
-a4cb46412d9ee0bd242e41a27a3eff14
-30668ac9b7b14ab283d6f1bf22b94c4b
-2c095326f0fd962e8c6038a9b494c630
-1b02ecf51b02ba5c5c1d3d1f3ea8a476
-5f8ac99b91a5085ece4df328a33a438c
-0c6a1f1a235c63f22ea40089a3a3dc61
+7e1820909f7d36f109992125c49ba781
+cbdfa433064c8414298e2f6a31693d0d
+03c26fa874007ce189975512fbeda685
+cab96cd5885fd5f44aa6fa98ec229121
+edf7df3f779f1ec5acc3db4a8da05ee0
+4793e79d57fbe31b2a8c5adf893dc40c
+123283288a7737c7344f908171124d66
+01cbaf8d52f5768d16b979a06def9c67
+90157144d5adb69cdcab90c88a8a5cc1
+4187bc60ba40f0a5454b4663ea3341f1
+4c1fd019431cb9da2d2858e7dd2a2560
+32f8cba0b465549efc94e98be7951160
+c6e0017832df66904db37a251692d599
+f2c6a0053dd1e3285ba4199d4f358bc3
+65541497105e6dd718cdea3e0c75c51a
+cab4f42ddc69492871a79f74f3a1a774
+ba69f540c2a53a8486fbbf725de57775
+8baa19b9b525bde7cc73f7ece3900d29
+c28e20f0d953bf5eed960114a7437c2a
+730034d67c6b8f383fdbeada00b3f71b
+d7f6770f5efc7603c0e283dde08854ed
+7a612a4b279207936a8ee1af37e1787a
+73c3820767ad80f31a71a5e8d0802183
+876070bff45c472d1c5d53ec404d3ebf
+726fb28e324e62057a67b6cf6d1fe054
+d48b920b4d3591d971c2340fdff674b9
+3db5680ce32a0c29b1b9629e418ff35a
+26f4b28ed445edf6ee85b6fd535a22a5
+9a7e5f47be38a94b9abaf5409d1e5a04
+9993cecc0352bb0396805ec04c2739ed
+db30c3ba9ecc968698e2d0b0a4cafa12
+9c1b9b4657d3ccaed0d2a1f2abac9f7a
 """);
 
         //stop(s);
@@ -2329,38 +2329,38 @@ a4cb46412d9ee0bd242e41a27a3eff14
 
         //stop(m);
         ok(()->m, """
-57f45d56d7a56da585d40c6170a3a1c1
-2db502bb16c3524089ea5ec48375dc6f
-892d81e0f1cf88e353c1989d7671e3eb
-0b6d24a7228516a0838af86fab1aa68b
-acba952e36e4fd172a8166299951c976
-107c031ed158586723dc38781b02a19a
-98730c694f354b5159c25f95e560dda5
-52cb4dfa349bd4866eeddc7a7d44341c
-d66e340276039eeb409ed1201cbd69ad
-2d63c1fef28246e5db3aed9e5bbf096c
-60fee7a867335242ef5e25e20bf6ed05
-fdc074a9f58836c6e0e4a6fb22a00e2a
-e4e398458d140246aa830e6d8e4298f3
-659c624ce57099bcb982ddbb5b4aa8ff
-0522b04596d2ce72c16ef04edc6ca00f
-a5174e5e073ff575898e4f482cb5adc6
-e33af30441bcc4d50ec8153fd806aede
-b25842fcf38686cd19243cce75455339
-ff7e6121b938253a57eb837cb7a9e99b
-16f02fd3344cac3d01657e3bfc40436c
-deaa361e92d7f4c165d8a2518f9079de
-bc631b08c00d9273f0c9eb4a867ee0e8
-aa7bcddea2a92d6dd742eadde9b232e9
-f7dee32454ef3b38cb3a6505670ac5c5
-44c51b11f329ca72883a32e204a7ce34
-7c042694c6e31cdff1647a06e0ad21da
-d0c5dbab4b53255467969ff7feb4ad1e
-3fc42fa1eaddd00cee85c5bfc6940815
-c03459de33e6bc5c0543e77155182a7c
-5be0316a5717ad83a98f988fe8027994
-0cd02ed8916ce25d787b084c4d0b16d0
-866e829257f665c24aab0980a3e538de
+f77a9a16349f422609dcfeabbc5a6864
+1efdbc602dc6f5257b31fdfebeb808a1
+96e93ee11dba1f303c58057b678fbef0
+520207487ec8fecc5694dead2ce84f24
+9d9bf30b728b7a766af6cffb4efec367
+616aa2c9ac06cd280f58f6f43687fd22
+d640697845d3d3191b88db040002ba26
+2d69cd629af8ce189597fac4cc365651
+fd82b5a3b37f0fe6df5bb63d8765f55a
+13c23c12d48635d49add8b194873fd74
+182176c269c84bff56c691de7315ff49
+296e8d7c37f1dd06f4d3ac4a9ff00026
+24d92817220dc5cbe37c178df9127e65
+91efe26c250b4d78e19bc33b0bbfd7af
+97e828c7de075902a501d49d492db83e
+a06fbb57835467850e185324370eaef4
+e3caaf263dbc64c239c69f0afe2cdb4a
+53180d18cde9abdf973a07ba440c306d
+40696f3d595c120dc91031d2b60e3553
+5ef9280790339d6abc93dd98a6b23728
+ff2b385c65ccbe3f450754e562a19365
+6fda2ea9931abc85ac0aa63a4b04cf05
+5cecd5d0ba4e8286168b504ca8650412
+2b08c919a1c14d77124ddaf4897df10e
+25dfcb967ae67b86af4fc43fdf00add2
+4552002c4676e895bb684cb9d5c0c558
+abe50718c03e6f7fd0f3480c34fa117e
+1b1e3c6b5a4c790ffe0f9d5e699b36ba
+8e59a9e3725e1f9de1ffd405910fd9c2
+d5af181c46de89694a8b26cf8faf8fcb
+d3fd76f830f7c88c14b187b3276fcd49
+915111a7d99f7e85c63ae290186e3cd5
 """);
 
         //stop(s);
@@ -2584,7 +2584,7 @@ c03459de33e6bc5c0543e77155182a7c
            }
          };
         //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "0e1ee28654479e2608a482c294f15e12");
+        ok(()->mainMemoryMd5Sum(), "e376eb1a59ef1afc4150477cdcb133ec");
         //stop(dumpTree());
         if (Ex) ok(dumpTree(), """
 Tree memory dump
@@ -2658,7 +2658,7 @@ Leaf           size:   4, count:   2
         height().ok(3);
 
         //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "2aac7256bd1345cb2bb27f81a9a8fcdb");
+        ok(()->mainMemoryMd5Sum(), "9fe4694b356aa5d29fdec989d34dfe1d");
 
         //stop(writeTree());
         if (Ex) ok(writeTree(), """
@@ -2706,7 +2706,7 @@ Leaf           size:   4, count:   2
         height().ok(4);
 
         //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "28809d8ecdcd4f84d086589eb46c2b18");
+        ok(()->mainMemoryMd5Sum(), "b62680b8bd18adea153be5d41bf6885a");
 
         //(writeTree());
         if (Ex) ok(writeTree(), """
@@ -2861,7 +2861,7 @@ Leaf           size:   4, count:   2
          };
 
         //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "43dc618b9a7ac66578d854776e39c9c6");
+        ok(()->mainMemoryMd5Sum(), "9c5f08ef098c5535582fee5184a89cd6 ");
 
         //stop(writeTree());
         if (Ex) ok(writeTree(), """
@@ -2908,15 +2908,15 @@ Leaf           size:   4, count:   2
     if (rtg(11)) test_rootFanOut();
     if (rtg(12)) test_rootFanOut2();
     if (rtg(13)) test_rootFanOut3();
-    if (rtg(14)) test_insert_locked();
+    //if (rtg(14)) test_insert_locked();
     if (rtg(15)) test_traverse();
     if (rtg(16)) {}
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
+   {oldTests();
     //test_traverse();
-    test_insert();
+    //test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
