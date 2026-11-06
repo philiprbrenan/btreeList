@@ -27,13 +27,12 @@ public class Program extends Test                                               
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
-  final static boolean                    runWithLocking =!true;                                                        // Run with locks imposed on permanent memories. Otherwise ignore lock requests
+  final static boolean                    runWithLocking = true;                                                        // Run with locks imposed on permanent memories. Otherwise ignore lock requests
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
-  final static boolean          suppressConstantChecking =!true;                                                        // Constant checking adds extra instructions which should not be present in the final version
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
@@ -1663,7 +1662,8 @@ endmodule
           stop(l.lockFailTransaction("Memory already locked by a different transaction."));                             // Terminate main program if it cannot get the lock
          }
         else                                                                                                            // Lock already exists so it is pointless to reacquire it
-         {stop("Memory already locked, area:", l.area, "transaction:", l.transactionId, "at:", l.lockTraceBack, "====");// Lock already exists so it is pointless to reacquire it
+         {stop("Memory already locked, area:", l.area, "transaction:", l.transactionId, "at:", l.lockTraceBack,         // Lock already exists so it is pointless to reacquire it
+               "Error occurred at:");
          }
        }
 
