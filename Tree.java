@@ -1194,7 +1194,7 @@ class Tree extends Program                                                      
             final int n = s.getSlotToKeyIndex(i);
             final int l = nodes.getInt(n);
             pLeaf(l, Depth+1, Index, i);
-            branchSlot(Index, Depth, v, Parent, i, k, l);                                                               // Print the connection back to the parent node.
+            branchSlot(i, Index, Depth, v, Parent, i, k, l);                                                               // Print the connection back to the parent node.
            }
          }
         branchTop(t, Depth);
@@ -1208,7 +1208,7 @@ class Tree extends Program                                                      
             final int c = nodes.getInt(n);                                                                              // Child branch or leaf
             if (Depth <= maximumNumberOfLevels) traverse(c, Index, Depth+1);                                            // Terminate large traverses perhaps produced in error
 
-            branchSlot(Index, Depth, v, Parent, i, k, c);
+            branchSlot(i, Index, Depth, v, Parent, i, k, c);
            }
          }
         branchTop(t, Depth);
@@ -1233,8 +1233,8 @@ class Tree extends Program                                                      
      {say("LLLL", "Index", Index, "Depth", Depth, "Parent", Parent, "Slot", Slot, "Keys", Keys, slots(Index, maxLeafSize));
      }
 
-    void branchSlot (int Index, int Depth, int Level, int Parent, int Slot, int Key, int Child)                         // Process branch slot by printing the tree to the left of the slot and then the slot
-     {say("BBBB", "Index", Index, "Depth", Depth, "Level", Level, "Parent", Parent, "Slot", Slot, "Key",  Key, "Child", Child, slots(Index, maxBranchSize));
+    void branchSlot (int I, int Index, int Depth, int Level, int Parent, int Slot, int Key, int Child)                  // Process branch slot by printing the tree to the left of the slot and then the slot
+     {say("BBBB", "I", I, "Index", Index, "Depth", Depth, "Level", Level, "Parent", Parent, "Slot", Slot, "Key",  Key, "Child", Child, slots(Index, maxBranchSize));
      }
 
     void branchTop ( int Index, int Depth)                                                                              // Process branch top by printing its sub tree to the right
@@ -1279,10 +1279,11 @@ class Tree extends Program                                                      
            }
          }
 
-        @Override void branchSlot(int Index, int Depth, int Level, int Parent, int Slot, int Key, int Child)            // Print keys of branch and optionally the details of the parent and the children of this branch
+        @Override void branchSlot(int I, int Index, int Depth, int Level, int Parent, int Slot, int Key, int Child)     // Print keys of branch and optionally the details of the parent and the children of this branch
          {final int d = Depth * linesToPrintABranch;
           if (Context)                                                                                                  // Print relationships with surrounding nodes
            {pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
+            if (I == 0 && hasLock(Index)) P.elementAt(d).append("{");                                                   // Show start of lock
             P.elementAt(d).append(f("%04d", Key));                                                                      // Write key into output area
             if (Depth == 0) P.elementAt(d+1).append("("+Index+","+Slot+")");                                            // Format second line for a root
             else P.elementAt(d+1).append("("+Index+","+Parent+","+Slot+")");                                            // Format second line for a non root branch showing the parent of the branch and the slot in the parent this branch came from
@@ -1298,7 +1299,7 @@ class Tree extends Program                                                      
          {if (Context)
            {final int d = Depth * linesToPrintABranch;
             pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
-//          trimRight(P.elementAt(d+1)).append("Z"+Index);                                                              // Add index of top to slot second line
+            if (hasLock(Index)) P.elementAt(d).append("}");                                                             // Show end of lock
             P.elementAt(d+1).append(" "+Index);                                                                         // Add index of top to slot second line
            }
          }
@@ -2590,7 +2591,7 @@ d3fd76f830f7c88c14b187b3276fcd49
 Tree memory dump
 Leaf   size   :   41
 Branch size   :   34
-Node   size   :   41
+Node   size   :   64
 MaxLeafSize   :    4
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -2861,7 +2862,7 @@ Leaf           size:   4, count:   2
          };
 
         //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "9c5f08ef098c5535582fee5184a89cd6 ");
+        ok(()->mainMemoryMd5Sum(), "9c5f08ef098c5535582fee5184a89cd6");
 
         //stop(writeTree());
         if (Ex) ok(writeTree(), """
@@ -2914,9 +2915,9 @@ Leaf           size:   4, count:   2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
     //test_traverse();
-    //test_insert();
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
