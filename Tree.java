@@ -3,7 +3,7 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Optimize merges by merging into the most full node from the least full node
-// InsertFullLeaf must insert into an unfull leaf if the leaf is no longer full
+// FindLeafForKey - Bint leaf can be an Int
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -141,9 +141,9 @@ class Tree extends Program                                                      
   int numberOfNodes () {return numberOfNodes;}                                                                          // Maximum number of nodes in tree
   int           mnl () {return maximumNumberOfLevels;}                                                                  // Maximum number of levels
 
-  void        lockRoot () { getLock(root());}                                                                           // Lock root
-  void      unlockRoot () {freeLock(root());}                                                                           // Unlock root
-  void assetRootLocked () {assertHasLock(root());}                                                                      // Assert that teh root is locked
+  void         lockRoot () { getLock(root());}                                                                          // Lock root
+  void       unlockRoot () {freeLock(root());}                                                                          // Unlock root
+  void assertRootLocked () {assertIsLocked(root());}                                                                     // Assert that the root is locked
 
   int addressToAreaLock(int Address)                                                                                    // Overridable convert an address in memory to a lock index
    {if (Address < build.memoryPositions.posFreeChain) return Address >>> logTwoSizeOfNode;                              // Lock number is normally the index of the node
@@ -462,7 +462,8 @@ class Tree extends Program                                                      
 
     NextEntry  (Int Key)                                                                                                // Locate the last entry in the tree
      {subStart("Tree.NextEntry");
-      final FindLeafForNextKey f = new FindLeafForNextKey(Key, new NotYetLocked());                                     // Start at root
+      getLock(root());
+      final FindLeafForNextKey f = new FindLeafForNextKey(Key);                                                         // Start at root
       new If (f.leaf)
        {void Then()
          {final Leaf           l = leaf(f.leaf.i());
@@ -529,8 +530,8 @@ class Tree extends Program                                                      
    }
 
   class FindLeafForKey                                                                                                  // Find the leaf that should contain the specified key.  The leaf is returned with a read lock on it to prevent any modifications of the leaf before the caller has had a chance to process it.  Consequently the caller must release the read lock promptly
-   {final  Int  key  = new Int  ("key");                                                                                // Search key
-    final  Bint leaf = new Bint ("leaf index");                                                                         // Leaf that should contain the key
+   {final  Int  key  = new Int ("key");                                                                                 // Search key
+    final  Bint leaf = new Bint("leaf index");                                                                          // Leaf that should contain the key. There will always be such a leaf as the tree starts off as a empty leaf. The leaf will be locked
 
     FindLeafForKey (Int Key)                                                                                            // Find the specified key in a leaf in the tree
      {subStart("Tree."+title());
@@ -555,6 +556,7 @@ class Tree extends Program                                                      
        };
 
       if (immediate && !leaf.valid().b()) stop("Find fell off the end of tree after this many searches:", mnl());
+      assertIsLocked(leaf.i());
       subFinish();
      }
 
@@ -671,18 +673,18 @@ class Tree extends Program                                                      
       mergePath.clear();                                                                                                // Clear the path
       eqKey    .clear();                                                                                                // Clear the equal key indicator to show that so far we have not encountered a branch entry containing the search key
 
-say("BBBB11", printLocks());
+//say("BBBB11", printLocks());
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
-         {say("BBBB22", p, writeTree(), printLocks());
+         {//say("BBBB22", p, writeTree(), printLocks());
           new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {say("BBBB33", p, writeTree(), printLocks());
+             {//say("BBBB33", p, writeTree(), printLocks());
               valid.set();                                                                                              // Reached a leaf
               leaf.set(p);                                                                                              // End the path on a leaf
              }
             void Else()                                                                                                 // On a branch
-             {say("BBBB44", p, writeTree(), printLocks());
+             {//say("BBBB44", p, writeTree(), printLocks());
               final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down
               new If (d.eqKey) {void Then() {eqKey.set();}};                                                            // Stepped through a key equal to the search key
               path.putInt(step, p);
@@ -694,12 +696,12 @@ say("BBBB11", printLocks());
            };
          }
        };
-say("BBBB55", p, writeTree(), printLocks());
+//say("BBBB55", p, writeTree(), printLocks());
       if (immediate() && !valid.b()) stop("Find fell off the end of tree after this many searches:", mnl());
       subFinish();
      }
 
-    void splitPoint ()                                                                                                  // Locate the split point: the uppermost full branch directly connected to the leaf by intervening full branches which will have to be split from the top back down to the parent of the leaf to permit the splitting of a full leaf
+    void splitPoint ()                                                                                                  // Locate the split point: the uppermost full branch directly connected to the leaf by intervening full branches which will have to be split from the top back down to the parent of the leaf to permit the splitting of a full leaf. The branches that are to be split will remain locked, the remainder will be unlocked.  The locked branchs will be unlocked after splitting down or merging up has been completed.
      {subStart("Tree.splitPoint");
       final Int u = new Int();                                                                                          // Location of split point
       new For(step)                                                                                                     // Number of steps in path
@@ -1469,16 +1471,17 @@ Height        :    1
      {void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
-           {say("AAAA11 Index", Index);
+           {//say("AAAA11 Index", Index);
             insert(Index, Index.Mul(11));
-            say("AAAA22", printLocks(), writeTree());
+            //say("AAAA22", printLocks(), writeTree());
             dumpProgramState("AAAA");
            }
          };
         height().ok(4);
 
         //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "c039873361f0bdc304c9b2def96e7ab0");
+        //ok(()->mainMemoryMd5Sum(), "c039873361f0bdc304c9b2def96e7ab0");
+        ok(()->mainMemoryMd5Sum(), "3935aa838d5bb6876a3bfdfdc8e66bf7");
 
         //stop(writeTree());
         if (Ex) ok(writeTree(), """
@@ -1526,8 +1529,9 @@ Height        :    1
         ok(()->m19, "Branch: 19,  maximum key: 16\n");
         ok(()->m_9, "Branch:  9,  maximum key:  8\n");
 
-        final FindLeafForNextKey n_1 = new FindLeafForNextKey(new Int(1), new NotYetLocked()); freeLock(n_1.leaf.i()); n_1.leaf.i().ok(3);
-        final FindLeafForNextKey n_2 = new FindLeafForNextKey(new Int(2), new NotYetLocked()); freeLock(n_2.leaf.i()); n_2.leaf.i().ok(4);
+        getLock(root());
+        final FindLeafForNextKey n_1 = new FindLeafForNextKey(new Int(1)); freeLock(n_1.leaf.i()); n_1.leaf.i().ok(3);
+        final FindLeafForNextKey n_2 = new FindLeafForNextKey(new Int(2)); freeLock(n_2.leaf.i()); n_2.leaf.i().ok(4);
 
         delete(new Int(16));
 
@@ -1543,7 +1547,8 @@ Height        :    1
 (3,9,0)       (4,9,2)       (7,9,4)         (8,9)      (10,14,0)        (5,14,2)        (12,14,4)           (13,14)       (15,21,0)        (11,21,2)        (17,21,4)           (18,21)         (22,6,0)       (16,6,2)       (24,6,4)         (2,6)|
 """);
 
-        ok(()->mainMemoryMd5Sum(), "f7ac331ac5f050c49bc1b9ac74622ae1");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
+//      ok(()->mainMemoryMd5Sum(), "f7ac331ac5f050c49bc1b9ac74622ae1");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
+        ok(()->mainMemoryMd5Sum(), "9f36c9dd8260171e47ee2415270390fd");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
 
         delete(new Int(15));
 
@@ -1559,7 +1564,8 @@ Height        :    1
 (3,9,0)       (4,9,2)       (7,9,4)         (8,9)      (10,14,0)        (5,14,2)           (13,14)       (15,21,0)        (11,21,2)        (17,21,4)           (18,21)         (22,6,0)       (16,6,2)       (24,6,4)         (2,6)|
 """);
 
-        ok(()->mainMemoryMd5Sum(), "aa92a04167974af251a1d447f5dc4c9a");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
+//      ok(()->mainMemoryMd5Sum(), "aa92a04167974af251a1d447f5dc4c9a");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
+        ok(()->mainMemoryMd5Sum(), "3467f46a26148727c9bcdf2569426777");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
 
         maxSteps(9_999_999);
         execute();
