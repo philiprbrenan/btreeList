@@ -80,12 +80,16 @@ class Leaf extends Program implements Program.Locatable                         
 
   void   lockLeaf () { getLock(at.i());}                                                                                // Lock a leaf
   void unlockLeaf () {freeLock(at.i());}                                                                                // Unlock a leaf
+
   void assertLeafIsLocked ()                                                                                            // Confirm the leaf is locked
-   {final Program.Memory.Locks.Lock l = lockDetails(at.ii());
+   {if (!runWithLocking) return;                                                                                        // Ignoring locks
+    final Program.Memory.Locks.Lock l = lockDetails(at.ii());
     if (l == null) stop("Leaf is supposed to be locked but is unlocked, leaf at:", at.i());
    }
+
   void assertLeafIsUnLocked ()                                                                                          // Confirm the leaf is locked
-   {final Program.Memory.Locks.Lock l = lockDetails(at.ii());
+   {if (!runWithLocking) return;                                                                                        // Ignoring locks
+    final Program.Memory.Locks.Lock l = lockDetails(at.ii());
     if (l != null) stop("Leaf supposed to be unlocked but is locked, leaf at:", l.area, "locked at:", l.lockTraceBack);
    }
 
