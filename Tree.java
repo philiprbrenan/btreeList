@@ -353,7 +353,7 @@ class Tree extends Program                                                      
     FirstEntry  ()                                                                                                      // Locate the first entry in the tree
      {subStart("Tree.FirstEntry");
       final Int p = root().dup();                                                                                       // Start at root
-      getLock(p);                                                                                                   // Lock the root so no-one can modify it while we are reading it
+      getLock(p);                                                                                                       // Lock the root so no-one can modify it while we are reading it
 
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
@@ -379,7 +379,7 @@ class Tree extends Program                                                      
                {void Then() {d.set(b.data(s.getSlotToKeyIndex(f.i())));}                                                // Step to first child
                 void Else() {d.set(b.top());}                                                                           // Step through top as there are no entries in the body of the branch
                };
-              getLock(d); freeLock(p); p.set(d);                                                                // Lock child, unlock parent, step down
+              getLock(d); freeLock(p); p.set(d);                                                                        // Lock child, unlock parent, step down
               Continue.set();                                                                                           // Continue traverse towards a leaf
              }
            };
@@ -2916,8 +2916,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_traverse();
-    test_insert();
+    test_traverse();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
