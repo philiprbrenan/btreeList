@@ -1,5 +1,4 @@
 //----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
@@ -1686,14 +1685,16 @@ endmodule
       Lock    lockFor (int Area) {return locks.get(Area);}                                                              // Get the lock associated with an area
 
       public String print(boolean TraceBack)                                                                            // Dump locks with optional trace back details
-       {if (size() == 0) return "";
+       {final int S = size();
+        if (S == 0)  return "No locks held\n";
         final StringBuilder s = new StringBuilder();
+        s.append(f("Locks, size: %d\n", S));
         s.append(f("%5s  %5s  %5s\n", "#", "Area", "Trans"));
         int i = 0;
         for(Integer L: locks.keySet())
          {final Lock l = locks.get(L);
           s.append(f("%5d  %5d  %5d\n", ++i, L, l.transactionId, l.lockTraceBack));
-          if (TraceBack) s.append(f("  %5d", l.lockTraceBack));
+          if (TraceBack) s.append(l.lockTraceBack);
          }
         return ""+s;
        }
