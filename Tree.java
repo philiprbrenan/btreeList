@@ -122,7 +122,7 @@ class Tree extends Program                                                      
     refCount         = unitMemoryRef.step(build.memoryPositions.posCount);                                              // Memory for key count
     refHeight        = unitMemoryRef.step(build.memoryPositions.posHeight);                                             // Memory for height of tree
 
-    mergePath        = new Memory(mnl(), "mergePath", new Memory.ReadWrite(), new Memory.Temporary());                  // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    mergePath        = new Memory(mnl2(), "mergePath", new Memory.ReadWrite(), new Memory.Temporary());                 // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
     lockFreeChain();                                                                                                    // Lock free chain
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
@@ -141,10 +141,11 @@ class Tree extends Program                                                      
   int maxBranchSize () {return maxBranchSize;}                                                                          // Maximum size of a branch
   int numberOfNodes () {return numberOfNodes;}                                                                          // Maximum number of nodes in tree
   int           mnl () {return maximumNumberOfLevels;}                                                                  // Maximum number of levels
+  int          mnl2 () {return maximumNumberOfLevels << 1;}                                                             // Twice the macimum number of levels to make sure that we really do have enough space to describe a path through the tree
 
   void         lockRoot () { getLock(root());}                                                                          // Lock root
   void       unlockRoot () {freeLock(root());}                                                                          // Unlock root
-  void assertRootLocked () {assertIsLocked(root());}                                                                     // Assert that the root is locked
+  void assertRootLocked () {assertIsLocked(root());}                                                                    // Assert that the root is locked
 
   int addressToAreaLock(int Address)                                                                                    // Overridable convert an address in memory to a lock index
    {if (Address < build.memoryPositions.posFreeChain) return Address >>> logTwoSizeOfNode;                              // Lock number is normally the index of the node
@@ -665,6 +666,7 @@ class Tree extends Program                                                      
   final class Path                                                                                                      // Record the path from the root to the leaf that should contain a key
    {final Int         key = new  Int("key");                                                                            // Search key
     final Int        leaf = new  Int("leaf");                                                                           // Leaf that should contain the key
+    final Int       start = new  Int("start").set(1);                                                                   // Current start position for entries in the path.  We leave some space at the front to insert the details of a split root branch if necessary
     final Int        step = new  Int("step");                                                                           // Current step in the path
     final Bint      split = new Bint("split");                                                                          // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
     final Bint       over = new Bint("over");                                                                           // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
@@ -677,7 +679,7 @@ class Tree extends Program                                                      
       final Bit valid = new Bit(false);                                                                                 // Whether a leaf was reached
 
       key .set(Key);                                                                                                    // Record search key
-      step.set(0);                                                                                                      // Start at the root
+      step.set(start);                                                                                                  // Start recording entries in the path at this point beginning with the root
       mergePath.clear();                                                                                                // Clear the path
       eqKey    .clear();                                                                                                // Clear the equal key indicator to show that so far we have not encountered a branch entry containing the search key
 
@@ -691,8 +693,8 @@ class Tree extends Program                                                      
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p, new AlreadyLocked()).new StepDown(key);                               // Step down
               new If (d.eqKey) {void Then() {eqKey.set();}};                                                            // Stepped through a key equal to the search key
-              path.putInt(step, p);
-              step.inc();
+              path.putInt(step, p);                                                                                     // Record index of node along path
+              step.inc();                                                                                               // Next step along the path
               p.set(d.node);                                                                                            // Step down
               Continue.set();                                                                                           // Continue search
              }
@@ -706,9 +708,9 @@ class Tree extends Program                                                      
     void splitPoint ()                                                                                                  // Locate the split point: the uppermost full branch directly connected to the leaf by intervening full branches which will have to be split from the top back down to the parent of the leaf to permit the splitting of a full leaf. The branches that are to be split will remain locked, the remainder will be unlocked.  The locked branchs will be unlocked after splitting down or merging up has been completed.
      {subStart("Tree.splitPoint");
       final Int u = new Int();                                                                                          // Location of split point
-      new For(step)                                                                                                     // Number of steps in path
+      new For(start, step)                                                                                              // Steap along the path from the current start position
        {void body(Int Index, Bit Continue)                                                                              // Step up from leaf to root
-         {final Int p = step.Sub(Index).dec();                                                                          // Position on path
+         {final Int p = step.Sub(Index).add(start).dec();                                                               // Position on path
           final Int b = path.getInt(p);                                                                                 // Branch index
           new If (branch(b, new AlreadyLocked()).full())                                                                // On a full branch
            {void Then() {split.set(p); Continue.set();}                                                                 // Highest full branch so far that will need splitting
@@ -727,22 +729,22 @@ class Tree extends Program                                                      
 
       new If (split)                                                                                                    // The top most branch to split
        {void Then()
-         {new If (split.i().eq(0))                                                                                      // Split the root branch
+         {new If (path.getInt(split.i()).eq(0))                                                                         // Split the root branch
            {void Then()
              {final Int sk = splitRootBranch();                                                                         // Splitting key
               final Int  z = root();                                                                                    // Root
               final Int  n = new Int("n");                                                                              // Next mode down
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then() {n.set(branch(z).data(z));}                                                                 // Step through left node
-                void Else() {n.set(branch(z).top();}                                                                    // Divert through first element of root now that it has been split
+                void Else() {n.set(branch(z).top(  ));}                                                                 // Divert through first element of root now that it has been split
                };
-              path.putInt(z, n);                                                                                        // Divert through first element of root now that it has been split
+              path.putInt(start, n);                                                                                    // Divert through first element of root now that it has been split
+              start.dec();                                                                                              // Add the root back to the path after addressing a path element in which to record the root
+              path.putInt(start, root());                                                                               // Record root as first element of path
               getLock(n);
               split.set(split.i().inc());                                                                               // Step up over split root which no longer needs splitting
-say("CCCC1111", writeTree());
              }
            };
-
           new ForCount(split.i(), step)                                                                                 // Split full branches which are not the root in descending order so that there is always enough room in the parent branch to accept the splitting key
            {void body(Int Index)
              {final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
@@ -770,16 +772,21 @@ say("CCCC1111", writeTree());
 
     void mergeUp ()                                                                                                     // Merge up from the leaf to the splitting point
      {subStart("Tree.mergeUp");
+//say("CCCC0000", step);
       new For(step)                                                                                                     // Start at branch immediately above the leaf and work upwards
        {void body(Int Index, Bit Continue)
          {final Int             i = step.Sub(Index).dec();                                                              // Index of parent branch that contains the split siblings
           final Branch          p = branch(path.getInt(i), new AlreadyLocked());                                        // Parent branch containing split children
           final Branch.StepDown d = p.new StepDown(key,    new AlreadyLocked());                                        // Locate key slot
           final Bint            L = new Bint();                                                                         // The possible merges are arranged so as to avoid moving the slot in the parent corresponding to the search key
+//say("CCCC1111", Index, writeTree());
           mergeLeftLeft(  p, d.slot);
           mergeRightRight(p, d.slot);
           mergeLeft(      p, d.slot);
           mergeRight(     p, d.slot);
+//say("CCCC2222", p, d.slot);
+//say("CCCC3333", writeTree());
+//say("CCCC4444", over, Index);
           new If (over)                                                                                                 // Have we reached the over node
            {void Then()
              {new If (Index.lt(over.i()))
@@ -787,9 +794,12 @@ say("CCCC1111", writeTree());
                 void Else() {freeLock(over.i());}                                                                       // Free the lock on the over node and stop merging up the tree
                };
              }
+            void Else() {Continue.set();}                                                                               // Continue merging up the tree
            };
+//say("CCCC5555", Continue);
          }
        };
+//say("CCCC6666");
       squashRoot();                                                                                                     // Reduce the height of the tree if possible
       subFinish();
      }
@@ -797,13 +807,23 @@ say("CCCC1111", writeTree());
     String printPath ()                                                                                                 // Print the path
      {immediateModeCheck();
       subStart("Tree.print.path");
-      final StringBuilder s = new StringBuilder("Path "+step+" steps: ");
+      final StringBuilder s = new StringBuilder("Path:\n");
 
-      new ForCount(step)
+      s.append("key      : "+key  +"\n");                                                                               // Search key
+      s.append("leaf     : "+leaf +"\n");                                                                               // Leaf that should contain the key
+      s.append("start    : "+start+"\n");                                                                               // Current start position for entries in the path.  We leave some space at the front to insert the details of a split root branch if necessary
+      s.append("step     : "+step +"\n");                                                                               // Current step in the path
+      s.append("split    : "+split+"\n");                                                                               // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
+      s.append("over     : "+over +"\n");                                                                               // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
+      s.append("equal key: "+eqKey+"\n");                                                                               // A branch has a key that is equal to the search key
+
+      s.append("Step  Node\n");                                                                                         // Steps along the path
+      new ForCount(start, step)
        {void body(Int Index)
-         {s.append(" "+path.getInt(Index).i());
+         {s.append(f("%4d  %4d\n", Index.i(), path.getInt(Index).i()));
          }
        };
+
       s.append(" "+leaf+" "+split+"\n");
       subFinish();
       return ""+s;
@@ -929,7 +949,6 @@ say("CCCC1111", writeTree());
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
 
     final Int    L = p.step.Dec();                                                                                      // Last step along path
-say("BBBB11111", p.path.getInt(L), writeTree());
     final Branch P = branch(p.path.getInt(L), new AlreadyLocked());                                                     // Parent branch of full leaf
     final Leaf   r = leaf(p.leaf,             new AlreadyLocked());                                                     // The full leaf into which the key should be inserted
     final Leaf   l = leaf();                                                                                            // New leaf
@@ -1019,6 +1038,7 @@ say("BBBB11111", p.path.getInt(L), writeTree());
    }
 
 //D1 Split and Merge                                                                                                    // Split and merge nodes in the tree
+
 //D2 Split                                                                                                              // Split nodes in the tree to make the tree wider
 
   private Int splitRootBranch ()                                                                                        // Split the root assuming that it is a branch
@@ -1079,8 +1099,6 @@ say("BBBB11111", p.path.getInt(L), writeTree());
   void mergeLeftIntoRightSibling (Branch Parent, Bint LeftSlot, Bint RightSlot, Int Left, Int Right, boolean Unlock)    // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
    {subStart("Tree.mergeLeftIntoRightSibling");
     final Branch P = Parent;
-    final Int    l = new Int();                                                                                         // Next sibling location
-    final Bint   R = P.slots.usedSlotsToKeys.nextOne(Left);                                                             // Right sibling via next valid slot
     new If (isLeaf(P.top()))                                                                                            // Parent has leaves for children
      {void Then()                                                                                                       // Merge leaves
        {final Leaf l = leaf(Left,  new AlreadyLocked());
@@ -1524,9 +1542,7 @@ Height        :    1
      {void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
-           {//say("AAAA11 Index", Index);
-            insert(Index, Index.Mul(11));
-            //say("AAAA22", printLocks(), writeTree());
+           {insert(Index, Index.Mul(11));
             dumpProgramState("AAAA");
            }
          };
@@ -2908,25 +2924,25 @@ Leaf           size:   4, count:   2
 
          new ForCount(One, new Int(N+1))
          {void body(Int Index)
-           {say("AAAA1111", Index, writeTree());
+           {if (immediate()) say("AAAA1111", Index, writeTree());
             insert(Index.Mul(10), Index.Mul(11));
             dumpProgramState("AAAA");
            }
          };
 
         //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "9c5f08ef098c5535582fee5184a89cd6");
+        ok(()->mainMemoryMd5Sum(), "6cd747a27951e254b915a348dd0c4052");
 
         //stop(writeTree());
         if (Ex) ok(writeTree(), """
                                                  0080                                                         |
-                                                 (0,2)  6                                                     |
+                                                 (0,2)  5                                                     |
                                                  [9,2]2                                                       |
        0020          0040          0060                          0100          0120           0140            |
-       (9,0,0)       (9,0,2)       (9,0,4) 8                     (6,0,0)       (6,0,2)        (6,0,4) 2       |
-       [3,0]1        [4,2]1        [7,4]1                        [10,0]1       [5,2]1         [12,4]1         |
+       (9,0,0)       (9,0,2)       (9,0,4) 8                     (5,0,0)       (5,0,2)        (5,0,4) 2       |
+       [3,0]1        [4,2]1        [7,4]1                        [10,0]1       [6,2]1         [12,4]1         |
 10,20         30,40         50,60           70,80        90,100         110,120       130,140          150,160|
-(3,9,0)       (4,9,2)       (7,9,4)         (8,9)        (10,6,0)       (5,6,2)       (12,6,4)         (2,6)  |
+(3,9,0)       (4,9,2)       (7,9,4)         (8,9)        (10,5,0)       (6,5,2)       (12,5,4)         (2,5)  |
 """);
 
         new Traverse()
