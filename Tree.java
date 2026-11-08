@@ -4,6 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Optimize merges by merging into the most full node from the least full node
 // FindLeafForKey - Bint leaf can be an Int
+// Make sure we unlock nodes above the first splitting node parent
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -171,7 +172,9 @@ class Tree extends Program                                                      
 
   void free (Locatable Free)                                                                                            // Free a leaf or a branch and invalidate its contents
    {final Bint a = Free.getLocation();
+    lockFreeChain();
     freeChain.set(a.i());
+    unlockFreeChain();
    }
 
   Bit isAllocated (Int Node) {return freeChain.getBit(Node).Flip();}                                                    // Check whether a node is allocated
@@ -216,11 +219,11 @@ class Tree extends Program                                                      
   Leaf leaf (Int Node)                          {return leaf(Node, true, new NotYetLocked());}                          // Index an existing leaf in memory            confirming that it really is a leaf
   Leaf leaf (Int Node, LockedStatus LockStatus) {return leaf(Node, true, LockStatus);}                                  // Index an existing leaf in memory            confirming that it really is a leaf
   Leaf leaf (Int Node, boolean Check, LockedStatus LockStatus)                                                          // Index an existing leaf in memory optionally confirming that it really is a leaf
-   {if (immediate() && Check && !isLeaf(Node).b()) stop("Not a leaf:", Node);                                           // Check the location actually holds a leaf
+   {if (LockStatus.unlocked()) getLock(Node);                                                                           // Lock the leaf if necessary
+    if (immediate() && Check && !isLeaf(Node).b()) stop("Not a leaf:", Node);                                           // Check the location actually holds a leaf
     final Memory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                         // Address leaf
     final Tree    tree = this;                                                                                          // Current tree
 
-    if (LockStatus.unlocked()) getLock(Node);                                                                           // Lock the leaf if necessary
     return new Leaf(build.leaf.parent(program()).memory(r).at(Node))                                                    // Return locked leaf based at the indexed address
      {Bit full()                                                                                                        // Whether the branch should be regarded as full or not
        {final Bit F = super.full();                                                                                     // Normal result of full
@@ -257,9 +260,11 @@ class Tree extends Program                                                      
 
   Leaf   leaf ()   {return makeLeaf(allocate(), new NotYetLocked());}                                                   // Create and initialize a branch in memory and return its index
 
-  Branch branch (Int Node) {return branch(Node, true);}                                                                 // Index an existing branch in memory            confirming that it really is a branch
-  Branch branch (Int Node, boolean Check)                                                                               // Index an existing branch in memory optionally confirming that it really is a branch
-   {if (immediate() && Check && !isBranch(Node).b()) stop("Not a branch:", Node);                                       // Check the location actually holds a branch
+  Branch branch (Int Node)                          {return branch(Node, true, new NotYetLocked());}                    // Index an existing branch in memory            confirming that it really is a branch
+  Branch branch (Int Node, LockedStatus LockStatus) {return branch(Node, true, LockStatus);}                            // Index an existing branch in memory            confirming that it really is a branch
+  Branch branch (Int Node, boolean Check, LockedStatus LockStatus)                                                      // Index an existing branch in memory optionally confirming that it really is a branch
+   {if (LockStatus.unlocked()) getLock(Node);                                                                           // Lock the leaf if necessary
+    if (immediate() && Check && !isBranch(Node).b()) stop("Not a branch:", Node);                                       // Check the location actually holds a branch
     final Memory.Ref   r = unitMemory.new Ref(nodeAddress(Node));                                                       // Address branch
     final Tree      tree = this;                                                                                        // Current tree
 
@@ -289,14 +294,16 @@ class Tree extends Program                                                      
      };
    }
 
-  Branch makeBranch (Int Node)                                                                                          // Make a branch from the specified node
-   {final Branch b = branch(Node, false);
+  Branch makeBranch (Int Node, LockedStatus LockStatus)                                                                 // Make a branch from the specified node
+   {final Branch b = branch(Node, false, LockStatus);
     b.initializeMemory();
     setType(Node, BranchOrLeaf.branch);
     return b;
    }
 
-  Branch branch () {return makeBranch(allocate());}                                                                     // Create and initialize a branch in memory and return its index
+  Branch makeBranch (Int Node) {return makeBranch(Node, new NotYetLocked());}                                           // Make a branch from the specified node
+
+  Branch branch () {return makeBranch(allocate(), new NotYetLocked());}                                                 // Create and initialize a branch in memory and return its index
 
   Int     count () {lockCount();  final Int c = refCount .getInt();                            unlockCount(); return c;}// Number of keys in tree
   Int  countInc () {lockCount();  final Int c = refCount .getInt(); refCount .putInt(c.inc()); unlockCount(); return c;}// Increment the key count
@@ -546,7 +553,7 @@ class Tree extends Program                                                      
              {leaf.set(p);                                                                                              // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
              }
             void Else()                                                                                                 // On a branch
-             {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down details
+             {final Branch.StepDown d = branch(p, new AlreadyLocked()).new StepDown(key);                               // Step down details
               freeLock(p);                                                                                              // Transfer the read lock to the leaf or branch stepped to so it cannot be modified while we are reading it
               p.set(d.node);                                                                                            // Step down to next level
               Continue.set();                                                                                           // Continue search
@@ -660,6 +667,7 @@ class Tree extends Program                                                      
     final Int        leaf = new  Int("leaf");                                                                           // Leaf that should contain the key
     final Int        step = new  Int("step");                                                                           // Current step in the path
     final Bint      split = new Bint("split");                                                                          // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
+    final Bint       over = new Bint("over");                                                                           // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
     final Bit       eqKey = new  Bit("equal key");                                                                      // A branch has a key that is equal to the search key
     final Memory.Ref path = mergePath.new Ref(0);                                                                       // Branches along path
 
@@ -673,33 +681,24 @@ class Tree extends Program                                                      
       mergePath.clear();                                                                                                // Clear the path
       eqKey    .clear();                                                                                                // Clear the equal key indicator to show that so far we have not encountered a branch entry containing the search key
 
-//say("BBBB11", printLocks());
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
-         {//say("BBBB22", p, writeTree(), printLocks());
-          new If (isLeaf(p))                                                                                            // On a leaf
+         {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {//say("BBBB33", p, writeTree(), printLocks());
-              valid.set();                                                                                              // Reached a leaf
+             {valid.set();                                                                                              // Reached a leaf
               leaf.set(p);                                                                                              // End the path on a leaf
              }
             void Else()                                                                                                 // On a branch
-             {//say("BBBB44", p, writeTree(), printLocks());
-              final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down
+             {final Branch.StepDown d = branch(p, new AlreadyLocked()).new StepDown(key);                               // Step down
               new If (d.eqKey) {void Then() {eqKey.set();}};                                                            // Stepped through a key equal to the search key
               path.putInt(step, p);
               step.inc();
-              //freeLock(p);                                                                                               // Position for next step
               p.set(d.node);                                                                                            // Step down
               Continue.set();                                                                                           // Continue search
              }
            };
          }
        };
-say("BBBB55", p, printLocks());
-debug = true;
-say("BBBB66", writeTree());
-say("BBBB77");
       if (immediate() && !valid.b()) stop("Find fell off the end of tree after this many searches:", mnl());
       subFinish();
      }
@@ -711,10 +710,11 @@ say("BBBB77");
        {void body(Int Index, Bit Continue)                                                                              // Step up from leaf to root
          {final Int p = step.Sub(Index).dec();                                                                          // Position on path
           final Int b = path.getInt(p);                                                                                 // Branch index
-          new If (branch(b).full())                                                                                     // On a full branch
-           {void Then()
-             {split.set(p);                                                                                             // Highest full branch so far that might need splitting
-              Continue.set();                                                                                           // Continue up from the leaf until a branch that is not full is encountered
+          new If (branch(b, new AlreadyLocked()).full())                                                                // On a full branch
+           {void Then() {split.set(p); Continue.set();}                                                                 // Highest full branch so far that will need splitting
+            void Else()                                                                                                 // The branch above the highest branch that needs splitting
+             {over.set(p);                                                                                              // Branch over highest splitting branch
+              new ForCount(p) {void body(Int Index) {freeLock(path.getInt(Index));}};                                   // Unlock any branches above the over branch
              }
            };
          }
@@ -724,21 +724,22 @@ say("BBBB77");
 
     void splitDown ()                                                                                                   // Split from the splitting top most splitting branch if such a branch exists
      {subStart("Tree.splitDown");
+
       new If (split)                                                                                                    // The top most branch to split
        {void Then()
          {new If (split.i().eq(0))                                                                                      // Split the root branch
            {void Then()
-             {final Int sk = splitRootBranch();
-              final Int  z = root();
+             {final Int sk = splitRootBranch();                                                                         // Splitting key
+              final Int  z = root();                                                                                    // Root
+              final Int  n = new Int("n");                                                                              // Next mode down
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
-               {void Then()
-                 {path.putInt(z, branch(z).data(z));                                                                    // Divert through first element of root now that it has been split
-                 }
-                void Else()
-                 {path.putInt(z, branch(z).top());                                                                      // Divert through top
-                 }
+               {void Then() {n.set(branch(z).data(z));}                                                                 // Step through left node
+                void Else() {n.set(branch(z).top();}                                                                    // Divert through first element of root now that it has been split
                };
+              path.putInt(z, n);                                                                                        // Divert through first element of root now that it has been split
+              getLock(n);
               split.set(split.i().inc());                                                                               // Step up over split root which no longer needs splitting
+say("CCCC1111", writeTree());
              }
            };
 
@@ -769,34 +770,22 @@ say("BBBB77");
 
     void mergeUp ()                                                                                                     // Merge up from the leaf to the splitting point
      {subStart("Tree.mergeUp");
-
-      new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
-       {void body(Int Index)
+      new For(step)                                                                                                     // Start at branch immediately above the leaf and work upwards
+       {void body(Int Index, Bit Continue)
          {final Int             i = step.Sub(Index).dec();                                                              // Index of parent branch that contains the split siblings
-          final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
-          final Branch.StepDown d = p.new StepDown(key);                                                                // Locate key slot
-          final Bint            L = new Bint();                                                                         // There are four possibilities to consider
-          new ForCount(4)                                                                                               // Locate the left sibling
-           {void body(Int Index)
-             {new If (Index.eq(0))                                                                                     // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
-               {void Then()             {L.copy(mergeLeftLeft(  p, d.slot));}
-                void Else()
-                 {new If (Index.eq(1))
-                   {void Then()         {L.copy(mergeRightRight(p, d.slot));}
-                    void Else()
-                     {new If (Index.eq(2))
-                       {void Then()     {L.copy(mergeLeft(      p, d.slot));}
-                        void Else()
-                         {new If (Index.eq(3))
-                           {void Then() {L.copy(mergeRight(     p, d.slot));}
-                           };
-                         }
-                       };
-                     }
-                   };
-                 }
+          final Branch          p = branch(path.getInt(i), new AlreadyLocked());                                        // Parent branch containing split children
+          final Branch.StepDown d = p.new StepDown(key,    new AlreadyLocked());                                        // Locate key slot
+          final Bint            L = new Bint();                                                                         // The possible merges are arranged so as to avoid moving the slot in the parent corresponding to the search key
+          mergeLeftLeft(  p, d.slot);
+          mergeRightRight(p, d.slot);
+          mergeLeft(      p, d.slot);
+          mergeRight(     p, d.slot);
+          new If (over)                                                                                                 // Have we reached the over node
+           {void Then()
+             {new If (Index.lt(over.i()))
+               {void Then() {Continue.set();}                                                                           // Continue merging up the tree
+                void Else() {freeLock(over.i());}                                                                       // Free the lock on the over node and stop merging up the tree
                };
-              new If (L) {void Then() {mergeLeftIntoRightSibling(p, L.i());}};                                          // Merge the left sibling into its right sibling
              }
            };
          }
@@ -822,26 +811,30 @@ say("BBBB77");
    }
 
   void squashRoot ()                                                                                                    // Squash the root down if possible
-   {final Branch R = branch(root());
+   {final Branch R = branch(root(), new NotYetLocked());                                                                // Its a branch because this method gets called after splitting a leaf to make room for a new key,data pair to be inserted
     new If (R.slots.empty())                                                                                            // Reduce the height of the tree if the body of the root is now empty
      {void Then()
        {final Int t = R.top();                                                                                          // Top
+        getLock(t);
         new If (isLeaf(t))                                                                                              // Root has leaves for children
          {void Then()
            {final Leaf L = makeLeaf(R.getLocation().i(), new AlreadyLocked());                                          // Make the root into a leaf
             final Leaf l = leaf(t);                                                                                     // Top as a leaf
             L.copy(l);                                                                                                  // Copy top into root decreasing height of tree
+            l.unlockLeaf();                                                                                             // Unlock top
             free(l);                                                                                                    // Free top as no longer needed
            }
           void Else()                                                                                                   // Root has branches for children
            {final Branch b = branch(t);                                                                                 // Top as a branch
             R.copy(b);                                                                                                  // Copy top into root
+            b.unlockBranch();                                                                                           // Unlock top
             free(b);                                                                                                    // Free top as no longer needed
            }
          };
         refHeight.putInt(refHeight.getInt().dec());                                                                     // Decrease the height of the tree
        }
      };
+    freeLock(root());                                                                                                   // Free the root
    }
 
 //D1 Public Methods                                                                                                     // Public methods for find, insert, delete etc.
@@ -872,7 +865,6 @@ say("BBBB77");
 
   public void insert (Int Key, Int Data)                                                                                // Insert a key, data pair into the tree
    {subStart("Tree.insert");
-say("CCCC1111  start Insert", Key, printLocks(), writeTree());
     lockRoot();
     new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
@@ -889,7 +881,7 @@ say("CCCC1111  start Insert", Key, printLocks(), writeTree());
                {final Leaf l = leaf(), r = leaf();                                                                      // Child leaves of root branch
                 l.copy(R);                                                                                              // Duplicate the root
                 final Int   sk = l.splitRight(r);                                                                       // Split the root leaf in two
-                final Branch b = makeBranch(root());                                                                    // Make the root into a branch
+                final Branch b = makeBranch(root(), new AlreadyLocked());                                               // Make the root into a branch
                 b.insert(sk, l.getLocation().i());                                                                      // Insert the left leaf
                 b.top(r.getLocation().i());                                                                             // The right leaf becomes top of the root branch
                 new If (Key.le(sk)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};            // Insert left or right leaf depending on key versus splitting key
@@ -907,8 +899,7 @@ say("CCCC1111  start Insert", Key, printLocks(), writeTree());
          };
        }
       void Else()                                                                                                       // The root is a branch
-       {say("CCCC2222", printLocks(), writeTree());
-        final FindLeafForKey f = new FindLeafForKey(Key);                                                               // Find the leaf for the key
+       {final FindLeafForKey f = new FindLeafForKey(Key);                                                               // Find the leaf for the key
         final Int            i = f.leaf.i();                                                                            // Index of leaf
         final Leaf           l = leaf(i, new AlreadyLocked());                                                          // Leaf that should contain the key
         final Slots.Find     F = l.slots.new Find(Key);                                                                 // Perhaps the key is already present in the leaf
@@ -936,15 +927,18 @@ say("CCCC1111  start Insert", Key, printLocks(), writeTree());
     final Path p = new Path(Key);                                                                                       // Path from root to full leaf
     p.splitPoint();                                                                                                     // The lowest branch in the tree that is full and has a non full parent
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
+
     final Int    L = p.step.Dec();                                                                                      // Last step along path
-    final Branch P = branch(p.path.getInt(L));                                                                          // Parent branch of full leaf
-    final Leaf   r = leaf(p.leaf);                                                                                      // The full leaf into which the key should be inserted
+say("BBBB11111", p.path.getInt(L), writeTree());
+    final Branch P = branch(p.path.getInt(L), new AlreadyLocked());                                                     // Parent branch of full leaf
+    final Leaf   r = leaf(p.leaf,             new AlreadyLocked());                                                     // The full leaf into which the key should be inserted
     final Leaf   l = leaf();                                                                                            // New leaf
     final Int   sk = r.splitLeft(l);                                                                                    // Split the full leaf into the new leaf
 
-    final Branch.StepDown d = P.new StepDown(Key);
 
-    final Bint s = new Bint();
+    final Branch.StepDown d = P.new StepDown(Key, new AlreadyLocked());                                                 // Step down from parent of last full branch in path
+
+    final Bint s = new Bint();                                                                                          // Record the slot through which we are stepping from the parent of the last full branch in the path
     new If (d.slot.valid())                                                                                             // If the leaf was reached by stepping through top then insert the new left leaf high
      {void Then()
        {s.copy(d.slot);                                                                                                 // Insert new left leaf below the key in the indicated slot
@@ -954,12 +948,8 @@ say("CCCC1111  start Insert", Key, printLocks(), writeTree());
     P.insert(sk, l.getLocation().i(), s);                                                                               // Insert new left leaf below the key in the indicated slot
 
     new If (Key.le(sk))                                                                                                 // Insert the key in the left leaf if it less than the splitting key
-     {void Then()
-       {l.insert(Key, Data);                                                                                            // Insert key in the left leaf
-       }
-      void Else()
-       {r.insert(Key, Data);                                                                                            // Insert key in the right leaf
-       }
+     {void Then() {l.insert(Key, Data); r.unlockLeaf();}                                                                // Insert key in the left leaf and unlock the right leaf as it is no longer part of the path to the key
+      void Else() {r.insert(Key, Data); l.unlockLeaf();}                                                                // Insert key in the right leaf and unlock the left leaf as it is no longer part of the path to the key
      };
     p.mergeUp();                                                                                                        // Merge nodes on either side of the path going up from the leaf to towards the root
     subFinish();
@@ -1033,7 +1023,7 @@ say("CCCC1111  start Insert", Key, printLocks(), writeTree());
 
   private Int splitRootBranch ()                                                                                        // Split the root assuming that it is a branch
    {subStart("Tree.splitRootBranch");
-    final Branch R = branch(root());                                                                                    // The root
+    final Branch R = branch(root(), new AlreadyLocked());                                                               // The root
     if (immediate() && isRootLeaf()   .b()) stop("Cannot split the root as a branch because it is not a branch");       // Check that it is a branch
     if (immediate() && R.full().Flip().b()) stop("Cannot split the root because it is not full");                       // Check that the root is full
     final Branch l = branch();                                                                                          // New left branch
@@ -1041,126 +1031,174 @@ say("CCCC1111  start Insert", Key, printLocks(), writeTree());
     l.copy(R);                                                                                                          // Copy the root into the left branch
     final Int sk = l.splitRight(r);                                                                                     // Splitting key
     R.clear();                                                                                                          // Clear the root
-    makeBranch(R.getLocation().i());                                                                                    // Mark the root as a branch
+    makeBranch(R.getLocation().i(), new AlreadyLocked());                                                               // Mark the root as a branch
     R.insertEmpty(sk, l.getLocation().i());                                                                             // Insert the left branch below the splitting key
     R.top(r.getLocation().i());                                                                                         // Insert right as top of root
     R.refLevel.putInt(l.refLevel.getInt().inc());                                                                       // Level of root is no one more than that of the branches below
-    refHeight.putInt(refHeight.getInt().inc());                                                                         // Increase height of tree
+    lockHeight(); refHeight.putInt(refHeight.getInt().inc()); unlockHeight();                                           // Increase height of tree
+    R.unlockBranch(); l.unlockBranch(); r.unlockBranch();                                                               // Unlock branches
     subFinish();
     return sk;                                                                                                          // Return the splitting key
    }
 
 //D2 Merge                                                                                                              // Merge nodes in the tree to make the tree narrower
-//D3 Merge Left                                                                                                         // Merge single and double left
 
-  Bit mergeLeftLeafIntoRightSibling (Branch Parent, Int Left, Leaf Right)                                               // Merge the specified left leaf sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
+  void mergeLeftLeafIntoRightSibling (Branch Parent, Int LeftSlot, Leaf Left, Leaf Right, boolean Unlock)               // Merge the specified left leaf sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {subStart("Tree.mergeLeftLeafIntoRightSibling");
-    final Bit    m = new Bit().set(false);                                                                              // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
-    final Leaf   l = leaf(P.data(P.slots.getSlotToKeyIndex(Left)));                                                     // Left leaf of merge
-    new If (Right.mergeLeft(l))                                                                                         // Successfully merged
+    new If (Right.mergeLeft(Left))                                                                                      // Successfully merged
      {void Then()
-       {P.slots.delete(Left);                                                                                           // The left sibling can now be freed
-        free(l);
-        m.set();
+       {P.slots.delete(LeftSlot);                                                                                       // The left sibling can now be unlocked and freed
+        Left.unlockLeaf(); if (Unlock) Right.unlockLeaf();
+        free(Left);
+       }
+      void Else()
+       {Left.unlockLeaf(); if (Unlock) Right.unlockLeaf();
        }
      };
     subFinish();
-    return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bit mergeLeftBranchIntoRightSibling (Branch Parent, Int Left, Branch Right)                                           // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
+  void mergeLeftBranchIntoRightSibling (Branch Parent, Int LeftSlot, Branch Left, Branch Right, boolean Unlock)         // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {subStart("Tree.mergeLeftBranchIntoRightSibling");
-    final Bit    m = new Bit(false);                                                                                    // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
-    final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(Left)));                                                   // Left branch of merge
-    final Int    k = P.slots.getSlotToKeyValue(Left);                                                                   // The parent key for the left sibling
-    new If (Right.mergeLeft(l, k))                                                                                      // Successfully merged
+    final Int    k = P.slots.getSlotToKeyValue(LeftSlot);                                                               // The parent key for the left sibling
+    new If (Right.mergeLeft(Left, k))                                                                                   // Successfully merged
      {void Then()                                                                                                       // The left sibling can now be freed
-       {P.slots.delete(Left);                                                                                           // Remove from parent
-        free(l);                                                                                                        // Free left branch
-        m.set();                                                                                                        // Success
+       {P.slots.delete(LeftSlot);                                                                                       // Remove from parent
+        Left.unlockBranch(); if (Unlock) Right.unlockBranch();
+        free(Left);
+       }
+      void Else()
+       {Left.unlockBranch(); if (Unlock) Right.unlockBranch();
        }
      };
     subFinish();
-    return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bit mergeLeftIntoRightSibling (Branch Parent, Int Left)                                                               // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
+  void mergeLeftIntoRightSibling (Branch Parent, Bint LeftSlot, Bint RightSlot, Int Left, Int Right, boolean Unlock)    // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
    {subStart("Tree.mergeLeftIntoRightSibling");
-    final Bit    m = new Bit(false);                                                                                    // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Int    l = new Int();                                                                                         // Next sibling location
     final Bint   R = P.slots.usedSlotsToKeys.nextOne(Left);                                                             // Right sibling via next valid slot
-    new If (isLeaf(P.top()))                                                                                            // Root has leaves for children
-     {void Then()
-       {new If (R)                                                                                                      // Next slot exists and so references the right sibling
-         {void Then() {l.set(P.data(P.slots.getSlotToKeyIndex(R.i())));}
-          void Else() {l.set(P.top());}
-         };
-        m.set(mergeLeftLeafIntoRightSibling(P, Left, leaf(l)));                                                         // Merge sibling leaves
+    new If (isLeaf(P.top()))                                                                                            // Parent has leaves for children
+     {void Then()                                                                                                       // Merge leaves
+       {final Leaf l = leaf(Left,  new AlreadyLocked());
+        final Leaf r = leaf(Right, new AlreadyLocked());
+        mergeLeftLeafIntoRightSibling(P, LeftSlot.i(), l, r, Unlock);
        }
-      void Else()                                                                                                       // Merge last two branches
-       {final Bint R = P.slots.usedSlotsToKeys.nextOne(Left);                                                           // Right sibling via next valid slot
-
-        new If (R)                                                                                                      // Next slot exists and so references the right sibling
-         {void Then() {l.set(P.data(P.slots.getSlotToKeyIndex(R.i())));}                                                // Next sibling is in the body of the parent
-          void Else() {l.set(P.top());}                                                                                 // Next sibling is top
-         };
-        m.set(mergeLeftBranchIntoRightSibling(P, Left, branch(l)));                                                     // Merge sibling branches
+      void Else()                                                                                                       // Merge branches
+       {final Branch l = branch(Left,  new AlreadyLocked());
+        final Branch r = branch(Right, new AlreadyLocked());
+        mergeLeftBranchIntoRightSibling(P, LeftSlot.i(), l, r, Unlock);
        }
      };
     subFinish();
-    return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bint mergeLeft (Branch Parent, Bint Pos)                                                                              // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+//D3 Merge Left                                                                                                         // Merge single and double left
+
+  Int  stepDownAt (Branch Parent, Int Slot) {return Parent.data(Parent.slots.getSlotToKeyIndex(Slot));}                 // Step down through a slot
+  Int stepDownTop (Branch Parent)           {return Parent.top();}                                                      // Step down through top
+
+  void mergeLeft (Branch Parent, Bint Pos)                                                                              // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed.  Ensure that both nodes in the merge are locked
    {subStart("Tree.mergeLeft");
     final Branch P = Parent;                                                                                            // Parent containing siblings
-    final Bint   L = new Bint();                                                                                        // Left child
+    final Bint   L = new Bint();                                                                                        // Left child slot
+
     new If (Pos)                                                                                                        // Merging relative to top
-     {void Then() {L.copy(P.slots.usedSlotsToKeys.prevOne(Pos.i()));}                                                   // Merge entirely within body of parent
-      void Else() {L.copy(P.slots.usedSlotsToKeys.lastOne());}                                                          // Last child in body of parent to be merged into top
+     {void Then() {L.copy(P.slots.usedSlotsToKeys.prevOne(Pos.i()));}                                                   // There might be a previous sibling to the left from a child in the body of the parent
+      void Else() {L.copy(P.slots.usedSlotsToKeys.lastOne());}                                                          // There might be a chikld in teh bidy of the parent to merge with top
      };
+
+    new If (L)                                                                                                          // A left child exists
+     {void Then()
+       {final Int l = stepDownAt(Parent, L.i());                                                                        // Index of left  node
+        getLock(l);                                                                                                     // Lock left as not on already locked path, method "mergeLeftIntoRightSibling" will
+        final Int r = new Int();
+        new If (Pos)
+         {void Then() {r.set(stepDownAt (Parent, Pos.i()));}                                                            // Siblings entirely within body of parent
+          void Else() {r.set(stepDownTop(Parent));}                                                                     // Right node of merge is top of parent
+         };
+        mergeLeftIntoRightSibling(Parent, L, Pos, l, r, false);                                                         // Merge
+       }
+     };
+
     subFinish();
-    return L;                                                                                                           // Whether the merge was performed or not
    }
 
-  Bint mergeLeftLeft (Branch Parent, Bint Pos)                                                                          // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+  void mergeLeftLeft (Branch Parent, Bint Pos)                                                                          // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed.  Ensure that both nodes in the merge are locked
    {subStart("mergeLeftLeft");
     final Branch P = Parent;                                                                                            // Parent containing siblings
     final Bint   R = new Bint();                                                                                        // Right child of merge
-    final Bint   L = new Bint();                                                                                        // Left child
 
     new If (Pos)                                                                                                        // Merging relative to top
      {void Then() {R.copy(P.slots.usedSlotsToKeys.prevOne(Pos.i()));}                                                   // Merge entirely within body of parent
       void Else() {R.copy(P.slots.usedSlotsToKeys.lastOne());}                                                          // Left once from top
      };
 
-    new If (R.valid())                                                                                                  // There is a left position
+    new If (R)                                                                                                          // There is a right child for the merge
      {void Then()
-       {L.copy(P.slots.usedSlotsToKeys.prevOne(R.i()));                                                                 // Left of left of position
+       {final Bint L = P.slots.usedSlotsToKeys.prevOne(R.i());                                                          // Left of right child
+        new If (L)                                                                                                      // There is a left position
+         {void Then()
+           {final Int l = stepDownAt(Parent, L.i());                                                                    // Index of left child for merge
+            final Int r = stepDownAt(Parent, R.i());                                                                    // Index of right child for merge
+            getLock(l); getLock(r);                                                                                     // Both nodes are off the already locked path so they will need to be locked
+            mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                        // Merge
+           }
+         };
        }
      };
     subFinish();
-    return L;                                                                                                           // Whether the merge was performed or not
    }
 
 //D3 Merge Right                                                                                                        // Merge single and double right
 
-  Bint mergeRight (Branch Parent, Bint Pos) {return Pos;}                                                               // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
+  void mergeRight (Branch Parent, Bint Pos)                                                                             // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. Ensure that both nodes in the merge are locked
+   {subStart("Tree.mergeRight");
+    final Branch P = Parent;                                                                                            // Parent containing siblings
+    final Bint   L = Pos;
+    new If (L)                                                                                                          // Lock right node of merge
+     {void Then()                                                                                                       // Not top
+       {final  Int l = stepDownAt(Parent, L.i());                                                                       // Index of left child for merge
+        final Bint R = P.slots.usedSlotsToKeys.nextOne(L.i());                                                          // Next right sibling
+        final Int  r = new Int("r");
+        new If (R)
+         {void Then() {r.set(stepDownAt(Parent, R.i()));}                                                               // Right sibling in body of parent is the right node of the merge
+          void Else() {r.set(stepDownTop(Parent));}                                                                     // Top of parent is the right node for the merge
+         };
+        getLock(r);                                                                                                     // Lock the right node as it is off the already locked path
+        mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                            // Merge freeing right because we have completed the merge cycle at this level
+       }
+      void Else() {freeLock(Parent.top());}                                                                             // Top has to be freed as the last merge at this level and we want to clear the locks on this level
+     };
+    subFinish();
+   }
 
-  Bint mergeRightRight (Branch Parent, Bint Pos)                                                                        // Merge the right hand sibling of the specified sibling with the right hand sibling of the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
+  void mergeRightRight (Branch Parent, Bint Pos)                                                                        // Merge the right hand sibling of the specified sibling with the right hand sibling of the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. Ensure that both nodes in the merge are locked
    {subStart("Tree.mergeRightRight");
-    final Bint L = new Bint();                                                                                          // Left child
+    final Bint L = new Bint();                                                                                          // Left child of merge
 
-    new If (Pos.valid())                                                                                                // Not on top
+    new If (Pos)                                                                                                        // Not on top so there is something on the right
      {void Then()
-       {L.copy(Parent.slots.usedSlotsToKeys.nextOne(Pos.i()));                                                          // Right once
+       {L.copy(Parent.slots.usedSlotsToKeys.nextOne(Pos.i()));                                                          // Right once to get left child of merge
+        new If (L)                                                                                                      // Left hand node of merge
+         {void Then()                                                                                                   // Left hand node is not top so we can find the right hand node of the merge
+           {final Int  l = stepDownAt(Parent, L.i());                                                                   // Index of left hand node for merge
+            final Bint R = Parent.slots.usedSlotsToKeys.nextOne(L.i());                                                 // Next right sibling
+            final Int  r = new Int("r");                                                                                // Index of right hand node of merge
+            new If (R)
+             {void Then() {r.set(stepDownAt(Parent, R.i()));}                                                           // Right hand node is a sibling in the body of the parent
+              void Else() {r.set(stepDownTop(Parent));}                                                                 // Right hand node is top of parent
+             };
+            getLock(l); getLock(r);                                                                                     // Lock the nodes to be merged as they are off the already locked path
+            mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                        // Merge
+           }
+         };
        }
      };
     subFinish();
-    return L;                                                                                                           // Whether the merge was performed or not
    }
 
 //D2 Traverse the tree                                                                                                  // Traverse the tree in order
@@ -1220,24 +1258,27 @@ say("CCCC1111  start Insert", Key, printLocks(), writeTree());
         branchTop(keys, t, Depth, locked);
         if (Depth <= maximumNumberOfLevels) traverse (t, Index, Depth+1);
        }
-      if (locked) freeLock(Index);                                                                                      // Unlock the branch if it was not originally locked
+      if (!locked) freeLock(Index);                                                                                     // Unlock the branch if it was not originally locked
      }
 
     TraverseTree ()                                                                                                     // Traverse the tree visiting each leaf and branch in order
      {immediateModeCheck();
-say("TTTT traverse", dumpLocks());
-      if (isLeaf(0)) pLeaf    (0, 0, 0, 0);
-      else           traverse (0, 0, 0);
+      boolean isLeaf;                                                                                                   // Whether the root is a leaf
+      if (hasLock(0))   isLeaf = isLeaf(0);                                                                             // Root already locked so we can check its status immediately
+      else {getLock(0); isLeaf = isLeaf(0); freeLock(0);}                                                               // Root not locked so lock it s it can be read, then unlock it to restore the status quo ante
+
+      if (isLeaf) pLeaf    (0, 0, 0, 0);
+      else        traverse (0, 0, 0);
      }
 
     void pLeaf (int Index, int Depth, int Parent, int ParentSlot)                                                       // Process a leaf
      {final boolean locked = hasLock(Index);                                                                            // Check whether the current leaf is locked
-      if (!locked) getLock(Index);                                                                                      // Lock the node if not already locked
+      if (!locked) getLock(Index);                                                                                      // Temporarily lock the node if not already locked so we can access it and thus print it
       final Slots         slots = slots(Index, maxLeafSize);
       final Stack<Integer> keys = new Stack<>();
       for(int i = 0; i < maxLeafSize*2; ++i) if (slots.getSlotToKeysInUse(i)) keys.push(slots.getSlotToKeyValue(i));
-      leaf(Index, Depth, Parent, ParentSlot, keys, locked);
-      if (locked) freeLock(Index);                                                                                      // Unlock the leaf if it was not originally locked
+      leaf(Index, Depth, Parent, ParentSlot, keys, locked);                                                             // Free the temporary lock we acquired to print this leaf
+      if (!locked) freeLock(Index);                                                                                     // Unlock the leaf if it was not originally locked
      }
 
     void leaf (      int Index, int Depth, int Parent, int Slot, Stack<Integer> Keys, boolean Locked)                   // Print a leaf
@@ -1309,8 +1350,8 @@ say("TTTT traverse", dumpLocks());
         @Override void branchTop(int Keys, int Index, int Depth, boolean Locked)                                        // Print node referenced by top
          {if (Context)
            {final int d = Depth * linesToPrintABranch;
-            pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
             if (Locked) P.elementAt(d).append(Keys > 0 ? "}" : "{}");                                                   // Show end of lock if there were keys else show locked but no keys
+            pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
             P.elementAt(d+1).append(" "+Index);                                                                         // Add index of top to slot second line
            }
          }
@@ -2867,10 +2908,8 @@ Leaf           size:   4, count:   2
 
          new ForCount(One, new Int(N+1))
          {void body(Int Index)
-           {say("AAAA1111", Index, printLocks(), writeTree());
-            say("AAAA2222", Index, printLocks(), writeTree());
+           {say("AAAA1111", Index, writeTree());
             insert(Index.Mul(10), Index.Mul(11));
-            say("AAAA3333", Index, printLocks(), writeTree());
             dumpProgramState("AAAA");
            }
          };
