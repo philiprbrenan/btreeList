@@ -147,7 +147,7 @@ class Branch extends Program implements Program.Locatable                       
       return ""+s;
      }
 
-    StepDown (Int Key)                                                                                                  // Return a reference to the next branch down whose sub tree might contain the specified key
+    StepDown (Int Key, LockedStatus LockedStatus)                                                                       // Return a reference to the next branch down whose sub tree might contain the specified key
      {assertBranchIsLocked();                                                                                           // The branch we are searching must already be locked
       key.set(Key);                                                                                                     // Record the search key
       final Slots.Find f = slots.new Find(Key);  eqKey.set(f.equal);                                                    // Find result
@@ -171,8 +171,10 @@ class Branch extends Program implements Program.Locatable                       
            };
          }
        };
-      getLock(node);                                                                                                    // Lock the node we have stepped to
+      if (LockedStatus.unlocked()) getLock(node);                                                                       // Lock the node we have stepped to unless we know that it is already locked
      }
+
+    StepDown (Int Key) {this(Key, new NotYetLocked());}                                                                 // Return a locked reference to the next branch down whose sub tree might contain the specified key assuming thatthe next node down is currently unlocked
    } // StepDown
 
   Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
