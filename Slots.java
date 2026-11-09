@@ -156,6 +156,18 @@ class Slots extends Program                                                     
 
   Bint  locateFirstUnusedKey ()             {return usedKeys.firstZero();}                                              // Absolute position of the first unused key
 
+  Bint indexOfFirstKey()                                                                                                // Index of first key if there is one
+   {final Bint f = locateFirstUsedSlot();                                                                               // First used slot
+    new If (f) {void Then() {f.set(getSlotToKeyIndex(f.i()));}};                                                        // Location of key associated with first used slot
+    return f;
+   }
+
+  Bint indexOfLastKey()                                                                                                 // Index of last key if there is one
+   {final Bint f = locateLastUsedSlot();                                                                                // Last used slot
+    new If (f) {void Then() {f.set(getSlotToKeyIndex(f.i()));}};                                                        // Location of key associated with last used slot
+    return f;
+   }
+
   Int locateNearestFreeSlotToKey (Int Position, Bit FavorLow)                                                           // Absolute position of the nearest free slot to the indicated position.  There will always be one as there are always more slots than keys. Prev will be true if the previous free slot is closest, else false if the next free slot is closest.
    {subStart("Slots.locateNearestFreeSlotToKey");
     final Slots slots = this;                                                                                           // Slots to search
@@ -1121,7 +1133,6 @@ keys     :    0  11   0   0   0   0   0   0
         for (int i = 0, N = numberOfKeys; i < N; i++) putKey (new Int(i), new Int(i+1));
         usedKeys.empty().ok(false);
         usedKeys.full ().ok(true);
-
 
         delKey(new Int(3)); locateFirstUnusedKey().ok(3);
         delKey(new Int(4)); locateFirstUnusedKey().ok(3);
@@ -2316,6 +2327,7 @@ usedSlots:    .   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   .   .   .   .   .   .
 keys     :    0   0   0   0   0   0   0
 """);
+
         maxSteps(9_999_999);
         execute();
        }
@@ -2418,9 +2430,49 @@ usedSlots:    X   X   X   .   X   .   .   .
 usedKeys :    X   X   X   X
 keys     :    4   2   3   1
 """);
+        indexOfFirstKey().ok(3);
+        indexOfLastKey ().ok(0);
+
         delete(new Int(2)); count().ok(3);
+        //stop(s);
+        check(print(), """
+Slots    : size:  4, count:  3
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    3   1   0   0   0   0   0   0
+keysSlots:    4   1   0   0   0   0   0   0
+usedSlots:    X   X   .   .   X   .   .   .
+usedKeys :    X   X   .   X
+keys     :    4   2   0   1
+""");
+
         delete(One); count().ok(2);
+        //stop(s);
+        check(print(), """
+Slots    : size:  4, count:  2
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    3   0   0   0   0   0   0   0
+keysSlots:    4   0   0   0   0   0   0   0
+usedSlots:    X   .   .   .   X   .   .   .
+usedKeys :    X   .   .   X
+keys     :    4   0   0   1
+""");
+        indexOfFirstKey().ok(3);
+        indexOfLastKey ().ok(0);
+
         delete(Zero); count().ok(1);
+        //stop(s);
+        check(print(), """
+Slots    : size:  4, count:  1
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    0   0   0   0   0   0   0   0
+keysSlots:    4   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   X   .   .   .
+usedKeys :    X   .   .   .
+keys     :    4   0   0   0
+""");
+        indexOfFirstKey().ok(0);
+        indexOfLastKey ().ok(0);
+
         delete(new Int(4)); count().ok(0);
         //stop(s);
         check(print(), """
@@ -2432,6 +2484,10 @@ usedSlots:    .   .   .   .   .   .   .   .
 usedKeys :    .   .   .   .
 keys     :    0   0   0   0
 """);
+
+        indexOfFirstKey().notValid();
+        indexOfLastKey ().notValid();
+
         maxSteps(9_999_999);
         execute();
        }
@@ -2471,8 +2527,8 @@ keys     :    0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_findGe();
+   {//oldTests();
+    test_delete(true);
    }
 
 // perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList"
