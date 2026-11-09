@@ -146,6 +146,8 @@ class Tree extends Program                                                      
   void         lockRoot () { getLock(root());}                                                                          // Lock root
   void       unlockRoot () {freeLock(root());}                                                                          // Unlock root
   void assertRootLocked () {assertIsLocked(root());}                                                                    // Assert that the root is locked
+  Bit      rootIsLocked () {return hasLock(Zero);}                                                                      // Test whether the root is locked
+  Bit    rootIsUnLocked () {return hasLock(Zero).flip();}                                                               // Test whether the root is unlocked
 
   int addressToAreaLock(int Address)                                                                                    // Overridable convert an address in memory to a lock index
    {if (Address < build.memoryPositions.posFreeChain) return Address >>> logTwoSizeOfNode;                              // Lock number is normally the index of the node
@@ -673,7 +675,7 @@ class Tree extends Program                                                      
     final Bit       eqKey = new  Bit("equal key");                                                                      // A branch has a key that is equal to the search key
     final Memory.Ref path = mergePath.new Ref(0);                                                                       // Branches along path
 
-    Path(Int Key)
+    Path(Int Key)                                                                                                       // Locat ethe path to the leaf that should contain teh key and lock all nodes from the root to the leaf
      {subStart("Tree.Path");
       final Int p = root().dup(); getLock(p);                                                                           // Start at root
       final Bit valid = new Bit(false);                                                                                 // Whether a leaf was reached
@@ -707,6 +709,7 @@ class Tree extends Program                                                      
 
     void splitPoint ()                                                                                                  // Locate the split point: the uppermost full branch directly connected to the leaf by intervening full branches which will have to be split from the top back down to the parent of the leaf to permit the splitting of a full leaf. The branches that are to be split will remain locked, the remainder will be unlocked.  The locked branchs will be unlocked after splitting down or merging up has been completed.
      {subStart("Tree.splitPoint");
+
       final Int u = new Int();                                                                                          // Location of split point
       new For(start, step)                                                                                              // Steap along the path from the current start position
        {void body(Int Index, Bit Continue)                                                                              // Step up from leaf to root
@@ -716,7 +719,7 @@ class Tree extends Program                                                      
            {void Then() {split.set(p); Continue.set();}                                                                 // Highest full branch so far that will need splitting
             void Else()                                                                                                 // The branch above the highest branch that needs splitting
              {over.set(p);                                                                                              // Branch over highest splitting branch
-              new ForCount(p) {void body(Int Index) {freeLock(path.getInt(Index));}};                                   // Unlock any branches above the over branch
+              new ForCount(start, p) {void body(Int Index) {freeLock(path.getInt(Index));}};                            // Unlock any branches above the over branch
              }
            };
          }
@@ -731,17 +734,14 @@ class Tree extends Program                                                      
        {void Then()
          {new If (path.getInt(split.i()).eq(0))                                                                         // Split the root branch
            {void Then()
-             {final Int sk = splitRootBranch();                                                                         // Splitting key
-              final Int  z = root();                                                                                    // Root
-              final Int  n = new Int("n");                                                                              // Next mode down
-              new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
-               {void Then() {n.set(branch(z).data(z));}                                                                 // Step through left node
-                void Else() {n.set(branch(z).top(  ));}                                                                 // Divert through first element of root now that it has been split
+             {final SplitRootBranch s = new SplitRootBranch();                                                          // Split the root branch
+              final Branch b = s.root;                                                                                  // Root branch
+              new If (key.le(s.splitKey))                                                                               // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
+               {void Then() {path.putInt(start, s.left .at.i()); s.right.unlockBranch();}                               // Step through left node which is known to exist because we just inserted it. Unlock the right branch as we are going through the left branch
+                void Else() {path.putInt(start, s.right.at.i()); s.left .unlockBranch();}                               // Divert through first element of root now that it has been split. Free the left branch as we are going through the right branch
                };
-              path.putInt(start, n);                                                                                    // Divert through first element of root now that it has been split
-              start.dec();                                                                                              // Add the root back to the path after addressing a path element in which to record the root
-              path.putInt(start, root());                                                                               // Record root as first element of path
-              getLock(n);
+
+              start.dec(); path.putInt(start, s.root.at.i());                                                           // Add the root back to the path after addressing a path element in which to record the root
               split.set(split.i().inc());                                                                               // Step up over split root which no longer needs splitting
              }
            };
@@ -750,7 +750,7 @@ class Tree extends Program                                                      
              {final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
               final Branch c = branch(path.getInt(Index));                                                              // Child branch that should be split
               final Branch.StepDown d = p.new StepDown(key);                                                            // Step down
-              final Branch l = branch();                                                                                // Branch to split into
+              final Branch l = branch();                                                                                // Create a new branch to split into
               final Int   sk = c.splitLeft(l);                                                                          // Splitting key
 
               new If (d.slot.notValid())                                                                                // Stepped through top
@@ -772,34 +772,30 @@ class Tree extends Program                                                      
 
     void mergeUp ()                                                                                                     // Merge up from the leaf to the splitting point
      {subStart("Tree.mergeUp");
-//say("CCCC0000", step);
-      new For(step)                                                                                                     // Start at branch immediately above the leaf and work upwards
+      new For(start, step)                                                                                              // Start at branch immediately above the leaf and work upwards
        {void body(Int Index, Bit Continue)
-         {final Int             i = step.Sub(Index).dec();                                                              // Index of parent branch that contains the split siblings
+         {final Int             i = step.Sub(Index).add(start).dec();                                                   // Index of parent branch that contains the split siblings
           final Branch          p = branch(path.getInt(i), new AlreadyLocked());                                        // Parent branch containing split children
           final Branch.StepDown d = p.new StepDown(key,    new AlreadyLocked());                                        // Locate key slot
           final Bint            L = new Bint();                                                                         // The possible merges are arranged so as to avoid moving the slot in the parent corresponding to the search key
-//say("CCCC1111", Index, writeTree());
           mergeLeftLeft(  p, d.slot);
           mergeRightRight(p, d.slot);
           mergeLeft(      p, d.slot);
           mergeRight(     p, d.slot);
-//say("CCCC2222", p, d.slot);
-//say("CCCC3333", writeTree());
-//say("CCCC4444", over, Index);
           new If (over)                                                                                                 // Have we reached the over node
            {void Then()
              {new If (Index.lt(over.i()))
                {void Then() {Continue.set();}                                                                           // Continue merging up the tree
-                void Else() {freeLock(over.i());}                                                                       // Free the lock on the over node and stop merging up the tree
+                void Else() {freeLock(path.getInt(over.i()));}                                                          // Free the lock on the over node and stop merging up the tree
                };
              }
             void Else() {Continue.set();}                                                                               // Continue merging up the tree
            };
-//say("CCCC5555", Continue);
          }
        };
-//say("CCCC6666");
+      new If (rootIsLocked()) {void Then() {freeLock(root());}};                                                        // Free any remaining lock on the rppt
+say("BBBB", printPath(), printTree());
+if (immediate()) checkAllLocksHaveBeenReleased();                                                                       // Confirm that all the locks have been released
       squashRoot();                                                                                                     // Reduce the height of the tree if possible
       subFinish();
      }
@@ -830,8 +826,9 @@ class Tree extends Program                                                      
      }
    }
 
-  void squashRoot ()                                                                                                    // Squash the root down if possible
-   {final Branch R = branch(root(), new NotYetLocked());                                                                // Its a branch because this method gets called after splitting a leaf to make room for a new key,data pair to be inserted
+  void squashRoot ()                                                                                                    // Squash the root down if possible, Assume the entire tree is unlocked at this point as it is  in a valid, if not ldeal, state
+   {if (immediate()) checkAllLocksHaveBeenReleased();                                                                   // Confirm that all the locks have been released
+    final Branch R = branch(root(), new NotYetLocked());                                                                // Its a branch because this method gets called after splitting a leaf to make room for a new key,data pair to be inserted
     new If (R.slots.empty())                                                                                            // Reduce the height of the tree if the body of the root is now empty
      {void Then()
        {final Int t = R.top();                                                                                          // Top
@@ -1041,24 +1038,37 @@ class Tree extends Program                                                      
 
 //D2 Split                                                                                                              // Split nodes in the tree to make the tree wider
 
-  private Int splitRootBranch ()                                                                                        // Split the root assuming that it is a branch
-   {subStart("Tree.splitRootBranch");
-    final Branch R = branch(root(), new AlreadyLocked());                                                               // The root
-    if (immediate() && isRootLeaf()   .b()) stop("Cannot split the root as a branch because it is not a branch");       // Check that it is a branch
-    if (immediate() && R.full().Flip().b()) stop("Cannot split the root because it is not full");                       // Check that the root is full
-    final Branch l = branch();                                                                                          // New left branch
-    final Branch r = branch();                                                                                          // New right branch
-    l.copy(R);                                                                                                          // Copy the root into the left branch
-    final Int sk = l.splitRight(r);                                                                                     // Splitting key
-    R.clear();                                                                                                          // Clear the root
-    makeBranch(R.getLocation().i(), new AlreadyLocked());                                                               // Mark the root as a branch
-    R.insertEmpty(sk, l.getLocation().i());                                                                             // Insert the left branch below the splitting key
-    R.top(r.getLocation().i());                                                                                         // Insert right as top of root
-    R.refLevel.putInt(l.refLevel.getInt().inc());                                                                       // Level of root is no one more than that of the branches below
-    lockHeight(); refHeight.putInt(refHeight.getInt().inc()); unlockHeight();                                           // Increase height of tree
-    R.unlockBranch(); l.unlockBranch(); r.unlockBranch();                                                               // Unlock branches
-    subFinish();
-    return sk;                                                                                                          // Return the splitting key
+  class SplitRootBranch                                                                                                 // Split the root branch of the tree
+   {final Branch root;                                                                                                  // The root branch
+    final Branch left;                                                                                                  // The left branch of the split
+    final Branch right;                                                                                                 // The left branch of the split
+    final Int    splitKey;                                                                                              // The key at which the branch was split
+
+    SplitRootBranch ()                                                                                                  // Split the root assuming that it is a branch
+     {subStart("Tree.splitRootBranch");
+
+      final Branch R = root = branch(root(), new AlreadyLocked());                                                      // The root
+      if (immediate() && isRootLeaf()   .b()) stop("Cannot split the root as a branch because it is not a branch");     // Check that it is a branch
+      if (immediate() && R.full().Flip().b()) stop("Cannot split the root because it is not full");                     // Check that the root is full
+
+      final Branch l = left  = branch();                                                                                // New left branch
+      final Branch r = right = branch();                                                                                // New right branch
+      l.copy(R);                                                                                                        // Copy the root into the left branch
+
+      final Int    k = splitKey = l.splitRight(r);                                                                      // Splitting key
+      R.clear();                                                                                                        // Clear the root
+      makeBranch(R.getLocation().i(), new AlreadyLocked());                                                             // Mark the root as a branch
+
+      R.insertEmpty(k, l.getLocation().i());                                                                            // Insert the left branch below the splitting key
+      R.top(r.getLocation().i());                                                                                       // Insert right as top of root
+
+      R.refLevel.putInt(l.refLevel.getInt().inc());                                                                     // Level of root is no one more than that of the branches below
+      lockHeight(); refHeight.putInt(refHeight.getInt().inc()); unlockHeight();                                         // Increase height of tree
+
+      //R.unlockBranch(); l.unlockBranch(); r.unlockBranch();                                                           // Unlock branches
+
+      subFinish();
+     }
    }
 
 //D2 Merge                                                                                                              // Merge nodes in the tree to make the tree narrower
@@ -1368,6 +1378,7 @@ class Tree extends Program                                                      
         @Override void branchTop(int Keys, int Index, int Depth, boolean Locked)                                        // Print node referenced by top
          {if (Context)
            {final int d = Depth * linesToPrintABranch;
+            pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
             if (Locked) P.elementAt(d).append(Keys > 0 ? "}" : "{}");                                                   // Show end of lock if there were keys else show locked but no keys
             pad(d+3);                                                                                                   // Pad the output area so that all the lines have the same length
             P.elementAt(d+1).append(" "+Index);                                                                         // Add index of top to slot second line
@@ -1395,8 +1406,8 @@ class Tree extends Program                                                      
      }
    }
 
-  StringBuilder writeTree () {var s = new Print(true) .printCollapsed(); return s;}                                     // Print the keys in the tree and the connections between the nodes in the tree
-  StringBuilder printTree () {var s = new Print(false).printCollapsed(); return s;}                                     // Print the keys in the tree
+  StringBuilder printTree () {var s = new Print(true) .printCollapsed(); return s;}                                     // Print the keys in the tree and the connections between the nodes in the tree
+  StringBuilder showTree () {var s = new Print(false).printCollapsed(); return s;}                                     // Print the keys in the tree
 
 //D1 Tests                                                                                                              // Tests
 
@@ -1551,8 +1562,8 @@ Height        :    1
         //stop(mainMemoryMd5Sum());
         ok(()->mainMemoryMd5Sum(), "bc384643844129f8149324e242a989ed");
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                  0008                                                              0016                                                                0024                                                         |
                                                  (0,0)                                                             (0,2)                                                               (0,4)   5                                                    |
                                                  [9,0]2                                                            [14,2]2                                                             [21,4]2                                                      |
@@ -1563,8 +1574,8 @@ Height        :    1
 (3,9,0)       (4,9,2)       (7,9,4)         (8,9)      (10,14,0)        (6,14,2)        (12,14,4)           (13,14)       (15,21,0)        (11,21,2)        (17,21,4)           (18,21)         (22,5,0)       (16,5,2)       (24,5,4)         (2,5)|
 """);
 
-        //stop(printTree());
-        if (Ex) ok(printTree(), """
+        //stop(showTree());
+        if (Ex) ok(showTree(), """
                         0008                               0016                                0024                                |
    0002   0004   0006           0010     0012     0014              0018     0020     0022              0026     0028     0030     |
 1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32|
@@ -1599,8 +1610,8 @@ Height        :    1
 
         delete(new Int(16));
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                  0008                                                              0015                                                                0024                                                         |
                                                  (0,0)                                                             (0,2)                                                               (0,4)   5                                                    |
                                                  [9,0]2                                                            [14,2]2                                                             [21,4]2                                                      |
@@ -1615,8 +1626,8 @@ Height        :    1
 
         delete(new Int(15));
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                  0008                                             0014                                                                0024                                                         |
                                                  (0,0)                                            (0,2)                                                               (0,4)   5                                                    |
                                                  [9,0]2                                           [14,2]2                                                             [21,4]2                                                      |
@@ -1652,11 +1663,11 @@ Height        :    1
            }
          };
 
-        //stop(mainMemoryMd5Sum(), writeTree(), printTree());
+        //stop(mainMemoryMd5Sum(), printTree(), showTree());
         ok(()->mainMemoryMd5Sum(), "e474db8316f4babf75a85304220eafba");
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                           0016                                                                       |
                                                           (0,2)  5                                                                   |
                                                           [9,2]2                                                                     |
@@ -1667,8 +1678,8 @@ Height        :    1
 (3,9,0)       (4,9,2)       (7,9,4)            (8,9)              (10,5,0)          (6,5,2)           (12,5,4)            (2,5)      |
 """);
 
-        //stop(printTree());
-        if (Ex) ok(printTree(), """
+        //stop(showTree());
+        if (Ex) ok(showTree(), """
                                                0016                                                        |
        0004       0008          0012                          0020           0024           0028           |
 1,2,3,4    5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
@@ -1697,11 +1708,11 @@ Height        :    1
            }
          };
 
-        //stop(mainMemoryMd5Sum(), writeTree(), printTree());
+        //stop(mainMemoryMd5Sum(), printTree(), showTree());
         ok(()->mainMemoryMd5Sum(), "803497907d77b4fe9daccb4852963044");
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                            0016                                                                       |
                                                            (0,2)  5                                                                   |
                                                            [9,2]2                                                                     |
@@ -1712,8 +1723,8 @@ Height        :    1
 (12,9,0)       (6,9,2)       (10,9,4)           (8,9)              (7,5,0)           (4,5,2)           (3,5,4)             (2,5)      |
 """);
 
-        //stop(printTree());
-        if (Ex) ok(printTree(), """
+        //stop(showTree());
+        if (Ex) ok(showTree(), """
                                                0016                                                        |
        0004       0008          0012                          0020           0024           0028           |
 1,2,3,4    5,6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23,24    25,26,27,28    29,30,31,32|
@@ -1754,11 +1765,11 @@ Height        :    1
            }
          };
 
-        //stop(mainMemoryMd5Sum(), writeTree(), printTree());
+        //stop(mainMemoryMd5Sum(), printTree(), showTree());
         ok(()->mainMemoryMd5Sum(), "1728b43d40e91b20bc2d093d662621a0");
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                        0012                                                                 0025                                         |
                                                        (0,2)                                                                (0,4)   6                                    |
                                                        [5,2]2                                                               [10,4]2                                      |
@@ -1769,8 +1780,8 @@ Height        :    1
 (1,5,1)       (13,5,2)       (8,5,4)         (4,5)           (11,10,1)          (3,10,4)           (14,10,5)          (7,10)         (9,6,2)       (12,6,4)         (2,6)|
 """);
 
-        //stop(printTree());
-        if (Ex) ok(printTree(), """
+        //stop(showTree());
+        if (Ex) ok(showTree(), """
                                    0012                                               0025                          |
      0003   0005     0008                         0016           0020        0023              0027        0030     |
 1,2,3    4,5    6,7,8    9,10,11,12    13,14,15,16    17,18,19,20    21,22,23    24,25    26,27    28,29,30    31,32|
@@ -1806,7 +1817,7 @@ Height        :    1
            }
          };
 
-        final StringBuilder s = Ex ? writeTree() : null;
+        final StringBuilder s = Ex ? printTree() : null;
         final StringBuilder m = new StringBuilder();
 
         new ForCount(new Int(N))
@@ -1814,7 +1825,7 @@ Height        :    1
            {final Int k = Index.Inc();
             final FirstEntry f = new FirstEntry(); f.key.ok(k); freeLock(f.leaf.i());
             delete(k);
-            if (Ex) s.append(writeTree());
+            if (Ex) s.append(printTree());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
             dumpProgramState("BBBB");
             if (immediate())
@@ -2083,14 +2094,14 @@ bec5f5f8a10f48c58d2511ce6de2c856
          };
         dumpProgramState("AAAA");
 
-        final StringBuilder s = Ex ? writeTree() : null;
+        final StringBuilder s = Ex ? printTree() : null;
         final StringBuilder m = new StringBuilder();
 
         new ForCount(new Int(N))
          {void body(Int Index)
            {delete(new Int(N).Sub(Index));
 
-            if (Ex) s.append(writeTree());
+            if (Ex) s.append(printTree());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
 
             dumpProgramState("BBBB");
@@ -2366,7 +2377,7 @@ dbc9285d7a50d5bc57dca9908881f7c1
          };
         dumpProgramState("AAAA");
 
-        final StringBuilder s = Ex ? writeTree() : null;
+        final StringBuilder s = Ex ? printTree() : null;
         final StringBuilder m = new StringBuilder();
         final VerilogArrays.Array a = verilogArrays().new Array("loadRandomKeys", random_32);                           // Create an array of the random keys to be deleted so that the array is accessible from Verilog
 
@@ -2383,7 +2394,7 @@ dbc9285d7a50d5bc57dca9908881f7c1
             k.TW();                                                                                                     // Write key into variable
             delete(k);
 
-            if (Ex) s.append(writeTree());
+            if (Ex) s.append(printTree());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
             dumpProgramState("BBBB");
            }
@@ -2722,8 +2733,8 @@ Leaf           size:   4, count:   2
         //stop(mainMemoryMd5Sum());
         ok(()->mainMemoryMd5Sum(), "47ddfd3a563175cc43e2a1984c305024");
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                                                                                                                                     0020                                                                                                                                                                              0040                                                                                                                                                                              0060                                                                                                                                                                               0080                                                                                                                                                                               0100                                                                              0110                                                                                                                                                               |
                                                                                                                                                                     (0,2)                                                                                                                                                                             (0,6)                                                                                                                                                                             (0,10)                                                                                                                                                                             (0,15)                                                                                                                                                                             (0,16)                                                                            (0,17)  11                                                                                                                                                         |
                                                                                                                                                                     [18,2]2                                                                                                                                                                           [29,6]2                                                                                                                                                                           [40,10]2                                                                                                                                                                           [51,15]2                                                                                                                                                                           [62,16]2                                                                          [1,17]2                                                                                                                                                            |
@@ -2734,8 +2745,8 @@ Leaf           size:   4, count:   2
 (3,18,0)        (4,18,2)        (5,18,4)        (6,18,6)        (7,18,8)        (8,18,10)         (9,18,12)         (10,18,14)         (13,18,16)            (14,18)       (15,29,0)        (16,29,2)        (17,29,4)        (19,29,6)        (12,29,8)        (20,29,10)         (21,29,12)         (22,29,14)         (24,29,16)            (25,29)       (26,40,0)        (27,40,2)        (28,40,4)        (30,40,6)        (23,40,8)        (31,40,10)         (32,40,12)         (33,40,14)         (35,40,16)            (36,40)        (37,51,0)        (38,51,2)        (39,51,4)        (41,51,6)        (34,51,8)        (42,51,10)         (43,51,12)         (44,51,14)         (46,51,16)            (47,51)        (48,62,0)        (49,62,2)        (50,62,4)        (52,62,6)        (45,62,8)        (53,62,10)         (54,62,12)         (55,62,14)         (57,62,16)            (58,62)        (59,1,2)       (60,1,6)       (61,1,10)        (63,1,14)           (56,1)           (64,11,2)        (65,11,4)        (66,11,6)        (68,11,8)        (69,11,10)         (70,11,12)         (71,11,15)         (72,11,17)           (2,11) |
 """);
 
-        //stop(printTree());
-        if (Ex) ok(printTree(), """
+        //stop(showTree());
+        if (Ex) ok(showTree(), """
                                                                              0020                                                                                      0040                                                                                      0060                                                                                      0080                                                                                       0100                                                   0110                                                                                               |
    0002   0004   0006   0008    0010     0012     0014     0016     0018              0022     0024     0026     0028     0030     0032     0034     0036     0038              0042     0044     0046     0048     0050     0052     0054     0056     0058              0062     0064     0066     0068     0070     0072     0074     0076     0078              0082     0084     0086     0088     0090     0092     0094     0096     0098                 0102       0104       0106       0108                  0112       0114       0116       0118       0120       0122       0124       0126       |
 1,2    3,4    5,6    7,8    9,10    11,12    13,14    15,16    17,18    19,20    21,22    23,24    25,26    27,28    29,30    31,32    33,34    35,36    37,38    39,40    41,42    43,44    45,46    47,48    49,50    51,52    53,54    55,56    57,58    59,60    61,62    63,64    65,66    67,68    69,70    71,72    73,74    75,76    77,78    79,80    81,82    83,84    85,86    87,88    89,90    91,92    93,94    95,96    97,98    99,100    101,102    103,104    105,106    107,108    109,110    111,112    113,114    115,116    117,118    119,120    121,122    123,124    125,126    127,128|
@@ -2770,8 +2781,8 @@ Leaf           size:   4, count:   2
         //stop(mainMemoryMd5Sum());
         ok(()->mainMemoryMd5Sum(), "8e1332cfb52e392192a21c9666623663");
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                                                                                                                          0018                                                                                                                                                                       0036                                                                                                                                                                       0054                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
                                                                                                                                                          (0,2)                                                                                                                                                                      (0,8)                                                                                                                                                                      (0,14)   24                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
                                                                                                                                                          [23,2]3                                                                                                                                                                    [37,8]3                                                                                                                                                                    [50,14]3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -2785,8 +2796,8 @@ Leaf           size:   4, count:   2
 (3,6,4)        (4,6,13)           (5,6)        (8,11,4)         (9,11,13)             (10,11)            (12,15,4)         (13,15,13)             (14,15)       (16,19,4)         (17,19,13)             (18,19)        (20,25,4)         (21,25,13)             (22,25)            (26,29,4)         (27,29,13)             (28,29)       (30,33,4)         (31,33,13)             (32,33)        (34,38,4)         (35,38,13)             (36,38)            (39,42,4)         (40,42,13)             (41,42)           (43,46,4)         (44,46,13)             (45,46)        (47,51,4)         (48,51,13)             (49,51)        (52,55,4)         (53,55,13)             (54,55)        (56,59,4)         (57,59,13)             (58,59)        (60,64,4)         (61,64,13)             (62,64)         (65,68,4)         (66,68,13)             (67,68)         (69,63,2)         (70,63,8)         (71,63,14)             (73,63)           (74,7,0)        (75,7,2)        (72,7,4)        (78,7,6)        (79,7,8)        (80,7,10)         (77,7,12)         (86,7,14)                       (87,7,16)                         (2,7)          |
 """);
 
-        //stop(printTree());
-        if (Ex) ok(printTree(), """
+        //stop(showTree());
+        if (Ex) ok(showTree(), """
                                                                     0018                                                                             0036                                                                             0054                                                                                                                                                                                                                                                                                                                                                       |
                  0006                    0012                                                  0024                       0030                                                  0042                       0048                                                  0060                       0066                       0072                       0078                       0084                       0090                                0098                                                                                                                                                 |
    0002   0004          0008    0010              0014     0016              0020     0022              0026     0028              0032     0034              0038     0040              0044     0046              0050     0052              0056     0058              0062     0064              0068     0070              0074     0076              0080     0082              0086     0088              0092     0094     0096               0100       0102       0104       0106       0108       0110       0112                       0118                       0124               |
@@ -2823,8 +2834,8 @@ Leaf           size:   4, count:   2
         //stop(mainMemoryMd5Sum());
         ok(()->mainMemoryMd5Sum(), "17021c6287b0beab0185c51e5064c45e");
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                                                                                                                                                                       0046                                                                                                                                                                                                                                                                     0110                                                                                                                                                                                                                                                                                                                          0174                                                                                                                                                                                                0214                                                                                                                                                                                                               |
                                                                                                                                                                                                       (0,14)                                                                                                                                                                                                                                                                   (0,15)                                                                                                                                                                                                                                                                                                                        (0,16)                                                                                                                                                                                              (0,17)  6                                                                                                                                                                                                          |
                                                                                                                                                                                                       [14,14]2                                                                                                                                                                                                                                                                 [23,15]2                                                                                                                                                                                                                                                                                                                      [32,16]2                                                                                                                                                                                            [1,17]2                                                                                                                                                                                                            |
@@ -2835,8 +2846,8 @@ Leaf           size:   4, count:   2
 (3,14,2)        (4,14,4)        (5,14,6)        (7,14,8)                    (8,14,10)                       (9,14,12)                       (10,14,14)                         (11,14)                        (12,23,2)                      (15,23,4)                      (13,23,6)                      (17,23,8)                      (18,23,10)                      (19,23,12)                      (20,23,14)                            (21,23)                                (22,32,2)                              (24,32,4)                              (16,32,6)                              (26,32,8)                              (27,32,10)                              (28,32,12)                              (29,32,14)                                 (30,32)                                (31,1,2)                              (33,1,6)                              (25,1,10)                              (35,1,14)                                 (36,1)                                  (37,6,2)                              (38,6,6)                              (39,6,10)                              (40,6,14)                              (34,6,16)                (2,6)                  |
 """);
 
-//        stop(printTree());
-//        if (Ex) ok(printTree(), """
+//        stop(showTree());
+//        if (Ex) ok(showTree(), """
 //                                                                                                                       0036                                                                                                                                                                                                              0098                                                                                                                                                                                                                                                                                   0162                                                                                                                                                                                                                                                                                    0226                                                                                                                                |
 //   0002   0004   0006              0012                 0018                 0024                 0030                                      0042                       0050                       0058                       0066                       0074                       0082                       0090                                                         0106                               0114                               0122                               0130                               0138                               0146                               0154                                                                  0170                               0178                               0186                               0194                               0202                               0210                               0218                                                                  0234                               0242                               0250                       |
 //1,2    3,4    5,6    7,8,9,10,11,12    13,14,15,16,17,18    19,20,21,22,23,24    25,26,27,28,29,30    31,32,33,34,35,36    37,38,39,40,41,42    43,44,45,46,47,48,49,50    51,52,53,54,55,56,57,58    59,60,61,62,63,64,65,66    67,68,69,70,71,72,73,74    75,76,77,78,79,80,81,82    83,84,85,86,87,88,89,90    91,92,93,94,95,96,97,98    99,100,101,102,103,104,105,106    107,108,109,110,111,112,113,114    115,116,117,118,119,120,121,122    123,124,125,126,127,128,129,130    131,132,133,134,135,136,137,138    139,140,141,142,143,144,145,146    147,148,149,150,151,152,153,154    155,156,157,158,159,160,161,162    163,164,165,166,167,168,169,170    171,172,173,174,175,176,177,178    179,180,181,182,183,184,185,186    187,188,189,190,191,192,193,194    195,196,197,198,199,200,201,202    203,204,205,206,207,208,209,210    211,212,213,214,215,216,217,218    219,220,221,222,223,224,225,226    227,228,229,230,231,232,233,234    235,236,237,238,239,240,241,242    243,244,245,246,247,248,249,250    251,252,253,254,255,256|
@@ -2917,7 +2928,7 @@ Leaf           size:   4, count:   2
 
          new ForCount(One, new Int(N+1))
          {void body(Int Index)
-           {if (immediate()) say("AAAA1111", Index, writeTree());
+           {if (immediate()) say("AAAA1111", Index, printTree());
             insert(Index.Mul(10), Index.Mul(11));
             dumpProgramState("AAAA");
            }
@@ -2926,8 +2937,8 @@ Leaf           size:   4, count:   2
         //stop(mainMemoryMd5Sum());
         ok(()->mainMemoryMd5Sum(), "6cd747a27951e254b915a348dd0c4052");
 
-        //stop(writeTree());
-        if (Ex) ok(writeTree(), """
+        //stop(printTree());
+        if (Ex) ok(printTree(), """
                                                  0080                                                         |
                                                  (0,2)  5                                                     |
                                                  [9,2]2                                                       |
@@ -2968,9 +2979,9 @@ Leaf           size:   4, count:   2
     if (rtg( 8)) test_deleteRandom32();
     if (rtg( 9)) test_update();
     if (rtg(10)) test_find();
-    if (rtg(11)) test_rootFanOut();
-    if (rtg(12)) test_rootFanOut2();
-    if (rtg(13)) test_rootFanOut3();
+    //if (rtg(11)) test_rootFanOut();
+    //if (rtg(12)) test_rootFanOut2();
+    //if (rtg(13)) test_rootFanOut3();
     //if (rtg(14)) test_insert_locked();
     if (rtg(15)) test_traverse();
     if (rtg(16)) {}
@@ -2978,8 +2989,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_traverse();
-    test_rootFanOut(true);
+    test_traverse(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
