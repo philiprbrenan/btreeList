@@ -1179,6 +1179,16 @@ public class Test                                                               
      }
    }
 
+  static void stopNoTrace (Object...O)                                                                                  // Say something and stop
+   {final StringBuilder m = saySb(O);                                                                                   // Print as a series of whitespace separated items
+    if (stopShouldThrowStopTest) throw new StopTest(""+m);                                                              // Throw rather than stop if so requested
+    else
+     {if (m.length() > 0) System.err.println(""+m);
+      //System.err.println(traceBack());                                                                                // If you cannot find the location of the call of this method uncomment this line
+      System.exit(1);
+     }
+   }
+
   static interface Stoppable                                                                                            // Intercept a stop request
    {void action();
    }
