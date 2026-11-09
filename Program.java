@@ -26,7 +26,7 @@ public class Program extends Test                                               
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
-  final static boolean                    runWithLocking =!true;                                                        // Run with locks imposed on permanent memories. Otherwise ignore lock requests
+  final static boolean                    runWithLocking = true;                                                        // Run with locks imposed on permanent memories. Otherwise ignore lock requests
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
@@ -2862,6 +2862,16 @@ endmodule
      };
     callAfterLockTestProgram();
     return Area;
+   }
+
+  Bit hasLock (Int Area)                                                                                                // Create an instruction to get a lock for a transaction
+   {final Bit h = new Bit("hasLock");
+    new I()
+     {void        a () {locks().hasLock(Area.i());}
+      String      v () {return "/* getLock */";}
+      boolean trace () {return false;}
+     };
+    return h;
    }
 
   void freeAllLocks ()                                                                                                  // Create an instruction to free all the locks held by a transaction
