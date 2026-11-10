@@ -3,8 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Optimize merges by merging into the most full node from the least full node
-// FindLeafForKey - Bint leaf can be an Int
-// Make sure we unlock nodes above the first splitting node parent
 // Detelete hanging chad in delete descaending by detcint and empoty leaf that is right of a last left.  If the root make the step intopt he root the last left - this can be all set in path
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -485,20 +483,16 @@ class Tree extends Program                                                      
      {subStart("Tree.NextEntry");
       getLock(root());
       final FindLeafForNextKey f = new FindLeafForNextKey(Key);                                                         // Start at root
-      new If (f.leaf)
+      final Leaf           l = leaf(f.leaf);
+      final Slots          s = l.slots;
+      final Slots.FindGe   n = s.new FindGe(f.key);
+      leaf.set(f.leaf);
+      new If (n.slot)
        {void Then()
-         {final Leaf           l = leaf(f.leaf.i());
-          final Slots          s = l.slots;
-          final Slots.FindGe   n = s.new FindGe(f.key);
-          leaf.set(f.leaf.i());
-          new If (n.slot)
-           {void Then()
-             {key .set(       s.getSlotToKeyValue(n.slot.i()));                                                         // Key from last slot
-              data.set(l.data(s.getSlotToKeyIndex(n.slot.i())));                                                        // Data associated with key
-             }
-            void Else() {freeLock(leaf.i());}                                                                           // Free the lock on the leaf as no next key was found
-           };
+         {key .set(       s.getSlotToKeyValue(n.slot.i()));                                                             // Key from last slot
+          data.set(l.data(s.getSlotToKeyIndex(n.slot.i())));                                                            // Data associated with key
          }
+        void Else() {l.unlockLeaf();}                                                                                   // Free the lock on the leaf as no next key was found
        };
       subFinish();
      }
@@ -547,8 +541,8 @@ class Tree extends Program                                                      
    }
 
   class FindLeafForKey                                                                                                  // Find the leaf that should contain the specified key.  The leaf is returned with a read lock on it to prevent any modifications of the leaf before the caller has had a chance to process it.  Consequently the caller must release the read lock promptly
-   {final  Int  key  = new Int ("key");                                                                                 // Search key
-    final  Bint leaf = new Bint("leaf index");                                                                          // Leaf that should contain the key. There will always be such a leaf as the tree starts off as a empty leaf. The leaf will be locked
+   {final  Int key  = new Int ("key");                                                                                  // Search key
+    final  Int leaf = new Int("leaf index");                                                                            // Leaf that should contain the key. There will always be such a leaf as the tree starts off as a empty leaf. The leaf will be locked
 
     FindLeafForKey (Int Key)                                                                                            // Find the specified key in a leaf in the tree
      {subStart("Tree."+title());
@@ -571,7 +565,7 @@ class Tree extends Program                                                      
          }
        };
 
-      if (immediate && !leaf.valid().b()) stop("Find fell off the end of tree after this many searches:", mnl());
+      //if (immediate && !leaf.valid().b()) stop("Find fell off the end of tree after this many searches:", mnl());     // Leaf is now an "Int" becuase I am sure that a leaf will always be found
       subFinish();
      }
 
@@ -579,7 +573,7 @@ class Tree extends Program                                                      
      {immediateModeCheck();
       subStart("Tree."+title()+".toString");
       final StringBuilder s = new StringBuilder(title()+" : "+printKey()+", "+leaf.valid().b()+"\n");
-      s.append(leaf(leaf.i()).print());
+      s.append(leaf(leaf).print());
       subFinish();
       return ""+s;
      }
@@ -860,7 +854,7 @@ class Tree extends Program                                                      
 
     new If (l.leaf.valid())
      {void Then()
-       {final Leaf       L = leaf(l.leaf.i());                                                                          // Load leaf
+       {final Leaf       L = leaf(l.leaf);                                                                              // Load leaf
         final Slots.Find f = L.slots.new Find(Key);                                                                     // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
@@ -868,7 +862,7 @@ class Tree extends Program                                                      
             data.set(L.data(k));                                                                                        // Data associated with key
            }
          };
-        freeLock(l.leaf.i());                                                                                           // Safe to free the read lock on the leaf because we have the data associated with the key
+        L.unlockLeaf();                                                                                                 // Safe to free the read lock on the leaf because we have the data associated with the key
        }
      };
 
@@ -913,7 +907,7 @@ class Tree extends Program                                                      
        }
       void Else()                                                                                                       // The root is a branch
        {final FindLeafForKey f = new FindLeafForKey(Key);                                                               // Find the leaf for the key
-        final Int            i = f.leaf.i();                                                                            // Index of leaf
+        final Int            i = f.leaf;                                                                                // Index of leaf
         final Leaf           l = leaf(i);                                                                               // Leaf that should contain the key
         final Slots.Find     F = l.slots.new Find(Key);                                                                 // Perhaps the key is already present in the leaf
         new If (F.equal)                                                                                                // Key exists in full leaf
@@ -1601,8 +1595,8 @@ Height        :    1
         ok(()->m_9, "Branch:  9,  maximum key:  8\n");
 
         getLock(root());
-        final FindLeafForNextKey n_1 = new FindLeafForNextKey(new Int(1)); freeLock(n_1.leaf.i()); n_1.leaf.i().ok(3);
-        final FindLeafForNextKey n_2 = new FindLeafForNextKey(new Int(2)); freeLock(n_2.leaf.i()); n_2.leaf.i().ok(4);
+        final FindLeafForNextKey n_1 = new FindLeafForNextKey(new Int(1)); freeLock(n_1.leaf.i()); n_1.leaf.ok(3);
+        final FindLeafForNextKey n_2 = new FindLeafForNextKey(new Int(2)); freeLock(n_2.leaf.i()); n_2.leaf.ok(4);
 
         delete(new Int(16));
 
