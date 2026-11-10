@@ -67,6 +67,7 @@ public class Program extends Test                                               
   final Int                                          One;                                                               // Integer constant one
   final String                               programName;                                                               // Name of program to assist in debugging multi program executions
   final Build                                      build;                                                               // Build parameter list used to construct the program
+  final boolean            checkAllLocksHaveBeenReleased;                                                               // Confirm that all locks have been released at the end of program execution
   I                                            executing = null;                                                        // Instruction currently being executed
   I                                            compiling = null;                                                        // Instruction currently being compiled
   int                                      transactionId;                                                               // Transaction Id - this is used to identify the holders of a lock
@@ -89,18 +90,20 @@ public class Program extends Test                                               
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
 
   static class Build                                                                                                    // Builder for this program
-   {boolean           immediate;                                                                                        // Immediate mode
-    Program       parentProgram;                                                                                        // Parent program
-    int                    size;                                                                                        // Size of memory used by this program
-    AddressToArea addressToArea;                                                                                        // Size of memory used by this program
-    String                 name;                                                                                        // Name of the program for debuggung purtposes - a program is not required to have a name
+   {boolean                     immediate;                                                                              // Immediate mode
+    boolean checkAllLocksHaveBeenReleased;                                                                              // Check that all locks have been released
+    Program                 parentProgram;                                                                              // Parent program
+    int                              size;                                                                              // Size of memory used by this program
+    AddressToArea           addressToArea;                                                                              // Size of memory used by this program
+    String                           name;                                                                              // Name of the program for debuggung purtposes - a program is not required to have a name
 
-    Build  immediate ()                  {immediate         = true;      return this;}
-    Build  immediate (boolean Immediate) {immediate         = Immediate; return this;}
-    Build     parent (Program    Parent) {parentProgram     = Parent;    return this;}
-    Build       name (String       Name) {name              = Name;      return this;}
-    Build     memory (int Size)          {size = Size; addressToArea = addressToZero(); return this;}
+    Build  immediate ()                  {immediate         = true;                                       return this;}
+    Build  immediate (boolean Immediate) {immediate         = Immediate;                                  return this;}
+    Build     parent (Program    Parent) {parentProgram     = Parent;                                     return this;}
+    Build       name (String       Name) {name              = Name;                                       return this;}
+    Build     memory (int Size)          {size = Size; addressToArea = addressToZero();                   return this;}
     Build     memory (int Size, AddressToArea AddressToArea) {size = Size; addressToArea = AddressToArea; return this;}
+    Build     checkAllLocksHaveBeenReleased ()   {checkAllLocksHaveBeenReleased = true;                   return this;}
    }  // Build
 
   Program (Build Build)                                                                                                 // Construct
@@ -108,6 +111,7 @@ public class Program extends Test                                               
     immediate       = Build.immediate;                                                                                  // Immediate or delayed execution. If after lock testing is in progress immediate mode is required
     parentProgram   = Build.parentProgram == null ? this : Build.parentProgram;                                         // Parent program that will contain the code
     programName     = Build.name;                                                                                       // Program name
+    checkAllLocksHaveBeenReleased = Build.checkAllLocksHaveBeenReleased;                                                // Check all locks have been released at the end of program execution
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
@@ -1893,7 +1897,7 @@ endmodule
 
   void execute ()                                                                                                       // Execute the current code
    {if (immediate() || !suppressImmediateOnly)                                                                          // The code has already been executed interpretively and, optionally, that is all that is required
-     {checkAllLocksHaveBeenReleased();
+     {if (checkAllLocksHaveBeenReleased) checkAllLocksHaveBeenReleased();
       return;
      }
     if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
@@ -1950,7 +1954,7 @@ endmodule
     if (!generateVerilog) say(f("            Execution: %,12d", steps));                                                // Show number of steps unless we are going to print this in during the Verilog process
 
     if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
-    checkAllLocksHaveBeenReleased();
+    if (checkAllLocksHaveBeenReleased) checkAllLocksHaveBeenReleased();                                                 // Optionally confirm that all locks have been released
     printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
 
     final GenerateVerilog g = new GenerateVerilog();                                                                    // Generate corresponding Verilog code
@@ -3319,7 +3323,7 @@ endmodule
 
   static void test_mem(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(4))
+    final Program P = new Program(new Build().immediate(Ex).memory(4).checkAllLocksHaveBeenReleased())
      {void code()
        {final Memory m = mainMemory;
         final Int     N0 = new Int    ("ZERO",  0);
@@ -3449,7 +3453,7 @@ Locks, size: 1
 
   static void test_memory(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(2))
+    final Program P = new Program(new Build().immediate(Ex).memory(2).checkAllLocksHaveBeenReleased())
      {void code()
        {final Memory m = mainMemory;
         final Int Z = new Int("Z", 0);
@@ -3523,7 +3527,7 @@ Locks, size: 1
 
   static void test_memoryRef(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(10))
+    final Program P = new Program(new Build().immediate(Ex).memory(10).checkAllLocksHaveBeenReleased())
      {void code()
        {final Memory     M = mainMemory;
         final Memory.Ref m = M.new Ref(2);
