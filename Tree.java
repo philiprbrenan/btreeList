@@ -74,7 +74,6 @@ class Tree extends Program                                                      
 
       if (name != null) p.name(name);                                                                                   // Optional name of program containing tree code
       if (afterLock)    p.afterLock();                                                                                  // After lock testing if requested
-      p.validateLocks();                                                                                                // Validate locks
       p.memory(size());                                                                                                 // Amount of main memory needed  by program.  The main memory will ultimately be preserved over program executions to allow the database to persist.
       p.immediate(immediate);
       return p;
@@ -116,7 +115,7 @@ class Tree extends Program                                                      
     build            = Build;                                                                                           // Keep the build for future reference
     sizeOfNode       = build.nodeSize;                                                                                  // Size of a node in the tree
     logTwoSizeOfNode = logTwo(sizeOfNode);                                                                              // Size of a node in the tree
-    final Memory.Ref unitMemoryRef = unitMemory.new Ref(0);                                                             // Memory used by tree
+    final Memory.Ref unitMemoryRef = mainMemory.new Ref(0);                                                             // Memory used by tree
     refNodes         = unitMemoryRef.step(build.memoryPositions.posNodes);                                              // Memory for nodes
     refFreeChain     = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                          // Memory for free chain
     refCount         = unitMemoryRef.step(build.memoryPositions.posCount);                                              // Memory for key count
@@ -205,7 +204,7 @@ class Tree extends Program                                                      
 
   Bit checkType (Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
    {final Int a = nodeAddress(Node);
-    final Int t = unitMemory.getInt(a);
+    final Int t = mainMemory.getInt(a);
     final Bit r = new Bit(false);
     new If (t.eq(Type.value())) {void Then() {r.set(true);}};
     return r;
@@ -213,7 +212,7 @@ class Tree extends Program                                                      
 
   void setType (Int Node, BranchOrLeaf Type)                                                                            // Set the type of a node
    {final Int a = nodeAddress(Node);
-    unitMemory.putInt(a, new Int(Type.value()));
+    mainMemory.putInt(a, new Int(Type.value()));
    }
 
   Bit isBranch (Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                // Whether the indexed node a branch
@@ -224,7 +223,7 @@ class Tree extends Program                                                      
   Leaf leaf (Int Node, boolean Check, LockedStatus LockStatus)                                                          // Index an existing leaf in memory optionally confirming that it really is a leaf
    {if (LockStatus.unlocked()) getLock(Node);                                                                           // Lock the leaf if necessary
     if (immediate() && Check && !isLeaf(Node).b()) stop("Not a leaf:", Node);                                           // Check the location actually holds a leaf
-    final Memory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                         // Address leaf
+    final Memory.Ref r = mainMemory.new Ref(nodeAddress(Node));                                                         // Address leaf
     final Tree    tree = this;                                                                                          // Current tree
 
     return new Leaf(build.leaf.parent(program()).memory(r).at(Node))                                                    // Return locked leaf based at the indexed address
@@ -253,22 +252,22 @@ class Tree extends Program                                                      
      };
    }
 
-  Leaf makeLeaf (Int Node, LockedStatus LockStatus)                                                                     // Make a leaf from the specified node
+  Leaf makeLeaf (Int Node, LockedStatus LockStatus)                                                                     // Make a leaf from the specified node given the locked status of the node
    {final Leaf l = leaf(Node, false, LockStatus);
     l.initializeMemory();
     setType(Node, BranchOrLeaf.leaf);
     l.assertLeafIsLocked();
     return l;                                                                                                           // Return locked leaf
    }
-
-  Leaf   leaf ()   {return makeLeaf(allocate(), new NotYetLocked());}                                                   // Create and initialize a branch in memory and return its index
+  Leaf makeLeaf (Int Node) {return makeLeaf(Node,       new NotYetLocked());}                                           // Make a leaf from the specified unlocked node
+  Leaf     leaf ()         {return makeLeaf(allocate(), new NotYetLocked());}                                           // Create and initialize a branch in memory and return its index
 
   Branch branch (Int Node)                          {return branch(Node, true, new NotYetLocked());}                    // Index an existing branch in memory            confirming that it really is a branch
   Branch branch (Int Node, LockedStatus LockStatus) {return branch(Node, true, LockStatus);}                            // Index an existing branch in memory            confirming that it really is a branch
   Branch branch (Int Node, boolean Check, LockedStatus LockStatus)                                                      // Index an existing branch in memory optionally confirming that it really is a branch
    {if (LockStatus.unlocked()) getLock(Node);                                                                           // Lock the leaf if necessary
     if (immediate() && Check && !isBranch(Node).b()) stop("Not a branch:", Node);                                       // Check the location actually holds a branch
-    final Memory.Ref   r = unitMemory.new Ref(nodeAddress(Node));                                                       // Address branch
+    final Memory.Ref   r = mainMemory.new Ref(nodeAddress(Node));                                                       // Address branch
     final Tree      tree = this;                                                                                        // Current tree
 
     return new Branch(build.branch.parent(program()).memory(r).at(Node))                                                // Base branch at the indexed address
@@ -710,6 +709,7 @@ class Tree extends Program                                                      
     void splitPoint ()                                                                                                  // Locate the split point: the uppermost full branch directly connected to the leaf by intervening full branches which will have to be split from the top back down to the parent of the leaf to permit the splitting of a full leaf. The branches that are to be split will remain locked, the remainder will be unlocked.  The locked branchs will be unlocked after splitting down or merging up has been completed.
      {subStart("Tree.splitPoint");
 
+say("CCCC1111", printPath(), printTree());
       final Int u = new Int();                                                                                          // Location of split point
       new For(start, step)                                                                                              // Steap along the path from the current start position
        {void body(Int Index, Bit Continue)                                                                              // Step up from leaf to root
@@ -724,6 +724,7 @@ class Tree extends Program                                                      
            };
          }
        };
+say("CCCC2222", printPath(), printTree());
       subFinish();
      }
 
@@ -747,21 +748,20 @@ class Tree extends Program                                                      
            };
           new ForCount(split.i(), step)                                                                                 // Split full branches which are not the root in descending order so that there is always enough room in the parent branch to accept the splitting key
            {void body(Int Index)
-             {final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
-              final Branch c = branch(path.getInt(Index));                                                              // Child branch that should be split
-              final Branch.StepDown d = p.new StepDown(key);                                                            // Step down
+             {final Branch r = branch(path.getInt(Index.Dec()), new AlreadyLocked());                                   // Parent branch whose child should be split
+              final Branch c = branch(path.getInt(Index),       new AlreadyLocked());                                   // Child branch that should be split
+              final Branch.StepDown d = r.new StepDown(key,     new AlreadyLocked());                                   // Step down
               final Branch l = branch();                                                                                // Create a new branch to split into
               final Int   sk = c.splitLeft(l);                                                                          // Splitting key
 
               new If (d.slot.notValid())                                                                                // Stepped through top
-               {void Then() {p.insert(sk, l.getLocation().i(), new Bint());}                                            // Insert split out branch as last element of parent branch body
-                void Else() {p.insert(sk, l.getLocation().i(), d.slot);}                                                // Insert split out branch just below the key in this slot
+               {void Then() {r.insert(sk, l.getLocation().i(), new Bint());}                                            // Insert split out branch as last element of parent branch body
+                void Else() {r.insert(sk, l.getLocation().i(), d.slot);}                                                // Insert split out branch just below the key in this slot
                };
 
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
-               {void Then()
-                 {path.putInt (Index, l.getLocation().i());                                                             // Update path with diversion through left branch
-                 }
+               {void Then() {path.putInt(Index, l.getLocation().i()); r.unlockBranch();}                                // Update path with diversion through left branch
+                void Else() {                                         l.unlockBranch();}                                // Diversion continues through right branch so we can unlock the left branch
                };
              }
            };
@@ -772,6 +772,7 @@ class Tree extends Program                                                      
 
     void mergeUp ()                                                                                                     // Merge up from the leaf to the splitting point
      {subStart("Tree.mergeUp");
+say("BBBB1111", printPath(), printTree());
       new For(start, step)                                                                                              // Start at branch immediately above the leaf and work upwards
        {void body(Int Index, Bit Continue)
          {final Int             i = step.Sub(Index).add(start).dec();                                                   // Index of parent branch that contains the split siblings
@@ -784,7 +785,7 @@ class Tree extends Program                                                      
           mergeRight(     p, d.slot);
           new If (over)                                                                                                 // Have we reached the over node
            {void Then()
-             {new If (Index.lt(over.i()))
+             {new If (p.at.i().lt(over.i()))
                {void Then() {Continue.set();}                                                                           // Continue merging up the tree
                 void Else() {freeLock(path.getInt(over.i()));}                                                          // Free the lock on the over node and stop merging up the tree
                };
@@ -793,9 +794,9 @@ class Tree extends Program                                                      
            };
          }
        };
+
       new If (rootIsLocked()) {void Then() {freeLock(root());}};                                                        // Free any remaining lock on the rppt
-say("BBBB", printPath(), printTree());
-if (immediate()) checkAllLocksHaveBeenReleased();                                                                       // Confirm that all the locks have been released
+say("DDDD", printLocks(), printTree());
       squashRoot();                                                                                                     // Reduce the height of the tree if possible
       subFinish();
      }
@@ -829,26 +830,27 @@ if (immediate()) checkAllLocksHaveBeenReleased();                               
   void squashRoot ()                                                                                                    // Squash the root down if possible, Assume the entire tree is unlocked at this point as it is  in a valid, if not ldeal, state
    {if (immediate()) checkAllLocksHaveBeenReleased();                                                                   // Confirm that all the locks have been released
     final Branch R = branch(root(), new NotYetLocked());                                                                // Its a branch because this method gets called after splitting a leaf to make room for a new key,data pair to be inserted
+
     new If (R.slots.empty())                                                                                            // Reduce the height of the tree if the body of the root is now empty
      {void Then()
        {final Int t = R.top();                                                                                          // Top
         getLock(t);
         new If (isLeaf(t))                                                                                              // Root has leaves for children
          {void Then()
-           {final Leaf L = makeLeaf(R.getLocation().i(), new AlreadyLocked());                                          // Make the root into a leaf
+           {final Leaf L = makeLeaf(R.getLocation().i(), new AlreadyLocked());                                                               // Make the root into a leaf
             final Leaf l = leaf(t);                                                                                     // Top as a leaf
             L.copy(l);                                                                                                  // Copy top into root decreasing height of tree
             l.unlockLeaf();                                                                                             // Unlock top
             free(l);                                                                                                    // Free top as no longer needed
            }
           void Else()                                                                                                   // Root has branches for children
-           {final Branch b = branch(t);                                                                                 // Top as a branch
+           {final Branch b = branch(t, new AlreadyLocked());                                                                                 // Top as a branch
             R.copy(b);                                                                                                  // Copy top into root
             b.unlockBranch();                                                                                           // Unlock top
             free(b);                                                                                                    // Free top as no longer needed
            }
          };
-        refHeight.putInt(refHeight.getInt().dec());                                                                     // Decrease the height of the tree
+        heightDec();                                                                                                    // Decrease the height of the tree
        }
      };
     freeLock(root());                                                                                                   // Free the root
@@ -967,6 +969,7 @@ if (immediate()) checkAllLocksHaveBeenReleased();                               
      {void Then() {l.insert(Key, Data); r.unlockLeaf();}                                                                // Insert key in the left leaf and unlock the right leaf as it is no longer part of the path to the key
       void Else() {r.insert(Key, Data); l.unlockLeaf();}                                                                // Insert key in the right leaf and unlock the left leaf as it is no longer part of the path to the key
      };
+
     p.mergeUp();                                                                                                        // Merge nodes on either side of the path going up from the leaf to towards the root
     subFinish();
    }
