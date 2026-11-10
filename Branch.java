@@ -893,6 +893,7 @@ Branch         size:   7, count:   7, top:  88, level:   0
         insert(new Int(20), new Int(2));
         insert(new Int(30), new Int(3));
         top   (             new Int(4));
+        at.set(Zero);
         final Branch.StepDown s1 = new StepDown(new Int(02)); s1.node.ok(1); s1.slot.ok(1);
         final Branch.StepDown s2 = new StepDown(new Int(12)); s2.node.ok(2); s2.slot.ok(4);
         final Branch.StepDown s3 = new StepDown(new Int(22)); s3.node.ok(3); s3.slot.ok(5);
@@ -990,8 +991,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_splitRight();
+   {//oldTests();
+    test_stepDown();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
