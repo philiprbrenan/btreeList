@@ -66,7 +66,7 @@ class Branch extends Program implements Program.Locatable                       
     if (maxSize % 2 == 0) stop("MaxSize should be odd not even:", maxSize);                                             // Not strictly true but slightly easier to cope with and so frequently used
     if (maxSize < 3)      stop("MaxSize must be at least 3:",     maxSize);
     final Build.MemoryPositions m = build.memoryPositions;
-    unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : unitMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
+    unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : mainMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a branch or a leaf
     refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refTop        = unitMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
@@ -147,8 +147,8 @@ class Branch extends Program implements Program.Locatable                       
       return ""+s;
      }
 
-    StepDown (Int Key, LockedStatus LockedStatus)                                                                       // Return a reference to the next branch down whose sub tree might contain the specified key
-     {assertBranchIsLocked();                                                                                           // The branch we are searching must already be locked
+    StepDown (Int Key)                                                                                                  // Return a reference to the next branch down whose sub tree might contain the specified key
+     {lockBranch();                                                                                                     // Lock the branch
       key.set(Key);                                                                                                     // Record the search key
       final Slots.Find f = slots.new Find(Key);  eqKey.set(f.equal);                                                    // Find result
       new If (f.empty)                                                                                                  // Found the index of a key that is greater than or equal to the search key
@@ -171,10 +171,8 @@ class Branch extends Program implements Program.Locatable                       
            };
          }
        };
-      if (LockedStatus.unlocked()) getLock(node);                                                                       // Lock the node we have stepped to unless we know that it is already locked
+      getLock(node);                                                                                                    // Lock the node we have stepped to unless we know that it is already locked
      }
-
-    StepDown (Int Key) {this(Key, new NotYetLocked());}                                                                 // Return a locked reference to the next branch down whose sub tree might contain the specified key assuming thatthe next node down is currently unlocked
    } // StepDown
 
   Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
