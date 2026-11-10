@@ -62,7 +62,7 @@ class Leaf extends Program implements Program.Locatable                         
     if (maxSize % 2 == 1) stop("MaxSize should be even not odd:", maxSize);                                             // Not strictly true but slightly easier to cope with
     if (maxSize < 2)      stop("MaxSize must be at least 2:",     maxSize);
     final Build.MemoryPositions m = build.memoryPositions;
-    unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : unitMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
+    unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : mainMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
     refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = unitMemoryRef.step(m.posData);                                                                      // Slots in use
