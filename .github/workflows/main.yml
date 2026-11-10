@@ -1,7 +1,7 @@
-# Test 2026-11-10 at 23:33:40
+# Test 2026-11-10 at 23:36:27
 
 name: btreeList
-run-name: lock all memory automatically, Verilog, SiliconCompiler, WithLocking
+run-name: sizeOfNode to nodeSize, Verilog, SiliconCompiler, WithLocking
 
 on:
   push:
