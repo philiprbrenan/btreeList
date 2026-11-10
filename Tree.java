@@ -78,7 +78,8 @@ class Tree extends Program                                                      
 
       if (name != null) p.name(name);                                                                                   // Optional name of program containing tree code
       p.memory(size(), new AddressToArea());                                                                            // Memory size and address to area lambda
-      p.immediate(immediate);
+      p.immediate(immediate);                                                                                           // Immediate or delayed execution mode
+      p.checkAllLocksHaveBeenReleased();                                                                                // Always check that all locks have been freed at the end of execution
       return p;
      }
 
