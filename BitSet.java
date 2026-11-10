@@ -87,7 +87,7 @@ public class BitSet extends Program                                             
     trackCount       = build.trackCount;
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
     unitsSize        = Build.units();                                                                                   // Memory units needed for the bitset and its bit trees
-    if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = program().unitMemory.new Ref(0);        // Use memory supplied by caller or create a reference to the default memory
+    if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = program().mainMemory.new Ref(0);        // Use memory supplied by caller or create a reference to the default memory
     memoryCount      = trackCount ? memoryRef.step(unitsNeeded() - 1) : null;                                           // Maintain a count field at the end to determine the number of bits set to one in O(1) time
 
     luoVerilog       = "x_bitSet_limitsUpperOne_" +bitSize;                                                             // Verilog procedures to make references to constant arrays rather than holding them in memory
