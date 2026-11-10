@@ -101,22 +101,8 @@ class Branch extends Program implements Program.Locatable                       
 
   void  branchCode ()                     {}                                                                            // Override this method to provide code for testing the branch
 
-  void   lockBranch() { getLock(at.i());}                                                                               // Lock a branch
-  void unlockBranch() {freeLock(at.i());}                                                                               // Unlock a branch
-
-  void assertBranchIsLocked ()                                                                                          // Confirm the branch is locked
-   {if (!runWithLocking) return;                                                                                        // Ignoring locks
-    final Program.Memory.Locks.Lock b = lockDetails(at.ii());
-    if (b == null) stop("Branch is supposed to be locked but is unlocked, branch at:", at.i());
-   }
-
-  void assertBranchIsUnLocked ()                                                                                        // Confirm the branch is locked
-   {if (!runWithLocking) return;                                                                                        // Ignoring locks
-    final Program.Memory.Locks.Lock b = lockDetails(at.ii());
-    if (b != null)
-     {stop("Branch supposed to be unlocked but is locked, branch at:", b.area, "locked at:", b.lockTraceBack);
-     }
-   }
+  void   lockBranch() {program(). getLock(at.i());}                                                                     // Lock a branch
+  void unlockBranch() {program().freeLock(at.i());}                                                                     // Unlock a branch
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a branch
 
