@@ -5,8 +5,6 @@
 // Optimize merges by merging into the most full node from the least full node
 // FindLeafForKey - Bint leaf can be an Int
 // Make sure we unlock nodes above the first splitting node parent
-// Change sizeOfNode to nodeSize
-// Check: step.Sub(Index)  .add(start) whether add is required or not in each use
 // Detelete hanging chad in delete descaending by detcint and empoty leaf that is right of a last left.  If the root make the step intopt he root the last left - this can be all set in path
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -21,7 +19,7 @@ class Tree extends Program                                                      
   final BitSet          freeChain;                                                                                      // Nodes currently free
   final int         numberOfNodes;                                                                                      // Maximum number of leaves plus branches in this tree
   final int maximumNumberOfLevels;                                                                                      // Maximum number of levels in tree to prevent runaways while debugging
-  final int            sizeOfNode;                                                                                      // The size of each node in the tree: a node must be able to hold a branch or a leaf
+  final int              nodeSize;                                                                                      // The size of each node in the tree: a node must be able to hold a branch or a leaf
   final int      logTwoSizeOfNode;                                                                                      // LOg two of the size of a node
   final Memory.Ref       refNodes;                                                                                      // The nodes associated with this tree
   final Memory.Ref   refFreeChain;                                                                                      // The free chain for this tree
@@ -141,8 +139,8 @@ class Tree extends Program                                                      
     if (b2        && !b3) stop(m2); else if (b2) say(m2);
     if (b3              ) stop(m3);
     build            = Build;                                                                                           // Keep the build for future reference
-    sizeOfNode       = build.nodeSize;                                                                                  // Size of a node in the tree
-    logTwoSizeOfNode = logTwo(sizeOfNode);                                                                              // Size of a node in the tree
+    nodeSize         = build.nodeSize;                                                                                  // Size of a node in the tree
+    logTwoSizeOfNode = logTwo(nodeSize);                                                                                // Size of a node in the tree
     final Memory.Ref unitMemoryRef = mainMemory.new Ref(0);                                                             // Memory used by tree
     refNodes         = unitMemoryRef.step(build.memoryPositions.posNodes);                                              // Memory for nodes
     refFreeChain     = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                          // Memory for free chain
@@ -208,7 +206,7 @@ class Tree extends Program                                                      
       if (freeChain.getBit(Node).b()) stop("Attempting to access a branch or leaf that has been freed:", Node);         // Complain if the node has been freed and not reallocated
       unlockFreeChain();
      }
-    return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
+    return Node.Mul(nodeSize);                                                                                          // Actual byte position of this node in memory
    }
 
   enum BranchOrLeaf                                                                                                     // Branch or leaf
@@ -339,7 +337,7 @@ class Tree extends Program                                                      
         s.append(f("Tree memory dump\n"));
         s.append(f("Leaf   size   : %4d\n", build.leafSize));
         s.append(f("Branch size   : %4d\n", build.branchSize));
-        s.append(f("Node   size   : %4d\n", sizeOfNode));
+        s.append(f("Node   size   : %4d\n", nodeSize));
         s.append(f("MaxLeafSize   : %4d\n", maxLeafSize));
         s.append(f("MaxBranchSize : %4d\n", maxBranchSize));
         s.append(f("NumberOfNodes : %4d\n", numberOfNodes));
