@@ -78,20 +78,8 @@ class Leaf extends Program implements Program.Locatable                         
 
   void leafCode () {}                                                                                                   // Override this method to provide code for testing the leaf
 
-  void   lockLeaf () { getLock(at.i());}                                                                                // Lock a leaf
-  void unlockLeaf () {freeLock(at.i());}                                                                                // Unlock a leaf
-
-  void assertLeafIsLocked ()                                                                                            // Confirm the leaf is locked
-   {if (!runWithLocking) return;                                                                                        // Ignoring locks
-    final Program.Memory.Locks.Lock l = lockDetails(at.ii());
-    if (l == null) stop("Leaf is supposed to be locked but is unlocked, leaf at:", at.i());
-   }
-
-  void assertLeafIsUnLocked ()                                                                                          // Confirm the leaf is locked
-   {if (!runWithLocking) return;                                                                                        // Ignoring locks
-    final Program.Memory.Locks.Lock l = lockDetails(at.ii());
-    if (l != null) stop("Leaf supposed to be unlocked but is locked, leaf at:", l.area, "locked at:", l.lockTraceBack);
-   }
+  void   lockLeaf () {program().getLock(at.i());}                                                                       // Lock a leaf
+  void unlockLeaf () {program().freeLock(at.i());}                                                                      // Unlock a leaf
 
   public Bint getLocation () {return at;}                                                                               // The location of this node in memory
 
