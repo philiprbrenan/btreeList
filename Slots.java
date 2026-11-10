@@ -73,7 +73,7 @@ class Slots extends Program                                                     
     numberOfKeys         = Build.numberOfKeys;                                                                          // Maximum number of keys
     size                 = Build.size();                                                                                // Size of memory used to hold a leaf
     final Build.MemoryPositions m = build.memoryPositions;
-    unitMemoryRef        = Build.unitMemoryRef != null ? Build.unitMemoryRef : unitMemory.new Ref(0);                   // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
+    unitMemoryRef        = Build.unitMemoryRef != null ? Build.unitMemoryRef : mainMemory.new Ref(0);                   // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refSlotsToKeys       = unitMemoryRef;                                                                               // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refKeysToSlots       = unitMemoryRef.step(m.posKeysToSlots);                                                        // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refUsedSlotsToKeys   = unitMemoryRef.step(m.posUsedSlotsToKeys);                                                    // Slots in use
