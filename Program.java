@@ -2,7 +2,6 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Apply memory access locks automatically
 // Log changes to memory so that the changes can be undone - needs locking for full implementation
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
