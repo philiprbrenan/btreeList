@@ -893,19 +893,15 @@ class Tree extends Program                                                      
     final FindLeafForKey l = new FindLeafForKey(Key);                                                                   // Find leaf that should contain the key
     final Bint        data = new Bint();
 
-    new If (l.leaf.valid())
-     {void Then()
-       {final Leaf       L = leaf(l.leaf);                                                                              // Load leaf
-        final Slots.Find f = L.slots.new Find(Key);                                                                     // Search for key in root
-        new If (f.equal)
-         {void Then()                                                                                                   // Key exists in leaf
-           {final Int k = L.slots.getSlotToKeyIndex(f.slot.i());                                                        // Key slot
-            data.set(L.data(k));                                                                                        // Data associated with key
-           }
-         };
-        L.unlockLeaf();                                                                                                 // Safe to free the read lock on the leaf because we have the data associated with the key
+    final Leaf       L = leaf(l.leaf);                                                                                  // Load leaf
+    final Slots.Find f = L.slots.new Find(Key);                                                                         // Search for key in root
+    new If (f.equal)
+     {void Then()                                                                                                       // Key exists in leaf
+       {final Int k = L.slots.getSlotToKeyIndex(f.slot.i());                                                            // Key slot
+        data.set(L.data(k));                                                                                            // Data associated with key
        }
      };
+    L.unlockLeaf();                                                                                                     // Safe to free the read lock on the leaf because we have the data associated with the key
 
     subFinish();
     return data;                                                                                                        // Will be set to invalid unless the key was found in which case it will contain the data associated with the key
@@ -2762,6 +2758,7 @@ Leaf   at:  12 size:   2, count:   2
        {t.insert(Index, Index.Mul(11));
        }
      };
+
     t.new ForCount(t.new Int(N+2))
      {void body(Int Index)
        {final Bint d = t.find(Index);
