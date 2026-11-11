@@ -99,13 +99,13 @@ class Leaf extends Program implements Program.Locatable                         
   void       data (Int Index, Int Value) {refData.putInt(Index, Value);}                                                // Set the data at the specified index
   int bytesNeeded ()                     {return build.size();}                                                         // Number of bytes needed to contain a leaf
   void      clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                          // Clear memory associated with the leaf
-
-  void       copy (Leaf Source) {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                              // Copy one leaf into another leaf
+  void       copy (Leaf Source)          {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                     // Copy one leaf into another leaf
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
-  Bint       find (Int Key) {return getDataFromKey(Key, false);}                                                        // Get the data associated with a key
-  Bint     delete (Int Key) {return getDataFromKey(Key, true);}                                                         // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Bint          find (Int Key)   {return getDataFromKey(Key, false);}                                                   // Get the data associated with a key
+  Bint        delete (Int Key)   {return getDataFromKey(Key, true);}                                                    // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  void    deleteSlot (Int Slot)  {slots.delete(Slot);}                                                                  // Delete a slot in the leaf given the index of the slot
 
   Slots.Find findKey (Int Key)   {return slots.new Find(Key);}                                                          // Locate the specified key in the leaf
   Int       keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                               // The index of the key from the index of the slot in the leaf
