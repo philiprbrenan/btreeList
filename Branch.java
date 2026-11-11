@@ -118,7 +118,8 @@ class Branch extends Program implements Program.Locatable                       
   Bint delete (Int Key) {return getDataFromKey(Key, true);}                                                             // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
   Slots.Find findKey (Int Key)   {return slots.new Find(Key);}                                                          // Locate the specified key in the branch
-  Int       keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                               // Index of key from index of slot
+  Int       keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                               // The index of the key from the index of the slot in the branch
+  Int       keyValue (Int Index) {return slots.getSlotToKeyValue(Index);}                                               // The value of the key from the index of the slot in the branch
 
   Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.new Find(Key);                                                                           // Find the key
