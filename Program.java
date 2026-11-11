@@ -1328,7 +1328,7 @@ public class Program extends Test                                               
         String v() {return ints.readWriteIndex() + " <= "+cawci+";" + vTrace(  "%8d getInt2 Set write index %8d", "pc",        cawci);}
        }.c(r.id);
 
-      new I()                                                                                                           // Write integer obtained from this memory back into the memory that holds integers and start the write to memory process.  If we had used the "W" method we would have to use another clock cycle.  Perhaps another table that tells us whether to assert or clear wriote enable for each memory would be helpful in automating this action and running it in parallel with other instructions
+      new I()                                                                                                           // Write integer obtained from this memory back into the memory that holds integers and start the write to memory process.  If we had used the "W" method we would have to use another clock cycle.  Perhaps another table that tells us whether to assert or clear write enable for each memory would be helpful in automating this action and running it in parallel with other instructions
        {void   a() {read0Int = r.i(units[I.i]); r.v = true; ints.writeInt        =     read0Int;       ints.writeIntEnable        = true; jTrace(f("%8d getInt3 save %8d = %8d",  currentPc(), ints.readWriteIndex, lui(read0Int)));}
         String v() {return                                  ints.writeInt() + " <= " + read0Int()+"; "+ints.writeIntEnable() + " <= 1;" + vTrace(  "%8d getInt3 save %8d = %8d", "pc",         ints.readWriteIndex(),   read0Int());}
        };
@@ -4226,6 +4226,6 @@ Locks, size: 2
      }
    }
  }
-//https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha                                                    // Compare github comits
+//https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha                                                    // Compare github commits
 // ^.{10,119}//                                                                                                         // Misplaced comment markers
 // \b[A-Za-z_$][A-Za-z0-9_$]*(?:| {2,})\(.*?\)(?: *//[^\r\n]*)?(?:\r?\n *//[^\r\n]*)* *\{                               // Methods declared without intervening space
