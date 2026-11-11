@@ -2,14 +2,6 @@
 // Branch of a btree implemented using distributed sparse slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-//Tree.java:794: {new If (b.slots.empty())                                                                              // Parent is now empty and so can also be removed
-//Tree.java:800: {final Bint U = b.slots.lastSlot();                                                                // Last slot in body of parent
-//Tree.java:801: final Int  u = b.data(b.slots.getSlotToKeyIndex(U.i()));                                          // Uppermost child in body of parent
-//Tree.java:803: b.slots.delSlotAndKey(U.i());                                                                     // Remove uppermost child in body of parent now it has  been made top
-//Tree.java:1012: R.slots.delete(f.slot.i());                                                                                 // Remove key from root leaf comprising tree
-//Tree.java:1164: {void Then() {L.copy(P.slots.prevSlot(Pos.i()));}                                                                  // There might be a previous sibling to the left from a child in the body of the parent
-//Tree.java:1165: void Else() {L.copy(P.slots.lastSlot());}                                                                         // There might be a chikld in teh bidy of the parent to merge with top
-//Tree.java:1219: final Bint R = P.slots.nextSlot(L.i());                                                                         // Next right sibling
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -107,6 +99,13 @@ class Branch extends Program implements Program.Locatable                       
   void       level (Int Level)            {refLevel.putInt(Level);}                                                     // Set value of level
   Branch    branch ()                     {return this;}                                                                // This branch
 
+  Bint   firstSlot ()                     {return slots.firstSlot();}                                                   // First occupied slot
+  Bint    nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                                 // Next occupied slot to the given slot
+  Bint    prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                                 // Previous occupied slot to the given slot
+  Bint    lastSlot ()                     {return slots.lastSlot();}                                                    // Last occupied slot
+
+  void deleteSlotAndKey (Int Slot)        {slots.delSlotAndKey(Slot);}                                                  // Delete the slot and its associated key
+
   void  branchCode ()                     {}                                                                            // Override this method to provide code for testing the branch
 
   void   lockBranch() {program(). getLock(at.i());}                                                                     // Lock a branch
@@ -128,7 +127,7 @@ class Branch extends Program implements Program.Locatable                       
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
        {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot.i())));                                                     // Get data associated with key
-        if (Delete) slots.delete(f.slot.i());                                                                           // Delete the key if requested
+        if (Delete) deleteSlot(f.slot.i());                                                                             // Delete the key if requested
        }
      };
     return r;                                                                                                           // Return data associated with key
