@@ -797,10 +797,10 @@ class Tree extends Program                                                      
                       Continue.set();                                                                                   // Continue up until we get to the top or find a parent with an upper moist child in its body
                      }
                     void Else()
-                     {final Bint U = b.slots.lastSlot();                                                                // Last slot in body of parent
-                      final Int  u = b.data(b.keyIndex(U.i()));                                          // Uppermost child in body of parent
+                     {final Bint U = b.lastSlot();                                                                      // Last slot in body of parent
+                      final Int  u = b.data(b.keyIndex(U.i()));                                                         // Uppermost child in body of parent
                       b.top(u);                                                                                         // Make upper most child top
-                      b.slots.delSlotAndKey(U.i());                                                                     // Remove uppermost child in body of parent now it has  been made top
+                      b.deleteSlotAndKey(U.i());                                                                        // Remove uppermost child in body of parent now it has  been made top
                      }
                    };
                   step.dec();                                                                                           // Path is now shorter
@@ -1043,7 +1043,7 @@ class Tree extends Program                                                      
                       void Else()                                                                                       // No maximum key
                        {new If (d.slot)
                          {void Then()
-                           {b.slots.delSlotAndKey(d.slot.i());                                                           // There is no maximum key in the sub tree so the tree must be empty so we can delete it
+                           {b.deleteSlotAndKey(d.slot.i());                                                             // There is no maximum key in the sub tree so the tree must be empty so we can delete it
                            }
                          };
                        }
@@ -1161,8 +1161,8 @@ class Tree extends Program                                                      
     final Bint   L = new Bint();                                                                                        // Left child slot
 
     new If (Pos)                                                                                                        // Merging relative to top
-     {void Then() {L.copy(P.slots.prevSlot(Pos.i()));}                                                                  // There might be a previous sibling to the left from a child in the body of the parent
-      void Else() {L.copy(P.slots.lastSlot());}                                                                         // There might be a chikld in teh bidy of the parent to merge with top
+     {void Then() {L.copy(P.prevSlot(Pos.i()));}                                                                        // There might be a previous sibling to the left from a child in the body of the parent
+      void Else() {L.copy(P.lastSlot());}                                                                               // There might be a chikld in teh bidy of the parent to merge with top
      };
 
     new If (L)                                                                                                          // A left child exists
@@ -1187,13 +1187,13 @@ class Tree extends Program                                                      
     final Bint   R = new Bint();                                                                                        // Right child of merge
 
     new If (Pos)                                                                                                        // Merging relative to top
-     {void Then() {R.copy(P.slots.prevSlot(Pos.i()));}                                                                  // Merge entirely within body of parent
-      void Else() {R.copy(P.slots.lastSlot());}                                                                         // Left once from top
+     {void Then() {R.copy(P.prevSlot(Pos.i()));}                                                                        // Merge entirely within body of parent
+      void Else() {R.copy(P.lastSlot());}                                                                               // Left once from top
      };
 
     new If (R)                                                                                                          // There is a right child for the merge
      {void Then()
-       {final Bint L = P.slots.prevSlot(R.i());                                                                         // Left of right child
+       {final Bint L = P.prevSlot(R.i());                                                                               // Left of right child
         new If (L)                                                                                                      // There is a left position
          {void Then()
            {final Int l = stepDownAt(Parent, L.i());                                                                    // Index of left child for merge
@@ -1216,7 +1216,7 @@ class Tree extends Program                                                      
     new If (L)                                                                                                          // Lock right node of merge
      {void Then()                                                                                                       // Not top
        {final  Int l = stepDownAt(Parent, L.i());                                                                       // Index of left child for merge
-        final Bint R = P.slots.nextSlot(L.i());                                                                         // Next right sibling
+        final Bint R = P.nextSlot(L.i());                                                                               // Next right sibling
         final Int  r = new Int("r");
         new If (R)
          {void Then() {r.set(stepDownAt(Parent, R.i()));}                                                               // Right sibling in body of parent is the right node of the merge
@@ -1236,11 +1236,11 @@ class Tree extends Program                                                      
 
     new If (Pos)                                                                                                        // Not on top so there is something on the right
      {void Then()
-       {L.copy(Parent.slots.nextSlot(Pos.i()));                                                                         // Right once to get left child of merge
+       {L.copy(Parent.nextSlot(Pos.i()));                                                                               // Right once to get left child of merge
         new If (L)                                                                                                      // Left hand node of merge
          {void Then()                                                                                                   // Left hand node is not top so we can find the right hand node of the merge
            {final Int  l = stepDownAt(Parent, L.i());                                                                   // Index of left hand node for merge
-            final Bint R = Parent.slots.nextSlot(L.i());                                                                // Next right sibling
+            final Bint R = Parent.nextSlot(L.i());                                                                      // Next right sibling
             final Int  r = new Int("r");                                                                                // Index of right hand node of merge
             new If (R)
              {void Then() {r.set(stepDownAt(Parent, R.i()));}                                                           // Right hand node is a sibling in the body of the parent
