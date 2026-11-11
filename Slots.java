@@ -835,7 +835,7 @@ class Slots extends Program                                                     
 
     StringBuilder print () {return new StringBuilder(""+this);}
 
-    Find (Int Key)                                                                                                      // Find the location of the specified search key in the slots by stepping down from teh top of the one tree checking first the left sub tree then the right to successively narrow the range in which the equal key should appear
+    Find (Int Key)                                                                                                      // Find the location of the specified search key in the slots by stepping down from the top of the one tree checking first the left sub tree then the right to successively narrow the range in which the equal key should appear
      {final BitSet u = usedSlotsToKeys;
 
       new If (empty())                                                                                                  // Nothing to find if all the slots are empty
