@@ -19,7 +19,7 @@ public class Program extends Test                                               
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
-  final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
+  final static boolean                        runVerilog =!true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
@@ -89,20 +89,20 @@ public class Program extends Test                                               
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
 
   static class Build                                                                                                    // Builder for this program
-   {boolean                     immediate;                                                                              // Immediate mode
-    boolean checkAllLocksHaveBeenReleased;                                                                              // Check that all locks have been released
-    Program                 parentProgram;                                                                              // Parent program
-    int                              size;                                                                              // Size of memory used by this program
-    AddressToArea           addressToArea;                                                                              // Size of memory used by this program
-    String                           name;                                                                              // Name of the program for debuggung purtposes - a program is not required to have a name
+   {boolean                     immediate = false;                                                                      // Immediate mode
+    boolean checkAllLocksHaveBeenReleased = false;                                                                      // Check that all locks have been released
+    Program                 parentProgram = null;                                                                       // Parent program
+    Integer                          size = null;                                                                       // Size of memory used by this program
+    AddressToArea           addressToArea = addressToZero();                                                            // Address to area mapping
+    String                           name = null;                                                                       // Name of the program for debugging purposes - a program is not required to have a name
 
-    Build  immediate ()                  {immediate         = true;                                       return this;}
-    Build  immediate (boolean Immediate) {immediate         = Immediate;                                  return this;}
-    Build     parent (Program    Parent) {parentProgram     = Parent;                                     return this;}
-    Build       name (String       Name) {name              = Name;                                       return this;}
-    Build     memory (int Size)          {size = Size; addressToArea = addressToZero();                   return this;}
-    Build     memory (int Size, AddressToArea AddressToArea) {size = Size; addressToArea = AddressToArea; return this;}
-    Build     checkAllLocksHaveBeenReleased ()   {checkAllLocksHaveBeenReleased = true;                   return this;}
+    Build immediate ()                                      {immediate     = true;                         return this;}
+    Build immediate (boolean Immediate)                     {immediate     = Immediate;                    return this;}
+    Build    parent (Program    Parent)                     {parentProgram = Parent;                       return this;}
+    Build      name (String       Name)                     {name          = Name;                         return this;}
+    Build    memory (int Size)                              {size = Size; addressToArea = addressToZero(); return this;}
+    Build    memory (int Size, AddressToArea AddressToArea) {size = Size; addressToArea = AddressToArea;   return this;}
+    Build    checkAllLocksHaveBeenReleased ()               {checkAllLocksHaveBeenReleased = true;         return this;}
    }  // Build
 
   Program (Build Build)                                                                                                 // Construct
@@ -128,8 +128,10 @@ public class Program extends Test                                               
     Zero            = new Int(0);                                                                                       // Integer constant zero
     One             = new Int(1);                                                                                       // Integer constant one
 
-    mainMemory      = p ? new Memory(Build.size, "program", new Memory.ReadWrite(), build.addressToArea) :              // Main memory associated with the program
-                      program().mainMemory;
+    final boolean s =     Build.size != null;                                                                           // An amount of memory was requested
+    final int     S = s ? Build.size : 0;                                                                               // Amount of memory required
+    mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea) :                  // Main memory associated with either the main program or a sub program using an independent memory
+                      program().mainMemory;                                                                             // Sub program uses main program memory
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
