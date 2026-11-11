@@ -15,7 +15,7 @@ class Branch extends Program implements Program.Locatable                       
   final Memory.Ref refSlots;                                                                                            // The slot associated with each key being used
   final Memory.Ref  refData;                                                                                            // Bitset showing which slots are being mapped to keys
   final Memory.Ref   refTop;                                                                                            // Target for keys greater than all the keys in the branch bitset
-  final Memory.Ref refLevel;                                                                                            // Level of this branch.  The first layer of branched above the leaves has level 1, the next layer of branches level 2 and so on
+  final Memory.Ref refLevel;                                                                                            // Level of this branch.  The first layer of branches above the leaves has level 1, the next layer of branches level 2 and so on
   final Build         build;                                                                                            // Build used to construct this branch
 
 //D1 Construction                                                                                                       // Construct and layout a branch
@@ -68,11 +68,11 @@ class Branch extends Program implements Program.Locatable                       
     final Build.MemoryPositions m = build.memoryPositions;
     unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : mainMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a branch or a leaf
-    refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+    refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots provide an ordering of the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refTop        = unitMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
     refLevel      = unitMemoryRef.step(m.posLevel);                                                                     // Level of this branch in the tree.  The first layer of branches above the leaves has level one, the next layer level two and so on, all the way up to the root
     refData       = unitMemoryRef.step(m.posData);                                                                      // Slots in use
-    if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
+    if (build.at != null) at.set(build.at);                                                                             // The location of the branch if supplied
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).memory(refSlots).parent(program()));              // Slots for branch
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
    }
@@ -100,8 +100,8 @@ class Branch extends Program implements Program.Locatable                       
   Branch    branch ()                     {return this;}                                                                // This branch
 
   Bint   firstSlot ()                     {return slots.firstSlot();}                                                   // First occupied slot
-  Bint    nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                                 // Next occupied slot to the given slot
-  Bint    prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                                 // Previous occupied slot to the given slot
+  Bint    nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                                 // Next occupied slot after the given slot
+  Bint    prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                                 // Previous occupied slot before the given slot
   Bint    lastSlot ()                     {return slots.lastSlot();}                                                    // Last occupied slot
 
   void deleteSlotAndKey (Int Slot)        {slots.delSlotAndKey(Slot);}                                                  // Delete the slot and its associated key
@@ -114,7 +114,7 @@ class Branch extends Program implements Program.Locatable                       
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a branch
 
   Bint          find (Int Key)   {return getDataFromKey(Key, false);}                                                   // Get the data associated with a key
-  Bint        delete (Int Key)   {return getDataFromKey(Key, true);}                                                    // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Bint        delete (Int Key)   {return getDataFromKey(Key, true);}                                                    // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
   void    deleteSlot (Int Slot)  {slots.delete(Slot);}                                                                  // Delete a slot in the branch given the index of the slot
 
   Slots.Find findKey (Int Key)   {return slots.new Find(Key);}                                                          // Locate the specified key in the branch
@@ -137,7 +137,7 @@ class Branch extends Program implements Program.Locatable                       
    {final Int   key = new Int ("key");                                                                                  // The key we are stepping down with
     final Int  node = new Int ("node");                                                                                 // The next node down
     final Bint slot = new Bint("slot");                                                                                 // The slot used to step down.  If not set then stepped through top
-    final Bit eqKey = new Bit ("eqKey");                                                                                // Indicates whether the search key was equal to the key being stepped through -if not it must have been less than
+    final Bit eqKey = new Bit ("eqKey");                                                                                // Indicates whether the search key was equal to the key being stepped through. If the search key is not not equal than it must have been less than
 
     public String toString ()
      {final StringBuilder s = new StringBuilder();
@@ -257,7 +257,7 @@ class Branch extends Program implements Program.Locatable                       
     final Branch L = this, R = Right;
     R.slots.initializeMemory();                                                                                         // Clear the target
     R.refData.copy(L.refData, L.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
-    final Int sk = L.slots.splitRightOdd(R.slots);                                                                      // Split the slots  and get the index of the splitting key
+    final Int sk = L.slots.splitRightOdd(R.slots);                                                                      // Split the slots and get the index of the splitting key
     R.top(L.top());                                                                                                     // Right top becomes left top
     L .top(L.data(sk));                                                                                                 // Left top is data from splitting key
     R.refLevel.copy(L.refLevel, 1);                                                                                     // Copy the level of the left branch into the level of the right branch
@@ -266,12 +266,12 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   Int splitLeft (Branch Left)                                                                                           // Split a full branch leftwards into a supplied branch and return the splitting key
-   {subStart("Branch.mergeRight");
+   {subStart("Branch.splitLeft");
     if (immediate() && count().i() < 2) stop("Branch must have at least two children before it can be split");          // The branch must have sufficient entries
     final Branch L = Left, R = this;
     L.slots.initializeMemory();                                                                                         // Clear target
     L.refData.copy(R.refData, R.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
-    final Int sk = R.slots.splitLeftOdd(L.slots);                                                                       // Split the slots  and get the index of the splitting key
+    final Int sk = R.slots.splitLeftOdd(L.slots);                                                                       // Split the slots and get the index of the splitting key
     L .top(R.data(sk));                                                                                                 // Left top is data from splitting key
     final Int r = R.slots.getKeyValue(sk).constant();                                                                   // Splitting key
     L.refLevel.copy(R.refLevel, 1);                                                                                     // Copy the level of the right branch into the level of the left branch
@@ -357,7 +357,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   void iterate (Iterator Iterator)                                                                                      // Iterate over a branch
-   {subStart("Branch.print");
+   {subStart("Branch.iterate");
     final Bint f = slots.firstSlot().dup();                                                                             // First slot in branch
     new If (f)
      {void Then()
