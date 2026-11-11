@@ -32,17 +32,17 @@ public class Test                                                               
   static       boolean                          debug = false;                                                          // Global debug flag
 // Uncomment zz for methods not called analysis
 // Uncomment z  for blocks not called analysis
-  final static String   coverageAnalysisSubStart = "zz"+"();";                                                          // A string indicating the start of a subroutine - method entries only
-//final static String   coverageAnalysisSubStart = "z"+"();";                                                           // Any labeled statement
-  static final TreeMap<String, Integer> coverage = new TreeMap<>();                                                     // Count of how many times each line has been executed
-  static String                        testGroup = null;                                                                // Tests can be split into groups so that they can be run in parallel
+  final static String        coverageAnalysisSubStart = "zz"+"();";                                                     // A string indicating the start of a subroutine - method entries only
+//final static String        coverageAnalysisSubStart = "z"+"();";                                                      // Any labeled statement
+  static final TreeMap<String, Integer>      coverage = new TreeMap<>();                                                // Count of how many times each line has been executed
+  static String                             testGroup = null;                                                           // Tests can be split into groups so that they can be run in parallel
 
-  static boolean         stopShouldThrowStopTest = false;                                                               // Stop should through an exception rather than actually stopping - useful during testing to confirm that errors are detected
-  static int                   currentTestNumber = 0;                                                                   // Current test being run
-  static long                    currentTestTime = System.nanoTime();                                                   // Time current test started
+  static boolean              stopShouldThrowStopTest = false;                                                          // Stop should through an exception rather than actually stopping - useful during testing to confirm that errors are detected
+  static int                        currentTestNumber = 0;                                                              // Current test being run
+  static long                         currentTestTime = System.nanoTime();                                              // Time current test started
+  static int             testsPassed = 0, testsFailed = 0;                                                              // Number of tests passed and failed
 
   static double elapsedTime (Long Start) {return (System.nanoTime() - Start) / 1_000_000_000.0;}                        // Elapsed time in seconds since start
-  static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
   Test () {testsStartHere();}                                                                                           // Constructor
 
