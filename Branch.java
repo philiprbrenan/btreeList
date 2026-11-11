@@ -114,8 +114,9 @@ class Branch extends Program implements Program.Locatable                       
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a branch
 
-  Bint   find (Int Key) {return getDataFromKey(Key, false);}                                                            // Get the data associated with a key
-  Bint delete (Int Key) {return getDataFromKey(Key, true);}                                                             // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Bint          find (Int Key)   {return getDataFromKey(Key, false);}                                                   // Get the data associated with a key
+  Bint        delete (Int Key)   {return getDataFromKey(Key, true);}                                                    // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  void    deleteSlot (Int Slot)  {slots.delete(Slot);}                                                                  // Delete a slot in the branch given the index of the slot
 
   Slots.Find findKey (Int Key)   {return slots.new Find(Key);}                                                          // Locate the specified key in the branch
   Int       keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                               // The index of the key from the index of the slot in the branch
