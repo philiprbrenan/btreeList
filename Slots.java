@@ -129,13 +129,11 @@ class Slots extends Program                                                     
   Bit     getSlotToKeysInUse (Int Index)    {return usedSlotsToKeys.getBit(Index);}                                     // Check whether a slot is in use
   Int      getSlotToKeyIndex (Int Index)    {return refSlotsToKeys .getInt(Index);}                                     // Index to keys from slots
   Int      getKeyToSlotIndex (Int Index)    {return refKeysToSlots .getInt(Index);}                                     // Index to slots from keys
-  Bit            getKeyInUse (Int Index)    {return usedKeys       .getBit(Index);}                                     // Check whether a key is in use
   Int            getKeyValue (Int Index)    {return refKeys        .getInt(Index);}                                     // Value of referenced key
 
   boolean getSlotToKeysInUse (int Index)    {return usedSlotsToKeys.getBitNC(Index);}                                   // Check whether a slot is in use
   int      getSlotToKeyIndex (int Index)    {return refSlotsToKeys .getInt(Index);}                                     // Index to keys from slot
   int      getKeyToSlotIndex (int Index)    {return refKeysToSlots .getInt(Index);}                                     // Index from slots to keys
-  boolean  getKeyInUse       (int Index)    {return usedKeys       .getBitNC(Index);}                                   // Check whether a key is in use
   int      getKeyValue       (int Index)    {return refKeys        .getInt(Index);}                                     // Value of referenced key
 
   Int      getSlotToKeyValue (Int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                             // Value of a key via a specified slot
@@ -144,26 +142,24 @@ class Slots extends Program                                                     
   Bit                  empty ()             {return usedKeys.empty();}                                                  // All bits in the corresponding bitset are unused so the Slots must be empty
   Bit                   full ()             {return usedKeys.full ();}                                                  // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
   Int                  count ()             {return usedKeys.count();}                                                  // The computed number of keys in the slots
-  int                  Count ()             {return usedKeys.Count();}                                                  // The computed number of keys in the slots
-//void  invalidateMemory ()                {unitMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   Int           numberOfKeys ()             {return new Int(numberOfKeys);}                                             // The number of references in the slots definition
   int    numberOfSlotsToKeys ()             {return numberOfKeys<<1;}                                                   // Number of slots from number of refs
   int    redistributionWidth ()             {return (int)java.lang.Math.sqrt(numberOfKeys);}                            // Redistribute if the next slot is further than this
-  Bint   locateFirstUsedSlot ()             {return usedSlotsToKeys.firstOne();}                                        // Index of first used slot
-  Bint    locateLastUsedSlot ()             {return usedSlotsToKeys.lastOne();}                                         // Index of last used slot
-  Bint              stepLeft (Int Start)    {return usedSlotsToKeys.prevOne(Start);}                                    // Step left to prior occupied slot assuming that such a step is possible
-  Bint             stepRight (Int Start)    {return usedSlotsToKeys.nextOne(Start);}                                    // Step right to the next occupied slot assuming that such a step is possible
 
+  Bint             firstSlot ()             {return usedSlotsToKeys.firstOne();}                                        // First slot
+  Bint              nextSlot (Int Pos)      {return usedSlotsToKeys.nextOne(Pos);}                                      // Next slot
+  Bint              prevSlot (Int Pos)      {return usedSlotsToKeys.prevOne(Pos);}                                      // Previous slot
+  Bint              lastSlot ()             {return usedSlotsToKeys.lastOne();}                                         // Last slot
   Bint  locateFirstUnusedKey ()             {return usedKeys.firstZero();}                                              // Absolute position of the first unused key
 
   Bint indexOfFirstKey()                                                                                                // Index of first key if there is one
-   {final Bint f = locateFirstUsedSlot();                                                                               // First used slot
+   {final Bint f = firstSlot();                                                                                         // First used slot
     new If (f) {void Then() {f.set(getSlotToKeyIndex(f.i()));}};                                                        // Location of key associated with first used slot
     return f;
    }
 
   Bint indexOfLastKey()                                                                                                 // Index of last key if there is one
-   {final Bint f = locateLastUsedSlot();                                                                                // Last used slot
+   {final Bint f = lastSlot();                                                                                          // Last used slot
     new If (f) {void Then() {f.set(getSlotToKeyIndex(f.i()));}};                                                        // Location of key associated with last used slot
     return f;
    }
@@ -1098,8 +1094,8 @@ class Slots extends Program                                                     
         usedSlotsToKeys.full().ok(false);
         putSlotToKeys(Zero, One);
 
-        locateFirstUsedSlot().ok(0);
-        locateLastUsedSlot ().ok(2);
+        firstSlot().ok(0);
+        lastSlot ().ok(2);
 
         putKey (One, new Int(11));
         putKey (new Int(3), new Int(22));
