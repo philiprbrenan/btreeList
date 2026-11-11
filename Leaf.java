@@ -215,7 +215,7 @@ class Leaf extends Program implements Program.Locatable                         
    }
 
   void iterate (Iterator Iterator)                                                                                      // Iterate over a leaf
-   {final Bint f = slots.usedSlotsToKeys.firstOne().dup();
+   {final Bint f = slots.firstSlot().dup();
     new If (f.valid())
      {void Then()
        {new For(maxSize)
@@ -223,7 +223,7 @@ class Leaf extends Program implements Program.Locatable                         
            {final Int i = f.i();
             final Int k = slots.getSlotToKeyValue(i).constant(), d = data(slots.getSlotToKeyIndex(i)).constant();
             new I() {void a() {Iterator.process(k, d);}  boolean trace() {return false;}};
-            f.copy(slots.usedSlotsToKeys.nextOne(i));
+            f.copy(slots.nextSlot(i));
             Continue.set(f.valid());
            }
          };
