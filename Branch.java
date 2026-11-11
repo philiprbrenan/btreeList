@@ -2,6 +2,14 @@
 // Branch of a btree implemented using distributed sparse slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+//Tree.java:794: {new If (b.slots.empty())                                                                              // Parent is now empty and so can also be removed
+//Tree.java:800: {final Bint U = b.slots.lastSlot();                                                                // Last slot in body of parent
+//Tree.java:801: final Int  u = b.data(b.slots.getSlotToKeyIndex(U.i()));                                          // Uppermost child in body of parent
+//Tree.java:803: b.slots.delSlotAndKey(U.i());                                                                     // Remove uppermost child in body of parent now it has  been made top
+//Tree.java:1012: R.slots.delete(f.slot.i());                                                                                 // Remove key from root leaf comprising tree
+//Tree.java:1164: {void Then() {L.copy(P.slots.prevSlot(Pos.i()));}                                                                  // There might be a previous sibling to the left from a child in the body of the parent
+//Tree.java:1165: void Else() {L.copy(P.slots.lastSlot());}                                                                         // There might be a chikld in teh bidy of the parent to merge with top
+//Tree.java:1219: final Bint R = P.slots.nextSlot(L.i());                                                                         // Next right sibling
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -108,6 +116,9 @@ class Branch extends Program implements Program.Locatable                       
 
   Bint   find (Int Key) {return getDataFromKey(Key, false);}                                                            // Get the data associated with a key
   Bint delete (Int Key) {return getDataFromKey(Key, true);}                                                             // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+
+  Slots.Find findKey (Int Key)   {return slots.new Find(Key);}                                                          // Locate the specified key in the branch
+  Int       keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                               // Index of key from index of slot
 
   Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.new Find(Key);                                                                           // Find the key
