@@ -637,11 +637,11 @@ public class Program extends Test                                               
     int     in0j ()       {return fast ? i()                   : intMemory().read0Int;}                                 // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
     int     in1j ()       {return fast ? i()                   : intMemory().read1Int;}                                 // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
     int     in2j ()       {return fast ? i()                   : intMemory().read2Int;}                                 // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
-    int      onj ()       {return fast ? i()                   : intMemory().writeInt;}                                 // Java value of integer to be written into memeory or into the fast integers array
+    int      onj ()       {return fast ? i()                   : intMemory().writeInt;}                                 // Java value of integer to be written into memory or into the fast integers array
     String  in0v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read0Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String  in1v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read1Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
     String  in2v ()       {return fast ? "fastInts["+cawci+"]" : intMemory().read2Int();}                               // Verilog name of integer retrieved either from the memory used for integers or from the array of fast integers
-    String   onv ()       {return fast ? "fastInts["+cawci+"]" : intMemory().writeInt();}                               // Verilog name of integer to be written into memeory or into the fast integers array
+    String   onv ()       {return fast ? "fastInts["+cawci+"]" : intMemory().writeInt();}                               // Verilog name of integer to be written into memory or into the fast integers array
 
     Int constant ()       {constant = true;  return this;}                                                              // Mark as a constant
     Int variable ()       {constant = false; return this;}                                                              // Mark as a variable
@@ -727,7 +727,7 @@ public class Program extends Test                                               
 
     abstract class LoadSourceOrTarget                                                                                   // Set index and values of memory for integer variables
      {LoadSourceOrTarget(String Label, int Register, boolean LoadValue)                                                 // The value should not be set for operations where the target already contains the value to store
-       {if (fast) return;                                                                                               // Bypass for inetgers held in registers
+       {if (fast) return;                                                                                               // Bypass for integers held in registers
         final Memory  m = intMemory();                                                                                  // Value register
         final String mi = pV(m.readWriteIndex());                                                                       // Index register
         final String mv = pV(m.read0Int());                                                                             // Value register
@@ -1328,7 +1328,7 @@ public class Program extends Test                                               
         String v() {return ints.readWriteIndex() + " <= "+cawci+";" + vTrace(  "%8d getInt2 Set write index %8d", "pc",        cawci);}
        }.c(r.id);
 
-      new I()                                                                                                           // Write integer obtained from this memory back into the memory that holds integers ans start the write to memory process.  If we had used W () we would have to use another clock cycle.  Perhaos another table that tells us whether to assert or clear wriote enable for each memory would be helpful in automating this action and running it in parallel with other instructions
+      new I()                                                                                                           // Write integer obtained from this memory back into the memory that holds integers and start the write to memory process.  If we had used the "W" method we would have to use another clock cycle.  Perhaps another table that tells us whether to assert or clear wriote enable for each memory would be helpful in automating this action and running it in parallel with other instructions
        {void   a() {read0Int = r.i(units[I.i]); r.v = true; ints.writeInt        =     read0Int;       ints.writeIntEnable        = true; jTrace(f("%8d getInt3 save %8d = %8d",  currentPc(), ints.readWriteIndex, lui(read0Int)));}
         String v() {return                                  ints.writeInt() + " <= " + read0Int()+"; "+ints.writeIntEnable() + " <= 1;" + vTrace(  "%8d getInt3 save %8d = %8d", "pc",         ints.readWriteIndex(),   read0Int());}
        };
@@ -1551,7 +1551,7 @@ endmodule
 endmodule
 """, "name", m(), "size", ""+size()));
 
-      final FileNames f = blackBoxFolder.file(m());                                                                     // Write black box descripition for memory so that Silicon compiler can incorporate it
+      final FileNames f = blackBoxFolder.file(m());                                                                     // Write black box description for memory so that Silicon compiler can incorporate it
       writeFile(f.v$(), ""+s);
       blackBoxes.push(f);
 
@@ -1607,7 +1607,7 @@ endmodule
 
 //D2 Locks                                                                                                              // Memory must be locked to prevent it from being read or modified by multiple processes at the same time. Although we do not actually run multiple processes, we can simulate concurrent access. This is preferable to relying solely on actual execution in some ways, because we can control the simulation to achieve better test coverage and reproduce the same scenarios for regression testing.
 
-    class Locks                                                                                                         // Locks held by the currently executing programs.  Static to avoid tying it to a particular program. Although there is, in effect, only one CPU never the less we can have one program called inside another to provide a simulation of more than one program running at a time with the advantages of determinancy and repeatability.
+    class Locks                                                                                                         // Locks held by the currently executing programs.  Static to avoid tying it to a particular program. Although there is, in effect, only one CPU never the less we can have one program called inside another to provide a simulation of more than one program running at a time with the advantages of determinism and repeatability.
      {final TreeMap<Integer,Lock> locks = new TreeMap<>();
 
       class Lock                                                                                                        // A lock on an area of memory. It is upto the user to respect the lock and to know to how much memory it applies
@@ -1674,7 +1674,7 @@ endmodule
      }
 
     void lockMemory (Int I)                                                                                             // Lock the memory associated with an address
-     {if (!runWithLocking || addressToArea == null) return;                                                             // Only create locks on permanent memory that might be accessed from more then one transaction
+     {if (!runWithLocking || addressToArea == null) return;                                                             // Only create locks on permanent memory that might be accessed from more than one transaction
 
       new I()
        {void a()
@@ -1700,7 +1700,7 @@ endmodule
      }
 
     void freeAllLocksInstruction ()                                                                                     // Create an instruction to free all the locks held by a transaction
-     {if (!runWithLocking || addressToArea == null) return;                                                             // Only create locks on permanent memory that might be accessed from more then one transaction
+     {if (!runWithLocking || addressToArea == null) return;                                                             // Only create locks on permanent memory that might be accessed from more than one transaction
       new I()
        {void        a () {freeAllLocks();}                                                                              // Search for locks created by the current transaction
         String      v () {return "/* freeAllLocks */";}
@@ -1812,7 +1812,7 @@ endmodule
 
     abstract void a ();                                                                                                 // Override to specify the action to be performed in Java by the instruction
     String        v () {return "";};                                                                                    // Override to specify the Verilog code to be generated for this instruction
-    int      traces () {return 1;}                                                                                      // Number of trace records expected - currently this is an override to avoid teh difficulty of specifying it via a constructor without keyword parameters
+    int      traces () {return 1;}                                                                                      // Number of trace records expected - currently this is an override to avoid the difficulty of specifying it via a constructor without keyword parameters
     boolean   trace () {return true;}                                                                                   // Enable tracing
 
     I c (int I) {            pcConstant(this, I);        return this;}                                                  // Save an integer constant associated with this instructions in the pcConstant array which is decoded ahead of each instruction execution to provide this information during instruction execution in Verilog without having to decode it from the instruction format
@@ -2295,7 +2295,7 @@ cd {f}; yosys -q {y}                                                            
     if (wastedWrites.size() > 0) say("Wasted Writes:\n", wastedWrites);
    }
 
-  void printProgramExecutionStatistics ()                                                                               // Execution statistics for prgram
+  void printProgramExecutionStatistics ()                                                                               // Execution statistics for program
    {//printReadWriteUsage();                                                                                            // Print read write usage of integers
     //printExecutionCoverageForTest();                                                                                  // Print details of which instructions were executed and which were not
     //say(f("%d integers, %d fast integers, %d bits", nextIntId, nextFastIntId, nextBitId));                            // Numbers of variables
@@ -2541,7 +2541,7 @@ endmodule
       if ({size} % N != 0) $fwrite(traceFile, "\\n");
       $fflush(traceFile);
 
-    //$fwrite(traceFile, "      read0Int = %8d\\n", {n}_read0Int);                                                      // Different behavior in Java and Verilog - in Verilog continuously assigned what ever is indexed by readWriteIndex, in Java just the last update
+    //$fwrite(traceFile, "      read0Int = %8d\\n", {n}_read0Int);                                                      // Different behavior in Java and Verilog - in Verilog continuously assigned whatever is indexed by readWriteIndex, in Java just the last update
       $fwrite(traceFile, "      read1Int = %8d\\n", {n}_read1Int);
       $fwrite(traceFile, "      read2Int = %8d\\n", {n}_read2Int);
       $fwrite(traceFile, "      writeInt = %8d\\n", {n}_writeInt);
@@ -2844,7 +2844,7 @@ check
 `ifdef __ICARUS__
   reg[31:0] memory [0:{size}];
   initial $readmemh("{file}", memory, 0, {size});
-  assign dout0 = memory[addr0];                                                                                         // Assume that the value can be retrieved from memory and used in a comoptation all within one clock cycle.
+  assign dout0 = memory[addr0];                                                                                         // Assume that the value can be retrieved from memory and used in a computation all within one clock cycle.
 `endif
 endmodule
 """,
@@ -2901,7 +2901,7 @@ endmodule
 
   static abstract class AddressToArea   {                   abstract int addressToArea(int a);}                         // Translate an address in memory to an area of memory to be locked
   static AddressToArea addressToZero () {return new AddressToArea() {int addressToArea(int a) {return 0;}};}            // Area is always zero
-  static AddressToArea addressToOne  () {return new AddressToArea() {int addressToArea(int a) {return a;}};}            // Area sio always same as address
+  static AddressToArea addressToOne  () {return new AddressToArea() {int addressToArea(int a) {return a;}};}            // Area is always same as address
 
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
