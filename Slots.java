@@ -1116,9 +1116,18 @@ usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   X   .   .   .   .
 keys     :    0  11   0  22   0   0   0   0
 """);
+        t.check(t.print(), """
+Slots    : size:  8, count:  2
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   2   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    .   X   .   X   .   .   .   .
+keys     :    0  11   0  22   0   0   0   0
+""");
 
-        delSlotToKeys(new Int(2));
-        delKey       (new Int(3));
+        s.delSlotToKeys(new Int(2));
+        s.delKey       (new Int(3));
         //stop(s);
         s.check(s.print(), """
 Slots    : size:  8, count:  1
@@ -2528,7 +2537,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_delete(true);
+    test_slots(true);
    }
 
 // perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList"
