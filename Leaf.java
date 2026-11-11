@@ -420,6 +420,7 @@ Leaf           size:   8, count:   8
    5     7    77
    7     8    88
 """);
+
     final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
     //r.initializeMemory();
     l.splitRight(r).ok(4);
@@ -784,7 +785,8 @@ Leaf           size:   8, count:   8
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_splitRight();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
