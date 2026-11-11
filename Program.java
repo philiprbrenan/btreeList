@@ -14,7 +14,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static String                     currentProject = "Hanging empty leaf";                                        // Lock main memory before a read or a write leaving the burden of freeing excess locks to the user
+ {final static String                     currentProject = "Find - verilog";                                            // Lock main memory before a read or a write leaving the burden of freeing excess locks to the user
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
@@ -128,7 +128,8 @@ public class Program extends Test                                               
     Zero            = new Int(0);                                                                                       // Integer constant zero
     One             = new Int(1);                                                                                       // Integer constant one
 
-    mainMemory      = new Memory(Build.size, "program", new Memory.ReadWrite(), build.addressToArea);                   // Main memory associated with the program
+    mainMemory      = p ? new Memory(Build.size, "program", new Memory.ReadWrite(), build.addressToArea) :              // Main memory associated with the program
+                      program().mainMemory;
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -2622,13 +2623,11 @@ endmodule
 
     void printInstructionLocations ()                                                                                   // Print the location of each instruction
      {final String f = verilogTestFolder.file("InstructionLocations").txt$();                                           // Instruction to location listing file
-      final StringBuilder s = new StringBuilder();
 
-      for(I i: code) s.append("-"+i.instructionNumber+"\n"+i.traceBack+"\n");                                           // Each instruction
 
       try
        (final BufferedWriter out = Files.newBufferedWriter(Path.of(f)))                                                 // Java's ghastly way of opening files
-       {out.write(""+s);
+       {for (I i : code) out.write("-"+i.instructionNumber+"\n"+i.traceBack+"\n");                                      // Each instruction
        }
       catch(Exception e) {stop(e, fullTraceBack(e));}                                                                   // Close output file
      }
