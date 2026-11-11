@@ -66,7 +66,7 @@ class Tree extends Program                                                      
       leaf                  = new Leaf   .Build().maxSize(maxLeafSize)  ; leaf     .build();                            // Size of a leaf
       leafSize              = leaf.size();
       branchSize            = branch.size();
-      nodeSize              = nextPowerOfTwo(max(branchSize, leafSize));                                                // Next power of two to make it easy to find the node we are inf or a given address and hence set locking
+      nodeSize              = nextPowerOfTwo(max(branchSize, leafSize));                                                // Next power of two to make it easy to find the node we are in for a given address and hence set locking
       logTwoSizeOfNode      = logTwo(nodeSize);                                                                         // Log two size of a node in the tree
       unitsNeededForNodes   = numberOfNodes * nodeSize;
       unitsNeededForFree    = freeChain.units();
@@ -163,7 +163,7 @@ class Tree extends Program                                                      
   int maxBranchSize () {return maxBranchSize;}                                                                          // Maximum size of a branch
   int numberOfNodes () {return numberOfNodes;}                                                                          // Maximum number of nodes in tree
   int           mnl () {return maximumNumberOfLevels;}                                                                  // Maximum number of levels
-  int          mnl2 () {return maximumNumberOfLevels << 1;}                                                             // Twice the macimum number of levels to make sure that we really do have enough space to describe a path through the tree
+  int          mnl2 () {return maximumNumberOfLevels << 1;}                                                             // Twice the maximum number of levels to make sure that we really do have enough space to describe a path through the tree
 
   void         lockRoot () { getLock(root());}                                                                          // Lock root
   void       unlockRoot () {freeLock(root());}                                                                          // Unlock root
@@ -572,7 +572,7 @@ class Tree extends Program                                                      
          }
        };
 
-      //if (immediate && !leaf.valid().b()) stop("Find fell off the end of tree after this many searches:", mnl());     // Leaf is now an "Int" becuase I am sure that a leaf will always be found
+      //if (immediate && !leaf.valid().b()) stop("Find fell off the end of tree after this many searches:", mnl());     // Leaf is now an "Int" because a leaf will always be found
       subFinish();
      }
 
@@ -1319,7 +1319,7 @@ class Tree extends Program                                                      
      {immediateModeCheck();
       boolean isLeaf;                                                                                                   // Whether the root is a leaf
       if (isLocked(0))   isLeaf = isLeaf(0);                                                                            // Root already locked so we can check its status immediately
-      else {getLock(0); isLeaf = isLeaf(0); freeLock(0);}                                                               // Root not locked so lock it s it can be read, then unlock it to restore the status quo ante
+      else {getLock(0); isLeaf = isLeaf(0); freeLock(0);}                                                               // Root not locked so lock it so it can be read, then unlock it to restore the status quo ante
 
       if (isLeaf) pLeaf    (0, 0, 0, 0);
       else        traverse (0, 0, 0);
