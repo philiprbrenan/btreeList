@@ -66,7 +66,7 @@ class Tree extends Program                                                      
       leaf                  = new Leaf   .Build().maxSize(maxLeafSize)  ; leaf     .build();                            // Size of a leaf
       leafSize              = leaf.size();
       branchSize            = branch.size();
-      nodeSize              = nextPowerOfTwo(max(branchSize, leafSize));                                                // Next power of two to make it easy to find teh node we are inf or a given address and hence set locking
+      nodeSize              = nextPowerOfTwo(max(branchSize, leafSize));                                                // Next power of two to make it easy to find the node we are inf or a given address and hence set locking
       logTwoSizeOfNode      = logTwo(nodeSize);                                                                         // Log two size of a node in the tree
       unitsNeededForNodes   = numberOfNodes * nodeSize;
       unitsNeededForFree    = freeChain.units();
@@ -682,7 +682,7 @@ class Tree extends Program                                                      
     final Bit        eqKey = new  Bit("equal key");                                                                     // A branch has a key that is equal to the search key
     final Memory.Ref  path = mergePath.new Ref(0);                                                                      // Branches along path
 
-    Path(Int Key)                                                                                                       // Locat ethe path to the leaf that should contain teh key and lock all nodes from the root to the leaf
+    Path(Int Key)                                                                                                       // Locate the path to the leaf that should contain the key and lock all nodes from the root to the leaf
      {subStart("Tree.Path");
       final Int p = root().dup(); getLock(p);                                                                           // Start at root
       final Bit valid = new Bit(false);                                                                                 // Whether a leaf was reached
@@ -1162,7 +1162,7 @@ class Tree extends Program                                                      
 
     new If (Pos)                                                                                                        // Merging relative to top
      {void Then() {L.copy(P.prevSlot(Pos.i()));}                                                                        // There might be a previous sibling to the left from a child in the body of the parent
-      void Else() {L.copy(P.lastSlot());}                                                                               // There might be a chikld in teh bidy of the parent to merge with top
+      void Else() {L.copy(P.lastSlot());}                                                                               // There might be a child in the body of the parent to merge with top
      };
 
     new If (L)                                                                                                          // A left child exists
