@@ -1118,7 +1118,7 @@ class Tree extends Program                                                      
   void mergeLeftBranchIntoRightSibling (Branch Parent, Int LeftSlot, Branch Left, Branch Right, boolean Unlock)         // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {subStart("Tree.mergeLeftBranchIntoRightSibling");
     final Branch P = Parent;
-    final Int    k = P.slots.getSlotToKeyValue(LeftSlot);                                                               // The parent key for the left sibling
+    final Int    k = P.keyValue(LeftSlot);                                                                              // The parent key for the left sibling
     new If (Right.mergeLeft(Left, k))                                                                                   // Successfully merged
      {void Then()                                                                                                       // The left sibling can now be freed
        {P.slots.delete(LeftSlot);                                                                                       // Remove from parent
