@@ -328,6 +328,7 @@ class Tree extends Program                                                      
    {subStart("Tree.dumpTree");
     final StringBuilder s = new StringBuilder();
     final Int           f = new Int(numberOfNodes()).Sub(freeChain.count());
+say("BBBB1111", printTree());
     new I()                                                                                                             // Dump the tree statistics
      {void a()
        {s.setLength(0);
@@ -349,14 +350,17 @@ class Tree extends Program                                                      
      {void body(Int Index)
        {new If(isAllocated(Index))
          {void Then()
-           {new If (isLeaf(Index))
+           {final boolean locked = isLocked(Index).b();
+             new If (isLeaf(Index))
              {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void a() {s.append(t);} boolean trace() {return false;}};}
               void Else() {final StringBuilder t = branch(Index).print(); new I() {void a() {s.append(t);} boolean trace() {return false;}};}
              };
+            if (!locked) freeLock(Index);
            }
          };
        }
      };
+say("BBBB2222", printTree(), s);
     subFinish();
     return s;
    }
@@ -914,6 +918,7 @@ class Tree extends Program                                                      
          {void Then()
            {final Int p = R.slots.getSlotToKeyIndex(f.slot.i());                                                        // Position of key in leaf root slots
             R.data(p, Data);                                                                                            // Update data associated with key
+            unlockRoot();
            }
           void Else()                                                                                                   // The key does not exist in the root leaf
            {new If (R.full())                                                                                           // Is the leaf full
@@ -947,7 +952,7 @@ class Tree extends Program                                                      
          {void Then()
            {final Int p = l.slots.getSlotToKeyIndex(F.slot.i());                                                        // Position of key in leaf slots
             l.data(p, Data);                                                                                            // Update data  associated with key
-            freeLock(i);                                                                                                // Release the read lock on the leaf obtained by find leaf
+            freeLock(i);                                                                                                // Release the lock on the leaf obtained by find leaf
            }
           void Else()                                                                                                   // Key is not present in the leaf
            {new If (l.full())                                                                                           // The target leaf is full
@@ -2666,6 +2671,7 @@ dccbfa70b58e9d65597159a702c6e62d
            {new ForCount(2)
              {void body(Int J)
                {insert(J, I);
+say("AAAA", I, J, printTree());
                }
              };
            }
@@ -2954,7 +2960,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteRandom32(true);
+    test_update(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
