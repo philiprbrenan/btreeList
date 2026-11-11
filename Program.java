@@ -2,7 +2,7 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using just ints, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Log changes to memory so that the changes can be undone - needs locking for full implementation
+// Log changes to memory so that the changes can be undone
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -14,12 +14,12 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static String                     currentProject = "Memory sharing";                                            // How memory is shared between main program and sub program
+ {final static String                     currentProject = "Method localization";                                       // How memory is shared between main program and sub program
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
-  final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
+  final static boolean                        runVerilog =!true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
@@ -82,9 +82,6 @@ public class Program extends Test                                               
   int                                         scDieAreaX = 1_000;                                                       // Default size of x dimension for chip. Was 1000x1000 before fast integers for "forCount" made this too small for tree delete
   int                                         scDieAreaY = 1_000;                                                       // Default size of y dimension for chip
   boolean                                      immediate = false;                                                       // Execute immediately if true else generate machine code and execute later
-  boolean                                  transactional = false;                                                       // If transactional then locks are only released at the end of the transaction, otherwise when requested via the "freeLock" method
-  boolean                               executeAfterLock = false;                                                       // Whether this program is executing the after lock test
-  boolean                               requestAfterLock = false;                                                       // Whether this program has requested an after lock test
   boolean                        initializedForExecution = false;                                                       // Whether the program has been initialized for execution or not
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
 
@@ -143,9 +140,7 @@ public class Program extends Test                                               
   void parentProgramCheck () {if (program() != program().program()) stop("Parent program not set to parent program");}  // Check that code is being written to the expected program
   Memory.Locks      locks () {return program().mainMemory.locks;}                                                       // Locks on the main memory used by the program
   int       transactionId () {return program().transactionId;}                                                          // Number of transaction being executed by this program
-  boolean   transactional () {return program().transactional;}                                                          // Whether this is a transaction or not.  A trnsaction commits at the end, a non transaction commits incrementally as the caller releases locks
-  void      transactionId (int     TransactionId) {program().transactionId = TransactionId;}                            // Set the transaction id
-  void      transactional (boolean Transactional) {program().transactional = Transactional;}                            // Set whether transactional or not
+  void      transactionId (int TransactionId) {program().transactionId = TransactionId;}                                // Set the transaction id
 
   void immediateModeCheck ()                                                                                            // Check that code is being executed in immediate mode
    {final String m = "Immediate mode only, cannot be run in delayed execution mode";
@@ -221,7 +216,7 @@ public class Program extends Test                                               
      }
    }
 
-//D1 Program                                                                                                            // Program execution structures.
+//D1 Programming                                                                                                        // Program execution structures.
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
 
@@ -970,14 +965,14 @@ public class Program extends Test                                               
     Int  Min (int I) {return dup().min(I) ;}
     Int  Min (Int I) {return dup().min(I) ;}
 
-    Bit   eq (int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a constant integer
+    Bit   eq (int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with an integer constant
     Bit   ne (int I) {return bie(Ops.ne, I);}
     Bit   le (int I) {return bie(Ops.le, I);}
     Bit   lt (int I) {return bie(Ops.lt, I);}
     Bit   ge (int I) {return bie(Ops.ge, I);}
     Bit   gt (int I) {return bie(Ops.gt, I);}
 
-    Bit   eq (Int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a variable integer
+    Bit   eq (Int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with an integer variable
     Bit   ne (Int I) {return bie(Ops.ne, I);}
     Bit   le (Int I) {return bie(Ops.le, I);}
     Bit   lt (Int I) {return bie(Ops.lt, I);}
@@ -1449,8 +1444,8 @@ public class Program extends Test                                               
 //D2 Memory references                                                                                                  // References to byte memory
 
     final class Ref                                                                                                     // Reference into memory
-     {final Int     offset = new Int();                                                                                 // Offset of this reference in memory
-      final Int offsetBits;                                                                                             // Offset of this reference in memory
+     {final Int     offset = new Int();                                                                                 // Offset of this reference in memory in memory units
+      final Int offsetBits;                                                                                             // Offset of this reference in memory in bits
       final Memory       m = Memory.this;
 
       Ref (int Offset) {offset.set(Offset); offsetBits = offset.Mul(Integer.SIZE);}                                     // Offset this ref
