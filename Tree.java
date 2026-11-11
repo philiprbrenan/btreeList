@@ -194,7 +194,9 @@ class Tree extends Program                                                      
     unlockFreeChain();
    }
 
-  Bit isAllocated (Int Node) {return freeChain.getBit(Node).Flip();}                                                    // Check whether a node is allocated
+  Bit isAllocated (Int Node)                                                                                            // Check whether a node is allocated
+   {lockFreeChain(); final Bit f = freeChain.getBit(Node).Flip(); unlockFreeChain(); return f;
+   }
 
   Int nodeAddress  (Int Node)                                                                                           // Convert an index to a byte address of node in memory
    {if (immediate())
@@ -327,8 +329,11 @@ class Tree extends Program                                                      
   StringBuilder dumpTree ()                                                                                             // Dump the tree
    {subStart("Tree.dumpTree");
     final StringBuilder s = new StringBuilder();
+
+    lockFreeChain();
     final Int           f = new Int(numberOfNodes()).Sub(freeChain.count());
-say("BBBB1111", printTree());
+    unlockFreeChain();
+
     new I()                                                                                                             // Dump the tree statistics
      {void a()
        {s.setLength(0);
@@ -360,7 +365,6 @@ say("BBBB1111", printTree());
          };
        }
      };
-say("BBBB2222", printTree(), s);
     subFinish();
     return s;
    }
@@ -1633,8 +1637,8 @@ Height        :    1
         ok(()->m_9, "Branch:  9,  maximum key:  8\n");
 
         getLock(root());
-        final FindLeafForNextKey n_1 = new FindLeafForNextKey(new Int(1)); freeLock(n_1.leaf.i()); n_1.leaf.ok(3);
-        final FindLeafForNextKey n_2 = new FindLeafForNextKey(new Int(2)); freeLock(n_2.leaf.i()); n_2.leaf.ok(4);
+        final FindLeafForNextKey n_1 = new FindLeafForNextKey(new Int(1)); freeLock(n_1.leaf); n_1.leaf.ok(3);
+        final FindLeafForNextKey n_2 = new FindLeafForNextKey(new Int(2)); freeLock(n_2.leaf); n_2.leaf.ok(4);
 
         delete(new Int(16));
 
@@ -1738,18 +1742,19 @@ Height        :    1
          };
 
         //stop(mainMemoryMd5Sum(), printTree(), showTree());
-        ok(()->mainMemoryMd5Sum(), "eaeb17b251901bfbe4540a4e4e372a32");
+        //ok(()->mainMemoryMd5Sum(), "eaeb17b251901bfbe4540a4e4e372a32");
+        ok(()->mainMemoryMd5Sum(), "803497907d77b4fe9daccb4852963044");
 
         //stop(printTree());
         if (Ex) ok(printTree(), """
                                                            0016                                                                       |
-                                                           (0,2)  6                                                                   |
+                                                           (0,2)  5                                                                   |
                                                            [9,2]2                                                                     |
         0004          0008             0012                                   0020              0024              0028                |
-        (9,0,0)       (9,0,2)          (9,0,4) 8                              (6,0,0)           (6,0,2)           (6,0,4) 2           |
-        [12,0]1       [5,2]1           [10,4]1                                [7,0]1            [4,2]1            [3,4]1              |
+        (9,0,0)       (9,0,2)          (9,0,4) 8                              (5,0,0)           (5,0,2)           (5,0,4) 2           |
+        [12,0]1       [6,2]1           [10,4]1                                [7,0]1            [4,2]1            [3,4]1              |
 1,2,3,4        5,6,7,8       9,10,11,12         13,14,15,16        17,18,19,20       21,22,23,24       25,26,27,28         29,30,31,32|
-(12,9,0)       (5,9,2)       (10,9,4)           (8,9)              (7,6,0)           (4,6,2)           (3,6,4)             (2,6)      |
+(12,9,0)       (6,9,2)       (10,9,4)           (8,9)              (7,5,0)           (4,5,2)           (3,5,4)             (2,5)      |
 """);
 
         //stop(showTree());
@@ -2664,36 +2669,78 @@ dccbfa70b58e9d65597159a702c6e62d
 
   static void test_update(boolean Ex)
    {sayCurrentTestName();
-    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex))
+    final int N = 16;
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeCode()
        {new ForCount(2)
          {void body(Int I)
-           {new ForCount(2)
+           {new ForCount(N)
              {void body(Int J)
-               {insert(J, I);
-say("AAAA", I, J, printTree());
+               {insert(J, J.Inc());
                }
              };
            }
          };
         //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "e376eb1a59ef1afc4150477cdcb133ec");
+        ok(()->mainMemoryMd5Sum(), "6f4745a2d16346e474fbedf82660ad54");
+
         //stop(dumpTree());
         if (Ex) ok(dumpTree(), """
 Tree memory dump
-Leaf   size   :   41
+Leaf   size   :   23
 Branch size   :   34
 Node   size   :   64
-MaxLeafSize   :    4
+MaxLeafSize   :    2
 MaxBranchSize :    3
-NumberOfNodes :    4
-Allocations   :    1
-Number of Keys:    2
-Height        :    1
-Leaf           size:   4, count:   2
+NumberOfNodes :   16
+Allocations   :   11
+Number of Keys:   16
+Height        :    3
+Branch         size:   3, count:   1, top:   5, level:   2
+ Ref   Key  Data
+   1     7     9
+Leaf   at:   2 size:   2, count:   2
+ Ref   Key  Data
+   0    14    15
+   1    15    16
+Leaf   at:   3 size:   2, count:   2
  Ref   Key  Data
    0     0     1
-   1     1     1
+   1     1     2
+Leaf   at:   4 size:   2, count:   2
+ Ref   Key  Data
+   0     2     3
+   1     3     4
+Branch at:   5 size:   3, count:   3, top:   2, level:   1
+ Ref   Key  Data
+   0     9    10
+   1    11     6
+   2    13    12
+Leaf   at:   6 size:   2, count:   2
+ Ref   Key  Data
+   0    10    11
+   1    11    12
+Leaf   at:   7 size:   2, count:   2
+ Ref   Key  Data
+   0     4     5
+   1     5     6
+Leaf   at:   8 size:   2, count:   2
+ Ref   Key  Data
+   0     6     7
+   1     7     8
+Branch at:   9 size:   3, count:   3, top:   8, level:   1
+ Ref   Key  Data
+   0     1     3
+   1     3     4
+   2     5     7
+Leaf   at:  10 size:   2, count:   2
+ Ref   Key  Data
+   0     8     9
+   1     9    10
+Leaf   at:  12 size:   2, count:   2
+ Ref   Key  Data
+   0    12    13
+   1    13    14
 """);
         maxSteps(9_999_999);
         execute();
@@ -2898,25 +2945,24 @@ Leaf           size:   4, count:   2
 
          new ForCount(One, new Int(N+1))
          {void body(Int Index)
-           {if (immediate()) say("AAAA1111", Index, printTree());
-            insert(Index.Mul(10), Index.Mul(11));
+           {insert(Index.Mul(10), Index.Mul(11));
             dumpProgramState("AAAA");
            }
          };
 
         //stop(mainMemoryMd5Sum());
-        ok(()->mainMemoryMd5Sum(), "9c5f08ef098c5535582fee5184a89cd6");
+        ok(()->mainMemoryMd5Sum(), "6cd747a27951e254b915a348dd0c4052");
 
         //stop(printTree());
         if (Ex) ok(printTree(), """
                                                  0080                                                         |
-                                                 (0,2)  6                                                     |
+                                                 (0,2)  5                                                     |
                                                  [9,2]2                                                       |
        0020          0040          0060                          0100          0120           0140            |
-       (9,0,0)       (9,0,2)       (9,0,4) 8                     (6,0,0)       (6,0,2)        (6,0,4) 2       |
-       [3,0]1        [4,2]1        [7,4]1                        [10,0]1       [5,2]1         [12,4]1         |
+       (9,0,0)       (9,0,2)       (9,0,4) 8                     (5,0,0)       (5,0,2)        (5,0,4) 2       |
+       [3,0]1        [4,2]1        [7,4]1                        [10,0]1       [6,2]1         [12,4]1         |
 10,20         30,40         50,60           70,80        90,100         110,120       130,140          150,160|
-(3,9,0)       (4,9,2)       (7,9,4)         (8,9)        (10,6,0)       (5,6,2)       (12,6,4)         (2,6)  |
+(3,9,0)       (4,9,2)       (7,9,4)         (8,9)        (10,5,0)       (6,5,2)       (12,5,4)         (2,5)  |
 """);
 
         new Traverse()
@@ -2960,7 +3006,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_update(true);
+    test_traverse();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
