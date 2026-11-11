@@ -1049,9 +1049,7 @@ class Slots extends Program                                                     
     return P;                                                                                                           // Place key in first key slot
    }
 
-  void delete (Int Slot)                                                                                                // Delete a key
-   {delSlotAndKey(Slot);                                                                                                // Delete key
-   }
+  void delete (Int Slot) {delSlotAndKey(Slot);}                                                                         // Delete a key
 
 //D2 Print                                                                                                              // Print the slots
 
