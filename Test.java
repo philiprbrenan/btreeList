@@ -1742,7 +1742,7 @@ Test.java:.*?:testCallerName
     catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
      {System.err.println(e);
       System.err.println(fullTraceBack(e));
-      System.exit(testsFailed);
+      System.exit(1);
      }
    }
  }
