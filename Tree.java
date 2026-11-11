@@ -1008,8 +1008,8 @@ class Tree extends Program                                                      
         final Slots.Find f = R.findKey(Key);                                                                            // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
-           {data.set(R.data(R.keyIndex(f.slot.i())));                                                    // Data associated with key
-            R.slots.delete(f.slot.i());                                                                                 // Remove key from root leaf comprising tree
+           {data.set(R.data(R.keyIndex(f.slot.i())));                                                                   // Data associated with key
+            R.deleteSlot(f.slot.i());                                                                                   // Remove key from root leaf comprising tree
             countDec();                                                                                                 // Count deleted key
            }
          };
@@ -1021,8 +1021,8 @@ class Tree extends Program                                                      
         final Slots.Find f = l.findKey(Key);                                                                            // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
-           {data.set(l.data(l.keyIndex(f.slot.i())));                                                    // Data associated with key
-            l.slots.delete(f.slot.i());                                                                                 // Remove key from leaf in tree tree
+           {data.set(l.data(l.keyIndex(f.slot.i())));                                                                   // Data associated with key
+            l.deleteSlot(f.slot.i());                                                                                   // Remove key from leaf in tree tree
             p.mergeUp();                                                                                                // Merge leaf and nodes above
             countDec();                                                                                                 // Count deleted key
             new If (p.eqKey)                                                                                            // If the key being deleted was present in a branch we should find it and replace it with the new maximum key under the key being deleted to maintain the invariant that the key in the branch is equal to the maximum key in the tree below
@@ -1104,7 +1104,7 @@ class Tree extends Program                                                      
     final Branch P = Parent;
     new If (Right.mergeLeft(Left))                                                                                      // Successfully merged
      {void Then()
-       {P.slots.delete(LeftSlot);                                                                                       // The left sibling can now be unlocked and freed
+       {P.deleteSlot(LeftSlot);                                                                                         // The left sibling can now be unlocked and freed
         Left.unlockLeaf(); if (Unlock) Right.unlockLeaf();
         free(Left);
        }
@@ -1121,7 +1121,7 @@ class Tree extends Program                                                      
     final Int    k = P.keyValue(LeftSlot);                                                                              // The parent key for the left sibling
     new If (Right.mergeLeft(Left, k))                                                                                   // Successfully merged
      {void Then()                                                                                                       // The left sibling can now be freed
-       {P.slots.delete(LeftSlot);                                                                                       // Remove from parent
+       {P.deleteSlot(LeftSlot);                                                                                         // Remove from parent
         Left.unlockBranch(); if (Unlock) Right.unlockBranch();
         free(Left);
        }
