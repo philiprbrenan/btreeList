@@ -148,8 +148,8 @@ class Branch extends Program implements Program.Locatable                       
               node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
              }
             void Else()                                                                                                 // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
-             {final Bint n = slots.usedSlotsToKeys.nextOne(f.slot.i());
-              new If (n.valid())
+             {final Bint n = slots.nextSlot(f.slot.i());                                                                // Next slot
+              new If (n)                                                                                                // Next slot is valid
                {void Then() {node.set(data(slots.getSlotToKeyIndex(n.i()))); slot.set(n.i());}                          // Node at next level down
                 void Else() {node.set(top());}                                                                          // No next key so step down through top
                };
@@ -189,7 +189,7 @@ class Branch extends Program implements Program.Locatable                       
             refData.putInt(Data);                                                                                       // Place data in the location that corresponds to the key slot used to complete the insertion
            }
           void Else()                                                                                                   // Insert above the last key, which is known to exist because the slots are not empty
-           {final Int l = slots.locateLastUsedSlot().i();
+           {final Int l = slots.lastSlot().i();
             final Slots.Find f = slots.new Find().set(l, false);                                                        // Construct the find to indicate how and where to perform the insertion as if we had just done a find
             r.set(f.insert(Key));                                                                                       // Insert knowing the insertion slot in advance
             final Int k = slots.getSlotToKeyIndex(r);
@@ -344,16 +344,16 @@ class Branch extends Program implements Program.Locatable                       
    {void process(Int Key, Int Data);
    }
 
-  void iterate (Iterator Iterator)                                                                                      // Iterate over a leaf
+  void iterate (Iterator Iterator)                                                                                      // Iterate over a branch
    {subStart("Branch.print");
-    final Bint f = slots.usedSlotsToKeys.firstOne().dup();
+    final Bint f = slots.firstSlot().dup();                                                                             // First slot in branch
     new If (f)
      {void Then()
        {new For(maxSize)
          {void body(Int Index, Bit Continue)
            {final Int k = slots.getSlotToKeyValue(f.i()), d = data(slots.getSlotToKeyIndex(f.i()));
             new I() {void a() {Iterator.process(k, d);} boolean trace() {return false;}};
-            f.copy(slots.usedSlotsToKeys.nextOne(f.i()));
+            f.copy(slots.nextSlot(f.i()));
             Continue.set(f.valid());
            }
          };
