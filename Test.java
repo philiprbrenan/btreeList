@@ -1444,7 +1444,7 @@ public class Test                                                               
 
   static String testCallerName (int Level) {return Level > 0 ?  testCallerName(Level-1) : traceTest();}                 // Has to go before the start of tests
 
-  void testsStartHere ()                                                                                                // Line number in the current file where tests start - so many call made from this point onwards shopuld be assumed to be part of teh test harness rather then teh code to be tested
+  void testsStartHere ()                                                                                                // Line number in the current file where tests start - so many call made from this point onwards should be assumed to be part of the test harness rather then th code to be tested
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
     for(int i = t.length-1; i >= 0; --i)
      {final StackTraceElement s = t[i];
