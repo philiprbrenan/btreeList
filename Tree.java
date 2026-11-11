@@ -388,7 +388,7 @@ class Tree extends Program                                                      
              {leaf.set(p);                                                                                              // Record leaf
               final Leaf  l = leaf(p);                                                                                  // Details of leaf
               final Slots s = l.slots;                                                                                  // Slots for leaf
-              final Bint  f = s.firstSlot();                                                             // First used slot is the first entry
+              final Bint  f = s.firstSlot();                                                                            // First used slot is the first entry
               new If (f)
                {void Then()
                  {key .set(       s.getSlotToKeyValue(f.i()));                                                          // Key from first slot
@@ -399,7 +399,7 @@ class Tree extends Program                                                      
             void Else()                                                                                                 // On a branch
              {final Branch b = branch(p);                                                                               // Branch
               final Slots  s = b.slots;                                                                                 // Slots for branch
-              final Bint   f = s.firstSlot();                                                            // First used slot is the first entry
+              final Bint   f = s.firstSlot();                                                                           // First used slot is the first entry
               final Int    d = new Int("down");
               new If (f)                                                                                                // Body of branch is not empty
                {void Then() {d.set(b.data(s.getSlotToKeyIndex(f.i())));}                                                // Step to first child
@@ -445,7 +445,7 @@ class Tree extends Program                                                      
              {leaf.set(p);                                                                                              // Record leaf
               final Leaf  l = leaf(p);                                                                                  // Details of leaf
               final Slots s = l.slots;                                                                                  // Slots for leaf
-              final Bint  f = s.lastSlot();                                                              // Last used slot is the last entry
+              final Bint  f = s.lastSlot();                                                                             // Last used slot is the last entry
               new If (f)
                {void Then()
                  {key .set(       s.getSlotToKeyValue(f.i()));                                                          // Key from last slot
@@ -456,7 +456,7 @@ class Tree extends Program                                                      
             void Else()                                                                                                 // On a branch
              {final Branch b = branch(p);                                                                               // Branch
               final Slots  s = b.slots;                                                                                 // Slots for branch
-              final Bint   f = s.firstSlot();                                                            // Last used slot is the last entry
+              final Bint   f = s.firstSlot();                                                                           // Last used slot is the last entry
               final Int    d = b.top();                                                                                 // Step through top as there are no entries in the body of the branch
               getLock(d); freeLock(p); p.set(d);                                                                        // Lock child, unlock parent, step down
               Continue.set();                                                                                           // Continue traverse towards a leaf
@@ -655,7 +655,7 @@ class Tree extends Program                                                      
              };
             void Else()                                                                                                 // We have arrived at a leaf - find the maximum element
              {final Slots s = leaf(p).slots;                                                                            // Slots
-              final Bint  i = s.lastSlot();                                                              // Index of slot referencing last key
+              final Bint  i = s.lastSlot();                                                                             // Index of slot referencing last key
               new If (i) {void Then() {maxKey.set(s.getSlotToKeyValue(i.i()));}};                                       // Last key in leaf if there is one
               freeLock(p);
              }
@@ -894,10 +894,10 @@ class Tree extends Program                                                      
     final Bint        data = new Bint();
 
     final Leaf       L = leaf(l.leaf);                                                                                  // Load leaf
-    final Slots.Find f = L.findKey(Key);                                                                         // Search for key in root
+    final Slots.Find f = L.findKey(Key);                                                                                // Search for key in root
     new If (f.equal)
      {void Then()                                                                                                       // Key exists in leaf
-       {final Int k = L.keyIndex(f.slot.i());                                                            // Key slot
+       {final Int k = L.keyIndex(f.slot.i());                                                                           // Key slot
         data.set(L.data(k));                                                                                            // Data associated with key
        }
      };
@@ -913,10 +913,10 @@ class Tree extends Program                                                      
     new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
        {final Leaf R = leaf(root());
-        final Slots.Find f = R.findKey(Key);                                                                     // Perhaps the key is already present in the leaf root tree
+        final Slots.Find f = R.findKey(Key);                                                                            // Perhaps the key is already present in the leaf root tree
         new If (f.equal)                                                                                                // Key exists in leaf root
          {void Then()
-           {final Int p = R.keyIndex(f.slot.i());                                                        // Position of key in leaf root slots
+           {final Int p = R.keyIndex(f.slot.i());                                                                       // Position of key in leaf root slots
             R.data(p, Data);                                                                                            // Update data associated with key
             unlockRoot();
            }
@@ -947,10 +947,10 @@ class Tree extends Program                                                      
        {final FindLeafForKey f = new FindLeafForKey(Key);                                                               // Find the leaf for the key
         final Int            i = f.leaf;                                                                                // Index of leaf
         final Leaf           l = leaf(i);                                                                               // Leaf that should contain the key
-        final Slots.Find     F = l.findKey(Key);                                                                 // Perhaps the key is already present in the leaf
+        final Slots.Find     F = l.findKey(Key);                                                                        // Perhaps the key is already present in the leaf
         new If (F.equal)                                                                                                // Key exists in full leaf
          {void Then()
-           {final Int p = l.keyIndex(F.slot.i());                                                        // Position of key in leaf slots
+           {final Int p = l.keyIndex(F.slot.i());                                                                       // Position of key in leaf slots
             l.data(p, Data);                                                                                            // Update data  associated with key
             freeLock(i);                                                                                                // Release the lock on the leaf obtained by find leaf
            }
