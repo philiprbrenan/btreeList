@@ -19,7 +19,7 @@ public class Program extends Test                                               
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
-  final static boolean                        runVerilog =!true;                                                        // Execute  Verilog version of each program
+  final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
@@ -1947,7 +1947,7 @@ endmodule
        }
      }
 
-    if (steps >= maxSteps) stop("Out of steps after step:", steps);                                                     // Show ran out of steps
+    if (steps >= maxSteps && pc >= 0 && pc < N) stop("Out of steps after step:", steps);                                // Show ran out of steps
     if (!generateVerilog) say(f("            Execution: %,12d", steps));                                                // Show number of steps unless we are going to print this in during the Verilog process
 
     if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
@@ -2412,7 +2412,7 @@ module {name};                                                                  
     forever #1 begin                                                                                                    // Let the clock run
       clock = ~clock;                                                                                                   // Execute instructions
       if (!clock) steps = steps + 1;                                                                                    // Number of steps executed - one per clock cycle
-      if (steps > {maxSteps}) begin $fclose(traceFile); $finish; end                                                    // Upper limit on number of steps for this program
+      if (steps >= {maxSteps}) begin $fclose(traceFile); $finish; end                                                   // Upper limit on number of steps for this program
     end
   end                                                                                                                   // Execute instructions
   always @(posedge clock) begin                                                                                         // Decode and execute instructions by iterating a case statement
@@ -4044,7 +4044,7 @@ Locks, size: 1
 
   static void test_lock (boolean Ex)
    {sayCurrentTestName();
-    final Stack<Character> s = new Stack<>();
+
     new Program(new Build().name("main").memory(8, addressToOne()))
      {void code()
        {final Memory m = mainMemory;
@@ -4088,12 +4088,11 @@ Locks, size: 2
 
   static void test_lockedMemory ()
    {sayCurrentTestName();
-    final Stack<Character> s = new Stack<>();
+
     new Program(new Build().name("main").memory(8).immediate(true))
      {void code()
        {final Memory m = mainMemory;
         final Int a = new Int("a", 1);
-        final Int b = new Int("b", 2);
 
         stopTest(()->m.putInt(a, a), "Cannot access unlocked memory area: 1");
         getLock(a);
@@ -4222,7 +4221,7 @@ Locks, size: 2
     catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
      {System.err.println(e);
       System.err.println(fullTraceBack(e));
-      System.exit(testsFailed);
+      System.exit(1);
      }
    }
  }
