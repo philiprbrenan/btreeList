@@ -1,12 +1,12 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Leaf of a btree implemented using distributed sparse slots.
+// Leaf of a B-tree implemented using distributed sparse slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
 
-class Leaf extends Program implements Program.Locatable                                                                 // A leaf in a btree that translates keys into values to be implemented as an application specific integrated circuit
+class Leaf extends Program implements Program.Locatable                                                                 // A leaf in a B-tree that translates keys into values to be implemented as an application specific integrated circuit
  {final int         maxSize;                                                                                            // The maximum number of entries in a leaf of the tree
   final Slots         slots;                                                                                            // Slots used to order keys in leaf
   Memory.Ref  unitMemoryRef = null;                                                                                     // Byte memory reference containing the tree
@@ -64,9 +64,9 @@ class Leaf extends Program implements Program.Locatable                         
     final Build.MemoryPositions m = build.memoryPositions;
     unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : mainMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
-    refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+    refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots provide an order to order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = unitMemoryRef.step(m.posData);                                                                      // Slots in use
-    if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
+    if (build.at != null) at.set(build.at);                                                                             // The location of the leaf, if supplied
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).memory(refSlots).parent(program()));              // Slots for leaf
     leafCode();                                                                                                         // Generate machine code if any assembler code has been supplied
    }
@@ -95,8 +95,8 @@ class Leaf extends Program implements Program.Locatable                         
   void       copy (Leaf Source)          {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                     // Copy one leaf into another leaf
 
   Bint  firstSlot ()                     {return slots.firstSlot();}                                                    // First occupied slot
-  Bint   nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                                  // Next occupied slot to the given slot
-  Bint   prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                                  // Previous occupied slot to the given slot
+  Bint   nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                                  // Next occupied slot after the given slot
+  Bint   prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                                  // Previous occupied slot before the given slot
   Bint   lastSlot ()                     {return slots.lastSlot();}                                                     // Last occupied slot
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
@@ -122,7 +122,7 @@ class Leaf extends Program implements Program.Locatable                         
     return r;                                                                                                           // Return data associated with key
    }
 
-  Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a leaf returning the index of the containing slot
+  Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key, data pair into a leaf returning the index of the containing slot
    {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                // The key must not already be present
     final Slots.Insert i = slots.insert(Key);                                                                           // Insert key
     final Int          k = slots.getSlotToKeyIndex(i.slot.i()).constant();                                              // Key into which the insertion was performed
