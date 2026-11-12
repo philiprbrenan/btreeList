@@ -97,7 +97,42 @@ class Leaf extends Program implements Program.Locatable                         
     new If (i) {void Then() {i.set(keyValue(i.i()));}};                                                                 // Last key in leaf if there is one
     return i;
    }
+
   Slots.FindGe findGe(Int Key)           {return slots.new FindGe(Key);}                                                // Find slot containing the first key greater then or equal to the search key
+
+  class FirstEntry                                                                                                      // Details of first entry in this leaf
+   {final Bint   f;
+    final Bint key = new Bint("Key");
+    final Int data = new Int ("Data");
+
+    FirstEntry()
+     {f = firstSlot();                                                                                                  // First used slot is the first entry
+      new If (f)
+       {void Then()
+         {final Int F = f.i();                                                                                          // Index of first slot
+          key .set(keyValue(F));                                                                                        // Key from first slot
+          data.set(slotData(F));                                                                                        // Data associated with key
+         }
+       };
+     }
+   }
+
+  class LastEntry                                                                                                       // Details of last entry in this leaf
+   {final Bint  l;
+    final Bint key = new Bint("Key");
+    final Int data = new Int ("Data");
+
+    LastEntry()
+     {l = lastSlot();                                                                                                   // Last used slot is the last entry
+      new If (l)
+       {void Then()
+         {final Int L = l.i();                                                                                          // Index of last slot
+          key .set(keyValue(L));                                                                                        // Key from last slot
+          data.set(slotData(L));                                                                                        // Data associated with key
+         }
+       };
+     }
+   }
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
