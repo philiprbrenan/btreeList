@@ -253,7 +253,6 @@ class Branch extends Program implements Program.Locatable                       
    {subStart("Branch.splitRight");
     if (immediate() && count().i() < 2) stop("Branch must have at least two children before it can be split");          // The branch must have sufficient entries
     final Branch L = this, R = Right;
-    //R.slots.initializeMemory();                                                                                         // Clear the target
     R.refData.copy(L.refData, L.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     final Int sk = L.slots.splitRightOdd(R.slots);                                                                      // Split the slots and get the index of the splitting key
     R.top(L.top());                                                                                                     // Right top becomes left top
@@ -267,7 +266,6 @@ class Branch extends Program implements Program.Locatable                       
    {subStart("Branch.splitLeft");
     if (immediate() && count().i() < 2) stop("Branch must have at least two children before it can be split");          // The branch must have sufficient entries
     final Branch L = Left, R = this;
-    //L.slots.initializeMemory();                                                                                         // Clear target
     L.refData.copy(R.refData, R.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     final Int sk = R.slots.splitLeftOdd(L.slots);                                                                       // Split the slots and get the index of the splitting key
     L .top(R.data(sk));                                                                                                 // Left top is data from splitting key
