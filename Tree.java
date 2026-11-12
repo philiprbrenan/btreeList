@@ -387,25 +387,18 @@ class Tree extends Program                                                      
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
              {leaf.set(p);                                                                                              // Record leaf
-              final Leaf  l = leaf(p);                                                                                  // Details of leaf
-              final Bint  f = l.firstSlot();                                                                            // First used slot is the first entry
-              new If (f)
+              final Leaf.FirstEntry f = leaf(p).new FirstEntry();                                                       // Details of first entry in leaf
+              new If (f.key)                                                                                            // Leaf not empty
                {void Then()
-                 {final Int F = f.i();                                                                                  // Index of first slot
-                  key .set(l.keyValue(F));                                                                              // Key from first slot
-                  data.set(l.slotData(F));                                                                              // Data associated with key
+                 {key .set(f.key.i());                                                                                  // Key from first slot
+                  data.set(f.data);                                                                                     // Data associated with key
                  }
                };
              }
             void Else()                                                                                                 // On a branch
              {final Branch b = branch(p);                                                                               // Branch
-              final Bint   f = b.firstSlot();                                                                           // First used slot is the first entry
-              final Int    d = new Int("down");
-              new If (f)                                                                                                // Body of branch is not empty
-               {void Then() {d.set(b.slotData(f.i()));}                                                                 // Step to first child
-                void Else() {d.set(b.top());}                                                                           // Step through top as there are no entries in the body of the branch
-               };
-              getLock(d); freeLock(p); p.set(d);                                                                        // Lock child, unlock parent, step down
+              final Branch.FirstEntry f = b.new FirstEntry();                                                           // First entry in branch
+              getLock(f.d); freeLock(p); p.set(f.d);                                                                    // Lock child, unlock parent, step down
               Continue.set();                                                                                           // Continue traverse towards a leaf
              }
            };
