@@ -129,6 +129,19 @@ class Branch extends Program implements Program.Locatable                       
     return r;                                                                                                           // Return data associated with key
    }
 
+  class FirstEntry                                                                                                      // First entry in a branch
+   {final Bint f;                                                                                                       // First used slot is the first entry
+    final Int  d = new Int("down");
+
+    FirstEntry()
+     {f = firstSlot();                                                                                                  // First slot
+      new If (f)                                                                                                        // Body of branch is not empty
+       {void Then() {d.set(slotData(f.i()));}                                                                           // Step to first child
+        void Else() {d.set(top());}                                                                                     // Step through top as there are no entries in the body of the branch
+       };
+     }
+   }
+
   class StepDown                                                                                                        // Step down from one layer of the tree to the next lower one
    {final Int   key = new Int ("key");                                                                                  // The key we are stepping down with
     final Int  node = new Int ("node");                                                                                 // The next node down
