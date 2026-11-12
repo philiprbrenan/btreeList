@@ -92,6 +92,12 @@ class Leaf extends Program implements Program.Locatable                         
   Bint   nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                                  // Next occupied slot after the given slot
   Bint   prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                                  // Previous occupied slot before the given slot
   Bint   lastSlot ()                     {return slots.lastSlot();}                                                     // Last occupied slot
+  Bint    lastKey ()                                                                                                    // Last key in leaf if there is one
+   {final Bint i = lastSlot();                                                                                          // Index of slot referencing last key
+    new If (i) {void Then() {i.set(keyValue(i.i()));}};                                                                 // Last key in leaf if there is one
+    return i;
+   }
+  Slots.FindGe findGe(Int Key)           {return slots.new FindGe(Key);}                                                // Find slot containing the first key greater then or equal to the search key
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
