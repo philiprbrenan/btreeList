@@ -11,7 +11,6 @@ class Leaf extends Program implements Program.Locatable                         
   final Slots         slots;                                                                                            // Slots used to order keys in leaf
   Memory.Ref  unitMemoryRef = null;                                                                                     // Byte memory reference containing the tree
   final Bint             at = new Bint();                                                                               // An optional representation of the location of the leaf sufficient to be able to free it
-  final Memory.Ref  refMark;                                                                                            // Mark this node as a leaf
   final Memory.Ref refSlots;                                                                                            // The slot associated with each key being used
   final Memory.Ref refData;                                                                                             // Bitset showing which slots are being mapped to keys
   final Build        build;                                                                                             // Build used to construct this leaf
@@ -63,7 +62,6 @@ class Leaf extends Program implements Program.Locatable                         
     if (maxSize < 2)      stop("MaxSize must be at least 2:",     maxSize);
     final Build.MemoryPositions m = build.memoryPositions;
     unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : mainMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
     refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots provide an order to order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = unitMemoryRef.step(m.posData);                                                                      // Slots in use
     if (build.at != null) at.set(build.at);                                                                             // The location of the leaf, if supplied
@@ -110,7 +108,7 @@ class Leaf extends Program implements Program.Locatable                         
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.set(refData.getInt(keyIndex(f.slot.i())));                                                                    // Get data associated with key
+       {r.set(data(keyIndex(f.slot.i())));                                                                              // Get data associated with key
         if (Delete) deleteSlot(f.slot.i());                                                                             // Delete the key if requested
        }
      };
