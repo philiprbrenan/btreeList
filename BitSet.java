@@ -115,10 +115,12 @@ public class BitSet extends Program                                             
   int                size () {return build.bitSize;}                                                                    // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
   Int          logBitSize () {return new Int(logBitSize)  ;}                                                            // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
   Int         logBitSize1 () {return new Int(logBitSize-1);}                                                            // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
+
   Int               count ()                                                                                            // Count of number of set bits in bitset if this information is being tracked it is available in order (1) time otherwise it is not provided
    {if (!trackCount) stop("Count capability not requested, use Build.count(true) to do so");
     return memoryCount.getInt();
    }
+
   int               Count ()                                                                                            // Count of number of set bits in bitset if this information is being tracked it is available in order (1) time otherwise it is not provided
    {if (!trackCount) stop("Count capability not requested, use Build.count(true) to do so");
     return memoryCount.getInt(0);
@@ -946,7 +948,6 @@ Zero:
     for (int i : range(23, 28)) b.nextZero(b.new Int( i)).ok( 29);
     for (int i : range(29, 32)) b.nextZero(b.new Int( i)).ok(false);
 
-//
                                 b.prevZero(b.new Int( 0)).ok(false);
     for (int i : range( 1, 14)) b.prevZero(b.new Int( i)).ok(i-1);
                                 b.prevZero(b.new Int(14)).ok( 12);
