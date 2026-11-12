@@ -490,13 +490,13 @@ class Tree extends Program                                                      
       getLock(root());
       final FindLeafForNextKey f = new FindLeafForNextKey(Key);                                                         // Start at root
       final Leaf           l = leaf(f.leaf);
-      final Slots          s = l.slots;
-      final Slots.FindGe   n = s.new FindGe(f.key);
+      final Slots.FindGe   n = l.slots.new FindGe(f.key);
       leaf.set(f.leaf);
       new If (n.slot)
        {void Then()
-         {key .set(       s.getSlotToKeyValue(n.slot.i()));                                                             // Key from last slot
-          data.set(l.data(s.getSlotToKeyIndex(n.slot.i())));                                                            // Data associated with key
+         {final Int s = n.slot.i();                                                                                     // Slot referencing the next key
+          key .set(l.keyValue(s));                                                                                      // Key from last slot
+          data.set(l.slotData(s));                                                                                      // Data associated with key
          }
         void Else() {l.unlockLeaf();}                                                                                   // Free the lock on the leaf as no next key was found
        };
