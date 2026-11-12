@@ -761,9 +761,9 @@ class Tree extends Program                                                      
               final Branch l = branch();                                                                                // Create a new branch to split into
               final Int   sk = c.splitLeft(l);                                                                          // Splitting key
 
-              new If (d.slot.notValid())                                                                                // Stepped through top
-               {void Then() {r.insert(sk, l.getLocation().i(), new Bint());}                                            // Insert split out branch as last element of parent branch body
-                void Else() {r.insert(sk, l.getLocation().i(), d.slot);}                                                // Insert split out branch just below the key in this slot
+              new If (d.slot)                                                                                           // Stepped through top
+               {void Then() {r.insert(sk, l.getLocation().i(), d.slot);}                                                // Insert split out branch just below the key in this slot
+                void Else() {r.insert(sk, l.getLocation().i(), new Bint());}                                            // Insert split out branch as last element of parent branch body
                };
 
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
