@@ -11,7 +11,6 @@ class Branch extends Program implements Program.Locatable                       
   final Slots         slots;                                                                                            // Slots used to order keys in branch
   final Bint             at = new Bint();                                                                               // A representation of the location of the branch sufficient to be able to free it
   Memory.Ref  unitMemoryRef = null;                                                                                     // Byte memory reference containing the tree
-  final Memory.Ref  refMark;                                                                                            // Mark this node as a branch
   final Memory.Ref refSlots;                                                                                            // The slot associated with each key being used
   final Memory.Ref  refData;                                                                                            // Bitset showing which slots are being mapped to keys
   final Memory.Ref   refTop;                                                                                            // Target for keys greater than all the keys in the branch bitset
@@ -67,7 +66,6 @@ class Branch extends Program implements Program.Locatable                       
     if (maxSize < 3)      stop("MaxSize must be at least 3:",     maxSize);
     final Build.MemoryPositions m = build.memoryPositions;
     unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : mainMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a branch or a leaf
     refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots provide an ordering of the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refTop        = unitMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
     refLevel      = unitMemoryRef.step(m.posLevel);                                                                     // Level of this branch in the tree.  The first layer of branches above the leaves has level one, the next layer level two and so on, all the way up to the root
@@ -124,7 +122,7 @@ class Branch extends Program implements Program.Locatable                       
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.set(refData.getInt(keyIndex(f.slot.i())));                                                                    // Get data associated with key
+       {r.set(data(keyIndex(f.slot.i())));                                                                    // Get data associated with key
         if (Delete) deleteSlot(f.slot.i());                                                                             // Delete the key if requested
        }
      };
@@ -175,7 +173,7 @@ class Branch extends Program implements Program.Locatable                       
    {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in branch:", Key, print());              // The key must not already be present
     final Slots.Insert i = slots.insert(Key);
     final Int          k = keyIndex(i.slot.i());
-    refData.putInt(k, Data);
+    data(k, Data);
     return i;                                                                                                           // Return the slot in the branch in which the key, data pair was inserted
    }
 
@@ -190,7 +188,7 @@ class Branch extends Program implements Program.Locatable                       
         final Slots.Find f = slots.new Find().set(BelowSlot.i(), true);                                                 // Construct the find to indicate how and where to perform the insertion as if we had just done a find
         r.set(f.insert(Key));                                                                                           // Insert knowing the insertion slot in advance
         final Int k = slots.getSlotToKeyIndex(r);
-        refData.putInt(k, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
+        data(k, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
        }
       void Else()                                                                                                       // No below slot supplied so insert in the middle if empty otherwise at the end
        {new If (slots.empty())                                                                                          // Easy insert as the slots are empty
@@ -203,7 +201,7 @@ class Branch extends Program implements Program.Locatable                       
             final Slots.Find f = slots.new Find().set(l, false);                                                        // Construct the find to indicate how and where to perform the insertion as if we had just done a find
             r.set(f.insert(Key));                                                                                       // Insert knowing the insertion slot in advance
             final Int k = slots.getSlotToKeyIndex(r);
-            refData.putInt(k, Data);                                                                                    // Place data in the location that corresponds to the key slot used to complete the insertion
+            data(k, Data);                                                                                    // Place data in the location that corresponds to the key slot used to complete the insertion
            }
          };
        }
@@ -228,14 +226,14 @@ class Branch extends Program implements Program.Locatable                       
   void compactLeft ()                                                                                                   // Compact a branch to the left
    {subStart("Branch.compactLeft");
     slots.compactSlotsLeft();                                                                                           // Compact the slots to match
-    slots.compactKeysLeft((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                          // Compact the slots to match
+    slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                          // Compact the slots to match
     subFinish();
    }
 
   void compactRight ()                                                                                                  // Compact a branch to the right
    {subStart("Branch.compactRight");
     slots.compactSlotsRight();                                                                                          // Compact the slots to match
-    slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
+    slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                         // Compact the slots to match
     subFinish();
    }
 
@@ -404,7 +402,7 @@ class Branch extends Program implements Program.Locatable                       
          {if (slots.getSlotToKeysInUse(i))
            {final String f = "%4d  %4d  %4d\n";
             final int    k = slots.getSlotToKeyIndex(i);
-            final String t = f(f, k, slots.getSlotToKeyValue(i), refData.getInt(k));
+            final String t = f(f, k, slots.getSlotToKeyValue(i), data(k));
             s.append(t);
            }
          }
