@@ -386,22 +386,21 @@ class Tree extends Program                                                      
            {void Then()
              {leaf.set(p);                                                                                              // Record leaf
               final Leaf  l = leaf(p);                                                                                  // Details of leaf
-              final Slots s = l.slots;                                                                                  // Slots for leaf
-              final Bint  f = s.firstSlot();                                                                            // First used slot is the first entry
+              final Bint  f = l.slots.firstSlot();                                                                      // First used slot is the first entry
               new If (f)
                {void Then()
-                 {key .set(       s.getSlotToKeyValue(f.i()));                                                          // Key from first slot
-                  data.set(l.data(s.getSlotToKeyIndex(f.i())));                                                         // Data associated with key
+                 {final Int F = f.i();                                                                                  // Index of first slot
+                  key .set(l.keyValue(F));                                                                              // Key from first slot
+                  data.set(l.slotData(F));                                                                              // Data associated with key
                  }
                };
              }
             void Else()                                                                                                 // On a branch
              {final Branch b = branch(p);                                                                               // Branch
-              final Slots  s = b.slots;                                                                                 // Slots for branch
-              final Bint   f = s.firstSlot();                                                                           // First used slot is the first entry
+              final Bint   f = b.slots.firstSlot();                                                                     // First used slot is the first entry
               final Int    d = new Int("down");
               new If (f)                                                                                                // Body of branch is not empty
-               {void Then() {d.set(b.data(s.getSlotToKeyIndex(f.i())));}                                                // Step to first child
+               {void Then() {d.set(b.slotData(f.i()));}                                                                 // Step to first child
                 void Else() {d.set(b.top());}                                                                           // Step through top as there are no entries in the body of the branch
                };
               getLock(d); freeLock(p); p.set(d);                                                                        // Lock child, unlock parent, step down
@@ -443,12 +442,12 @@ class Tree extends Program                                                      
            {void Then()
              {leaf.set(p);                                                                                              // Record leaf
               final Leaf  l = leaf(p);                                                                                  // Details of leaf
-              final Slots s = l.slots;                                                                                  // Slots for leaf
-              final Bint  f = s.lastSlot();                                                                             // Last used slot is the last entry
+              final Bint  f = l.slots.lastSlot();                                                                       // Last used slot is the last entry
               new If (f)
                {void Then()
-                 {key .set(       s.getSlotToKeyValue(f.i()));                                                          // Key from last slot
-                  data.set(l.data(s.getSlotToKeyIndex(f.i())));                                                         // Data associated with key
+                 {final Int s = f.i();
+                  key .set(l.keyValue(s));                                                                              // Key from last slot
+                  data.set(l.slotData(s));                                                                              // Data associated with key
                  }
                };
              }
