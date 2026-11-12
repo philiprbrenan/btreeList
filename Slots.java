@@ -105,23 +105,23 @@ class Slots extends Program                                                     
 
   void delSlotToKeys (Int Index)                                                                                        // Delete a slot
    {subStart("Slots.delSlotToKeys");
-    final Int K = refSlotsToKeys.getInt(Index);                                                                         // Slot to key index
-                  refSlotsToKeys.putInt(Index, Zero);                                                                   // Zero forward reference
-    refKeysToSlots.putInt(K,                   Zero);                                                                   // Zero backward reference
-    usedSlotsToKeys.set  (Index,               false);                                                                  // Make this slot reference inactive
+    final Int K = getSlotToKeyIndex(Index);                                                                             // Slot to key index
+              refSlotsToKeys.putInt(Index, Zero);                                                                       // Zero forward reference
+    refKeysToSlots.putInt(K,               Zero);                                                                       // Zero backward reference
+    usedSlotsToKeys.set  (Index,          false);                                                                       // Make this slot reference inactive
     subFinish();
    }
 
   void putKey (Int Index, Int Key)                                                                                      // Set a key
    {subStart("Slots.putKey");
-    refKeys .putInt(Index, Key);
-    usedKeys.set   (Index, true);
+    putKeyValue( Index, Key);
+    usedKeys.set(Index, true);
     subFinish();
    }
 
   void delKey (Int Index)                                                                                               // Clear a key
    {subStart("Slots.delKey");
-    refKeys.putInt(Index, Zero);                                                                                        // Clear the key by zeroing it - this is not strictly necessary - it does make tests neater
+    putKeyValue(Index, Zero);                                                                                           // Clear the key by zeroing it - this is not strictly necessary - it does make tests neater
     usedKeys.set  (Index, false);
     subFinish();
    }
@@ -138,6 +138,8 @@ class Slots extends Program                                                     
 
   Int      getSlotToKeyValue (Int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                             // Value of a key via a specified slot
   int      getSlotToKeyValue (int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                             // Value of a key via a specified slot
+
+  void    putKeyValue        (Int Index, Int Value) {refKeys.putInt(Index, Value);}                                     // Set the value of a directly indexed key
 
   Bit                  empty ()             {return usedKeys.empty();}                                                  // All bits in the corresponding bitset are unused so the Slots must be empty
   Bit                   full ()             {return usedKeys.full ();}                                                  // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
@@ -261,7 +263,7 @@ class Slots extends Program                                                     
 
   private void moveKey (Bint T, Bint S, Bit Continue)                                                                   // Move a key from the source position to the target position
    {subStart("Slots.moveKey");
-    final Int s = refKeysToSlots.getInt(S.i());                                                                         // The slot referencing the key
+    final Int s = getKeyToSlotIndex(S.i());                                                                             // The slot referencing the key
     final Int q = getKeyValue(S.i());                                                                                   // The value of the key
     delSlotAndKey(s);                                                                                                   // Delete the slot and its associated key
     setSlotAndKey(s, T.i(), q);                                                                                         // Reinsert the key
@@ -455,7 +457,7 @@ class Slots extends Program                                                     
     new ForCount(R)    {void body(Int Index) {Right.delete(Index);}};                                                   // Clear lower half of target right slots
     new ForCount(M, N) {void body(Int Index) {left .delete(Index);}};                                                   // Clear upper half of left slots
 
-    left.refKeys.putInt(sk, sK);                                                                                        // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
+    left.putKeyValue(sk, sK);                                                                                           // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
 
     left .redistribute();                                                                                               // Redistribute source and target slots if requested
     Right.redistribute();
@@ -478,7 +480,7 @@ class Slots extends Program                                                     
     final Int sK = new Int(right.getKeyValue(sk))     .constant();                                                      // Value of the splitting key
 
     new ForCount(R)     {void body(Int Index) {right.delete(Index);}};                                                  // Clear lower half of target right slots
-    right.refKeys.putInt(sk, sK);                                                                                       // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
+    right.putKeyValue(sk, sK);                                                                                          // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
     new ForCount(M, N)  {void body(Int Index) {Left .delete(Index);}};                                                  // Clear upper half of left slots
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
     right.redistribute();
