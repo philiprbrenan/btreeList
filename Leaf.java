@@ -71,11 +71,6 @@ class Leaf extends Program implements Program.Locatable                         
     leafCode();                                                                                                         // Generate machine code if any assembler code has been supplied
    }
 
-  Leaf initializeMemory ()                                                                                              // Initialize slots and data associated with the leaf
-   {clear();                                                                                                            // Clear backing memory
-    return this;
-   }
-
   void   leafCode () {}                                                                                                 // Override this method to provide code for testing the leaf
 
   void   lockLeaf () {program().getLock(at.i());}                                                                       // Lock a leaf
