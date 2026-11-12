@@ -110,7 +110,7 @@ class Leaf extends Program implements Program.Locatable                         
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot.i())));                                                     // Get data associated with key
+       {r.set(refData.getInt(keyIndex(f.slot.i())));                                                                    // Get data associated with key
         if (Delete) deleteSlot(f.slot.i());                                                                             // Delete the key if requested
        }
      };
@@ -120,7 +120,7 @@ class Leaf extends Program implements Program.Locatable                         
   Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key, data pair into a leaf returning the index of the containing slot
    {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                // The key must not already be present
     final Slots.Insert i = slots.insert(Key);                                                                           // Insert key
-    final Int          k = slots.getSlotToKeyIndex(i.slot.i()).constant();                                              // Key into which the insertion was performed
+    final Int          k = keyIndex(i.slot.i()).constant();                                                             // Key into which the insertion was performed
     refData.putInt(k, Data);
     return i;                                                                                                           // Return the slot in the leaf in which the key, data pair was inserted
    }
@@ -226,7 +226,7 @@ class Leaf extends Program implements Program.Locatable                         
        {new For(maxSize)
          {void body(Int Index, Bit Continue)
            {final Int i = f.i();
-            final Int k = slots.getSlotToKeyValue(i).constant(), d = data(slots.getSlotToKeyIndex(i)).constant();
+            final Int k = keyValue(i).constant(), d = data(keyIndex(i)).constant();
             new I() {void a() {Iterator.process(k, d);}  boolean trace() {return false;}};
             f.copy(slots.nextSlot(i));
             Continue.set(f.valid());
@@ -778,8 +778,7 @@ Leaf           size:   8, count:   8
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_splitRight();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
