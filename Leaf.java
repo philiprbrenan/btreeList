@@ -119,7 +119,7 @@ class Leaf extends Program implements Program.Locatable                         
    {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                // The key must not already be present
     final Slots.Insert i = slots.insert(Key);                                                                           // Insert key
     final Int          k = keyIndex(i.slot.i()).constant();                                                             // Key into which the insertion was performed
-    refData.putInt(k, Data);
+    data(k, Data);
     return i;                                                                                                           // Return the slot in the leaf in which the key, data pair was inserted
    }
 
@@ -128,7 +128,7 @@ class Leaf extends Program implements Program.Locatable                         
 
   void compactLeft ()                                                                                                   // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
-    slots.compactKeysLeft((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                          // Compact the slots to match
+    slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                                              // Compact the slots to match
    }
 
   void compactRight ()                                                                                                  // Compact a leaf to the right
