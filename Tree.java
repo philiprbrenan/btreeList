@@ -217,7 +217,6 @@ class Tree extends Program                                                      
 
   Int         root () {return Zero;}                                                                                    // The root is always at node zero
   Bit   isRootLeaf () {return checkType(root(), BranchOrLeaf.leaf  );}                                                  // Whether the root is a leaf
-  Bit isRootBranch () {return checkType(root(), BranchOrLeaf.branch);}                                                  // Whether the root is a branch
 
   Bit checkType (Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
    {final Int a = nodeAddress(Node);
