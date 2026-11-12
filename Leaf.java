@@ -139,19 +139,15 @@ class Leaf extends Program implements Program.Locatable                         
 //D2 Split                                                                                                              // Split a full leaf into two leaves
 
   Int splitRight (Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf and return the splitting key value
-   {//if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                               // The leaf must be full
-    if (immediate() && count().i() < 2) stop("Leaf too small to be split");                                             // The leaf must be large enough to split
+   {if (immediate() && count().i() < 2) stop("Leaf too small to be split");                                             // The leaf must be large enough to split
     final Leaf left = this;                                                                                             // Current leaf is on the left
-    //Right.slots.initializeMemory();                                                                                     // Clear target
     Right.refData.copy(left.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     return left.slots.splitRightEven(Right.slots).constant();                                                           // Split the slots
    }
 
   Int splitLeft (Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf and return the splitting key value
-   {//if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                               // The leaf must be large enough to split
-    if (immediate() && count().i() < 2) stop("Leaf too small to be split");                                             // The leaf must be full
+   {if (immediate() && count().i() < 2) stop("Leaf too small to be split");                                             // The leaf must be full
     final Leaf right = this;                                                                                            // Current leaf is on the right
-    //Left.slots.initializeMemory();                                                                                      // Clear target
     Left.refData.copy(right.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     return right.slots.splitLeftEven(Left.slots).constant();                                                            // Split the slots
    }
