@@ -75,7 +75,7 @@ public class BitSet extends Program                                             
    }
 
   @SuppressWarnings("this-escape")
-  public BitSet (Build Build)                                                                                            // Constructor
+  public BitSet (Build Build)                                                                                           // Constructor
    {super(Build.build());
     build            = Build;
     bitSize          = nextPowerOfTwo(build.bitSize);                                                                   // Record size
