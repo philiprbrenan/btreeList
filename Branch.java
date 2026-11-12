@@ -192,7 +192,7 @@ class Branch extends Program implements Program.Locatable                       
        {new If (slots.empty())                                                                                          // Easy insert as the slots are empty
          {void Then()
            {r.set(slots.insertEmpty(Key));                                                                              // Insert immediately in the center
-            data(Zero, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
+            data(Zero, Data);                                                                                           // Place data in the location that corresponds to the key slot used to complete the insertion
            }
           void Else()                                                                                                   // Insert above the last key, which is known to exist because the slots are not empty
            {final Int l = slots.lastSlot().i();
@@ -981,8 +981,7 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_stepDown();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
