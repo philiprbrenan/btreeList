@@ -133,7 +133,7 @@ class Leaf extends Program implements Program.Locatable                         
 
   void compactRight ()                                                                                                  // Compact a leaf to the right
    {slots.compactSlotsRight();                                                                                          // Compact the slots to match
-    slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
+    slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                                             // Compact the slots to match
    }
 
 //D2 Split                                                                                                              // Split a full leaf into two leaves
@@ -271,7 +271,7 @@ class Leaf extends Program implements Program.Locatable                         
          {if (slots.getSlotToKeysInUse(i))
            {final String f = "%4d  %4d  %4d\n";
             final int    k = slots.getSlotToKeyIndex(i);
-            final String t = f(f, k, slots.getSlotToKeyValue(i), refData.getInt(k));
+            final String t = f(f, k, slots.getSlotToKeyValue(i), data(k));
             s.append(t);
            }
          };
