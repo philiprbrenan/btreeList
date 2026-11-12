@@ -194,7 +194,7 @@ class Branch extends Program implements Program.Locatable                       
        {new If (slots.empty())                                                                                          // Easy insert as the slots are empty
          {void Then()
            {r.set(slots.insertEmpty(Key));                                                                              // Insert immediately in the center
-            refData.putInt(Zero, Data);                                                                                       // Place data in the location that corresponds to the key slot used to complete the insertion
+            putData(Zero, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
            }
           void Else()                                                                                                   // Insert above the last key, which is known to exist because the slots are not empty
            {final Int l = slots.lastSlot().i();
@@ -214,7 +214,7 @@ class Branch extends Program implements Program.Locatable                       
     if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
-    refData.putInt(Zero, Data);                                                                                               // Place data in first key slot
+    putData(Zero, Data);                                                                                               // Place data in first key slot
     subFinish();
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
