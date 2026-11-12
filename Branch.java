@@ -81,6 +81,7 @@ class Branch extends Program implements Program.Locatable                       
   Int        count ()                     {return slots.count();}                                                       // Number of key/data pairs in the branch
   int      maxSize ()                     {return maxSize;}                                                             // Number of key/data pairs in the branch
   Int         data (Int Index)            {return refData.getInt(Index);}                                               // Get data at an index
+  Int     slotData (Int Index)            {return data(keyIndex( Index));}                                               // Get data at a slot index
   int         data (int Index)            {return refData.getInt(Index);}                                               // Get data at an index
   void        data (Int Index, Int Value) {refData.putInt(Index, Value);}                                               // Set data at the specified index
   int  bytesNeeded ()                     {return build.size();}                                                        // Number of bytes needed to contain a branch
