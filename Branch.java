@@ -88,8 +88,8 @@ class Branch extends Program implements Program.Locatable                       
   void       clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                         // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
   void        copy (Branch Source)        {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                    // Copy one branch into another branch
   Int          top ()                     {return refTop  .getInt();}                                                   // Get value of top
-  Int        level ()                     {return refLevel.getInt();}                                                   // Get value of level
   void         top (Int Top)              {refTop  .putInt(Top);}                                                       // Set value of top
+  Int        level ()                     {return refLevel.getInt();}                                                   // Get value of level
   void       level (Int Level)            {refLevel.putInt(Level);}                                                     // Set value of level
   Branch    branch ()                     {return this;}                                                                // This branch
 
@@ -99,6 +99,7 @@ class Branch extends Program implements Program.Locatable                       
   Bint    lastSlot ()                     {return slots.lastSlot();}                                                    // Last occupied slot
 
   void deleteSlotAndKey (Int Slot)        {slots.delSlotAndKey(Slot);}                                                  // Delete the slot and its associated key
+  void setSlotAndKey(Int Slot, Int KeyIndex, Int Value) {slots.setSlotAndKey(Slot, KeyIndex, Value);}                   // Write a specified value into the specified slot and key in the branch
 
   void  branchCode ()                     {}                                                                            // Override this method to provide code for testing the branch
 
