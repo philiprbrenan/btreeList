@@ -270,7 +270,7 @@ class Tree extends Program                                                      
 
   Leaf makeLeaf (Int Node)                                                                                              // Make a leaf from the specified node given the locked status of the node
    {final Leaf l = leaf(Node, false);
-    l.initializeMemory();
+    l.clear();
     setType(Node, BranchOrLeaf.leaf);
     return l;                                                                                                           // Return locked leaf
    }
@@ -311,7 +311,7 @@ class Tree extends Program                                                      
 
   Branch makeBranch (Int Node)                                                                                          // Make a branch from the specified node
    {final Branch b = branch(Node, false);
-    b.initializeMemory();
+    b.clear();
     setType(Node, BranchOrLeaf.branch);
     return b;
    }
@@ -3007,7 +3007,7 @@ Leaf   at:  12 size:   2, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_rootFanOut2(true);
+    test_deleteAscending(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
