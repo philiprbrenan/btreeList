@@ -144,7 +144,7 @@ class Leaf extends Program implements Program.Locatable                         
    {//if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                               // The leaf must be full
     if (immediate() && count().i() < 2) stop("Leaf too small to be split");                                             // The leaf must be large enough to split
     final Leaf left = this;                                                                                             // Current leaf is on the left
-    Right.slots.initializeMemory();                                                                                     // Clear target
+    //Right.slots.initializeMemory();                                                                                     // Clear target
     Right.refData.copy(left.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     return left.slots.splitRightEven(Right.slots).constant();                                                           // Split the slots
    }
@@ -153,7 +153,7 @@ class Leaf extends Program implements Program.Locatable                         
    {//if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                               // The leaf must be large enough to split
     if (immediate() && count().i() < 2) stop("Leaf too small to be split");                                             // The leaf must be full
     final Leaf right = this;                                                                                            // Current leaf is on the right
-    Left.slots.initializeMemory();                                                                                      // Clear target
+    //Left.slots.initializeMemory();                                                                                      // Clear target
     Left.refData.copy(right.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     return right.slots.splitLeftEven(Left.slots).constant();                                                            // Split the slots
    }
@@ -294,7 +294,6 @@ class Leaf extends Program implements Program.Locatable                         
   static void test_leaf(boolean Ex)
    {sayCurrentTestName();
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -332,7 +331,6 @@ Leaf           size:   8, count:   4
   static void test_compactLeft(boolean Ex)
    {sayCurrentTestName();
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -367,7 +365,6 @@ Leaf           size:   8, count:   3
   static void test_compactRight(boolean Ex)
    {sayCurrentTestName();
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -403,7 +400,6 @@ Leaf           size:   8, count:   4
   static void test_splitRight(boolean Ex)
    {sayCurrentTestName();
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -427,7 +423,6 @@ Leaf           size:   8, count:   8
 """);
 
     final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
-    //r.initializeMemory();
     l.splitRight(r).ok(4);
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
@@ -459,7 +454,6 @@ Leaf           size:   8, count:   4
   static void test_splitLeft(boolean Ex)
    {sayCurrentTestName();
     final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex));
-    //r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -513,7 +507,6 @@ Leaf           size:   8, count:   4
   static void test_mergeRight(boolean Ex)
    {sayCurrentTestName();
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -579,7 +572,6 @@ Leaf           size:   8, count:   8
   static void test_mergeLeft(boolean Ex)
    {sayCurrentTestName();
     final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex));
-    //r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -647,7 +639,6 @@ Leaf           size:   8, count:   8
   static void test_find(boolean Ex)
    {sayCurrentTestName();
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -705,8 +696,7 @@ Leaf           size:   8, count:   0
    {sayCurrentTestName();
     new Leaf(new Build().maxSize(8).immediate(Ex))
      {@Override void leafCode()
-       {//initializeMemory();
-        insert(new Int(2), new Int(22));
+       {insert(new Int(2), new Int(22));
         insert(new Int(4), new Int(44));
         insert(new Int(3), new Int(33));
         insert(One, new Int(11));
@@ -756,11 +746,9 @@ Leaf           size:   8, count:   8
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex))
      {void leafCode()
        {final Leaf l = this;
-        //l.initializeMemory();
         l.data(One, new Int(A));
         l.data(One)     .ok(A);
         final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
-        //r.initializeMemory();
         r.copy(l);
 
         l.clear();
