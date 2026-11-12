@@ -77,11 +77,6 @@ class Branch extends Program implements Program.Locatable                       
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
    }
 
-  Branch initializeMemory ()                                                                                            // Initialize slots and data associated with the branch
-   {clear();                                                                                                            // Clear backing memory
-    return this;
-   }
-
   public Bint getLocation ()              {return at;}                                                                  // The location of this node in memory
   Bit        empty ()                     {return slots.empty();}                                                       // Is the body of the branch empty
   Bit         full ()                     {return slots.full ();}                                                       // Is the body of the branch full
@@ -120,13 +115,14 @@ class Branch extends Program implements Program.Locatable                       
   Slots.Find findKey (Int Key)   {return slots.new Find(Key);}                                                          // Locate the specified key in the branch
   Int       keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                               // The index of the key from the index of the slot in the branch
   Int       keyValue (Int Index) {return slots.getSlotToKeyValue(Index);}                                               // The value of the key from the index of the slot in the branch
+  Int         getKey (Int Index) {return slots.getKeyValue(Index);}                                                     // The value of the indexed key without stepping through the slots first
 
   Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.new Find(Key);                                                                           // Find the key
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot.i())));                                                     // Get data associated with key
+       {r.set(refData.getInt(keyIndex(f.slot.i())));                                                                    // Get data associated with key
         if (Delete) deleteSlot(f.slot.i());                                                                             // Delete the key if requested
        }
      };
@@ -176,7 +172,7 @@ class Branch extends Program implements Program.Locatable                       
   Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
    {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in branch:", Key, print());              // The key must not already be present
     final Slots.Insert i = slots.insert(Key);
-    final Int          k = slots.getSlotToKeyIndex(i.slot.i());
+    final Int          k = keyIndex(i.slot.i());
     refData.putInt(k, Data);
     return i;                                                                                                           // Return the slot in the branch in which the key, data pair was inserted
    }
@@ -262,7 +258,7 @@ class Branch extends Program implements Program.Locatable                       
     L .top(L.data(sk));                                                                                                 // Left top is data from splitting key
     R.refLevel.copy(L.refLevel, 1);                                                                                     // Copy the level of the left branch into the level of the right branch
     subFinish();
-    return L.slots.getKeyValue(sk).constant();                                                                          // Splitting key
+    return L.getKey(sk).constant();                                                                                     // Splitting key
    }
 
   Int splitLeft (Branch Left)                                                                                           // Split a full branch leftwards into a supplied branch and return the splitting key
@@ -273,7 +269,7 @@ class Branch extends Program implements Program.Locatable                       
     L.refData.copy(R.refData, R.build.dataUnits());                                                                     // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     final Int sk = R.slots.splitLeftOdd(L.slots);                                                                       // Split the slots and get the index of the splitting key
     L .top(R.data(sk));                                                                                                 // Left top is data from splitting key
-    final Int r = R.slots.getKeyValue(sk).constant();                                                                   // Splitting key
+    final Int r = R.getKey(sk).constant();                                                                              // Splitting key
     L.refLevel.copy(R.refLevel, 1);                                                                                     // Copy the level of the right branch into the level of the left branch
     subFinish();
     return r;                                                                                                           // Splitting key
@@ -428,7 +424,6 @@ class Branch extends Program implements Program.Locatable                       
   static void test_branch (boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    //l.initializeMemory();
                                            l.count().ok(0);
     l.insert(l.new Int(2), l.new Int(22)); l.count().ok(1);
     l.insert(l.new Int(4), l.new Int(44)); l.count().ok(2);
@@ -469,7 +464,6 @@ Branch         size:   7, count:   4, top:   0, level:   1
   static void test_compactLeft(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -504,7 +498,6 @@ Branch         size:   7, count:   3, top:   0, level:   0
   static void test_compactRight(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -540,7 +533,6 @@ Branch         size:   7, count:   4, top:   0, level:   0
   static void test_splitRight(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -562,7 +554,6 @@ Branch         size:   7, count:   7, top:  99, level:   0
    5     7    77
 """);
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
-    //r.initializeMemory();
     l.splitRight(r).ok(4);
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
@@ -592,7 +583,6 @@ Branch         size:   7, count:   3, top:  99, level:   0
   static void test_splitLeft(boolean Ex)
    {sayCurrentTestName();
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
-    //r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -643,7 +633,6 @@ Branch         size:   7, count:   3, top:  99, level:   0
   static void test_mergeRight(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -707,7 +696,6 @@ Branch         size:   7, count:   7, top:  99, level:   0
   static void test_mergeLeft(boolean Ex)
    {sayCurrentTestName();
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
-    //r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -771,7 +759,6 @@ Branch         size:   7, count:   7, top:  99, level:   0
   static void test_find(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -826,8 +813,7 @@ Branch         size:   7, count:   0, top:   0, level:   0
    {sayCurrentTestName();
     new Branch(new Build().maxSize(7).immediate(Ex))
      {@Override void branchCode()
-       {//initializeMemory();
-        insert(new Int(2), new Int(22));
+       {insert(new Int(2), new Int(22));
         insert(new Int(4), new Int(44));
         insert(new Int(3), new Int(33));
         insert(One, new Int(11));
@@ -875,11 +861,9 @@ Branch         size:   7, count:   7, top:  88, level:   0
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex))
      {void branchCode()
        {final Branch l = this;
-        //l.initializeMemory();
         l.data(One, new Int(A));
         l.data(One)  .ok(A);
         final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
-        //r.initializeMemory();
         r.copy(l);
 
         l.clear();
@@ -900,8 +884,7 @@ Branch         size:   7, count:   7, top:  88, level:   0
     final int    N = 4;
     final Branch a = new Branch(new Build().maxSize(N-1).immediate(Ex))
      {void branchCode()
-       {//initializeMemory();
-        insert(new Int(10), One);
+       {insert(new Int(10), One);
         insert(new Int(20), new Int(2));
         insert(new Int(30), new Int(3));
         top   (             new Int(4));
@@ -925,8 +908,7 @@ Branch         size:   7, count:   7, top:  88, level:   0
    {sayCurrentTestName();
     new Branch(new Build().maxSize(7).immediate(Ex))
      {@Override void branchCode()
-       {//initializeMemory();
-        insertEmpty(new Int(4), new Int(44));
+       {insertEmpty(new Int(4), new Int(44));
         check(print(), """
 Branch         size:   7, count:   1, top:   0, level:   0
  Ref   Key  Data
