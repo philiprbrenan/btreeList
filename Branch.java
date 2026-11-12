@@ -75,8 +75,6 @@ class Branch extends Program implements Program.Locatable                       
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
    }
 
-  //void initializeMemory() {slots.initializeMemory();}                                                                   // Initialize the slots used by the leaf
-
   public Bint getLocation ()              {return at;}                                                                  // The location of this node in memory
   Bit        empty ()                     {return slots.empty();}                                                       // Is the body of the branch empty
   Bit         full ()                     {return slots.full ();}                                                       // Is the body of the branch full
@@ -122,7 +120,7 @@ class Branch extends Program implements Program.Locatable                       
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.set(data(keyIndex(f.slot.i())));                                                                    // Get data associated with key
+       {r.set(data(keyIndex(f.slot.i())));                                                                              // Get data associated with key
         if (Delete) deleteSlot(f.slot.i());                                                                             // Delete the key if requested
        }
      };
@@ -188,7 +186,7 @@ class Branch extends Program implements Program.Locatable                       
         final Slots.Find f = slots.new Find().set(BelowSlot.i(), true);                                                 // Construct the find to indicate how and where to perform the insertion as if we had just done a find
         r.set(f.insert(Key));                                                                                           // Insert knowing the insertion slot in advance
         final Int k = slots.getSlotToKeyIndex(r);
-        data(k, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
+        data(k, Data);                                                                                                  // Place data in the location that corresponds to the key slot used to complete the insertion
        }
       void Else()                                                                                                       // No below slot supplied so insert in the middle if empty otherwise at the end
        {new If (slots.empty())                                                                                          // Easy insert as the slots are empty
@@ -201,7 +199,7 @@ class Branch extends Program implements Program.Locatable                       
             final Slots.Find f = slots.new Find().set(l, false);                                                        // Construct the find to indicate how and where to perform the insertion as if we had just done a find
             r.set(f.insert(Key));                                                                                       // Insert knowing the insertion slot in advance
             final Int k = slots.getSlotToKeyIndex(r);
-            data(k, Data);                                                                                    // Place data in the location that corresponds to the key slot used to complete the insertion
+            data(k, Data);                                                                                              // Place data in the location that corresponds to the key slot used to complete the insertion
            }
          };
        }
@@ -214,7 +212,7 @@ class Branch extends Program implements Program.Locatable                       
     if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
-    putData(Zero, Data);                                                                                               // Place data in first key slot
+    putData(Zero, Data);                                                                                                // Place data in first key slot
     subFinish();
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
@@ -226,14 +224,14 @@ class Branch extends Program implements Program.Locatable                       
   void compactLeft ()                                                                                                   // Compact a branch to the left
    {subStart("Branch.compactLeft");
     slots.compactSlotsLeft();                                                                                           // Compact the slots to match
-    slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                          // Compact the slots to match
+    slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                                              // Compact the slots to match
     subFinish();
    }
 
   void compactRight ()                                                                                                  // Compact a branch to the right
    {subStart("Branch.compactRight");
     slots.compactSlotsRight();                                                                                          // Compact the slots to match
-    slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                         // Compact the slots to match
+    slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                                             // Compact the slots to match
     subFinish();
    }
 
