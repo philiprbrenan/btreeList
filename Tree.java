@@ -585,45 +585,41 @@ class Tree extends Program                                                      
     String    title () {return "FindLeafForNextKey";}                                                                   // Title
    }
 
-  final class FindBranch                                                                                                // Find a branch that contains a specified key
-   {final  Int    key = new  Int("key");                                                                                // Search key
-    final Bint branch = new Bint("branch index");                                                                       // Index of the branch containing the key if the key was found
-    final  Int   slot = new  Int("slot");                                                                               // Slot in a valid branch reference containing the key
+  void FindBranchAndUpdateKey(Int Key)                                                                                  // Find the branch in the tree that mentions the specified key. If such a branch exists update the key with the latest largest key in the sub tree, or remove this entry from the branch of the sub tree is empty
+   {subStart("Tree.findBranch");
+    final Int p = root().dup();                                                                                       // Start at root
+    getLock(p);                                                                                                       // Lock the root so no-one can modify it while we are reading it
 
-    FindBranch (Int Key)                                                                                                // Find the branch in the tree that mentions the specified key if such a branch exists
-     {subStart("Tree.findBranch");
-      final Int p = root().dup();                                                                                       // Start at root
-      getLock(p);                                                                                                       // Lock the root so no-one can modify it while we are reading it
-      key.set(Key);
+    new For(mnl())                                                                                                    // Step down from branch to branch
+     {void body(Int Index, Bit Continue)
+       {new If (isBranch(p))                                                                                          // On a branch
+         {void Then()
+           {final Branch          b = branch(p);                                                                      // Current branch
+            final Branch.StepDown d = b.new StepDown(Key);                                                            // Step down on key
+            new If (d.eqKey)                                                                                          // Found the matching key
+             {void Then()
+               {final MaximumKey  m = new MaximumKey(d.node);                                                         // Maximum key in sub tree becomes the new key for this slot
 
-      new For(mnl())                                                                                                    // Step down from branch to branch
-       {void body(Int Index, Bit Continue)
-         {new If (isBranch(p))                                                                                          // On a branch
-           {void Then()
-             {final Branch.StepDown d = branch(p).new StepDown(Key);                                                    // Step down details
-              new If (d.eqKey)
-               {void Then() {branch.set(p); slot.set(d.slot);}                                                          // Found the matching key so terminate the search and hold a read lock on the branch so found
-                void Else() {getLock(d.node); freeLock(p); p.set(d.node); Continue.set();}                              // Step down to the next branch
+                new If (m.maxKey)                                                                                     // Maximum was found
+                 {void Then()
+                   {final Slots       s = b.slots;                                                                    // Slots to be updated in branch being updated
+                    final Int         i = b.keyIndex(d.slot.i());                                                     // Index of slot holding key
+                    b.setSlotAndKey(d.slot.i(), i, m.maxKey.i());                                                     // Replace the existing key with the maximum of its sub tree in order to maintain the variant that the branch key is equal to the largest key in its sub tree
+                   }
+                  void Else()                                                                                         // No maximum key
+                   {new If (d.slot) {void Then() {b.deleteSlotAndKey(d.slot.i());}};                                  // There is no maximum key in the sub tree so the tree must be empty so we can delete it
+                   }
+                 };
                };
-             }
-            void Else() {freeLock(p);}                                                                                  // Stepped down to a leaf so release the read lock on the parent branch because a branch containing the key was not found
-           };
-         }
-       };
+              void Else() {getLock(d.node); freeLock(p); p.set(d.node); Continue.set();}                              // Step down to the next branch
+             };
+           }
+          void Else() {freeLock(p);}                                                                                  // Stepped down to a leaf so release the read lock on the parent branch because a branch containing the key was not found
+         };
+       }
+     };
 
-      if (immediate && !branch.b().v) stop("Find fell off the end of tree after this many searches:", mnl());
-      subFinish();
-     }
-
-    public String toString ()                                                                                           // Print the find results
-     {subStart("Tree.FindBranch.toString");
-      final StringBuilder s = new StringBuilder();
-      s.append("Find branch key: "+key+", valid: "+branch.b().i);
-      if (branch.b().i) s.append(", branch:"+branch.ii()+", slot: "+slot);
-      s.append("\n");
-      subFinish();
-      return ""+s;
-     }
+    subFinish();
    }
 
   final class MaximumKey                                                                                                // Maximum key under a specified branch
@@ -996,25 +992,7 @@ class Tree extends Program                                                      
             countDec();                                                                                                 // Count deleted key
             new If (p.eqKey)                                                                                            // If the key being deleted was present in a branch we should find it and replace it with the new maximum key under the key being deleted to maintain the invariant that the key in the branch is equal to the maximum key in the tree below
              {void Then()
-               {final FindBranch F = new FindBranch(Key);                                                               // Find the branch containing the key if it is still in the tree - it might have been merged out
-                new If (F.branch)
-                 {void Then()
-                   {final Branch          b = branch(F.branch.i());                                                     // Branch containing search key
-                    final Branch.StepDown d = b.new StepDown(Key);                                                      // Step down through key to sub tree referenced by the search key
-                    final MaximumKey      m = new MaximumKey(d.node);                                                   // Maximum key in sub tree becomes the new key for this slot
-
-                    new If (m.maxKey)                                                                                   // Maximum was found
-                     {void Then()
-                       {final Slots       s = b.slots;                                                                  // Slots to be updated in branch being updated
-                        final Int         i = b.keyIndex(F.slot);                                                       // Index of slot holding key
-                        b.setSlotAndKey(F.slot, i, m.maxKey.i());                                                       // Replace the existing key with the maximum of its sub tree in order to maintain the variant that the branch key is equal to the largest key in its sub tree
-                       }
-                      void Else()                                                                                       // No maximum key
-                       {new If (d.slot) {void Then(){b.deleteSlotAndKey(d.slot.i());}};                                 // There is no maximum key in the sub tree so the tree must be empty so we can delete it
-                       }
-                     };
-                   }
-                 };
+               {FindBranchAndUpdateKey(Key);                                                                            // Find the branch containing the key if it is still in the tree - it might have been merged out
                }
              };
            }
@@ -1574,16 +1552,6 @@ Height        :    1
 
         final FirstEntry F   = new FirstEntry(); freeLock(F.leaf.i()); F.leaf.ok(3);
         final LastEntry  L   = new  LastEntry(); freeLock(L.leaf.i()); L.leaf.ok(2);
-
-        final FindBranch f_8 = new FindBranch(new Int( 8)); freeLock(f_8.branch.i());
-        final FindBranch f_2 = new FindBranch(new Int( 2)); freeLock(f_2.branch.i());
-        final FindBranch f14 = new FindBranch(new Int(14)); freeLock(f14.branch.i());
-        final FindBranch f_1 = new FindBranch(new Int( 1));
-
-        ok(()->f_8, "Find branch key: key=8, valid: true, branch:0, slot: slot=0\n");
-        ok(()->f_2, "Find branch key: key=2, valid: true, branch:9, slot: slot=0\n");
-        ok(()->f14, "Find branch key: key=14, valid: true, branch:14, slot: slot=4\n");
-        ok(()->f_1, "Find branch key: key=1, valid: false\n");
 
         final MaximumKey m_0 = new MaximumKey(new Int( 0));
         final MaximumKey m21 = new MaximumKey(new Int(21));
