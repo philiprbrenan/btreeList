@@ -881,10 +881,10 @@ class Tree extends Program                                                      
   public Bint find (Int Key)                                                                                            // Find the data associated with the specified key in the tree
    {subStart("Tree.find");
     lockRoot();
-    final FindLeafForKey l = new FindLeafForKey(Key);                                                                   // Find leaf that should contain the key
-    final Leaf           L = leaf(l.leaf);                                                                              // Load leaf
-    final Leaf.Find      f = L.new Find(Key);                                                                           // Search for key in leaf
-    final Bint        data = new Bint();                                                                                // Data associated with key if the key is present in the tree
+    final FindLeafForKey   l = new FindLeafForKey(Key);                                                                 // Find leaf that should contain the key
+    final Leaf             L = leaf(l.leaf);                                                                            // Load leaf
+    final Leaf.FindLeafKey f = L.new FindLeafKey(Key);                                                                  // Search for key in leaf
+    final Bint          data = new Bint();                                                                              // Data associated with key if the key is present in the tree
     new If (f.slot) {void Then() {data.set(f.data);}};                                                                  // Record data associated with key if the key was found
     L.unlockLeaf();                                                                                                     // Safe to free the read lock on the leaf because we have the data associated with the key
 
@@ -897,8 +897,8 @@ class Tree extends Program                                                      
     lockRoot();
     new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
-       {final Leaf      R = leaf(root());
-        final Leaf.Find f = R.new Find(Key);                                                                            // Perhaps the key is already present in the leaf root tree
+       {final Leaf             R = leaf(root());                                                                        // Try to insert key into root leaf
+        final Leaf.FindLeafKey f = R.new FindLeafKey(Key);                                                              // Perhaps the key is already present in the leaf root tree
         new If (f.slot)                                                                                                 // Key exists in leaf root
          {void Then()
            {R.slotData(f.slot.i(), Data);                                                                               // Update data associated with key via the indexing slot
@@ -928,9 +928,9 @@ class Tree extends Program                                                      
          };
        }
       void Else()                                                                                                       // The root is a branch
-       {final FindLeafForKey f = new FindLeafForKey(Key);                                                               // Find the leaf for the key
-        final Leaf           l = leaf(f.leaf);                                                                          // Leaf that should contain the key
-        final Leaf.Find      F = l.new Find(Key);                                                                       // Perhaps the key is already present in the leaf
+       {final FindLeafForKey   f = new FindLeafForKey(Key);                                                             // Find the leaf for the key
+        final Leaf             l = leaf(f.leaf);                                                                        // Leaf that should contain the key
+        final Leaf.FindLeafKey F = l.new FindLeafKey(Key);                                                              // Perhaps the key is already present in the leaf
         new If (F.slot)                                                                                                 // Key exists in full leaf
          {void Then()
            {l.slotData(F.slot.i(), Data);                                                                               // Update data associated with key indexed by the found slot
@@ -982,11 +982,11 @@ class Tree extends Program                                                      
     final Int data = new Int();                                                                                         // Data associated with key if the key is present in the tree
     new If (isRootLeaf())
      {void Then()                                                                                                       // The root is a leaf
-       {final Leaf       R = leaf(root());                                                                              // Load root
-        final Slots.Find f = R.findKey(Key);                                                                            // Search for key in root
-        new If (f.equal)
+       {final Leaf             R = leaf(root());                                                                        // Load root
+        final Leaf.FindLeafKey f = R.new FindLeafKey(Key);                                                              // Search for key in root
+        new If (f.slot)                                                                                                 // Found the slot containing the data
          {void Then()                                                                                                   // Key exists in leaf
-           {data.set(R.slotData(f.slot.i()));                                                                           // Data associated with key
+           {data.set(f.data);                                                                                           // Data associated with key
             R.deleteSlot(f.slot.i());                                                                                   // Remove key from root leaf comprising tree
             countDec();                                                                                                 // Count deleted key
            }
@@ -994,12 +994,12 @@ class Tree extends Program                                                      
         R.unlockLeaf();                                                                                                 // Unlock root
        }
       void Else()                                                                                                       // The root is a branch
-       {final Path       p = new Path(Key);                                                                             // Path to leaf that should contain key
-        final Leaf       l = leaf(p.leaf);                                                                              // Containing leaf
-        final Slots.Find f = l.findKey(Key);                                                                            // Search for key in root
-        new If (f.equal)
+       {final Path             p = new Path(Key);                                                                       // Path to leaf that should contain key
+        final Leaf             l = leaf(p.leaf);                                                                        // Containing leaf
+        final Leaf.FindLeafKey f = l.new FindLeafKey(Key);                                                              // Search for key in root
+        new If (f.slot)                                                                                                 // Found the slot containing the key
          {void Then()                                                                                                   // Key exists in leaf
-           {data.set(l.data(l.keyIndex(f.slot.i())));                                                                   // Data associated with key
+           {data.set(f.data);                                                                                           // Data associated with key
             l.deleteSlot(f.slot.i());                                                                                   // Remove key from leaf in tree tree
             p.mergeUp();                                                                                                // Merge leaf and nodes above
             countDec();                                                                                                 // Count deleted key
