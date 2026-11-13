@@ -897,12 +897,11 @@ class Tree extends Program                                                      
     lockRoot();
     new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
-       {final Leaf R = leaf(root());
-        final Slots.Find f = R.findKey(Key);                                                                            // Perhaps the key is already present in the leaf root tree
-        new If (f.equal)                                                                                                // Key exists in leaf root
+       {final Leaf      R = leaf(root());
+        final Leaf.Find f = R.new Find(Key);                                                                            // Perhaps the key is already present in the leaf root tree
+        new If (f.slot)                                                                                                 // Key exists in leaf root
          {void Then()
-           {final Int p = R.keyIndex(f.slot.i());                                                                       // Position of key in leaf root slots
-            R.data(p, Data);                                                                                            // Update data associated with key
+           {R.slotData(f.slot.i(), Data);                                                                               // Update data associated with key via the indexing slot
             unlockRoot();
            }
           void Else()                                                                                                   // The key does not exist in the root leaf
@@ -934,7 +933,7 @@ class Tree extends Program                                                      
         final Leaf.Find      F = l.new Find(Key);                                                                       // Perhaps the key is already present in the leaf
         new If (F.slot)                                                                                                 // Key exists in full leaf
          {void Then()
-           {l.data(l.keyIndex(F.slot.i()), Data);                                                                       // Update data  associated with key
+           {l.slotData(F.slot.i(), Data);                                                                               // Update data associated with key indexed by the found slot
             freeLock(f.leaf);                                                                                           // Release the lock on the leaf obtained by find leaf
            }
           void Else()                                                                                                   // Key is not present in the leaf
