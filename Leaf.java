@@ -83,7 +83,8 @@ class Leaf extends Program implements Program.Locatable                         
   Int        data (Int Index)            {return refData.getInt(Index);}                                                // Get data at a direct index
   Int    slotData (Int Index)            {return data(keyIndex( Index));}                                               // Get data at a slot index
   int        data (int Index)            {return refData.getInt(Index);}                                                // Get data at an index
-  void       data (Int Index, Int Value) {refData.putInt(Index, Value);}                                                // Set the data at the specified index
+  void       data (Int Index, Int Value) {refData.putInt(Index, Value);}                                                // Set the data at the index specified directly
+  void   slotData (Int Index, Int Value) {refData.putInt(keyIndex(Index), Value);}                                      // Set the data at the index specified by slot
   int bytesNeeded ()                     {return build.size();}                                                         // Number of bytes needed to contain a leaf
   void      clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                          // Clear memory associated with the leaf
   void       copy (Leaf Source)          {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                     // Copy one leaf into another leaf
