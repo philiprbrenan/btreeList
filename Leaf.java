@@ -76,30 +76,30 @@ class Leaf extends Program implements Program.Locatable                         
 
   public Bint getLocation () {return at;}                                                                               // The location of this node in memory
 
-  Bit       empty ()                     {return slots.empty();}                                                        // Is the leaf empty
-  Bit        full ()                     {return slots.full ();}                                                        // Is the leaf full
-  Int       count ()                     {return slots.count();}                                                        // Number of key/data pairs in the leaf
-  int     maxSize ()                     {return maxSize;}                                                              // Number of key/data pairs in the leaf
-  Int        data (Int Index)            {return refData.getInt(Index);}                                                // Get data at a direct index
-  Int    slotData (Int Index)            {return data(keyIndex( Index));}                                               // Get data at a slot index
-  int        data (int Index)            {return refData.getInt(Index);}                                                // Get data at an index
-  void       data (Int Index, Int Value) {refData.putInt(Index, Value);}                                                // Set the data at the index specified directly
-  void   slotData (Int Index, Int Value) {refData.putInt(keyIndex(Index), Value);}                                      // Set the data at the index specified by slot
-  int bytesNeeded ()                     {return build.size();}                                                         // Number of bytes needed to contain a leaf
-  void      clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                          // Clear memory associated with the leaf
-  void       copy (Leaf Source)          {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                     // Copy one leaf into another leaf
+  Bit               empty ()                     {return slots.empty();}                                                // Is the leaf empty
+  Bit                full ()                     {return slots.full ();}                                                // Is the leaf full
+  Int               count ()                     {return slots.count();}                                                // Number of key/data pairs in the leaf
+  int             maxSize ()                     {return maxSize;}                                                      // Number of key/data pairs in the leaf
+  private Int        data (Int Index)            {return refData.getInt(Index);}                                        // Get data at a direct index
+  private Int    slotData (Int Index)            {return data(keyIndex( Index));}                                       // Get data at a slot index
+  private int        data (int Index)            {return refData.getInt(Index);}                                        // Get data at an index
+  private void       data (Int Index, Int Value) {refData.putInt(Index, Value);}                                        // Set the data at the index specified directly
+  private void   slotData (Int Index, Int Value) {refData.putInt(keyIndex(Index), Value);}                              // Set the data at the index specified by slot
+  private int bytesNeeded ()                     {return build.size();}                                                 // Number of bytes needed to contain a leaf
+  void              clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                  // Clear memory associated with the leaf
+  void               copy (Leaf Source)          {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}             // Copy one leaf into another leaf
 
-  Bint  firstSlot ()                     {return slots.firstSlot();}                                                    // First occupied slot
-  Bint   nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                                  // Next occupied slot after the given slot
-  Bint   prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                                  // Previous occupied slot before the given slot
-  Bint   lastSlot ()                     {return slots.lastSlot();}                                                     // Last occupied slot
-  Bint    lastKey ()                                                                                                    // Last key in leaf if there is one
+  private Bint  firstSlot ()                     {return slots.firstSlot();}                                            // First occupied slot
+  private Bint   nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                          // Next occupied slot after the given slot
+  private Bint   prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                          // Previous occupied slot before the given slot
+  private Bint   lastSlot ()                     {return slots.lastSlot();}                                             // Last occupied slot
+  Bint            lastKey ()                                                                                            // Last key in leaf if there is one
    {final Bint i = lastSlot();                                                                                          // Index of slot referencing last key
     new If (i) {void Then() {i.set(keyValue(i.i()));}};                                                                 // Last key in leaf if there is one
     return i;
    }
 
-  Slots.FindGe findGe(Int Key)           {return slots.new FindGe(Key);}                                                // Find slot containing the first key greater then or equal to the search key
+  private Slots.FindGe findGe(Int Key)   {return slots.new FindGe(Key);}                                                // Find slot containing the first key greater then or equal to the search key
 
   class FirstEntry                                                                                                      // Details of first entry in this leaf
    {final Bint slot;                                                                                                    // Index of first slot
@@ -107,10 +107,10 @@ class Leaf extends Program implements Program.Locatable                         
     final Int  data = new Int("Data");                                                                                  // Data associated with first key
 
     FirstEntry()
-     {slot = firstSlot();                                                                                                  // First used slot is the first entry
+     {slot = firstSlot();                                                                                               // First used slot is the first entry
       new If (slot)
        {void Then()
-         {final Int f = slot.i();                                                                                          // Index of first slot
+         {final Int f = slot.i();                                                                                       // Index of first slot
           key .set(keyValue(f));                                                                                        // Key from first slot
           data.set(slotData(f));                                                                                        // Data associated with key
          }
@@ -137,16 +137,16 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
-  Bint             find (Int Key)   {return getDataFromKey(Key, false);}                                                // Get the data associated with a key
-  Bint           delete (Int Key)   {return getDataFromKey(Key, true);}                                                 // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
-  void       deleteSlot (Int Slot)  {slots.delete(Slot);}                                                               // Delete a slot in the leaf given the index of the slot
-  void deleteSlotAndKey (Int Slot)  {slots.delSlotAndKey(Slot);}                                                        // Delete the slot and its associated key
+  public Bint              find (Int Key)   {return getDataFromKey(Key, false);}                                        // Get the data associated with a key
+  public Bint            delete (Int Key)   {return getDataFromKey(Key, true);}                                         // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  private void       deleteSlot (Int Slot)  {slots.delete(Slot);}                                                       // Delete a slot in the leaf given the index of the slot
+  private void deleteSlotAndKey (Int Slot)  {slots.delSlotAndKey(Slot);}                                                // Delete the slot and its associated key
+  private Int          keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                    // The index of the key from the index of the slot in the leaf
+  private Int          keyValue (Int Index) {return slots.getSlotToKeyValue(Index);}                                    // The value of the key from the index of the slot in the leaf
 
-  Slots.Find    findKey (Int Key)   {return slots.new Find(Key);}                                                       // Locate the specified key in the leaf
-  Int          keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                            // The index of the key from the index of the slot in the leaf
-  Int          keyValue (Int Index) {return slots.getSlotToKeyValue(Index);}                                            // The value of the key from the index of the slot in the leaf
+  private Slots.Find findKey (Int Key) {return slots.new Find(Key);}                                                    // Locate the specified key in the leaf
 
-  class FindLeafKey                                                                                                     // Find a key within a leaf
+  public class FindLeafKey                                                                                              // Find a key within a leaf
    {final Int   key = new Int( "key");                                                                                  // Search key
     final Bint slot = new Bint("slot");                                                                                 // Slot that indexes key if found
     final Int  data = new Int( "data");                                                                                 // Data associated with found key
@@ -161,9 +161,30 @@ class Leaf extends Program implements Program.Locatable                         
          }
        };
      }
+    void deleteKey ()         {deleteSlot(slot.i());}                                                                   // Delete the key assuming that it exists
+    void   setData (Int Data) {slotData(slot.i(), Data);}                                                               // Delete the key assuming that it exists
    }
 
-  Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
+  public class FindLeafKeyGe                                                                                            // Find the first key within a leaf greater than or equal to the specified search key
+   {final Int   key = new Int( "key");                                                                                  // Search key
+    final Bint slot = new Bint("slot");                                                                                 // Slot that indexes key if found
+    final Int  data = new Int( "data");                                                                                 // Data associated with found key
+
+    FindLeafKeyGe(Int Key)
+     {key.set(Key);                                                                                                     // Record the search key
+      final Slots.FindGe n = findGe(Key);                                                                               // Search
+      new If (n.slot)
+       {void Then()
+         {final Int s = n.slot.i();                                                                                     // Slot referencing the next key
+          key .set(keyValue(s));                                                                                        // Key from last slot
+          data.set(slotData(s));                                                                                        // Data associated with key
+         }
+        void Else() {unlockLeaf();}                                                                                     // Free the lock on the leaf as no next key was found
+       };
+     }
+   }
+
+  private Bint getDataFromKey (Int Key, boolean Delete)                                                                 // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.new Find(Key);                                                                           // Find the key
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
@@ -175,23 +196,22 @@ class Leaf extends Program implements Program.Locatable                         
     return r;                                                                                                           // Return data associated with key
    }
 
-  Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key, data pair into a leaf returning the index of the containing slot
+  void insert (Int Key, Int Data)                                                                                       // Insert a key, data pair into a leaf returning the index of the containing slot
    {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                // The key must not already be present
     final Slots.Insert i = slots.insert(Key);                                                                           // Insert key
     final Int          k = keyIndex(i.slot.i()).constant();                                                             // Key into which the insertion was performed
     data(k, Data);
-    return i;                                                                                                           // Return the slot in the leaf in which the key, data pair was inserted
    }
 
 //D1 Compact, Split, Merge                                                                                              // Compact, split or merge leaves
 //D2 Compact                                                                                                            // Compact a leaf to the left or right
 
-  void compactLeft ()                                                                                                   // Compact a leaf to the left
+  private void compactLeft ()                                                                                                   // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
     slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                                              // Compact the slots to match
    }
 
-  void compactRight ()                                                                                                  // Compact a leaf to the right
+  private void compactRight ()                                                                                                  // Compact a leaf to the right
    {slots.compactSlotsRight();                                                                                          // Compact the slots to match
     slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                                             // Compact the slots to match
    }
@@ -214,7 +234,7 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D2 Merge                                                                                                              // Merge two leaves
 
-  Int mergeLimit () {return new Int(maxSize());}                                                                        // Combined leaf size limit for a merge
+  private Int mergeLimit () {return new Int(maxSize());}                                                                        // Combined leaf size limit for a merge
 
   private void copyMergeData (Leaf Source, Int Start, Int End)                                                          // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {new ForCount (Start, End)
