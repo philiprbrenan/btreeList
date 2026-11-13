@@ -146,12 +146,12 @@ class Leaf extends Program implements Program.Locatable                         
   Int          keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                            // The index of the key from the index of the slot in the leaf
   Int          keyValue (Int Index) {return slots.getSlotToKeyValue(Index);}                                            // The value of the key from the index of the slot in the leaf
 
-  class Find                                                                                                            // Find a key within a leaf
+  class FindLeafKey                                                                                                     // Find a key within a leaf
    {final Int   key = new Int( "key");                                                                                  // Search key
     final Bint slot = new Bint("slot");                                                                                 // Slot that indexes key if found
     final Int  data = new Int( "data");                                                                                 // Data associated with found key
 
-    Find(Int Key)
+    FindLeafKey(Int Key)
      {key.set(Key);                                                                                                     // Record the search key
       final Slots.Find f = findKey(Key);                                                                                // Locate the specified key in the leaf
       new If (f.equal)                                                                                                  // Found a matching key
