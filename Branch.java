@@ -130,14 +130,13 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   class FirstEntry                                                                                                      // First entry in a branch
-   {final Bint f;                                                                                                       // First used slot is the first entry
-    final Int  d = new Int("down");
-
+   {final Bint slot;                                                                                                    // First used slot is the first entry if it exists else use top
+    final Int  down = new Int("down");                                                                                  // Data associated with first entry
     FirstEntry()
-     {f = firstSlot();                                                                                                  // First slot
-      new If (f)                                                                                                        // Body of branch is not empty
-       {void Then() {d.set(slotData(f.i()));}                                                                           // Step to first child
-        void Else() {d.set(top());}                                                                                     // Step through top as there are no entries in the body of the branch
+     {slot = firstSlot();                                                                                               // First slot
+      new If (slot)                                                                                                     // Body of branch is not empty
+       {void Then() {down.set(slotData(slot.i()));}                                                                     // Step to first child
+        void Else() {down.set(top());}                                                                                  // Step through top as there are no entries in the body of the branch
        };
      }
    }
