@@ -1517,14 +1517,14 @@ public class Program extends Test                                               
   input  wire                 cs0,                                                                                      // Memory selected when high
   input  reg[31:0]          addr0,                                                                                      // Index in memory of integer to be read or written
   output reg[31:0]          dout0);                                                                                     // Integer read from memory
-if (rtg( 1)) ifdef __ICARUS__
+`ifdef __ICARUS__
   reg[31:0] memory [0:{size}-1];                                                                                        // Memory
   reg[31:0] i;                                                                                                          // Index
 
   always @(posedge clk0) begin                                                                                          // Synchronous memory access
     if (cs0) dout0 <= memory[addr0];                                                                                    // Read an integer from memory
   end
-if (rtg( 1)) endif
+`endif
 endmodule
 """, "name", m(), "size", ""+size())) : new StringBuilder(substitute("""
                                                                                                                         // Read write memory
@@ -1537,7 +1537,7 @@ endmodule
   input  reg[31:0]          addr1,                                                                                      // Index in memory of integer to be read
   input  reg[31:0]           din0,                                                                                      // Integer to write into memory
   output reg[31:0]          dout1);                                                                                     // Integer read from memory
-if (rtg( 1)) ifdef __ICARUS__
+`ifdef __ICARUS__
   reg[31:0] memory [0:{size}-1];                                                                                        // Memory
   reg[31:0] i;                                                                                                          // Index
 
@@ -1547,7 +1547,7 @@ if (rtg( 1)) ifdef __ICARUS__
     if (csb0) memory[addr0] <= din0;                                                                                    // Write
     if (csb1) dout1 <= memory[addr1];                                                                                   // Read
   end
-if (rtg( 1)) endif
+`endif
 endmodule
 """, "name", m(), "size", ""+size()));
 
@@ -1555,7 +1555,7 @@ endmodule
       writeFile(f.v$(), ""+s);
       blackBoxes.push(f);
 
-      return "\nif (rtg( 1)) ifndef SYNTHESIS"+s+"if (rtg( 1)) endif\n";                                                                        // During testing the black boxes are included in line and icarus Verilog simulates them directly ignoring the black box flag. When using silicon compiler, the black boxes are put in separate files which are added to the project phase via the appropriate file set.
+      return "\n`ifndef SYNTHESIS"+s+"`endif\n";                                                                        // During testing the black boxes are included in line and icarus Verilog simulates them directly ignoring the black box flag. When using silicon compiler, the black boxes are put in separate files which are added to the project phase via the appropriate file set.
      }
 
     String instantiateModule ()                                                                                         // Instantiate a memory module
@@ -1880,7 +1880,7 @@ endmodule
     s.append("$fdisplay(traceFile, "+q(Format));
     for(int i = 0; i < Message.length; ++i) s.append(", "+Message[i]);
     s.append("); $fflush(traceFile);");
-    return suppressInstructionTracing ? ""+s : "if (rtg( 1)) ifndef SYNTHESIS "+s+" if (rtg( 1)) endif";
+    return suppressInstructionTracing ? ""+s : "`ifndef SYNTHESIS "+s+" `endif";
    }
 
   String currentInstructionLocation ()                                                                                  // Show the current instruction location
@@ -2065,10 +2065,10 @@ cd {f}; yosys -q {y}                                                            
 
   task automatic {name}                                                                                                 // Write dump title
     begin
-if (rtg( 1)) ifndef SYNTHESIS
+`ifndef SYNTHESIS
       $fwrite(traceFile, "{title} %8d steps, %8d pc\\n", steps, pc);                                                    // Write location in program
       $fflush(traceFile);
-if (rtg( 1)) endif
+`endif
     end
   endtask
 """, "name", called(), "title", title);
@@ -2367,7 +2367,7 @@ if (rtg( 1)) endif
       catch(Exception e) {stop("Unable to open file:", codeFile, e, fullTraceBack(e)); throw new RuntimeException(e);}
 
       /*Module*/put(substitute("""
-if (rtg( 1)) ifdef SYNTHESIS
+`ifdef SYNTHESIS
 module {name} (                                                                                                         // Bint machine - callable module for synthesis
 """, "name", name));
 
@@ -2380,22 +2380,22 @@ module {name} (                                                                 
   input wire clock,                                                                                                     // Clock pin
   input wire reset,                                                                                                     // Reset
   output wire[31:0] o_pc);                                                                                              // This is just to create some output so that Yosys does not collapse the chip to nothing because it does not produces any output
-if (rtg( 1)) else
+`else
 module {name};                                                                                                          // Bint machine - standalone for execution
-if (rtg( 1)) endif
+`endif
 """, "name", name));
 
         /*Execution State Variables*/put("""
-if (rtg( 1)) ifndef SYNTHESIS
+`ifndef SYNTHESIS
   reg                 clock;                                                                                            // Program clock to drive instruction execution
   wire                reset;                                                                                            // Program reset
-if (rtg( 1)) endif
+`endif
   reg[31:0]              pc;                                                                                            // Program counter for stepping through user code
   reg[31:0]           steps;                                                                                            // Counter for number of steps executed
   integer         traceFile;                                                                                            // Write Verilog trace records to this file
-if (rtg( 1)) ifdef SYNTHESIS
+`ifdef SYNTHESIS
   assign o_pc = pc[31:0];                                                                                               // Prevent Yosys collapsing the chip to nothing
-if (rtg( 1)) endif
+`endif
 """);
 
       if (nextFastIntId > 0) createFastInts();                                                                          // Create array of fast integers if any have been used
@@ -2405,7 +2405,7 @@ if (rtg( 1)) endif
 
       /*Execute*/put(s("""
 
-if (rtg( 1)) ifndef SYNTHESIS
+`ifndef SYNTHESIS
   initial begin
     #10;                                                                                                                // Let all the initialization complete
     clock = 0; steps = 0;                                                                                               // Initialize the clock - failure to do this will result in an infinite loop as the clock cannot transition on an undefined value
@@ -2416,9 +2416,9 @@ if (rtg( 1)) ifndef SYNTHESIS
     end
   end                                                                                                                   // Execute instructions
   always @(posedge clock) begin                                                                                         // Decode and execute instructions by iterating a case statement
-if (rtg( 1)) else                                                                                                                   // Clock - only needed during icarus Verilog simulation not during synthesis
+`else                                                                                                                   // Clock - only needed during icarus Verilog simulation not during synthesis
   always_ff @(posedge clock) begin                                                                                      // Decode and execute instructions by iterating a case statement
-if (rtg( 1)) endif                                                                                                                  // Clock - only needed during icarus Verilog simulation not during synthesis
+`endif                                                                                                                  // Clock - only needed during icarus Verilog simulation not during synthesis
 """,
 "maxSteps", ""+maxSteps
 ));
@@ -2457,10 +2457,10 @@ if (rtg( 1)) endif                                                              
 
       /* Execute default*/put("""
       default: begin
-if (rtg( 1)) ifndef SYNTHESIS
+`ifndef SYNTHESIS
         $fclose(traceFile);                                                                                             // Close trace file
         $finish(0);
-if (rtg( 1)) endif
+`endif
       end
     endcase
   end
@@ -2474,7 +2474,7 @@ if (rtg( 1)) endif
 
       /*Open trace file*/put(substitute("""
 
-if (rtg( 1)) ifndef SYNTHESIS
+`ifndef SYNTHESIS
     traceFile = $fopen("{traceFile}", "w");                                                                             // Clear the trace file
     if (traceFile == 0) begin
       $display("ERROR: Could not open file '{traceFile}' for writing.");
@@ -2485,7 +2485,7 @@ if (rtg( 1)) ifndef SYNTHESIS
       $display("ERROR: Could not open file '{traceFile}' for appending.");
       $finish;
     end
-if (rtg( 1)) endif
+`endif
   end
 """, "traceFile", traceFile));
 
@@ -2514,7 +2514,7 @@ endmodule
     reg[31:0] I;
     parameter integer N = 10;
     begin
-if (rtg( 1)) ifndef SYNTHESIS
+`ifndef SYNTHESIS
 """, "dumpVerilogMemoryInDecimalName", M.dumpVerilogMemoryInDecimalName());
 
       final String m = substitute("""
@@ -2548,7 +2548,7 @@ if (rtg( 1)) ifndef SYNTHESIS
       $fwrite(traceFile, "readWriteIndex = %8d\\n", {n}_readWriteIndex);
       $fwrite(traceFile, "writeIntEnable = %8d\\n", {n}_writeIntEnable ? 1 : 0);
 
-if (rtg( 1)) endif
+`endif
     end
   endtask
 """, "n", M.n(), "size", ""+M.size());
@@ -2743,10 +2743,10 @@ check
 
   task automatic {name} ();                                                                                             // Dump variables
     begin
-if (rtg( 1)) ifndef SYNTHESIS
-   if (rtg( 1)) include "{includeFile}"
+`ifndef SYNTHESIS
+   `include "{includeFile}"
     $fflush(traceFile);
-if (rtg( 1)) endif
+`endif
     end
   endtask
 """, "name", dumpVerilogVariablesName(), "includeFile", includeFile.minus(verilogTestFolder).v$()));
@@ -2771,7 +2771,7 @@ if (rtg( 1)) endif
 """,                 "id", ""+b.id, "v", bitMemory().memory(b.id)));
      }
 
-    writeFile(includeFile.v$(), "if (rtg( 1)) ifndef SYNTHESIS\n"+v+"if (rtg( 1)) endif\n");
+    writeFile(includeFile.v$(), "`ifndef SYNTHESIS\n"+v+"`endif\n");
     return ""+s;
    }
 
@@ -2841,11 +2841,11 @@ if (rtg( 1)) endif
  (input  wire      clk0,
   input  reg[31:0] addr0,
   output reg[31:0] dout0);
-if (rtg( 1)) ifdef __ICARUS__
+`ifdef __ICARUS__
   reg[31:0] memory [0:{size}];
   initial $readmemh("{file}", memory, 0, {size});
   assign dout0 = memory[addr0];                                                                                         // Assume that the value can be retrieved from memory and used in a computation all within one clock cycle.
-if (rtg( 1)) endif
+`endif
 endmodule
 """,
 "name",  name,        "file", verilogTestIncludesFolder.file(name).minus(verilogTestFolder).v$(),
@@ -2855,7 +2855,7 @@ endmodule
         writeFile(f.v$(), ""+s);
         blackBoxes.push(f);
 
-        return "\nif (rtg( 1)) ifndef SYNTHESIS\n"+s+"if (rtg( 1)) endif\n";
+        return "\n`ifndef SYNTHESIS\n"+s+"`endif\n";
        }
 
 //D2 OpenRAM                                                                                                            // Generate OpenRAM versions of each array
@@ -4209,8 +4209,7 @@ Locks, size: 2
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
-    try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
+   {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
       if (github_action) oldTests(); else newTests();                                                                   // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Code coverage
