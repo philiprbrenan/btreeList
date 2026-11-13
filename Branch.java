@@ -75,49 +75,60 @@ class Branch extends Program implements Program.Locatable                       
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
    }
 
-  public Bint getLocation ()              {return at;}                                                                  // The location of this node in memory
-  Bit        empty ()                     {return slots.empty();}                                                       // Is the body of the branch empty
-  Bit         full ()                     {return slots.full ();}                                                       // Is the body of the branch full
-  Int        count ()                     {return slots.count();}                                                       // Number of key/data pairs in the branch
-  int      maxSize ()                     {return maxSize;}                                                             // Number of key/data pairs in the branch
-  Int         data (Int Index)            {return refData.getInt(Index);}                                               // Get data at an index
-  Int     slotData (Int Index)            {return data(keyIndex( Index));}                                               // Get data at a slot index
-  int         data (int Index)            {return refData.getInt(Index);}                                               // Get data at an index
-  void        data (Int Index, Int Value) {refData.putInt(Index, Value);}                                               // Set data at the specified index
-  int  bytesNeeded ()                     {return build.size();}                                                        // Number of bytes needed to contain a branch
-  void       clear ()                     {unitMemoryRef.clear(bytesNeeded());}                                         // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
-  void        copy (Branch Source)        {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                    // Copy one branch into another branch
-  Int          top ()                     {return refTop  .getInt();}                                                   // Get value of top
-  void         top (Int Top)              {refTop  .putInt(Top);}                                                       // Set value of top
-  Int        level ()                     {return refLevel.getInt();}                                                   // Get value of level
-  void       level (Int Level)            {refLevel.putInt(Level);}                                                     // Set value of level
-  Branch    branch ()                     {return this;}                                                                // This branch
+  public Bint       getLocation ()                     {return at;}                                                     // The location of this node in memory
+  Bit                     empty ()                     {return slots.empty();}                                          // Is the body of the branch empty
+  Bit                      full ()                     {return slots.full ();}                                          // Is the body of the branch full
+  Int                     count ()                     {return slots.count();}                                          // Number of key/data pairs in the branch
+  int                   maxSize ()                     {return maxSize;}                                                // Number of key/data pairs in the branch
+  Int                      data (Int Index)            {return refData.getInt(Index);}                                  // Get data at an index
+  private Int          slotData (Int Index)            {return data(keyIndex( Index));}                                  // Get data at a slot index
+  private int              data (int Index)            {return refData.getInt(Index);}                                  // Get data at an index
+  private void             data (Int Index, Int Value) {refData.putInt(Index, Value);}                                  // Set data at the specified index
+  int               bytesNeeded ()                     {return build.size();}                                           // Number of bytes needed to contain a branch
+  void                    clear ()                     {unitMemoryRef.clear(bytesNeeded());}                            // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
+  void                     copy (Branch Source)        {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}       // Copy one branch into another branch
+  Int                       top ()                     {return refTop  .getInt();}                                      // Get value of top
+  void                      top (Int Top)              {refTop  .putInt(Top);}                                          // Set value of top
+  Int                     level ()                     {return refLevel.getInt();}                                      // Get value of level
+  void                    level (Int Level)            {refLevel.putInt(Level);}                                        // Set value of level
+  Branch                 branch ()                     {return this;}                                                   // This branch
 
-  Bint   firstSlot ()                     {return slots.firstSlot();}                                                   // First occupied slot
-  Bint    nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                                 // Next occupied slot after the given slot
-  Bint    prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                                 // Previous occupied slot before the given slot
-  Bint    lastSlot ()                     {return slots.lastSlot();}                                                    // Last occupied slot
+  Bint                firstSlot ()                     {return slots.firstSlot();}                                      // First occupied slot
+  Bint                 nextSlot (Int Pos)              {return slots.nextSlot(Pos);}                                    // Next occupied slot after the given slot
+  Bint                 prevSlot (Int Pos)              {return slots.prevSlot(Pos);}                                    // Previous occupied slot before the given slot
+  Bint                 lastSlot ()                     {return slots.lastSlot();}                                       // Last occupied slot
 
-  void deleteSlotAndKey (Int Slot)        {slots.delSlotAndKey(Slot);}                                                  // Delete the slot and its associated key
-  void setSlotAndKey(Int Slot, Int KeyIndex, Int Value) {slots.setSlotAndKey(Slot, KeyIndex, Value);}                   // Write a specified value into the specified slot and key in the branch
+  void         deleteSlotAndKey (Int Slot)             {slots.delSlotAndKey(Slot);}                                     // Delete the slot and its associated key
+  void            setSlotAndKey (Int Slot, Int KeyIndex, Int Value) {slots.setSlotAndKey(Slot, KeyIndex, Value);}       // Write a specified value into the specified slot and key in the branch
 
   void  branchCode ()                     {}                                                                            // Override this method to provide code for testing the branch
 
   void   lockBranch() {program(). getLock(at.i());}                                                                     // Lock a branch
   void unlockBranch() {program().freeLock(at.i());}                                                                     // Unlock a branch
 
+  void moveLastChildInBodyOfParentToTop()                                                                               // Move last child in body of parent to top
+   {final Bint s = lastSlot();                                                                                          // Last slot in body of parent
+    new If (s)
+     {void Then()
+       {final Int d = data(keyIndex(s.i()));                                                                            // Uppermost child in body of parent
+        top(d);                                                                                                         // Make upper most child top
+        deleteSlotAndKey(s.i());                                                                                        // Remove uppermost child in body of parent now it has  been made top
+       }
+     };
+   }
+
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a branch
 
-  Bint          find (Int Key)   {return getDataFromKey(Key, false);}                                                   // Get the data associated with a key
-  Bint        delete (Int Key)   {return getDataFromKey(Key, true);}                                                    // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
-  void    deleteSlot (Int Slot)  {slots.delete(Slot);}                                                                  // Delete a slot in the branch given the index of the slot
+  Bint                  find (Int Key)   {return getDataFromKey(Key, false);}                                           // Get the data associated with a key
+  Bint                delete (Int Key)   {return getDataFromKey(Key, true);}                                            // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  void            deleteSlot (Int Slot)  {slots.delete(Slot);}                                                          // Delete a slot in the branch given the index of the slot
 
-  Slots.Find findKey (Int Key)   {return slots.new Find(Key);}                                                          // Locate the specified key in the branch
-  Int       keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                               // The index of the key from the index of the slot in the branch
-  Int       keyValue (Int Index) {return slots.getSlotToKeyValue(Index);}                                               // The value of the key from the index of the slot in the branch
-  Int         getKey (Int Index) {return slots.getKeyValue(Index);}                                                     // The value of the indexed key without stepping through the slots first
+  private Slots.Find findKey (Int Key)   {return slots.new Find(Key);}                                                  // Locate the specified key in the branch
+  Int               keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                       // The index of the key from the index of the slot in the branch
+  Int               keyValue (Int Index) {return slots.getSlotToKeyValue(Index);}                                       // The value of the key from the index of the slot in the branch
+  private Int         getKey (Int Index) {return slots.getKeyValue(Index);}                                             // The value of the indexed key without stepping through the slots first
 
-  Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
+  private Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.new Find(Key);                                                                           // Find the key
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
@@ -181,12 +192,11 @@ class Branch extends Program implements Program.Locatable                       
      }
    } // StepDown
 
-  Slots.Insert insert (Int Key, Int Data)                                                                               // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
+  void insert (Int Key, Int Data)                                                                                       // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
    {if (immediate() && slots.new Find(Key).equal.b()) stop("Key already exists in branch:", Key, print());              // The key must not already be present
     final Slots.Insert i = slots.insert(Key);
     final Int          k = keyIndex(i.slot.i());
     data(k, Data);
-    return i;                                                                                                           // Return the slot in the branch in which the key, data pair was inserted
    }
 
   Int insert (Int Key, Int Data, Bint BelowSlot)                                                                        // Insert a key data pair into a branch when the slot below which to make the insertion is known, assuming the key is not already present, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
@@ -226,7 +236,7 @@ class Branch extends Program implements Program.Locatable                       
     if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
-    data(Zero, Data);                                                                                                // Place data in first key slot
+    data(Zero, Data);                                                                                                   // Place data in first key slot
     subFinish();
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
@@ -235,14 +245,14 @@ class Branch extends Program implements Program.Locatable                       
 
 //D2 Compact                                                                                                            // Compact a branch to the left or right
 
-  void compactLeft ()                                                                                                   // Compact a branch to the left
+  private void compactLeft ()                                                                                                   // Compact a branch to the left
    {subStart("Branch.compactLeft");
     slots.compactSlotsLeft();                                                                                           // Compact the slots to match
     slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                                              // Compact the slots to match
     subFinish();
    }
 
-  void compactRight ()                                                                                                  // Compact a branch to the right
+  private void compactRight ()                                                                                                  // Compact a branch to the right
    {subStart("Branch.compactRight");
     slots.compactSlotsRight();                                                                                          // Compact the slots to match
     slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                                             // Compact the slots to match
