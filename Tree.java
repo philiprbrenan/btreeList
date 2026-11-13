@@ -4,6 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Optimize merges by merging into the most full node from the least full node
 // R.refLevel.putInt(l.refLevel.getInt().inc()); needs locking and shunting into branch?
+// Replace Slots.Find
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -388,7 +389,7 @@ class Tree extends Program                                                      
            {void Then()
              {leaf.set(p);                                                                                              // Record leaf
               final Leaf.FirstEntry f = leaf(p).new FirstEntry();                                                       // Details of first entry in leaf
-              new If (f.slot)                                                                                              // Leaf not empty
+              new If (f.slot)                                                                                           // Leaf not empty
                {void Then()
                  {key .set(f.key);                                                                                      // Key from first slot
                   data.set(f.data);                                                                                     // Data associated with key
@@ -691,7 +692,7 @@ class Tree extends Program                                                      
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down
               new If (d.eqKey) {void Then() {eqKey.set();}};                                                            // Stepped through a key equal to the search key
-              putPath(step, p);                                                                                     // Record index of node along path
+              putPath(step, p);                                                                                         // Record index of node along path
               step.inc();                                                                                               // Next step along the path
               p.set(d.node);                                                                                            // Step down
               Continue.set();                                                                                           // Continue search
@@ -748,7 +749,7 @@ class Tree extends Program                                                      
            {void body(Int Index)
              {final Branch r = branch(getPath(Index.Dec()));                                                            // Parent branch whose child should be split
               final Branch c = branch(getPath(Index)      );                                                            // Child branch that should be split
-              final Branch.StepDown d = r.new StepDown(key    );                                                        // Step down
+              final Branch.StepDown d = r.new StepDown(key);                                                            // Step down
               final Branch l = branch();                                                                                // Create a new branch to split into
               final Int   sk = c.splitLeft(l);                                                                          // Splitting key
 
@@ -777,8 +778,7 @@ class Tree extends Program                                                      
          {final Int q = new Int("q").set(leaf);                                                                         // Last child
           new For(mnl())                                                                                                // Back up along path
            {void body(Int Index, Bit Continue)
-             {final Int    p = step.Dec();                                                                              // Parent branch index in path
-              final Int    B = getPath(p);                                                                              // Parent branch node index
+             {final Int    B = getPath(step.Dec());                                                                     // Parent branch node index
               final Branch b = branch(B);                                                                               // Parent branch
               new If (b.top().eq(q))                                                                                    // Child is the top of its parent
                {void Then()
@@ -857,7 +857,7 @@ class Tree extends Program                                                      
         getLock(t);
         new If (isLeaf(t))                                                                                              // Root has leaves for children
          {void Then()
-           {final Leaf L = makeLeaf(R.getLocation().i());                                                               // Make the root into a leaf
+           {final Leaf L = makeLeaf(root());                                                                            // Make the root into a leaf
             final Leaf l = leaf(t);                                                                                     // Top as a leaf
             L.copy(l);                                                                                                  // Copy top into root decreasing height of tree
             l.unlockLeaf();                                                                                             // Unlock top
@@ -882,16 +882,10 @@ class Tree extends Program                                                      
    {subStart("Tree.find");
     lockRoot();
     final FindLeafForKey l = new FindLeafForKey(Key);                                                                   // Find leaf that should contain the key
-    final Bint        data = new Bint();
-
-    final Leaf       L = leaf(l.leaf);                                                                                  // Load leaf
-    final Slots.Find f = L.findKey(Key);                                                                                // Search for key in root
-    new If (f.equal)
-     {void Then()                                                                                                       // Key exists in leaf
-       {final Int k = L.keyIndex(f.slot.i());                                                                           // Key slot
-        data.set(L.data(k));                                                                                            // Data associated with key
-       }
-     };
+    final Leaf           L = leaf(l.leaf);                                                                              // Load leaf
+    final Leaf.Find      f = L.new Find(Key);                                                                           // Search for key in leaf
+    final Bint        data = new Bint();                                                                                // Data associated with key if the key is present in the tree
+    new If (f.slot) {void Then() {data.set(f.data);}};                                                                  // Record data associated with key if the key was found
     L.unlockLeaf();                                                                                                     // Safe to free the read lock on the leaf because we have the data associated with the key
 
     subFinish();
@@ -936,19 +930,17 @@ class Tree extends Program                                                      
        }
       void Else()                                                                                                       // The root is a branch
        {final FindLeafForKey f = new FindLeafForKey(Key);                                                               // Find the leaf for the key
-        final Int            i = f.leaf;                                                                                // Index of leaf
-        final Leaf           l = leaf(i);                                                                               // Leaf that should contain the key
-        final Slots.Find     F = l.findKey(Key);                                                                        // Perhaps the key is already present in the leaf
-        new If (F.equal)                                                                                                // Key exists in full leaf
+        final Leaf           l = leaf(f.leaf);                                                                          // Leaf that should contain the key
+        final Leaf.Find      F = l.new Find(Key);                                                                       // Perhaps the key is already present in the leaf
+        new If (F.slot)                                                                                                 // Key exists in full leaf
          {void Then()
-           {final Int p = l.keyIndex(F.slot.i());                                                                       // Position of key in leaf slots
-            l.data(p, Data);                                                                                            // Update data  associated with key
-            freeLock(i);                                                                                                // Release the lock on the leaf obtained by find leaf
+           {l.data(l.keyIndex(F.slot.i()), Data);                                                                       // Update data  associated with key
+            freeLock(f.leaf);                                                                                           // Release the lock on the leaf obtained by find leaf
            }
           void Else()                                                                                                   // Key is not present in the leaf
            {new If (l.full())                                                                                           // The target leaf is full
-             {void Then() {freeLock(i); insertFullLeaf(Key, Data);}                                                     // Insert into a tree known to have a branch at the root and probably still has a full target leaf for the key
-              void Else() {l.insert(Key, Data); freeLock(i);}                                                           // Insert a new key into a non full leaf
+             {void Then() {freeLock(f.leaf); insertFullLeaf(Key, Data);}                                                // Insert into a tree known to have a branch at the root and probably still has a full target leaf for the key
+              void Else() {l.insert(Key, Data); freeLock(f.leaf);}                                                      // Insert a new key into a non full leaf
              };
             countInc();                                                                                                 // Count inserted key
            }
