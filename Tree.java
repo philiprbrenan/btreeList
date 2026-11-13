@@ -4,7 +4,8 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Optimize merges by merging into the most full node from the least full node
 // R.refLevel.putInt(l.refLevel.getInt().inc()); needs locking and shunting into branch?
-// Replace Slots.Find
+// Replace Slots.FindGe
+// Classify methods in leaves, branches etc as private to avoid knoeing aboyt lots and bit sets in tree,java
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -441,9 +442,8 @@ class Tree extends Program                                                      
               final Leaf.LastEntry f = l.new LastEntry();                                                               // Last used slot is the last entry
               new If (f.slot)
                {void Then()
-                 {final Int s = f.slot.i();
-                  key .set(l.keyValue(s));                                                                              // Key from last slot
-                  data.set(l.slotData(s));                                                                              // Data associated with key
+                 {key .set(f.key);                                                                                      // Key from last slot
+                  data.set(f.data);                                                                                     // Data associated with key
                  }
                };
              }
@@ -483,13 +483,12 @@ class Tree extends Program                                                      
       getLock(root());
       final FindLeafForNextKey f = new FindLeafForNextKey(Key);                                                         // Start at root
       final Leaf               l = leaf(f.leaf);
-      final Slots.FindGe       n = l.findGe(f.key);
+      final Leaf.FindLeafKeyGe n = l.new FindLeafKeyGe(f.key);                                                          // Find next key greater than or equal to the specified search key
       leaf.set(f.leaf);
       new If (n.slot)
        {void Then()
-         {final Int s = n.slot.i();                                                                                     // Slot referencing the next key
-          key .set(l.keyValue(s));                                                                                      // Key from last slot
-          data.set(l.slotData(s));                                                                                      // Data associated with key
+         {key .set(n.key);                                                                                              // Key from last slot
+          data.set(n.data);                                                                                             // Data associated with key
          }
         void Else() {l.unlockLeaf();}                                                                                   // Free the lock on the leaf as no next key was found
        };
@@ -787,12 +786,7 @@ class Tree extends Program                                                      
                      {q.set(B);                                                                                         // Child is branch made empty by removal of top child
                       Continue.set();                                                                                   // Continue up until we get to the top or find a parent with an upper moist child in its body
                      }
-                    void Else()
-                     {final Bint U = b.lastSlot();                                                                      // Last slot in body of parent
-                      final Int  u = b.data(b.keyIndex(U.i()));                                                         // Uppermost child in body of parent
-                      b.top(u);                                                                                         // Make upper most child top
-                      b.deleteSlotAndKey(U.i());                                                                        // Remove uppermost child in body of parent now it has  been made top
-                     }
+                    void Else() {b.moveLastChildInBodyOfParentToTop();}                                                 // Move last child in body of parent to top
                    };
                   step.dec();                                                                                           // Path is now shorter
                  }
@@ -900,10 +894,7 @@ class Tree extends Program                                                      
        {final Leaf             R = leaf(root());                                                                        // Try to insert key into root leaf
         final Leaf.FindLeafKey f = R.new FindLeafKey(Key);                                                              // Perhaps the key is already present in the leaf root tree
         new If (f.slot)                                                                                                 // Key exists in leaf root
-         {void Then()
-           {R.slotData(f.slot.i(), Data);                                                                               // Update data associated with key via the indexing slot
-            unlockRoot();
-           }
+         {void Then() {f.setData(Data); unlockRoot();}                                                                  // Update data associated with key via the indexing slot
           void Else()                                                                                                   // The key does not exist in the root leaf
            {new If (R.full())                                                                                           // Is the leaf full
              {void Then()                                                                                               // Split the root leaf to make room for  the new key
@@ -933,7 +924,7 @@ class Tree extends Program                                                      
         final Leaf.FindLeafKey F = l.new FindLeafKey(Key);                                                              // Perhaps the key is already present in the leaf
         new If (F.slot)                                                                                                 // Key exists in full leaf
          {void Then()
-           {l.slotData(F.slot.i(), Data);                                                                               // Update data associated with key indexed by the found slot
+           {F.setData(Data);                                                                                            // Update data associated with key indexed by the found slot
             freeLock(f.leaf);                                                                                           // Release the lock on the leaf obtained by find leaf
            }
           void Else()                                                                                                   // Key is not present in the leaf
@@ -987,7 +978,7 @@ class Tree extends Program                                                      
         new If (f.slot)                                                                                                 // Found the slot containing the data
          {void Then()                                                                                                   // Key exists in leaf
            {data.set(f.data);                                                                                           // Data associated with key
-            R.deleteSlot(f.slot.i());                                                                                   // Remove key from root leaf comprising tree
+            f.deleteKey();                                                                                              // Remove key from root leaf comprising tree
             countDec();                                                                                                 // Count deleted key
            }
          };
@@ -1000,7 +991,7 @@ class Tree extends Program                                                      
         new If (f.slot)                                                                                                 // Found the slot containing the key
          {void Then()                                                                                                   // Key exists in leaf
            {data.set(f.data);                                                                                           // Data associated with key
-            l.deleteSlot(f.slot.i());                                                                                   // Remove key from leaf in tree tree
+            f.deleteKey();                                                                                              // Remove key from leaf in tree tree
             p.mergeUp();                                                                                                // Merge leaf and nodes above
             countDec();                                                                                                 // Count deleted key
             new If (p.eqKey)                                                                                            // If the key being deleted was present in a branch we should find it and replace it with the new maximum key under the key being deleted to maintain the invariant that the key in the branch is equal to the maximum key in the tree below
