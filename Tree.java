@@ -388,9 +388,9 @@ class Tree extends Program                                                      
            {void Then()
              {leaf.set(p);                                                                                              // Record leaf
               final Leaf.FirstEntry f = leaf(p).new FirstEntry();                                                       // Details of first entry in leaf
-              new If (f.key)                                                                                            // Leaf not empty
+              new If (f.slot)                                                                                              // Leaf not empty
                {void Then()
-                 {key .set(f.key.i());                                                                                  // Key from first slot
+                 {key .set(f.key);                                                                                      // Key from first slot
                   data.set(f.data);                                                                                     // Data associated with key
                  }
                };
@@ -398,7 +398,7 @@ class Tree extends Program                                                      
             void Else()                                                                                                 // On a branch
              {final Branch b = branch(p);                                                                               // Branch
               final Branch.FirstEntry f = b.new FirstEntry();                                                           // First entry in branch
-              getLock(f.d); freeLock(p); p.set(f.d);                                                                    // Lock child, unlock parent, step down
+              getLock(f.down); freeLock(p); p.set(f.down);                                                              // Lock child, unlock parent, step down
               Continue.set();                                                                                           // Continue traverse towards a leaf
              }
            };
@@ -437,10 +437,10 @@ class Tree extends Program                                                      
            {void Then()
              {leaf.set(p);                                                                                              // Record leaf
               final Leaf l = leaf(p);                                                                                   // Details of leaf
-              final Bint f = l.lastSlot();                                                                              // Last used slot is the last entry
-              new If (f)
+              final Leaf.LastEntry f = l.new LastEntry();                                                               // Last used slot is the last entry
+              new If (f.slot)
                {void Then()
-                 {final Int s = f.i();
+                 {final Int s = f.slot.i();
                   key .set(l.keyValue(s));                                                                              // Key from last slot
                   data.set(l.slotData(s));                                                                              // Data associated with key
                  }
@@ -448,7 +448,6 @@ class Tree extends Program                                                      
              }
             void Else()                                                                                                 // On a branch
              {final Branch b = branch(p);                                                                               // Branch
-              final Bint   f = b.firstSlot();                                                                           // Last used slot is the last entry
               final Int    d = b.top();                                                                                 // Step through top as there are no entries in the body of the branch
               getLock(d); freeLock(p); p.set(d);                                                                        // Lock child, unlock parent, step down
               Continue.set();                                                                                           // Continue traverse towards a leaf
