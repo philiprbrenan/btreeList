@@ -1,4 +1,4 @@
-# Test 2026-11-13 at 18:33:53
+# Test 2026-11-13 at 19:33:47
 
 name: btreeList
 run-name: Method localization, Verilog, SiliconCompiler, WithLocking
@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [ArrayConstant_1, BitSet_1, BitSet_2, BitSet_3, BitSet_4, BitSet_5, BitSet_6, BitSet_7, BitSet_8, BitSet_9, BitSet_10, BitSet_11, BitSet_12, BitSet_13, BitSet_14, BitSet_15, Branch_1, Branch_2, Branch_3, Branch_4, Branch_5, Branch_6, Branch_7, Branch_8, Branch_9, Branch_10, Branch_11, Branch_12, Gds_1, Leaf_1, Leaf_2, Leaf_3, Leaf_4, Leaf_5, Leaf_6, Leaf_7, Leaf_8, Leaf_9, Leaf_10, Lef_1, Program_1, Ram_1, Rom_1, Slots_1, Slots_2, Slots_3, Slots_4, Slots_5, Slots_6, Slots_7, Slots_8, Slots_9, Slots_10, Slots_11, Slots_12, Slots_13, Slots_14, Slots_15, Slots_16, Slots_17, Slots_18, Slots_19, Slots_20, Slots_21, Slots_22, Slots_23, Test_1, Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11, Tree_12, Tree_13, Tree_14, Tree_15, Tree_16]
+        task: [ArrayConstant_1, BitSet_1, BitSet_2, BitSet_3, BitSet_4, BitSet_5, BitSet_6, BitSet_7, BitSet_8, BitSet_9, BitSet_10, BitSet_11, BitSet_12, BitSet_13, BitSet_14, BitSet_15, Branch_1, Branch_2, Branch_3, Branch_4, Branch_5, Branch_6, Branch_7, Branch_8, Branch_9, Branch_10, Branch_11, Branch_12, Gds_1, Leaf_1, Leaf_2, Leaf_3, Leaf_4, Leaf_5, Leaf_6, Leaf_7, Leaf_8, Leaf_9, Leaf_10, Lef_1, Program_1, Program_2, Program_3, Program_4, Program_5, Program_6, Program_7, Program_8, Program_9, Program_10, Program_11, Program_12, Program_13, Program_14, Program_15, Program_16, Program_17, Program_18, Program_19, Program_20, Program_21, Program_22, Program_23, Program_24, Program_25, Program_26, Program_27, Program_28, Program_29, Program_30, Program_31, Program_32, Program_33, Ram_1, Rom_1, Slots_1, Slots_2, Slots_3, Slots_4, Slots_5, Slots_6, Slots_7, Slots_8, Slots_9, Slots_10, Slots_11, Slots_12, Slots_13, Slots_14, Slots_15, Slots_16, Slots_17, Slots_18, Slots_19, Slots_20, Slots_21, Slots_22, Slots_23, Test_1, Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11, Tree_12, Tree_13, Tree_14, Tree_15, Tree_16]
 
     steps:
     - uses: actions/checkout@v6
@@ -690,6 +690,518 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: sc_Program_1
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_2
+      if: ${{             matrix.task == 'Program_2' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 2
+        tree --prune -I '*.class'
+
+    - name: Upload Program_2
+      if: ${{ always() && matrix.task == 'Program_2' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_2
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_3
+      if: ${{             matrix.task == 'Program_3' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 3
+        tree --prune -I '*.class'
+
+    - name: Upload Program_3
+      if: ${{ always() && matrix.task == 'Program_3' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_3
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_4
+      if: ${{             matrix.task == 'Program_4' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 4
+        tree --prune -I '*.class'
+
+    - name: Upload Program_4
+      if: ${{ always() && matrix.task == 'Program_4' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_4
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_5
+      if: ${{             matrix.task == 'Program_5' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 5
+        tree --prune -I '*.class'
+
+    - name: Upload Program_5
+      if: ${{ always() && matrix.task == 'Program_5' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_5
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_6
+      if: ${{             matrix.task == 'Program_6' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 6
+        tree --prune -I '*.class'
+
+    - name: Upload Program_6
+      if: ${{ always() && matrix.task == 'Program_6' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_6
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_7
+      if: ${{             matrix.task == 'Program_7' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 7
+        tree --prune -I '*.class'
+
+    - name: Upload Program_7
+      if: ${{ always() && matrix.task == 'Program_7' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_7
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_8
+      if: ${{             matrix.task == 'Program_8' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 8
+        tree --prune -I '*.class'
+
+    - name: Upload Program_8
+      if: ${{ always() && matrix.task == 'Program_8' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_8
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_9
+      if: ${{             matrix.task == 'Program_9' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 9
+        tree --prune -I '*.class'
+
+    - name: Upload Program_9
+      if: ${{ always() && matrix.task == 'Program_9' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_9
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_10
+      if: ${{             matrix.task == 'Program_10' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 10
+        tree --prune -I '*.class'
+
+    - name: Upload Program_10
+      if: ${{ always() && matrix.task == 'Program_10' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_10
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_11
+      if: ${{             matrix.task == 'Program_11' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 11
+        tree --prune -I '*.class'
+
+    - name: Upload Program_11
+      if: ${{ always() && matrix.task == 'Program_11' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_11
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_12
+      if: ${{             matrix.task == 'Program_12' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 12
+        tree --prune -I '*.class'
+
+    - name: Upload Program_12
+      if: ${{ always() && matrix.task == 'Program_12' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_12
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_13
+      if: ${{             matrix.task == 'Program_13' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 13
+        tree --prune -I '*.class'
+
+    - name: Upload Program_13
+      if: ${{ always() && matrix.task == 'Program_13' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_13
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_14
+      if: ${{             matrix.task == 'Program_14' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 14
+        tree --prune -I '*.class'
+
+    - name: Upload Program_14
+      if: ${{ always() && matrix.task == 'Program_14' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_14
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_15
+      if: ${{             matrix.task == 'Program_15' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 15
+        tree --prune -I '*.class'
+
+    - name: Upload Program_15
+      if: ${{ always() && matrix.task == 'Program_15' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_15
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_16
+      if: ${{             matrix.task == 'Program_16' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 16
+        tree --prune -I '*.class'
+
+    - name: Upload Program_16
+      if: ${{ always() && matrix.task == 'Program_16' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_16
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_17
+      if: ${{             matrix.task == 'Program_17' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 17
+        tree --prune -I '*.class'
+
+    - name: Upload Program_17
+      if: ${{ always() && matrix.task == 'Program_17' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_17
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_18
+      if: ${{             matrix.task == 'Program_18' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 18
+        tree --prune -I '*.class'
+
+    - name: Upload Program_18
+      if: ${{ always() && matrix.task == 'Program_18' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_18
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_19
+      if: ${{             matrix.task == 'Program_19' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 19
+        tree --prune -I '*.class'
+
+    - name: Upload Program_19
+      if: ${{ always() && matrix.task == 'Program_19' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_19
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_20
+      if: ${{             matrix.task == 'Program_20' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 20
+        tree --prune -I '*.class'
+
+    - name: Upload Program_20
+      if: ${{ always() && matrix.task == 'Program_20' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_20
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_21
+      if: ${{             matrix.task == 'Program_21' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 21
+        tree --prune -I '*.class'
+
+    - name: Upload Program_21
+      if: ${{ always() && matrix.task == 'Program_21' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_21
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_22
+      if: ${{             matrix.task == 'Program_22' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 22
+        tree --prune -I '*.class'
+
+    - name: Upload Program_22
+      if: ${{ always() && matrix.task == 'Program_22' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_22
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_23
+      if: ${{             matrix.task == 'Program_23' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 23
+        tree --prune -I '*.class'
+
+    - name: Upload Program_23
+      if: ${{ always() && matrix.task == 'Program_23' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_23
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_24
+      if: ${{             matrix.task == 'Program_24' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 24
+        tree --prune -I '*.class'
+
+    - name: Upload Program_24
+      if: ${{ always() && matrix.task == 'Program_24' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_24
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_25
+      if: ${{             matrix.task == 'Program_25' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 25
+        tree --prune -I '*.class'
+
+    - name: Upload Program_25
+      if: ${{ always() && matrix.task == 'Program_25' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_25
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_26
+      if: ${{             matrix.task == 'Program_26' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 26
+        tree --prune -I '*.class'
+
+    - name: Upload Program_26
+      if: ${{ always() && matrix.task == 'Program_26' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_26
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_27
+      if: ${{             matrix.task == 'Program_27' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 27
+        tree --prune -I '*.class'
+
+    - name: Upload Program_27
+      if: ${{ always() && matrix.task == 'Program_27' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_27
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_28
+      if: ${{             matrix.task == 'Program_28' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 28
+        tree --prune -I '*.class'
+
+    - name: Upload Program_28
+      if: ${{ always() && matrix.task == 'Program_28' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_28
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_29
+      if: ${{             matrix.task == 'Program_29' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 29
+        tree --prune -I '*.class'
+
+    - name: Upload Program_29
+      if: ${{ always() && matrix.task == 'Program_29' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_29
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_30
+      if: ${{             matrix.task == 'Program_30' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 30
+        tree --prune -I '*.class'
+
+    - name: Upload Program_30
+      if: ${{ always() && matrix.task == 'Program_30' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_30
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_31
+      if: ${{             matrix.task == 'Program_31' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 31
+        tree --prune -I '*.class'
+
+    - name: Upload Program_31
+      if: ${{ always() && matrix.task == 'Program_31' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_31
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_32
+      if: ${{             matrix.task == 'Program_32' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 32
+        tree --prune -I '*.class'
+
+    - name: Upload Program_32
+      if: ${{ always() && matrix.task == 'Program_32' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_32
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_33
+      if: ${{             matrix.task == 'Program_33' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 33
+        tree --prune -I '*.class'
+
+    - name: Upload Program_33
+      if: ${{ always() && matrix.task == 'Program_33' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_33
         path: |
           verilog/**
           !verilog/**/*.gzEND
