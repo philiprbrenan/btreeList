@@ -69,7 +69,7 @@ class Leaf extends Program implements Program.Locatable                         
     leafCode();                                                                                                         // Generate machine code if any assembler code has been supplied
    }
 
-  void   leafCode () {}                                                                                                 // Override this method to provide code for testing the leaf
+  protected void leafCode () {}                                                                                         // Override this method to provide code for testing the leaf
 
   void   lockLeaf () {program().getLock(at.i());}                                                                       // Lock a leaf
   void unlockLeaf () {program().freeLock(at.i());}                                                                      // Unlock a leaf
@@ -769,7 +769,7 @@ Leaf           size:   8, count:   0
   static void test_iterate(boolean Ex)
    {sayCurrentTestName();
     new Leaf(new Build().maxSize(8).immediate(Ex))
-     {@Override void leafCode()
+     {protected void leafCode()
        {insert(new Int(2), new Int(22));
         insert(new Int(4), new Int(44));
         insert(new Int(3), new Int(33));
@@ -818,7 +818,7 @@ Leaf           size:   8, count:   8
    {sayCurrentTestName();
     final int A = 22, B = 21;
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex))
-     {void leafCode()
+     {protected void leafCode()
        {final Leaf l = this;
         l.data(One, new Int(A));
         l.data(One)     .ok(A);
