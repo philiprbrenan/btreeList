@@ -81,7 +81,7 @@ class Branch extends Program implements Program.Locatable                       
   Int                     count ()                     {return slots.count();}                                          // Number of key/data pairs in the branch
   int                   maxSize ()                     {return maxSize;}                                                // Number of key/data pairs in the branch
   Int                      data (Int Index)            {return refData.getInt(Index);}                                  // Get data at an index
-  private Int          slotData (Int Index)            {return data(keyIndex( Index));}                                  // Get data at a slot index
+  private Int          slotData (Int Index)            {return data(keyIndex( Index));}                                 // Get data at a slot index
   private int              data (int Index)            {return refData.getInt(Index);}                                  // Get data at an index
   private void             data (Int Index, Int Value) {refData.putInt(Index, Value);}                                  // Set data at the specified index
   int               bytesNeeded ()                     {return build.size();}                                           // Number of bytes needed to contain a branch
@@ -128,7 +128,7 @@ class Branch extends Program implements Program.Locatable                       
   Int               keyValue (Int Index) {return slots.getSlotToKeyValue(Index);}                                       // The value of the key from the index of the slot in the branch
   private Int         getKey (Int Index) {return slots.getKeyValue(Index);}                                             // The value of the indexed key without stepping through the slots first
 
-  private Bint getDataFromKey (Int Key, boolean Delete)                                                                         // Get the data associated with a key with the option of deleting the key if found
+  private Bint getDataFromKey (Int Key, boolean Delete)                                                                 // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.new Find(Key);                                                                           // Find the key
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
@@ -245,14 +245,14 @@ class Branch extends Program implements Program.Locatable                       
 
 //D2 Compact                                                                                                            // Compact a branch to the left or right
 
-  private void compactLeft ()                                                                                                   // Compact a branch to the left
+  private void compactLeft ()                                                                                           // Compact a branch to the left
    {subStart("Branch.compactLeft");
     slots.compactSlotsLeft();                                                                                           // Compact the slots to match
     slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                                              // Compact the slots to match
     subFinish();
    }
 
-  private void compactRight ()                                                                                                  // Compact a branch to the right
+  private void compactRight ()                                                                                          // Compact a branch to the right
    {subStart("Branch.compactRight");
     slots.compactSlotsRight();                                                                                          // Compact the slots to match
     slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                                             // Compact the slots to match
