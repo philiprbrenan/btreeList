@@ -4186,7 +4186,7 @@ Locks, size: 2
     if (rtg(15)) test_mem();
     if (rtg(16)) test_namedMemory();
     if (rtg(17)) test_memory();
-//  if (rtg(18)) test_memoryNegative();                                                                                              // No longer using negative numbers per Open Road
+//  if (rtg(18)) test_memoryNegative();                                                                                 // No longer using negative numbers per Open Road
     if (rtg(19)) test_memoryRef();
     if (rtg(20)) test_verilogArray();
     if (rtg(21)) test_arrayConstant();
@@ -4209,8 +4209,9 @@ Locks, size: 2
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
+   {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
+    try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
+     {deleteAllFilesInVerilogTestsFolder();                                                                             // Delete generated Verilog files created by a prior run of the current test
       if (github_action) oldTests(); else newTests();                                                                   // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Code coverage
       printExecutionCoverageGlobal(10);                                                                                 // Find locations in the java code that generated instructions that were never tested
