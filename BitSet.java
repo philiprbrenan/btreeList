@@ -2151,7 +2151,7 @@ Zero:
   public static void main(String[] args)                                                                                // Program entry point for testing.
    {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
     try                                                                                                                 // Protected execution block.
-     {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
+     {deleteAllFilesInVerilogTestsFolder();                                                                             // Delete generated Verilog files created by a prior run of the current test
       if (github_action) oldTests(); else newTests();                                                                   // Select tests.
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Optional coverage analysis.
       //printExecutionCoverageGlobal(4);                                                                                // Find locations in the java code that generated instructions that were never tested
