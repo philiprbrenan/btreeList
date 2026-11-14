@@ -160,7 +160,7 @@ class Tree extends Program                                                      
     treeCode();
    }
 
-  void     treeCode () {}                                                                                               // Override to apply code to the tree
+  protected void treeCode () {}                                                                                         // Override to apply code to the tree
 
   int   maxLeafSize () {return maxLeafSize;}                                                                            // Maximum size of a leaf
   int maxBranchSize () {return maxBranchSize;}                                                                          // Maximum size of a branch
@@ -587,34 +587,28 @@ class Tree extends Program                                                      
 
   void FindBranchAndUpdateKey(Int Key)                                                                                  // Find the branch in the tree that mentions the specified key. If such a branch exists update the key with the latest largest key in the sub tree, or remove this entry from the branch of the sub tree is empty
    {subStart("Tree.findBranch");
-    final Int p = root().dup();                                                                                       // Start at root
-    getLock(p);                                                                                                       // Lock the root so no-one can modify it while we are reading it
+    final Int p = root().dup();                                                                                         // Start at root
+    getLock(p);                                                                                                         // Lock the root so no-one can modify it while we are reading it
 
-    new For(mnl())                                                                                                    // Step down from branch to branch
+    new For(mnl())                                                                                                      // Step down from branch to branch
      {void body(Int Index, Bit Continue)
-       {new If (isBranch(p))                                                                                          // On a branch
+       {new If (isBranch(p))                                                                                            // On a branch
          {void Then()
-           {final Branch          b = branch(p);                                                                      // Current branch
-            final Branch.StepDown d = b.new StepDown(Key);                                                            // Step down on key
-            new If (d.eqKey)                                                                                          // Found the matching key
+           {final Branch          b = branch(p);                                                                        // Current branch
+            final Branch.StepDown d = b.new StepDown(Key);                                                              // Step down on key
+            new If (d.eqKey)                                                                                            // Found the matching key
              {void Then()
-               {final MaximumKey  m = new MaximumKey(d.node);                                                         // Maximum key in sub tree becomes the new key for this slot
+               {final MaximumKey  m = new MaximumKey(d.node);                                                           // Maximum key in sub tree becomes the new key for this slot
 
-                new If (m.maxKey)                                                                                     // Maximum was found
-                 {void Then()
-                   {final Slots       s = b.slots;                                                                    // Slots to be updated in branch being updated
-                    final Int         i = b.keyIndex(d.slot.i());                                                     // Index of slot holding key
-                    b.setSlotAndKey(d.slot.i(), i, m.maxKey.i());                                                     // Replace the existing key with the maximum of its sub tree in order to maintain the variant that the branch key is equal to the largest key in its sub tree
-                   }
-                  void Else()                                                                                         // No maximum key
-                   {new If (d.slot) {void Then() {b.deleteSlotAndKey(d.slot.i());}};                                  // There is no maximum key in the sub tree so the tree must be empty so we can delete it
-                   }
+                new If (m.maxKey)                                                                                       // Maximum was found
+                 {void Then() {b.setSlotAndKey(d.slot.i(),           b.keyIndex(d.slot.i()), m.maxKey.i());}            // Replace the existing key with the maximum of its sub tree in order to maintain the variant that the branch key is equal to the largest key in its sub tree
+                  void Else() {new If (d.slot) {void Then() {b.deleteSlotAndKey(d.slot.i());}};}                        // There is no maximum key in the sub tree so the tree must be empty so we can delete it
                  };
                };
-              void Else() {getLock(d.node); freeLock(p); p.set(d.node); Continue.set();}                              // Step down to the next branch
+              void Else() {getLock(d.node); freeLock(p); p.set(d.node); Continue.set();}                                // Step down to the next branch
              };
            }
-          void Else() {freeLock(p);}                                                                                  // Stepped down to a leaf so release the read lock on the parent branch because a branch containing the key was not found
+          void Else() {freeLock(p);}                                                                                    // Stepped down to a leaf so release the read lock on the parent branch because a branch containing the key was not found
          };
        }
      };
@@ -990,11 +984,7 @@ class Tree extends Program                                                      
             f.deleteKey();                                                                                              // Remove key from leaf in tree tree
             p.mergeUp();                                                                                                // Merge leaf and nodes above
             countDec();                                                                                                 // Count deleted key
-            new If (p.eqKey)                                                                                            // If the key being deleted was present in a branch we should find it and replace it with the new maximum key under the key being deleted to maintain the invariant that the key in the branch is equal to the maximum key in the tree below
-             {void Then()
-               {FindBranchAndUpdateKey(Key);                                                                            // Find the branch containing the key if it is still in the tree - it might have been merged out
-               }
-             };
+            new If (p.eqKey) {void Then() {FindBranchAndUpdateKey(Key);}};                                              // If the key being deleted was present in a branch we should find it and replace it with the new maximum key under the key being deleted to maintain the invariant that the key in the branch is equal to the maximum key in the tree below
            }
          };
        }
@@ -1519,7 +1509,7 @@ Height        :    1
 
     final int  N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
@@ -1615,7 +1605,7 @@ Height        :    1
    {sayCurrentTestName();
     final int N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index);
@@ -1660,7 +1650,7 @@ Height        :    1
    {sayCurrentTestName();
     final int N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(new Int(N))
          {void body(Int Index)
            {insert(new Int(N).Sub(Index), Index);
@@ -1707,7 +1697,7 @@ Height        :    1
 
     final int  N = random_32.length;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {final VerilogArrays.Array a = verilogArrays().new Array("loadRandomKeys", random_32);                           // Create an array of the random keys to be inserted from Verilog
 
         new ForCount(N)
@@ -1764,7 +1754,7 @@ Height        :    1
     final int N = 32;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
@@ -2049,7 +2039,7 @@ bec5f5f8a10f48c58d2511ce6de2c856
     final int  N = 32;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
@@ -2320,7 +2310,7 @@ aa5e343f6b3b1296e12384b4c49e105f
     final int  N = random_32.length;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
@@ -2598,7 +2588,7 @@ dccbfa70b58e9d65597159a702c6e62d
    {sayCurrentTestName();
     final int N = 16;
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(2)
          {void body(Int I)
            {new ForCount(N)
@@ -2715,7 +2705,7 @@ Leaf   at:  12 size:   2, count:   2
 
     final int  N = 128;
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(9).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
@@ -2763,7 +2753,7 @@ Leaf   at:  12 size:   2, count:   2
 
     final int  N = 128;
     final Tree t = new Tree(new Build().maxLeafSize(8).maxBranchSize(9).rootFanLevels(4).branchFanOut(3).leafFanOut(2).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
@@ -2820,7 +2810,7 @@ Leaf   at:  12 size:   2, count:   2
     //if (true) return;                                                                                                   // Not sure what this test proves
     final int  N = 256;
     final Tree t = new Tree(new Build().maxLeafSize(8).maxBranchSize(9).rootFanLevels(2).branchFanOut(3).leafFanOut(2).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new ForCount(One, new Int(N+1))
          {void body(Int Index)
            {insert(Index, Index.Mul(11));
@@ -2868,7 +2858,7 @@ Leaf   at:  12 size:   2, count:   2
 
     final int  N = 16;
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
-     {void treeCode()
+     {protected void treeCode()
        {new Traverse()
          {void traverse(Int Index, Int Key, Int Data, Bit Continue)
            {if (immediate()) stop("Tree should be empty");
