@@ -111,7 +111,7 @@ public class BitSet extends Program                                             
    }
 
   BitSet initializeMemory () {memoryRef.clear(unitsNeeded()); return this;}                                             // Initialize memory
-  int         unitsNeeded () {return build.units();}                                                                    // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
+  private int unitsNeeded () {return build.units();}                                                                    // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
   int                size () {return build.bitSize;}                                                                    // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
   Int          logBitSize () {return new Int(logBitSize)  ;}                                                            // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
   Int         logBitSize1 () {return new Int(logBitSize-1);}                                                            // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
@@ -126,7 +126,7 @@ public class BitSet extends Program                                             
     return memoryCount.getInt(0);
    }
 
-  void bitSetCode () {}                                                                                                 // Override this method to supply some code to be executed against the bitset
+  protected void bitSetCode () {}                                                                                       // Override this method to supply some code to be executed against the bitset
 
 //D1 Get and Set Bits                                                                                                   // Get and set bits in the bitset setting the corresponding paths in the bits trees
 
@@ -164,8 +164,8 @@ public class BitSet extends Program                                             
   Bit     getBitNC (Int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
   boolean getBitNC (int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
 
-  void    setBitNC (Int Index)  {setBitNC(Index, true);}                                                                // Set bit value without checking index
-  void  clearBitNC (Int Index)  {setBitNC(Index, false);}                                                               // Clear a bit value without checking index
+  private void    setBitNC (Int Index)  {setBitNC(Index, true);}                                                                // Set bit value without checking index
+  private void  clearBitNC (Int Index)  {setBitNC(Index, false);}                                                               // Clear a bit value without checking index
 
   void    setBitNC (Int Index, boolean B)                                                                               // Set a bit to a value known at compile time
    {subStart     ("Bitset.setBitNC_IB");
@@ -293,14 +293,14 @@ public class BitSet extends Program                                             
    {if (immediate() && Pos.i() < size()) checkInActual(Pos); else checkInZerosTree(Pos);
    }
 
-  int       top_zero ()        {return 2 * bitSize - 2 + bitSize1;}                                                     // Top of the zeros tree if it exists - zero based
-  int        top_one ()        {return 2 * bitSize - 2;}                                                                // Top of the ones  tree if it exists - zero based
-  Int         topOne ()        {return new Int(top_one());}                                                             // Top of the ones  tree if it exists - zero based
+  private int top_zero ()        {return 2 * bitSize - 2 + bitSize1;}                                                   // Top of the zeros tree if it exists - zero based
+  private int  top_one ()        {return 2 * bitSize - 2;}                                                              // Top of the ones  tree if it exists - zero based
+  Int           topOne ()        {return new Int(top_one());}                                                           // Top of the ones  tree if it exists - zero based
 
-  int         posOne (int P)   {return 1 * bitSize + P;}                                                                // Position in the ones  tree if it exists, argument is zero based as is the result
-  int        posZero (int P)   {return 2 * bitSize + P - 1;}                                                            // Position in the zeros tree if it exists, argument is zero based as is the result
+  private int   posOne (int P)   {return 1 * bitSize + P;}                                                              // Position in the ones  tree if it exists, argument is zero based as is the result
+  private int  posZero (int P)   {return 2 * bitSize + P - 1;}                                                          // Position in the zeros tree if it exists, argument is zero based as is the result
 
-  Int      zeroToOne (Int Pos)
+  Int        zeroToOne (Int Pos)
   {final Int r = new Int();
     new If (Pos.lt(bitSizeInt))
     {void Then()
@@ -1777,7 +1777,7 @@ Zero:
   static void test_b7(boolean Ex)
    {sayCurrentTestName();
     final BitSet b = new BitSet(new Build().bitSize(7).immediate(Ex))
-     {void  bitSetCode()
+     {protected void  bitSetCode()
        {set(new Int(3));
         set(new Int(6));
         //stop(this);
@@ -1853,7 +1853,7 @@ Zero:
   static void test_b8(boolean Ex)
    {sayCurrentTestName();
     final BitSet b = new BitSet(new Build().bitSize(8).immediate(Ex))
-     {void  bitSetCode()
+     {protected void  bitSetCode()
        {set(new Int(3));
         set(new Int(6));
         //stop(this);
@@ -1933,7 +1933,7 @@ Zero:
   static void test_b9(boolean Ex)
    {sayCurrentTestName();
     final BitSet b = new BitSet(new Build().bitSize(9).immediate(Ex))
-     {void  bitSetCode()
+     {protected void  bitSetCode()
        {set(new Int(3));
         set(new Int(6));
         set(new Int(7));
@@ -2021,7 +2021,7 @@ Zero:
   static void test_b10(boolean Ex)
    {sayCurrentTestName();
     final BitSet b = new BitSet(new Build().bitSize(10).immediate(Ex))
-     {void  bitSetCode()
+     {protected void  bitSetCode()
        {set(new Int(3));
         set(new Int(6));
         set(new Int(7));
@@ -2100,7 +2100,7 @@ Zero:
   static void test_set(boolean Ex)
    {sayCurrentTestName();
     final BitSet b = new BitSet(new Build().bitSize(8).immediate(Ex))
-     {void  bitSetCode()
+     {protected void  bitSetCode()
        {set(new Int(2));
         //stop(this);
         ok(()->this, """
