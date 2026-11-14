@@ -132,7 +132,7 @@ public class Program extends Test                                               
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
-  void               code () {}                                                                                         // Override to provide some code for this program
+  protected void     code () {}                                                                                         // Override to provide some code for this program
   Program         program () {return parentProgram;}                                                                    // Address this program
   boolean       immediate () {return program().immediate;}                                                              // Executing immediately via interpretation
   boolean     isExecuting () {return program().executing != null;}                                                      // Executing machine code
@@ -2920,7 +2920,7 @@ endmodule
   static void test_ifThen(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Bit b = new Bit("b", true);
         final Int a = new Int("a").set(1);
         new If (b)
@@ -2942,7 +2942,7 @@ endmodule
   static void test_ifElse(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Bit b = new Bit("b", true);
         final Int a = new Int("a").set(1);
         new If (b.Flip())
@@ -2966,7 +2966,7 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex))
      {int i = 0;
       int incI() {return ++i;}
-      void code()
+      protected void code()
        {final Int a = new FastInt("a");
         final Int b = new FastInt("b");
         final Int c = new FastInt("b");
@@ -2999,7 +2999,7 @@ endmodule
   static void test_For(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int N = new Int("N", 2);
         new For(N)
          {void body(Int Index, Bit Continue)
@@ -3021,7 +3021,7 @@ endmodule
   static void test_programming(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int i = new Int("i").set(0);
         final Int N = new Int("N", 11);
         new For(N)
@@ -3049,7 +3049,7 @@ endmodule
   static void test_addition(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int("a", 1);
         final Int b = new Int("b", a.Add(2));
         b.Add(1).ok(4).name = "c";
@@ -3075,7 +3075,7 @@ endmodule
   static void test_clearSet(boolean Ex)
    {sayCurrentTestName();
     final Program  P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Bit a = new Bit("a", true);
         a.ok(true);
         a.clear();       a.ok(false);
@@ -3097,7 +3097,7 @@ endmodule
   static void test_andOr(boolean Ex)
    {sayCurrentTestName();
     final Program  P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Bit Z = new Bit("zero", false);
         final Bit O = new Bit("one",   true);
 
@@ -3131,7 +3131,7 @@ endmodule
   static void test_add(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int("a").set(1);
         final Int b = new Int("b").set(0);
         final Int N = new Int("N", 10);
@@ -3174,7 +3174,7 @@ endmodule
   static void test_fibonacci(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int("a").set(0);
         final Int b = new Int("b").set(1);
         final Int c = new Int("c", true);
@@ -3205,7 +3205,7 @@ endmodule
   static void test_mod(Boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int("a");
         final Bit b = new Bit("b");
         final Int c = new Int("c").set(0);
@@ -3242,7 +3242,7 @@ endmodule
   static Program test_incremental(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int("a").set(0);
         final StringBuilder s = new StringBuilder();
               a.ok(0);
@@ -3265,13 +3265,13 @@ endmodule
   static void test_remote(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int("a").set(1);
         a.add(2).ok(3);
        }
      };
     final Program Q = new Program(new Build().immediate(Ex).parent(P))
-     {void code()
+     {protected void code()
        {final Int a = new Int("A").set(1);
         a.ok(1);
         a.add(3).ok(4);
@@ -3293,7 +3293,7 @@ endmodule
   static void test_variables(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(3))
-     {void code()
+     {protected void code()
        {dumpProgramState("AAAA");
         final Int i = new Int("i", 1);
         final Bit b = new Bit("b", true);
@@ -3319,7 +3319,7 @@ endmodule
   static void test_mem(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(4).checkAllLocksHaveBeenReleased())
-     {void code()
+     {protected void code()
        {final Memory m = mainMemory;
         final Int     N0 = new Int    ("ZERO",  0);
         final Int     N1 = new Int    ("ONE",   1);
@@ -3431,7 +3431,7 @@ Locks, size: 1
   static void test_namedMemory(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Memory m = new Memory(2, "test memory name", new Memory.ReadWrite(), null);
         final Int a = new Int("a"); a.set(2); m.putInt(One, a);
         dumpProgramState("aaaa");
@@ -3449,7 +3449,7 @@ Locks, size: 1
   static void test_memory(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(2).checkAllLocksHaveBeenReleased())
-     {void code()
+     {protected void code()
        {final Memory m = mainMemory;
         final Int Z = new Int("Z", 0);
         final Int O = new Int("O", 1);
@@ -3500,7 +3500,7 @@ Locks, size: 1
 //  static void test_memoryNegative(boolean Ex)                                                                         // Non negative values simplifies silicon compiler
 //   {sayCurrentTestName();
 //    final Program P = new Program(new Build().immediate(Ex).memory(8))
-//     {void code()
+//     {protected void code()
 //       {final Memory m = mainMemory;
 //        new ForCount(2)
 //         {void body(Int Index)
@@ -3523,7 +3523,7 @@ Locks, size: 1
   static void test_memoryRef(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(10).checkAllLocksHaveBeenReleased())
-     {void code()
+     {protected void code()
        {final Memory     M = mainMemory;
         final Memory.Ref m = M.new Ref(2);
         final Memory.Ref n = M.new Ref(3);
@@ -3660,7 +3660,7 @@ Locks, size: 1
   static void test_verilogArray(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(16))
-     {void code()
+     {protected void code()
        {final int[]array = {1, 3, 5, 2, 4, 6, 7, 8};                                                                    // Array
         final VerilogArrays.Array A = verilogArrays().new Array("verilogArrayData", array);                             // Verilog version of array
         dumpProgramState("AAAA");
@@ -3690,7 +3690,7 @@ Locks, size: 1
    {sayCurrentTestName();
     final int [] a = {2, 3, 5, 7, 11};
     final Program P = new Program(new Build().immediate(Ex).memory(16))
-     {void code()
+     {protected void code()
        {final Int i = new Int("i").set(2);
         i.S();
         final String v = new ArrayConstant(a).verilog(intMemory().read1Int(), intMemory().writeInt());
@@ -3716,7 +3716,7 @@ Locks, size: 1
   static void test_lastInstructionBase(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(8))
-     {void code()
+     {protected void code()
        {final Int a = new Int(2);
         final Int b = new Int();
         a.ok(2);
@@ -3752,7 +3752,7 @@ Locks, size: 1
    {sayCurrentTestName();
     final int N = 8;
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int ("a").set(N/2);
         final StringBuilder s = new StringBuilder();
         new ForCount(N)
@@ -3849,7 +3849,7 @@ Locks, size: 1
    {sayCurrentTestName();
     final int N = 10;
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int  a = new Int("a").set(N);
         new ForCount(N)
          {void body(Int Index)
@@ -3879,7 +3879,7 @@ Locks, size: 1
   static void test_forLoops(Boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int  a = new Int("a").set(0);
         new For(One, new Int(10))
          {void body(Int Index, Bit Continue)
@@ -3916,7 +3916,7 @@ Locks, size: 1
   static void test_fastInt (Boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new FastInt("a");
         final Int b = new FastInt("b");
         final Int c = new     Int("c");
@@ -3956,7 +3956,7 @@ Locks, size: 1
   static void test_pcConstant (Boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int("a").set(1);
         a.add(2);
         a.ok(3);
@@ -3973,7 +3973,7 @@ Locks, size: 1
   static void test_compareZero (Boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new FastInt("a");
         final Int b = new     Int("b").set(0);
         a.ez().ok(true);
@@ -4001,7 +4001,7 @@ Locks, size: 1
   static void test_upDown (Boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int("a").set(1);
         final Int b = new Int("b", 2);
         a.Up  () .ok(2);
@@ -4025,7 +4025,7 @@ Locks, size: 1
   static void test_maxMin (Boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {final Int a = new Int("a", 2);
         final Int b = new Int("b", 4);
         a.Max(4).ok(4);
@@ -4046,7 +4046,7 @@ Locks, size: 1
    {sayCurrentTestName();
 
     new Program(new Build().name("main").memory(8, addressToOne()))
-     {void code()
+     {protected void code()
        {final Memory m = mainMemory;
         final Int    a = new Int("a").set(0);
         final Int    l = new Int("l", 2);
@@ -4090,7 +4090,7 @@ Locks, size: 2
    {sayCurrentTestName();
 
     new Program(new Build().name("main").memory(8).immediate(true))
-     {void code()
+     {protected void code()
        {final Memory m = mainMemory;
         final Int a = new Int("a", 1);
 
@@ -4128,7 +4128,7 @@ Locks, size: 2
     final int            N = 10;
     final Stack<Integer> S = new Stack<>();
     new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {new ForCount(N)
          {void body(Int Index)
            {push(S, ()->Index.i());
@@ -4150,7 +4150,7 @@ Locks, size: 2
     final int            N = 10;
     final Stack<Integer> S = new Stack<>();
     new Program(new Build().immediate(Ex))
-     {void code()
+     {protected void code()
        {new Until()
          {void body(Int Index, Bit Continue)
            {push(S, ()->Index.i());
