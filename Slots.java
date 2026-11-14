@@ -91,7 +91,7 @@ class Slots extends Program                                                     
     return this;
    }
 
-  void slotsCode () {}                                                                                                  // Override this method to provide code for testing the slots
+  protected void slotsCode () {}                                                                                        // Override this method to provide code for testing the slots
 
 //D2 Internal                                                                                                           // Low level internal operations on slots
 
@@ -1087,7 +1087,7 @@ class Slots extends Program                                                     
   static void test_slots (boolean Ex)
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {putSlotToKeys(new Int(2), new Int(3));
 
         usedSlotsToKeys.empty().ok(false);
@@ -1166,7 +1166,7 @@ keys     :    0  11   0  22   0   0   0   0
   static void test_locateNearestFreeSlotToKey(boolean Ex)
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(16).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {setSlots(2, 4, 5, 6, 9, 10, 12);
         final Slots s = this;
         //stop(s);
@@ -1204,7 +1204,7 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
   static void test_alloc(boolean Ex)
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(4).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {putKey(new Int(2),  One);
         final Slots s = this;
         //stop(s);
@@ -1245,7 +1245,7 @@ keys     :    2   3   1   4
   static void test_set_del_slot_key(boolean Ex)
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(4).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {setSlotAndKey(new Int(3),  new Int(2),  One);
         setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
@@ -1285,7 +1285,7 @@ keys     :    0   0   0   2
   static void test_compact(boolean Ex)
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(4).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {setSlotAndKey(new Int(2),  One,  One);
         setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
@@ -1395,7 +1395,7 @@ keys     :    0   0   1   2
   static void test_redistribute(boolean Ex)
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {maxSteps(9_999_999);
         setSlotAndKey(new Int(2),   One,  One);
         setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
@@ -1440,7 +1440,7 @@ keys     :    7   1   3   2   4   5   6   0
   static void test_shift(boolean Ex)
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {maxSteps(9_999_999);
         setSlotAndKey(new Int(2),   One,  One);
         setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
@@ -1515,12 +1515,12 @@ keys     :    7   1   3   2   4   5   6   0
    {sayCurrentTestName();
     final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {final Slots l = this;
         insert(new Int(2));
         insert(One);
         final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
-         {void slotsCode()
+         {protected void slotsCode()
            {final Insert i3 = insert(new Int(3)); i3.inserted.ok(true);
             final Insert i4 = insert(new Int(4)); i4.inserted.ok(true);
             final Insert j3 = insert(new Int(3)); j3.inserted.ok(false);  j3.slot.i().eq(i3.slot.i()).ok(true);
@@ -1561,7 +1561,7 @@ keys     :    0   0   4   3
    {sayCurrentTestName();
     final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {final Slots r = this;
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r));
         new ForCount(2)
@@ -1608,12 +1608,12 @@ keys     :    2   1   4   3
    {sayCurrentTestName();
     final int N = 5;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {final Slots l = this;
         l.insert(new Int(2));
         l.insert(One);
         final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
-         {void slotsCode()
+         {protected void slotsCode()
            {insert(new Int(4));
             insert(new Int(5));
            }
@@ -1676,12 +1676,12 @@ keys     :    0   0   0   5   4
    {sayCurrentTestName();
     final int   N = 5;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {final Slots r = this;
         r.insert(new Int(4));
         r.insert(new Int(5));
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r))
-         {void slotsCode()
+         {protected void slotsCode()
            {insert(One);
             insert(new Int(2));
            }
@@ -1733,7 +1733,7 @@ keys     :    1   2   3   5   4
   static void test_find(boolean Ex)
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {putSlotToKeys(new Int( 0), One);
         putSlotToKeys(new Int( 2), new Int(3));
         putSlotToKeys(new Int( 4), new Int(5));
@@ -1799,7 +1799,7 @@ Zero:
   static void test_findGe(boolean Ex)
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {putSlotToKeys(new Int( 0), One);
         putSlotToKeys(new Int( 2), new Int(3));
         putSlotToKeys(new Int( 4), new Int(5));
@@ -1866,7 +1866,7 @@ Zero:
   static void test_findRight(boolean Ex)                                                                                // Same as find but with the slots on the right
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {putSlotToKeys(new Int( 9), One);
         putSlotToKeys(new Int(11), new Int(3));
         putSlotToKeys(new Int(13), new Int(5));
@@ -1933,7 +1933,7 @@ Zero:
     final int [] keys = new int[] {14, 13, 16, 15, 18, 17, 12, 11};
 
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {final Slots               s = this;
         final StringBuilder       t = new StringBuilder();
         final VerilogArrays.Array a = verilogArrays().new Array("keys", keys);
@@ -2029,7 +2029,7 @@ keys     :   14  13  16  15  18  17  12  11
    {sayCurrentTestName();
     final int [] keys = new int[] {11, 12, 13, 15, 16, 17, 18, 14};
     final Slots s = new Slots(new Build().numberOfKeys(keys.length).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {final VerilogArrays.Array a = verilogArrays().new Array("keys", keys);
 
         new ForCount(keys.length)                                                                                       // Using this rather complex for loop reduces the amount of code generated
@@ -2072,7 +2072,7 @@ keys     :   11  12  13  15  16  17  18  14
    {sayCurrentTestName();
     final int N = 8;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {insert(new Int(11));
         insert(new Int(12));
         insert(new Int(13));
@@ -2130,7 +2130,7 @@ keys     :    0   0   0  15  16  17  18   0
    {sayCurrentTestName();
     final int N = 8;
     final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {insert(new Int(11));
         insert(new Int(12));
         insert(new Int(13));
@@ -2188,7 +2188,7 @@ keys     :    0   0   0  15  16  17  18   0
    {sayCurrentTestName();
     final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {insert(new Int(11));
         insert(new Int(12));
         insert(new Int(13));
@@ -2245,7 +2245,7 @@ keys     :    0   0   0  15  16  17   0
    {sayCurrentTestName();
     final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {insert(new Int(11));
         insert(new Int(12));
         insert(new Int(13));
@@ -2302,7 +2302,7 @@ keys     :    0   0   0  15  16  17  14
    {sayCurrentTestName();
     final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {insert(new Int(11));
         insert(new Int(12));
         insert(new Int(13));
@@ -2347,7 +2347,7 @@ keys     :    0   0   0   0   0   0   0
 //  static void test_stuck(boolean Ex)
 //   {sayCurrentTestName();
 //    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
-//     {void slotsCode()
+//     {protected void slotsCode()
 //       {initializeMemory();
 //        stuckPush(new Int(11));
 //        stuckPush(new Int(22));
@@ -2378,7 +2378,7 @@ keys     :    0   0   0   0   0   0   0
    {sayCurrentTestName();
     final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {final Slots s = this;
         insertEmpty(new Int(4)).ok(7);
         //stop(s);
@@ -2418,7 +2418,7 @@ keys     :    4   2   6   0   0   0   0
    {sayCurrentTestName();
     final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
+     {protected void slotsCode()
        {final Slots s = this;
                             count().ok(0);
         insert(new Int(4)); count().ok(1);
