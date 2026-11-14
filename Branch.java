@@ -101,10 +101,10 @@ class Branch extends Program implements Program.Locatable                       
   void         deleteSlotAndKey (Int Slot)             {slots.delSlotAndKey(Slot);}                                     // Delete the slot and its associated key
   void            setSlotAndKey (Int Slot, Int KeyIndex, Int Value) {slots.setSlotAndKey(Slot, KeyIndex, Value);}       // Write a specified value into the specified slot and key in the branch
 
-  void  branchCode ()                     {}                                                                            // Override this method to provide code for testing the branch
+  protected void     branchCode ()                     {}                                                               // Override this method to provide code for testing the branch
 
-  void   lockBranch() {program(). getLock(at.i());}                                                                     // Lock a branch
-  void unlockBranch() {program().freeLock(at.i());}                                                                     // Unlock a branch
+  void                lockBranch()                     {program(). getLock(at.i());}                                    // Lock a branch
+  void              unlockBranch()                     {program().freeLock(at.i());}                                    // Unlock a branch
 
   void moveLastChildInBodyOfParentToTop()                                                                               // Move last child in body of parent to top
    {final Bint s = lastSlot();                                                                                          // Last slot in body of parent
@@ -832,7 +832,7 @@ Branch         size:   7, count:   0, top:   0, level:   0
   static void test_iterate(boolean Ex)
    {sayCurrentTestName();
     new Branch(new Build().maxSize(7).immediate(Ex))
-     {@Override void branchCode()
+     {protected void branchCode()
        {insert(new Int(2), new Int(22));
         insert(new Int(4), new Int(44));
         insert(new Int(3), new Int(33));
@@ -879,7 +879,7 @@ Branch         size:   7, count:   7, top:  88, level:   0
    {sayCurrentTestName();
     final int A = 22, B = 21;
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex))
-     {void branchCode()
+     {protected void branchCode()
        {final Branch l = this;
         l.data(One, new Int(A));
         l.data(One)  .ok(A);
@@ -903,7 +903,7 @@ Branch         size:   7, count:   7, top:  88, level:   0
    {sayCurrentTestName();
     final int    N = 4;
     final Branch a = new Branch(new Build().maxSize(N-1).immediate(Ex))
-     {void branchCode()
+     {protected void branchCode()
        {insert(new Int(10), One);
         insert(new Int(20), new Int(2));
         insert(new Int(30), new Int(3));
@@ -927,7 +927,7 @@ Branch         size:   7, count:   7, top:  88, level:   0
   static void test_knownInsert(boolean Ex)
    {sayCurrentTestName();
     new Branch(new Build().maxSize(7).immediate(Ex))
-     {@Override void branchCode()
+     {protected void branchCode()
        {insertEmpty(new Int(4), new Int(44));
         check(print(), """
 Branch         size:   7, count:   1, top:   0, level:   0
