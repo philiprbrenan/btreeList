@@ -206,12 +206,12 @@ class Leaf extends Program implements Program.Locatable                         
 //D1 Compact, Split, Merge                                                                                              // Compact, split or merge leaves
 //D2 Compact                                                                                                            // Compact a leaf to the left or right
 
-  private void compactLeft ()                                                                                                   // Compact a leaf to the left
+  private void compactLeft ()                                                                                           // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
     slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                                              // Compact the slots to match
    }
 
-  private void compactRight ()                                                                                                  // Compact a leaf to the right
+  private void compactRight ()                                                                                          // Compact a leaf to the right
    {slots.compactSlotsRight();                                                                                          // Compact the slots to match
     slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                                             // Compact the slots to match
    }
@@ -234,7 +234,7 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D2 Merge                                                                                                              // Merge two leaves
 
-  private Int mergeLimit () {return new Int(maxSize());}                                                                        // Combined leaf size limit for a merge
+  private Int mergeLimit () {return new Int(maxSize());}                                                                // Combined leaf size limit for a merge
 
   private void copyMergeData (Leaf Source, Int Start, Int End)                                                          // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {new ForCount (Start, End)
