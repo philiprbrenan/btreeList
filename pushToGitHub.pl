@@ -22,7 +22,7 @@ my @ext         = qw(c java pl md png gds);                                     
 my @containers  = (                                                                                                     # Containers to use to run the java code once through each set of EDA tools as it is difficult to combine them in one image
 #[qw(or ghcr.io/philiprbrenan/or_github:latest)],                                                                       # Open ram container - but not in use as OpenRam can only produce small memories
  [qw(sc ghcr.io/philiprbrenan/sc_github:latest)]);                                                                      # Silicon compiler
-my %tasks       = (BitSet=>15, Branch=>12, Leaf=>10, Program=>33, Slots=>23, Tree=>16);                                 # Number of tasks for each component - default is one
+my %tasks       = (BitSet=>15, Branch=>12, Leaf=>10, Program=>36, Slots=>23, Tree=>16);                                 # Number of tasks for each component - default is one
 
 my $include     = q(.);                                                                                                 # Java files to include in testing
 #my $include     = q(tree);
@@ -163,7 +163,7 @@ END
 
     for my $t(@t)                                                                                                       # Tasks
      {my $C  = $$t{class};
-      my $G  = $$t{group};
+      my $G  = "rtg=".$$t{group};
       my $N  = $$t{name};
 
       $y .= <<END;
