@@ -14,7 +14,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent Java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
- {final static String                     currentProject = "Method localization";                                       // How memory is shared between main program and sub program
+ {final static String                     currentProject = "Remote execution";                                          // How memory is shared between main program and sub program
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
@@ -64,6 +64,7 @@ public class Program extends Test                                               
   static String                                subsTrace = null;                                                        // Traceback through the methods currently active
   final Int                                         Zero;                                                               // Integer constant zero
   final Int                                          One;                                                               // Integer constant one
+  final Int                          remoteExecutionMode;                                                               // Remote execution mode
   final String                               programName;                                                               // Name of program to assist in debugging multi program executions
   final Build                                      build;                                                               // Build parameter list used to construct the program
   final boolean            checkAllLocksHaveBeenReleased;                                                               // Confirm that all locks have been released at the end of program execution
@@ -129,6 +130,7 @@ public class Program extends Test                                               
     final int     S = s ? Build.size : 0;                                                                               // Amount of memory required
     mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea) :                  // Main memory associated with either the main program or a sub program using an independent memory
                       program().mainMemory;                                                                             // Sub program uses main program memory
+    remoteExecutionMode = new Int("remote execution mode").set(RemoteExecution.Modes.Local.ordinal());                  // Remote execution mode is local by default
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -362,9 +364,11 @@ public class Program extends Test                                               
 
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
+  interface Computable {}                                                                                               // Something we can compute with
+
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
-  final class Bit                                                                                                       // A boolean value
+  final class Bit implements Computable                                                                                 // A boolean value
    {boolean         i = false;                                                                                          // Value of the boolean
     boolean         v = false;                                                                                          // Whether the current value of the integer is valid or not
     boolean        nd = false;                                                                                          // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
@@ -603,7 +607,7 @@ public class Program extends Test                                               
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
-  class Int                                                                                                             // An integer value
+  class Int implements Computable                                                                                       // An integer value - noty final because of "fast ints".
    {private int          i = 0;                                                                                         // Value of the integer
     private boolean      v = false;                                                                                     // Whether the current value of the integer is valid or not
             String    name = null;                                                                                      // The name of the variable
@@ -1142,7 +1146,7 @@ public class Program extends Test                                               
 
 //D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the Verilog representationOperations on integer values
 
-  final class Bint                                                                                                      // An integer that can be specified as valid or invalid
+  final class Bint implements Computable                                                                                // An integer that can be specified as valid or invalid
    {private final Bit b = new Bit(false);                                                                               // Whether the associated integer is valid or invalid
     private final Int i = new Int();                                                                                    // The integer component
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
@@ -1892,6 +1896,64 @@ endmodule
 
 // D2 Execute                                                                                                           // Execute the code in the current program
 
+  class Execute                                                                                                         // Execute some or all of the code
+   {final int                  start;                                                                                   // Start  instruction
+    final int                 finish;                                                                                   // Finish instruction
+    final RemoteExecution.Modes mode;                                                                                   // The execution mode in which to execute the code
+
+    static class Build
+     {Integer              start;                                                                                       // Start  instruction
+      Integer             finish;                                                                                       // Finish instruction
+      RemoteExecution.Modes mode = RemoteExecution.Modes.Local;                                                          // The execution mode in which to execute the code
+
+      Build  start (int Start)                  {start  = Start;  return this;}
+      Build finish (int Finish)                 {finish = Finish; return this;}
+      Build   mode (RemoteExecution.Modes Mode) {mode   = Mode;   return this;}
+     }
+
+    Execute(Build Build)                                                                                                // Finalize the execution request
+     { start = Build.start  != null ? Build.start  : 0;
+      finish = Build.finish != null ? Build.finish : codeSize();
+        mode = Build.mode;
+      execute();
+     }
+
+    void execute ()                                                                                                     // Execute the code of the program
+     {remoteExecutionMode.set(mode.ordinal());                                                                          // Set execution mode
+      currentPc = pc = start;                                                                                           // Reset program counter to start of program
+
+      for(steps = 0; steps < maxSteps && pc >= 0 && pc < finish; ++steps)                                               // Execute each instruction within a specified number of steps
+       {final I i = code.elementAt(pc);
+        try
+         {currentPc = pc++;                                                                                             // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
+          executing = i;                                                                                                // Currently executing instruction
+          jtrace    = 0;                                                                                                // Number of java trace records produced
+
+          if (!suppressInstructionCoverage && i.traceTest != null)                                                      // Update instruction coverage by location in Java code where instruction was generated
+           {instructionCover.get(i.traceTest).count++;
+           }
+
+          i.a();                                                                                                        // Execute the instruction
+
+          i.executed++;                                                                                                 // Count the executions of the instruction
+          if (i.trace())                                                                                                // Check tracing
+           {if (jtrace != i.traces())                                                                                   // Wrong number of trace calls
+             {stop("Wrong number of Java traces generated, got:", jtrace, "expected:", i.traces(),
+                   "at:", i.instructionLocation());
+             }
+            if (jtrace == 0) jTrace(f("%8d Location: %s", currentPc, i.instructionLocationAsComment()));                // Append location to Java trace log as no tracing was performed
+           }
+
+          executing = null;                                                                                             // Show no instruction currently being executed
+         }
+        catch(Exception E)
+         {if (executing == null) stop("Exception:", E, "while executing:", traceBack(E));
+          else stop("Exception:", E, "\nin instruction:", executing.traceBack, "\nwhile executing:", traceBack(E));
+         }
+       }
+     }
+   }
+
   void execute ()                                                                                                       // Execute the current code
    {if (immediate() || !suppressImmediateOnly)                                                                          // The code has already been executed interpretively and, optionally, that is all that is required
      {if (checkAllLocksHaveBeenReleased) checkAllLocksHaveBeenReleased();
@@ -1902,9 +1964,6 @@ endmodule
     if ( initializedForExecution) stop("Already executed");                                                             // The idea is to produce a complete program the first time
     if (!initializedForExecution) traceFiles.delete_java();                                                             // Clear Java trace file at first execution of main program
     if (!initializedForExecution) dumpProgramState("Finished");                                                         // Dump program state at end of execution
-
-    currentPc   = pc = 0;                                                                                               // Reset program counter to start of program
-    final int N = codeSize();                                                                                           // Number of instructions
 
     intMemory().reallocate(nextIntId);                                                                                  // Resize integer memory now we know how big to make it
     bitMemory().reallocate(nextBitId);                                                                                  // Resize boolean memory now we know how big to make it
@@ -1917,37 +1976,9 @@ endmodule
 
     initializedForExecution = true;                                                                                     // The program is now ready for execution
 
-    for(steps = 0; steps < maxSteps && pc >= 0 && pc < N; ++steps)                                                      // Execute each instruction within a specified number of steps
-     {final I i = code.elementAt(pc);
-      try
-       {currentPc = pc++;                                                                                               // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
-        executing = i;                                                                                                  // Currently executing instruction
-        jtrace    = 0;                                                                                                  // Number of java trace records produced
+    new Execute(new Execute.Build().mode(RemoteExecution.Modes.Local));                                                                            // Execute instructions
 
-        if (!suppressInstructionCoverage && i.traceTest != null)                                                        // Update instruction coverage by location in Java code where instruction was generated
-         {instructionCover.get(i.traceTest).count++;
-         }
-
-        i.a();                                                                                                          // Execute the instruction
-
-        i.executed++;                                                                                                   // Count the executions of the instruction
-        if (i.trace())                                                                                                  // Check tracing
-         {if (jtrace != i.traces())                                                                                     // Wrong number of trace calls
-           {stop("Wrong number of Java traces generated, got:", jtrace, "expected:", i.traces(),
-                 "at:", i.instructionLocation());
-           }
-          if (jtrace == 0) jTrace(f("%8d Location: %s", currentPc, i.instructionLocationAsComment()));                  // Append location to Java trace log as no tracing was performed
-         }
-
-        executing = null;                                                                                               // Show no instruction currently being executed
-       }
-      catch(Exception E)
-       {if (executing == null) stop("Exception:", E, "while executing:", traceBack(E));
-        else stop("Exception:", E, "\nin instruction:", executing.traceBack, "\nwhile executing:", traceBack(E));
-       }
-     }
-
-    if (steps >= maxSteps && pc >= 0 && pc < N) stop("Out of steps after step:", steps);                                // Show ran out of steps
+    if (steps >= maxSteps && pc >= 0 && pc < codeSize()) stop("Out of steps after step:", steps);                       // Show ran out of steps
     if (!generateVerilog) say(f("            Execution: %,12d", steps));                                                // Show number of steps unless we are going to print this in during the Verilog process
 
     if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
@@ -2903,6 +2934,114 @@ endmodule
   static AddressToArea addressToZero () {return new AddressToArea() {int addressToArea(int a) {return 0;}};}            // Area is always zero
   static AddressToArea addressToOne  () {return new AddressToArea() {int addressToArea(int a) {return a;}};}            // Area is always same as address
 
+//D1 Remote execution                                                                                                   // Methods to enable remote execution of delayed mode code
+
+  abstract class RemoteExecution                                                                                        // Isolate code to be executed remotely
+   {int start;
+    int finish;
+    final Stack<Computable>  inParameters = new Stack<>();                                                              // Input data fields
+    final Stack<Computable> outParameters = new Stack<>();                                                              // Output data fields
+
+    RemoteExecution(Int Target)                                                                                         // Execute the code in method "body" on the specified target process,.
+     {Collections.addAll(inParameters,  in());
+      Collections.addAll(outParameters, out());
+      new If (remoteExecutionMode.eq(RemoteExecution.Modes.Client.ordinal()))                                           // Code does not get executed locally in client mode
+       {void Then()                                                                                                     // Client mode,
+         {new I()
+           {void a()
+             {say("AAAA");
+              packRequest();                                                                                                // Pack the request and send it to the server
+              //unpackResponse();                                                                                             // Wait for repsonse and unpack response into local variables
+             }
+            boolean trace() {return false;}
+           };
+         }
+        void Else()                                                                                                     // Execution of code either locally or remotely on server
+         {start = code.size();                                                                                          // Location of start instruction
+          new If (remoteExecutionMode.eq(RemoteExecution.Modes.Server.ordinal()))
+           {void Then()                                                                                                 // Server mode
+             {//unpackRequest();                                                                                          // Unpack request and set local variables to match
+             }
+           };
+          body();                                                                                                       // Instructions to be executed
+          new If (remoteExecutionMode.eq(RemoteExecution.Modes.Server.ordinal()))
+           {void Then()
+             {packResponse();                                                                                           // Pack server response and send it back to the client
+             }
+           };
+          finish = code.size();                                                                                         // Location of finish instruction
+         }
+       };
+     }
+    abstract void body ();                                                                                              // Instructions to be executed
+    abstract Computable[]in ();                                                                                         // Identify the input parameters
+    abstract Computable[]out ();                                                                                        // Identify the output parameters
+
+    void pack (ByteBuffer Buffer, Stack<Computable> Parameters, boolean Instructions)                                   // Pack data into a buffer ready to be sent to the server or client
+     {final ByteBuffer X = Buffer;
+      X.putInt(0);
+      if (Instructions) {X.putInt(start); X.putInt(finish);}                                                            // Range of instructions to be executed if requested
+      for (Computable c : Parameters)                                                                                   // Load each parameter
+       {switch (c)
+         {case Bit  B -> {X.putInt(B.id);   X.putInt(B.b() ? 1 : 0);}
+          case Int  I -> {X.putInt(I.id);   X.putInt(I.i());}
+          case Bint C -> {X.putInt(C.b.id); X.putInt(C.i.id); X.putInt(C.valid().b() ? 1 : 0); if (C.valid().b()) X.putInt(C.ii());}
+          default     ->  stop("Unknown computable type:"+c);
+         }
+       }
+      X.putInt(0, X.position());                                                                                        // Insert length field at front
+      X.flip();                                                                                                         // Prepare buffer for writing into the socket
+     }
+
+    void packRequest ()                                                                                                 // Pack a request for execution and send it to the server
+     {final ByteBuffer b = ByteBuffer.allocate(1<<10);
+      pack(b, inParameters, true);
+      //sendRequest(b);
+     }
+
+    void packResponse ()                                                                                                // Pack the response from the server and send it back to the client
+     {final ByteBuffer b = ByteBuffer.allocate(1<<10);
+      pack(b, outParameters, false);
+      //sendResponse(b);
+     }                                                                                                                  // Format the request and end it to the server
+
+    void unpack (ByteBuffer Buffer, Stack<Computable> Parameters, boolean Instructions)                                 // Unpack request optionally receiving instruction range as well
+     {final ByteBuffer X = Buffer;
+      X.getInt();                                                                                                       // Skip length
+      if (Instructions) {start  = X.getInt(); finish = X.getInt();}                                                     // Optionally get instruction range
+
+      for (Computable c : Parameters)
+       {switch (c)
+         {case Bit  B -> {final int id  = X.getInt(); bits.elementAt(id).set(X.getInt() > 0);}
+          case Int  I -> {final int id  = X.getInt(); ints.elementAt(id).set(X.getInt());}
+          case Bint C -> {final int idb = X.getInt(), idi = X.getInt(), valid = X.getInt();
+                          bits.elementAt(idb).set(valid != 0);
+                          if (valid != 0) ints.elementAt(idi).set(X.getInt());
+                         }
+          default -> stop("Unknown computable type:"+c);
+         }
+       }
+      if (Instructions) new Execute(new Execute.Build().start(start).finish(finish).mode(RemoteExecution.Modes.Local));
+     }
+
+    void  unpackRequest (ByteBuffer B) {unpack(B, inParameters, true);}                                                 // Unpack request and execute the decoded instruction range
+    void unpackResponse (ByteBuffer B) {unpack(B, inParameters, false);}                                                // Unpack response into local program which can now proceed executing as if the remote code had just been executed inline
+
+    interface Reference                                                                                                 // Get a reference to the remote execution request from an object: the reference is built by an inner class so a method of locating the object created from the inner class is required
+     {RemoteExecution reference();
+     }
+
+    enum Types {Bit, Int, Bint};                                                                                        // Types of data that can be transmitted
+
+    enum Modes                                                                                                          // Names for the execution modes of a delayed mode program
+     {Local,                                                                                                            // Execution is confined to one process in which all instructions are executed as a single program
+      Client,                                                                                                           // Like "Local" execution except remotely executable code is executed in a remote server process when requested by this client.  The parameters for a remote call are those of the only declared constructor of the remotely executable class. The results are returned in a message matching the fields declared in the remotely executable class. Parameters and fields must be restricted to types of "Bit", "Int", "Bint" and be declared final
+      Server                                                                                                            // Server mode executes remotely executable code on behalf of clients. The server waits for a request, unpacks the parameters into the corresponding variables, executes the instructions generated by the "RemoteExecution.body" method and then sends a response back containing the execution results to be loaded into the fields declared in the remotely executable class.
+     };
+    public String toString() {return f("%4d first,  %4d last\n", start, finish);}                                       // Print the instruction locations
+   }
+
+
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
   void testsStartHere () {super.testsStartHere();}                                                                      // Divider between code to be tested and code to drive testing
@@ -3281,8 +3420,8 @@ endmodule
     P.execute();
     if ( P.immediate()) ok(P.intMemory.size(), 0);
     if ( Q.immediate()) ok(Q.intMemory.size(), 0);
-    if (!P.immediate() && Program.suppressImmediateOnly) ok(P.intMemory.size(), 6);
-    if (!Q.immediate() && Program.suppressImmediateOnly) ok(Q.intMemory.size(), 6);
+    if (!P.immediate() && Program.suppressImmediateOnly) ok(P.intMemory.size(), 8);
+    if (!Q.immediate() && Program.suppressImmediateOnly) ok(Q.intMemory.size(), 8);
    }
 
   static void test_remote()
@@ -4168,6 +4307,42 @@ Locks, size: 2
               test_Until(false);
    }
 
+  class RemoteExecutionTest implements RemoteExecution.Reference
+   {final Int     out = new Int("out");
+    final RemoteExecution r;
+    RemoteExecutionTest(Int In)
+     {r = new RemoteExecution(new Int(0))
+       {void body()
+         {out.set(In).up();
+          new I() {void a() {say("AAAA");} boolean trace() {return false;}};
+         }
+        Computable[] in () {return new Computable[]{In};}
+        Computable[]out () {return new Computable[]{out};}
+       };
+     }
+    public RemoteExecution reference() {return r;}
+   }
+
+  static void test_remoteExecution (boolean Ex)
+   {sayCurrentTestName();
+    new Program(new Build().immediate(Ex))
+     {protected void code()
+       {final Int                 a = new Int("a");
+        final RemoteExecutionTest r = new RemoteExecutionTest(new Int(2));
+        r.out.ok(4);
+        execute();
+        if (!immediate())
+         {new Execute(new Execute.Build().start(r.reference().start).finish(r.reference().finish).mode(RemoteExecution.Modes.Local));
+         }
+       }
+     };
+   }
+
+  static void test_remoteExecution()
+   {          test_remoteExecution(true);
+              test_remoteExecution(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (rtg( 1)) test_ifThen();
     if (rtg( 2)) test_ifElse();
@@ -4202,10 +4377,14 @@ Locks, size: 2
     if (rtg(31)) test_lock();
     if (rtg(32)) test_push();
     if (rtg(33)) test_Until();
+    //if (rtg(34)) test_remoteExecution();
+    if (rtg(35)) {}
+    if (rtg(36)) {}
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    //test_remoteExecution();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
