@@ -1,7 +1,7 @@
-# Test 2026-11-14 at 10:59:45
+# Test 2026-11-15 at 23:21:38
 
 name: btreeList
-run-name: Method localization, Verilog, SiliconCompiler, WithLocking
+run-name: Remote execution, Verilog, SiliconCompiler, WithLocking
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [ArrayConstant_1, BitSet_1, BitSet_2, BitSet_3, BitSet_4, BitSet_5, BitSet_6, BitSet_7, BitSet_8, BitSet_9, BitSet_10, BitSet_11, BitSet_12, BitSet_13, BitSet_14, BitSet_15, Branch_1, Branch_2, Branch_3, Branch_4, Branch_5, Branch_6, Branch_7, Branch_8, Branch_9, Branch_10, Branch_11, Branch_12, Gds_1, Leaf_1, Leaf_2, Leaf_3, Leaf_4, Leaf_5, Leaf_6, Leaf_7, Leaf_8, Leaf_9, Leaf_10, Lef_1, Program_1, Program_2, Program_3, Program_4, Program_5, Program_6, Program_7, Program_8, Program_9, Program_10, Program_11, Program_12, Program_13, Program_14, Program_15, Program_16, Program_17, Program_18, Program_19, Program_20, Program_21, Program_22, Program_23, Program_24, Program_25, Program_26, Program_27, Program_28, Program_29, Program_30, Program_31, Program_32, Program_33, Ram_1, Rom_1, Slots_1, Slots_2, Slots_3, Slots_4, Slots_5, Slots_6, Slots_7, Slots_8, Slots_9, Slots_10, Slots_11, Slots_12, Slots_13, Slots_14, Slots_15, Slots_16, Slots_17, Slots_18, Slots_19, Slots_20, Slots_21, Slots_22, Slots_23, Test_1, Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11, Tree_12, Tree_13, Tree_14, Tree_15, Tree_16]
+        task: [ArrayConstant_1, BitSet_1, BitSet_2, BitSet_3, BitSet_4, BitSet_5, BitSet_6, BitSet_7, BitSet_8, BitSet_9, BitSet_10, BitSet_11, BitSet_12, BitSet_13, BitSet_14, BitSet_15, Branch_1, Branch_2, Branch_3, Branch_4, Branch_5, Branch_6, Branch_7, Branch_8, Branch_9, Branch_10, Branch_11, Branch_12, Gds_1, Leaf_1, Leaf_2, Leaf_3, Leaf_4, Leaf_5, Leaf_6, Leaf_7, Leaf_8, Leaf_9, Leaf_10, Lef_1, Program_1, Program_2, Program_3, Program_4, Program_5, Program_6, Program_7, Program_8, Program_9, Program_10, Program_11, Program_12, Program_13, Program_14, Program_15, Program_16, Program_17, Program_18, Program_19, Program_20, Program_21, Program_22, Program_23, Program_24, Program_25, Program_26, Program_27, Program_28, Program_29, Program_30, Program_31, Program_32, Program_33, Program_34, Program_35, Program_36, Ram_1, RemoteExecutionClient_1, RemoteExecutionServer_1, RemoteInspector_1, Rom_1, Slots_1, Slots_2, Slots_3, Slots_4, Slots_5, Slots_6, Slots_7, Slots_8, Slots_9, Slots_10, Slots_11, Slots_12, Slots_13, Slots_14, Slots_15, Slots_16, Slots_17, Slots_18, Slots_19, Slots_20, Slots_21, Slots_22, Slots_23, Test_1, Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11, Tree_12, Tree_13, Tree_14, Tree_15, Tree_16]
 
     steps:
     - uses: actions/checkout@v6
@@ -30,7 +30,7 @@ jobs:
     - name: Position files in package
       run: |
         mkdir -p verilog com/AppaApps/Silicon
-        cp ArrayConstant.java BitSet.java Branch.java Gds.java Leaf.java Lef.java Program.java Ram.java Rom.java Slots.java Test.java Tree.java com/AppaApps/Silicon
+        cp ArrayConstant.java BitSet.java Branch.java Gds.java Leaf.java Lef.java Program.java Ram.java RemoteExecutionClient.java RemoteExecutionServer.java RemoteInspector.java Rom.java Slots.java Test.java Tree.java com/AppaApps/Silicon
         tree --prune -I '*.class'
 
     - name: Java
@@ -42,7 +42,7 @@ jobs:
     - name: ArrayConstant_1
       if: ${{             matrix.task == 'ArrayConstant_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/ArrayConstant 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/ArrayConstant rtg=1
         tree --prune -I '*.class'
 
     - name: Upload ArrayConstant_1
@@ -58,7 +58,7 @@ jobs:
     - name: BitSet_1
       if: ${{             matrix.task == 'BitSet_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=1
         tree --prune -I '*.class'
 
     - name: Upload BitSet_1
@@ -74,7 +74,7 @@ jobs:
     - name: BitSet_2
       if: ${{             matrix.task == 'BitSet_2' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 2
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=2
         tree --prune -I '*.class'
 
     - name: Upload BitSet_2
@@ -90,7 +90,7 @@ jobs:
     - name: BitSet_3
       if: ${{             matrix.task == 'BitSet_3' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 3
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=3
         tree --prune -I '*.class'
 
     - name: Upload BitSet_3
@@ -106,7 +106,7 @@ jobs:
     - name: BitSet_4
       if: ${{             matrix.task == 'BitSet_4' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 4
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=4
         tree --prune -I '*.class'
 
     - name: Upload BitSet_4
@@ -122,7 +122,7 @@ jobs:
     - name: BitSet_5
       if: ${{             matrix.task == 'BitSet_5' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 5
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=5
         tree --prune -I '*.class'
 
     - name: Upload BitSet_5
@@ -138,7 +138,7 @@ jobs:
     - name: BitSet_6
       if: ${{             matrix.task == 'BitSet_6' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 6
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=6
         tree --prune -I '*.class'
 
     - name: Upload BitSet_6
@@ -154,7 +154,7 @@ jobs:
     - name: BitSet_7
       if: ${{             matrix.task == 'BitSet_7' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 7
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=7
         tree --prune -I '*.class'
 
     - name: Upload BitSet_7
@@ -170,7 +170,7 @@ jobs:
     - name: BitSet_8
       if: ${{             matrix.task == 'BitSet_8' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 8
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=8
         tree --prune -I '*.class'
 
     - name: Upload BitSet_8
@@ -186,7 +186,7 @@ jobs:
     - name: BitSet_9
       if: ${{             matrix.task == 'BitSet_9' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 9
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=9
         tree --prune -I '*.class'
 
     - name: Upload BitSet_9
@@ -202,7 +202,7 @@ jobs:
     - name: BitSet_10
       if: ${{             matrix.task == 'BitSet_10' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 10
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=10
         tree --prune -I '*.class'
 
     - name: Upload BitSet_10
@@ -218,7 +218,7 @@ jobs:
     - name: BitSet_11
       if: ${{             matrix.task == 'BitSet_11' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 11
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=11
         tree --prune -I '*.class'
 
     - name: Upload BitSet_11
@@ -234,7 +234,7 @@ jobs:
     - name: BitSet_12
       if: ${{             matrix.task == 'BitSet_12' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 12
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=12
         tree --prune -I '*.class'
 
     - name: Upload BitSet_12
@@ -250,7 +250,7 @@ jobs:
     - name: BitSet_13
       if: ${{             matrix.task == 'BitSet_13' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 13
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=13
         tree --prune -I '*.class'
 
     - name: Upload BitSet_13
@@ -266,7 +266,7 @@ jobs:
     - name: BitSet_14
       if: ${{             matrix.task == 'BitSet_14' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 14
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=14
         tree --prune -I '*.class'
 
     - name: Upload BitSet_14
@@ -282,7 +282,7 @@ jobs:
     - name: BitSet_15
       if: ${{             matrix.task == 'BitSet_15' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 15
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet rtg=15
         tree --prune -I '*.class'
 
     - name: Upload BitSet_15
@@ -298,7 +298,7 @@ jobs:
     - name: Branch_1
       if: ${{             matrix.task == 'Branch_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Branch_1
@@ -314,7 +314,7 @@ jobs:
     - name: Branch_2
       if: ${{             matrix.task == 'Branch_2' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 2
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=2
         tree --prune -I '*.class'
 
     - name: Upload Branch_2
@@ -330,7 +330,7 @@ jobs:
     - name: Branch_3
       if: ${{             matrix.task == 'Branch_3' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 3
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=3
         tree --prune -I '*.class'
 
     - name: Upload Branch_3
@@ -346,7 +346,7 @@ jobs:
     - name: Branch_4
       if: ${{             matrix.task == 'Branch_4' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 4
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=4
         tree --prune -I '*.class'
 
     - name: Upload Branch_4
@@ -362,7 +362,7 @@ jobs:
     - name: Branch_5
       if: ${{             matrix.task == 'Branch_5' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 5
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=5
         tree --prune -I '*.class'
 
     - name: Upload Branch_5
@@ -378,7 +378,7 @@ jobs:
     - name: Branch_6
       if: ${{             matrix.task == 'Branch_6' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 6
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=6
         tree --prune -I '*.class'
 
     - name: Upload Branch_6
@@ -394,7 +394,7 @@ jobs:
     - name: Branch_7
       if: ${{             matrix.task == 'Branch_7' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 7
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=7
         tree --prune -I '*.class'
 
     - name: Upload Branch_7
@@ -410,7 +410,7 @@ jobs:
     - name: Branch_8
       if: ${{             matrix.task == 'Branch_8' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 8
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=8
         tree --prune -I '*.class'
 
     - name: Upload Branch_8
@@ -426,7 +426,7 @@ jobs:
     - name: Branch_9
       if: ${{             matrix.task == 'Branch_9' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 9
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=9
         tree --prune -I '*.class'
 
     - name: Upload Branch_9
@@ -442,7 +442,7 @@ jobs:
     - name: Branch_10
       if: ${{             matrix.task == 'Branch_10' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 10
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=10
         tree --prune -I '*.class'
 
     - name: Upload Branch_10
@@ -458,7 +458,7 @@ jobs:
     - name: Branch_11
       if: ${{             matrix.task == 'Branch_11' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 11
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=11
         tree --prune -I '*.class'
 
     - name: Upload Branch_11
@@ -474,7 +474,7 @@ jobs:
     - name: Branch_12
       if: ${{             matrix.task == 'Branch_12' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 12
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch rtg=12
         tree --prune -I '*.class'
 
     - name: Upload Branch_12
@@ -490,7 +490,7 @@ jobs:
     - name: Gds_1
       if: ${{             matrix.task == 'Gds_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Gds 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Gds rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Gds_1
@@ -506,7 +506,7 @@ jobs:
     - name: Leaf_1
       if: ${{             matrix.task == 'Leaf_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Leaf_1
@@ -522,7 +522,7 @@ jobs:
     - name: Leaf_2
       if: ${{             matrix.task == 'Leaf_2' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 2
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=2
         tree --prune -I '*.class'
 
     - name: Upload Leaf_2
@@ -538,7 +538,7 @@ jobs:
     - name: Leaf_3
       if: ${{             matrix.task == 'Leaf_3' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 3
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=3
         tree --prune -I '*.class'
 
     - name: Upload Leaf_3
@@ -554,7 +554,7 @@ jobs:
     - name: Leaf_4
       if: ${{             matrix.task == 'Leaf_4' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 4
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=4
         tree --prune -I '*.class'
 
     - name: Upload Leaf_4
@@ -570,7 +570,7 @@ jobs:
     - name: Leaf_5
       if: ${{             matrix.task == 'Leaf_5' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 5
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=5
         tree --prune -I '*.class'
 
     - name: Upload Leaf_5
@@ -586,7 +586,7 @@ jobs:
     - name: Leaf_6
       if: ${{             matrix.task == 'Leaf_6' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 6
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=6
         tree --prune -I '*.class'
 
     - name: Upload Leaf_6
@@ -602,7 +602,7 @@ jobs:
     - name: Leaf_7
       if: ${{             matrix.task == 'Leaf_7' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 7
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=7
         tree --prune -I '*.class'
 
     - name: Upload Leaf_7
@@ -618,7 +618,7 @@ jobs:
     - name: Leaf_8
       if: ${{             matrix.task == 'Leaf_8' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 8
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=8
         tree --prune -I '*.class'
 
     - name: Upload Leaf_8
@@ -634,7 +634,7 @@ jobs:
     - name: Leaf_9
       if: ${{             matrix.task == 'Leaf_9' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 9
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=9
         tree --prune -I '*.class'
 
     - name: Upload Leaf_9
@@ -650,7 +650,7 @@ jobs:
     - name: Leaf_10
       if: ${{             matrix.task == 'Leaf_10' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 10
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf rtg=10
         tree --prune -I '*.class'
 
     - name: Upload Leaf_10
@@ -666,7 +666,7 @@ jobs:
     - name: Lef_1
       if: ${{             matrix.task == 'Lef_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Lef 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Lef rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Lef_1
@@ -682,7 +682,7 @@ jobs:
     - name: Program_1
       if: ${{             matrix.task == 'Program_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Program_1
@@ -698,7 +698,7 @@ jobs:
     - name: Program_2
       if: ${{             matrix.task == 'Program_2' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 2
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=2
         tree --prune -I '*.class'
 
     - name: Upload Program_2
@@ -714,7 +714,7 @@ jobs:
     - name: Program_3
       if: ${{             matrix.task == 'Program_3' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 3
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=3
         tree --prune -I '*.class'
 
     - name: Upload Program_3
@@ -730,7 +730,7 @@ jobs:
     - name: Program_4
       if: ${{             matrix.task == 'Program_4' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 4
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=4
         tree --prune -I '*.class'
 
     - name: Upload Program_4
@@ -746,7 +746,7 @@ jobs:
     - name: Program_5
       if: ${{             matrix.task == 'Program_5' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 5
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=5
         tree --prune -I '*.class'
 
     - name: Upload Program_5
@@ -762,7 +762,7 @@ jobs:
     - name: Program_6
       if: ${{             matrix.task == 'Program_6' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 6
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=6
         tree --prune -I '*.class'
 
     - name: Upload Program_6
@@ -778,7 +778,7 @@ jobs:
     - name: Program_7
       if: ${{             matrix.task == 'Program_7' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 7
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=7
         tree --prune -I '*.class'
 
     - name: Upload Program_7
@@ -794,7 +794,7 @@ jobs:
     - name: Program_8
       if: ${{             matrix.task == 'Program_8' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 8
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=8
         tree --prune -I '*.class'
 
     - name: Upload Program_8
@@ -810,7 +810,7 @@ jobs:
     - name: Program_9
       if: ${{             matrix.task == 'Program_9' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 9
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=9
         tree --prune -I '*.class'
 
     - name: Upload Program_9
@@ -826,7 +826,7 @@ jobs:
     - name: Program_10
       if: ${{             matrix.task == 'Program_10' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 10
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=10
         tree --prune -I '*.class'
 
     - name: Upload Program_10
@@ -842,7 +842,7 @@ jobs:
     - name: Program_11
       if: ${{             matrix.task == 'Program_11' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 11
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=11
         tree --prune -I '*.class'
 
     - name: Upload Program_11
@@ -858,7 +858,7 @@ jobs:
     - name: Program_12
       if: ${{             matrix.task == 'Program_12' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 12
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=12
         tree --prune -I '*.class'
 
     - name: Upload Program_12
@@ -874,7 +874,7 @@ jobs:
     - name: Program_13
       if: ${{             matrix.task == 'Program_13' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 13
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=13
         tree --prune -I '*.class'
 
     - name: Upload Program_13
@@ -890,7 +890,7 @@ jobs:
     - name: Program_14
       if: ${{             matrix.task == 'Program_14' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 14
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=14
         tree --prune -I '*.class'
 
     - name: Upload Program_14
@@ -906,7 +906,7 @@ jobs:
     - name: Program_15
       if: ${{             matrix.task == 'Program_15' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 15
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=15
         tree --prune -I '*.class'
 
     - name: Upload Program_15
@@ -922,7 +922,7 @@ jobs:
     - name: Program_16
       if: ${{             matrix.task == 'Program_16' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 16
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=16
         tree --prune -I '*.class'
 
     - name: Upload Program_16
@@ -938,7 +938,7 @@ jobs:
     - name: Program_17
       if: ${{             matrix.task == 'Program_17' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 17
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=17
         tree --prune -I '*.class'
 
     - name: Upload Program_17
@@ -954,7 +954,7 @@ jobs:
     - name: Program_18
       if: ${{             matrix.task == 'Program_18' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 18
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=18
         tree --prune -I '*.class'
 
     - name: Upload Program_18
@@ -970,7 +970,7 @@ jobs:
     - name: Program_19
       if: ${{             matrix.task == 'Program_19' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 19
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=19
         tree --prune -I '*.class'
 
     - name: Upload Program_19
@@ -986,7 +986,7 @@ jobs:
     - name: Program_20
       if: ${{             matrix.task == 'Program_20' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 20
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=20
         tree --prune -I '*.class'
 
     - name: Upload Program_20
@@ -1002,7 +1002,7 @@ jobs:
     - name: Program_21
       if: ${{             matrix.task == 'Program_21' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 21
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=21
         tree --prune -I '*.class'
 
     - name: Upload Program_21
@@ -1018,7 +1018,7 @@ jobs:
     - name: Program_22
       if: ${{             matrix.task == 'Program_22' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 22
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=22
         tree --prune -I '*.class'
 
     - name: Upload Program_22
@@ -1034,7 +1034,7 @@ jobs:
     - name: Program_23
       if: ${{             matrix.task == 'Program_23' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 23
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=23
         tree --prune -I '*.class'
 
     - name: Upload Program_23
@@ -1050,7 +1050,7 @@ jobs:
     - name: Program_24
       if: ${{             matrix.task == 'Program_24' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 24
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=24
         tree --prune -I '*.class'
 
     - name: Upload Program_24
@@ -1066,7 +1066,7 @@ jobs:
     - name: Program_25
       if: ${{             matrix.task == 'Program_25' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 25
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=25
         tree --prune -I '*.class'
 
     - name: Upload Program_25
@@ -1082,7 +1082,7 @@ jobs:
     - name: Program_26
       if: ${{             matrix.task == 'Program_26' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 26
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=26
         tree --prune -I '*.class'
 
     - name: Upload Program_26
@@ -1098,7 +1098,7 @@ jobs:
     - name: Program_27
       if: ${{             matrix.task == 'Program_27' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 27
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=27
         tree --prune -I '*.class'
 
     - name: Upload Program_27
@@ -1114,7 +1114,7 @@ jobs:
     - name: Program_28
       if: ${{             matrix.task == 'Program_28' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 28
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=28
         tree --prune -I '*.class'
 
     - name: Upload Program_28
@@ -1130,7 +1130,7 @@ jobs:
     - name: Program_29
       if: ${{             matrix.task == 'Program_29' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 29
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=29
         tree --prune -I '*.class'
 
     - name: Upload Program_29
@@ -1146,7 +1146,7 @@ jobs:
     - name: Program_30
       if: ${{             matrix.task == 'Program_30' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 30
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=30
         tree --prune -I '*.class'
 
     - name: Upload Program_30
@@ -1162,7 +1162,7 @@ jobs:
     - name: Program_31
       if: ${{             matrix.task == 'Program_31' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 31
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=31
         tree --prune -I '*.class'
 
     - name: Upload Program_31
@@ -1178,7 +1178,7 @@ jobs:
     - name: Program_32
       if: ${{             matrix.task == 'Program_32' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 32
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=32
         tree --prune -I '*.class'
 
     - name: Upload Program_32
@@ -1194,7 +1194,7 @@ jobs:
     - name: Program_33
       if: ${{             matrix.task == 'Program_33' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 33
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=33
         tree --prune -I '*.class'
 
     - name: Upload Program_33
@@ -1207,10 +1207,58 @@ jobs:
           !verilog/**/*.gzEND
         if-no-files-found: ignore
 
+    - name: Program_34
+      if: ${{             matrix.task == 'Program_34' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=34
+        tree --prune -I '*.class'
+
+    - name: Upload Program_34
+      if: ${{ always() && matrix.task == 'Program_34' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_34
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_35
+      if: ${{             matrix.task == 'Program_35' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=35
+        tree --prune -I '*.class'
+
+    - name: Upload Program_35
+      if: ${{ always() && matrix.task == 'Program_35' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_35
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: Program_36
+      if: ${{             matrix.task == 'Program_36' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program rtg=36
+        tree --prune -I '*.class'
+
+    - name: Upload Program_36
+      if: ${{ always() && matrix.task == 'Program_36' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_Program_36
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
     - name: Ram_1
       if: ${{             matrix.task == 'Ram_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Ram 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Ram rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Ram_1
@@ -1223,10 +1271,58 @@ jobs:
           !verilog/**/*.gzEND
         if-no-files-found: ignore
 
+    - name: RemoteExecutionClient_1
+      if: ${{             matrix.task == 'RemoteExecutionClient_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/RemoteExecutionClient rtg=1
+        tree --prune -I '*.class'
+
+    - name: Upload RemoteExecutionClient_1
+      if: ${{ always() && matrix.task == 'RemoteExecutionClient_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_RemoteExecutionClient_1
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: RemoteExecutionServer_1
+      if: ${{             matrix.task == 'RemoteExecutionServer_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/RemoteExecutionServer rtg=1
+        tree --prune -I '*.class'
+
+    - name: Upload RemoteExecutionServer_1
+      if: ${{ always() && matrix.task == 'RemoteExecutionServer_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_RemoteExecutionServer_1
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
+    - name: RemoteInspector_1
+      if: ${{             matrix.task == 'RemoteInspector_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/RemoteInspector rtg=1
+        tree --prune -I '*.class'
+
+    - name: Upload RemoteInspector_1
+      if: ${{ always() && matrix.task == 'RemoteInspector_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_RemoteInspector_1
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
+
     - name: Rom_1
       if: ${{             matrix.task == 'Rom_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Rom 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Rom rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Rom_1
@@ -1242,7 +1338,7 @@ jobs:
     - name: Slots_1
       if: ${{             matrix.task == 'Slots_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Slots_1
@@ -1258,7 +1354,7 @@ jobs:
     - name: Slots_2
       if: ${{             matrix.task == 'Slots_2' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 2
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=2
         tree --prune -I '*.class'
 
     - name: Upload Slots_2
@@ -1274,7 +1370,7 @@ jobs:
     - name: Slots_3
       if: ${{             matrix.task == 'Slots_3' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 3
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=3
         tree --prune -I '*.class'
 
     - name: Upload Slots_3
@@ -1290,7 +1386,7 @@ jobs:
     - name: Slots_4
       if: ${{             matrix.task == 'Slots_4' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 4
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=4
         tree --prune -I '*.class'
 
     - name: Upload Slots_4
@@ -1306,7 +1402,7 @@ jobs:
     - name: Slots_5
       if: ${{             matrix.task == 'Slots_5' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 5
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=5
         tree --prune -I '*.class'
 
     - name: Upload Slots_5
@@ -1322,7 +1418,7 @@ jobs:
     - name: Slots_6
       if: ${{             matrix.task == 'Slots_6' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 6
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=6
         tree --prune -I '*.class'
 
     - name: Upload Slots_6
@@ -1338,7 +1434,7 @@ jobs:
     - name: Slots_7
       if: ${{             matrix.task == 'Slots_7' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 7
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=7
         tree --prune -I '*.class'
 
     - name: Upload Slots_7
@@ -1354,7 +1450,7 @@ jobs:
     - name: Slots_8
       if: ${{             matrix.task == 'Slots_8' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 8
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=8
         tree --prune -I '*.class'
 
     - name: Upload Slots_8
@@ -1370,7 +1466,7 @@ jobs:
     - name: Slots_9
       if: ${{             matrix.task == 'Slots_9' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 9
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=9
         tree --prune -I '*.class'
 
     - name: Upload Slots_9
@@ -1386,7 +1482,7 @@ jobs:
     - name: Slots_10
       if: ${{             matrix.task == 'Slots_10' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 10
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=10
         tree --prune -I '*.class'
 
     - name: Upload Slots_10
@@ -1402,7 +1498,7 @@ jobs:
     - name: Slots_11
       if: ${{             matrix.task == 'Slots_11' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 11
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=11
         tree --prune -I '*.class'
 
     - name: Upload Slots_11
@@ -1418,7 +1514,7 @@ jobs:
     - name: Slots_12
       if: ${{             matrix.task == 'Slots_12' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 12
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=12
         tree --prune -I '*.class'
 
     - name: Upload Slots_12
@@ -1434,7 +1530,7 @@ jobs:
     - name: Slots_13
       if: ${{             matrix.task == 'Slots_13' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 13
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=13
         tree --prune -I '*.class'
 
     - name: Upload Slots_13
@@ -1450,7 +1546,7 @@ jobs:
     - name: Slots_14
       if: ${{             matrix.task == 'Slots_14' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 14
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=14
         tree --prune -I '*.class'
 
     - name: Upload Slots_14
@@ -1466,7 +1562,7 @@ jobs:
     - name: Slots_15
       if: ${{             matrix.task == 'Slots_15' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 15
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=15
         tree --prune -I '*.class'
 
     - name: Upload Slots_15
@@ -1482,7 +1578,7 @@ jobs:
     - name: Slots_16
       if: ${{             matrix.task == 'Slots_16' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 16
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=16
         tree --prune -I '*.class'
 
     - name: Upload Slots_16
@@ -1498,7 +1594,7 @@ jobs:
     - name: Slots_17
       if: ${{             matrix.task == 'Slots_17' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 17
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=17
         tree --prune -I '*.class'
 
     - name: Upload Slots_17
@@ -1514,7 +1610,7 @@ jobs:
     - name: Slots_18
       if: ${{             matrix.task == 'Slots_18' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 18
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=18
         tree --prune -I '*.class'
 
     - name: Upload Slots_18
@@ -1530,7 +1626,7 @@ jobs:
     - name: Slots_19
       if: ${{             matrix.task == 'Slots_19' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 19
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=19
         tree --prune -I '*.class'
 
     - name: Upload Slots_19
@@ -1546,7 +1642,7 @@ jobs:
     - name: Slots_20
       if: ${{             matrix.task == 'Slots_20' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 20
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=20
         tree --prune -I '*.class'
 
     - name: Upload Slots_20
@@ -1562,7 +1658,7 @@ jobs:
     - name: Slots_21
       if: ${{             matrix.task == 'Slots_21' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 21
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=21
         tree --prune -I '*.class'
 
     - name: Upload Slots_21
@@ -1578,7 +1674,7 @@ jobs:
     - name: Slots_22
       if: ${{             matrix.task == 'Slots_22' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 22
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=22
         tree --prune -I '*.class'
 
     - name: Upload Slots_22
@@ -1594,7 +1690,7 @@ jobs:
     - name: Slots_23
       if: ${{             matrix.task == 'Slots_23' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 23
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots rtg=23
         tree --prune -I '*.class'
 
     - name: Upload Slots_23
@@ -1610,7 +1706,7 @@ jobs:
     - name: Test_1
       if: ${{             matrix.task == 'Test_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Test 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Test rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Test_1
@@ -1626,7 +1722,7 @@ jobs:
     - name: Tree_1
       if: ${{             matrix.task == 'Tree_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=1
         tree --prune -I '*.class'
 
     - name: Upload Tree_1
@@ -1642,7 +1738,7 @@ jobs:
     - name: Tree_2
       if: ${{             matrix.task == 'Tree_2' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 2
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=2
         tree --prune -I '*.class'
 
     - name: Upload Tree_2
@@ -1658,7 +1754,7 @@ jobs:
     - name: Tree_3
       if: ${{             matrix.task == 'Tree_3' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 3
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=3
         tree --prune -I '*.class'
 
     - name: Upload Tree_3
@@ -1674,7 +1770,7 @@ jobs:
     - name: Tree_4
       if: ${{             matrix.task == 'Tree_4' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 4
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=4
         tree --prune -I '*.class'
 
     - name: Upload Tree_4
@@ -1690,7 +1786,7 @@ jobs:
     - name: Tree_5
       if: ${{             matrix.task == 'Tree_5' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 5
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=5
         tree --prune -I '*.class'
 
     - name: Upload Tree_5
@@ -1706,7 +1802,7 @@ jobs:
     - name: Tree_6
       if: ${{             matrix.task == 'Tree_6' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 6
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=6
         tree --prune -I '*.class'
 
     - name: Upload Tree_6
@@ -1722,7 +1818,7 @@ jobs:
     - name: Tree_7
       if: ${{             matrix.task == 'Tree_7' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 7
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=7
         tree --prune -I '*.class'
 
     - name: Upload Tree_7
@@ -1738,7 +1834,7 @@ jobs:
     - name: Tree_8
       if: ${{             matrix.task == 'Tree_8' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 8
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=8
         tree --prune -I '*.class'
 
     - name: Upload Tree_8
@@ -1754,7 +1850,7 @@ jobs:
     - name: Tree_9
       if: ${{             matrix.task == 'Tree_9' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 9
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=9
         tree --prune -I '*.class'
 
     - name: Upload Tree_9
@@ -1770,7 +1866,7 @@ jobs:
     - name: Tree_10
       if: ${{             matrix.task == 'Tree_10' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 10
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=10
         tree --prune -I '*.class'
 
     - name: Upload Tree_10
@@ -1786,7 +1882,7 @@ jobs:
     - name: Tree_11
       if: ${{             matrix.task == 'Tree_11' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 11
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=11
         tree --prune -I '*.class'
 
     - name: Upload Tree_11
@@ -1802,7 +1898,7 @@ jobs:
     - name: Tree_12
       if: ${{             matrix.task == 'Tree_12' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 12
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=12
         tree --prune -I '*.class'
 
     - name: Upload Tree_12
@@ -1818,7 +1914,7 @@ jobs:
     - name: Tree_13
       if: ${{             matrix.task == 'Tree_13' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 13
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=13
         tree --prune -I '*.class'
 
     - name: Upload Tree_13
@@ -1834,7 +1930,7 @@ jobs:
     - name: Tree_14
       if: ${{             matrix.task == 'Tree_14' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 14
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=14
         tree --prune -I '*.class'
 
     - name: Upload Tree_14
@@ -1850,7 +1946,7 @@ jobs:
     - name: Tree_15
       if: ${{             matrix.task == 'Tree_15' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 15
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=15
         tree --prune -I '*.class'
 
     - name: Upload Tree_15
@@ -1866,7 +1962,7 @@ jobs:
     - name: Tree_16
       if: ${{             matrix.task == 'Tree_16' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 16
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree rtg=16
         tree --prune -I '*.class'
 
     - name: Upload Tree_16
@@ -1896,7 +1992,7 @@ jobs:
       - name: Build Silicon.jar
         run: |
           mkdir -p com/AppaApps/Silicon
-          cp ArrayConstant.java BitSet.java Branch.java Gds.java Leaf.java Lef.java Program.java Ram.java Rom.java Slots.java Test.java Tree.java com/AppaApps/Silicon
+          cp ArrayConstant.java BitSet.java Branch.java Gds.java Leaf.java Lef.java Program.java Ram.java RemoteExecutionClient.java RemoteExecutionServer.java RemoteInspector.java Rom.java Slots.java Test.java Tree.java com/AppaApps/Silicon
           javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
           jar -v --create --file Silicon.jar -C Classes .
           pwd
