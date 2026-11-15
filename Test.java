@@ -1210,7 +1210,7 @@ public class Test                                                               
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
-  static boolean rtg (int i)  {return testGroup == null || testGroup.equals(""+i);}                                     // Whether to run the indicated test group
+  static boolean rtg (int i)  {return testGroup == null || testGroup.equals("rtg="+i);}                                 // Whether to run the indicated test group
 
   static boolean ok (boolean b)                                                                                         // Check test results match expected results.
    {if (b) {++testsPassed; return true;}
@@ -1439,6 +1439,8 @@ public class Test                                                               
       return ""+s;
      }
    }
+
+  String curentCommandLine () {return ProcessHandle.current().info().commandLine().get();}                                    // The command use to launch the current process
 
 //D1 Tests                                                                                                              // Tests
 
