@@ -52,6 +52,7 @@ my $runParameters = getRunParameters();
 
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
    @files = grep {!m(verilog/)}        @files;                                                                          # Eliminate the temporary verilog folder
+   @files = grep {!m(z/)}              @files;                                                                          # Eliminate uncertain lines of development
 my @java  = grep {fe($_) =~ m(java)is} @files;                                                                          # Java files minus excluded files
    @files = changedFiles $shaFile,     @files;                                                                          # Filter out files that have not changed
 
