@@ -85,6 +85,8 @@ public class Program extends Test                                               
   boolean                                      immediate = false;                                                       // Execute immediately if true else generate machine code and execute later
   boolean                        initializedForExecution = false;                                                       // Whether the program has been initialized for execution or not
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
+  static RemoteExecution.Modes       remoteExecutionMode = RemoteExecution.Modes.Local;                                 // Normally run in local mode, but client and server modes are also possible
+  static int                         remoteExecutionArea = 0;                                                           // The area of memory controlled by server mode
 
   static class Build                                                                                                    // Builder for this program
    {boolean                     immediate = false;                                                                      // Immediate mode
