@@ -5,8 +5,11 @@
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.io.*;
+import java.nio.*;
+import java.nio.channels.*;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.*;
+import java.net.*;
 import java.security.*;
 import java.text.*;
 import java.time.*;
@@ -141,8 +144,8 @@ public class Test                                                               
        {treeMap.put(key.trim(), properties.getProperty(key).trim());                                                    // Normalize keys and values
        }
      }
-    catch(Exception e)
-     {e.printStackTrace();
+    catch(Exception E)
+     {stop("Unable to read properties:", E, traceBack(E));
      }
     return treeMap;                                                                                                     // Return treemap
    }
@@ -1108,9 +1111,8 @@ public class Test                                                               
          }
         message = "Compressed "+read+" bytes from "+sourceFile+" to "+compressedFile;
        }
-      catch (IOException e)
-       {e.printStackTrace();
-        stop("Unable to comress file:", sourceFile, "to", compressedFile);
+      catch (IOException E)
+       {stop("Unable to compress file:", sourceFile, "to", compressedFile, E, traceBack(E));
        }
      }
    }
@@ -1127,6 +1129,17 @@ public class Test                                                               
    }
 
   static Timer timer () {return new Timer();}                                                                           // Create a new timer
+
+  static boolean waitForFileToExist(String FilePath, int Timeout)                                                       // Wait for a Unix domain socket file to appear, up to a timeout in milliseconds
+   {final Path path = Path.of(FilePath);
+    final long end = System.currentTimeMillis() + Timeout;
+    while (System.currentTimeMillis() < end)
+     {if (Files.exists(path)) return true;                                                                              // Socket file exists
+      try {Thread.sleep(10);}                                                                                           // Wait briefly before checking again
+      catch (InterruptedException E) {Thread.currentThread().interrupt(); return false;}                                // Stop if interrupted
+     }
+    return Files.exists(path);                                                                                          // Check once more at timeout
+   }
 
 //D1 Printing                                                                                                           // Print log messages
 
@@ -1385,6 +1398,7 @@ public class Test                                                               
 //D1 Command Execution                                                                                                  // Execute a command sequence and return its stdout and stderr
 
   static String pwd () {return System.getProperty("user.dir");}                                                         // Current working folder
+  static long   pid () {return ProcessHandle.current().pid();}                                                          // Pid of current process
 
   static class ExecCommand                                                                                              // Execute a command sequence
    {final String command;
@@ -1407,21 +1421,21 @@ public class Test                                                               
          {try (final BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream())))
            {String line; while ((line = reader.readLine()) != null) O.append(line).append(System.lineSeparator());
            }
-          catch (IOException x) {x.printStackTrace();}
+          catch (IOException E1) {stop("Unable to read standard command output:", E1, traceBack(E1));}
          }); o.start();
 
         final Thread e = new Thread(() ->
          {try (final BufferedReader reader = new BufferedReader(new InputStreamReader(p.getErrorStream())))
            {String line; while ((line = reader.readLine()) != null) E.append(line).append(System.lineSeparator());
            }
-          catch (IOException x) {x.printStackTrace();}
+          catch (IOException E2) {stop("Unable to read error command output:", E2, traceBack(E2));}
          }); e.start();
 
         rc = p.waitFor();
 
         o.join(); e.join();
        }
-      catch (Exception e) {e.printStackTrace();}
+      catch (Exception E3) {stop("Unable to execute command:", command, E3, traceBack(E3));}
       out = ""+O; err = ""+E; exitCode = rc;                                                                            // Results of command execution
       if (rc != 0) stop(this);
      }
@@ -1446,6 +1460,121 @@ public class Test                                                               
    {if (mainArguments == null) stop("No command line arguments recorded - did you set mainArguments?");
     for (String a: mainArguments) if (a.regionMatches(true, 0, Arg, 0, Arg.length())) return a.substring(Arg.length()); // Look for first argument matching the supplied prefix
     return null;
+   }
+
+  static void startCopies(int N, String Parameter)                                                                      // Start N copies of the current program. Each started copy is given a unique command line keyword
+   {final String c = currentCommandLine();
+    try
+     {for(int i = 1; i <= N; ++i)
+       {final String C = f("%s %s=$d", c, Parameter, i);
+        new ProcessBuilder("sh", "-c", C)
+         .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+         .redirectError(ProcessBuilder.Redirect.INHERIT)
+         .start();
+       }
+     }
+    catch(Exception E) {stop("Unable to start a copy of the current program:", E, traceBack(E));}
+   }
+
+//D1 Unix domain sockets                                                                                                // Run a unix domain socket server
+
+  static class UnixDomainServer
+   {final int L = 999;                                                                                                  // Upper limit on the number of messages that can be processes
+    UnixDomainServer(String SocketPath)                                                                                 // Run a unix domain server that accepts integer messages from a  single client, processes them and return the results to the client.  Messages are encoded as an integer giving the total message length followed by the bytes of the message
+     {try
+      (ServerSocketChannel s = openServerUnixDomainSocket(SocketPath);                                                  // Open server socket and bind to named path
+             SocketChannel c = s.accept())                                                                              // Accept a connection request from a client
+       {for(int l = 0; l < L; ++l)                                                                                      // Process messages from the client
+         {final ByteBuffer i = readMessageFromSocket(c);                                                                // Read message from client
+          if (i.remaining() > 0)                                                                                        // Finished on a zero length message
+           {final ByteBuffer o = processMessage(i);                                                                     // Process message and obtain a resulting message to send back
+            writeMessageToSocket(c, o);
+           }
+          else
+           {writeMessageToSocket(c, null);                                                                              // Have to send something back on final transaction
+            break;
+           }
+         }
+       }
+      catch (Exception E) {stop("Unix domain socket read error:", E, traceBack(E));}                                    // Something went badly wrong with the server
+     }
+
+    ByteBuffer processMessage(ByteBuffer Message)                                                                       // Process a message sent to the server on the server and send the processing results from the server back to the client
+     {final ByteBuffer b = ByteBuffer.allocate(Integer.BYTES);                                                          // Sample output message
+      b.putInt(42);                                                                                                     // Load message
+      b.flip();                                                                                                         // Make the buffer ready for sending
+      return b;                                                                                                         // Return the resulting messsage
+     }
+
+    static ByteBuffer readMessageFromSocket(SocketChannel Socket)                                                       // Read a message whose entire length is expressed in an integer at the start of a message
+     {final int        H = Integer.BYTES;                                                                               // Header size
+      final int        L = 256;                                                                                         // Maximum message size in bytes including header
+      try
+       {final ByteBuffer h = ByteBuffer.allocate(H);                                                                    // Allocate buffer for h
+
+        while (h.hasRemaining()) if (Socket.read(h) <= 0) stop("Invalid message h");                                    // Read header
+
+        h.flip();                                                                                                       // Read from buffer
+        final int size = h.getInt();                                                                                    // Get size of message
+        if (size < H) stop("m payload length is negative:", size);                                                      // Check size is long enough for there to be a body to the message
+        if (size > L) stop("m longer than maximum limit. m size is:", size, "limit is:", L);                            // Check size is long enough for there to be a body to the message
+
+        final ByteBuffer message = ByteBuffer.allocate(size-H);                                                         // Space for the reminder of the message
+
+        if (size > H) while (message.hasRemaining()) if (Socket.read(message) <= 0) stop("m too short");                // Read message
+
+        message.flip();                                                                                                 // Make buffer readable
+        return message;                                                                                                 // Return message in a buffer
+       }
+      catch (Exception E) {stop("Unix domain socket read error:", E, traceBack(E));}                                    // Something went badly wrong with the message read
+      return null;
+     }
+
+    static void writeMessageToSocket(SocketChannel Socket, ByteBuffer Message)                                          // Write a message preceded by its entire length
+     {final ByteBuffer m = Message;                                                                                     // Message, whichm ight be null if no message is being supplied
+      final int        H = Integer.BYTES;                                                                               // Size of header
+      try
+       {final ByteBuffer h = ByteBuffer.allocate(H);                                                                    // Allocate buffer for header
+        h.putInt((m != null ? m.remaining() : 0) + H);                                                                  // Set total message size
+        h.flip();                                                                                                       // Make header readable
+
+        while (h.hasRemaining())  if (Socket.write(h)  <= 0) stop("Invalid message header write");                      // Write header  in as many steps as are needed
+        if (m != null) while (m.hasRemaining()) if (Socket.write(Message) <= 0) stop("Message write failed");           // Write message in as many steps as are needed
+       }
+      catch (Exception E) {stop("Unix domain socket write error:", E, traceBack(E));}                                   // Something went badly wrong with the message write
+     }
+
+    static ByteBuffer writeMessageToSocketAndReadResponse(SocketChannel Socket, ByteBuffer Message)                     // Write a message to teh server, wait for the response and return it
+     {        writeMessageToSocket(Socket, Message);
+      return readMessageFromSocket(Socket);
+     }
+
+    static ServerSocketChannel openServerUnixDomainSocket(String SocketPath)                                            // Open a server Unix domain socket
+     {try {Files.deleteIfExists(Path.of(SocketPath));}                                                                  // Remove any existing socket file
+      catch (Exception E) {stop("Cannot remove existing socket:", E, traceBack(E));}                                    // Something went badly wrong
+
+      try
+       {ServerSocketChannel socket = ServerSocketChannel.open(StandardProtocolFamily.UNIX);                             // Open Unix domain socket
+
+        try
+         {socket.bind(UnixDomainSocketAddress.of(SocketPath));
+          return socket;
+         }
+        catch (Exception E) {socket.close(); stop("Unix domain socket bind error:", E, traceBack(E));}                  // Something went badly wrong
+       }
+      catch (Exception E) {stop("Unix domain socket server open error:", E, traceBack(E));}                             // Something went badly wrong
+      return null;
+     }
+
+    static SocketChannel openClientUnixDomainSocket(String SocketPath)                                                  // Open a client Unix domain socket
+     {try
+       {final SocketChannel socket = SocketChannel.open(StandardProtocolFamily.UNIX);                                   // Open Unix domain socket
+        socket.connect(UnixDomainSocketAddress.of(SocketPath));                                                         // Connect to server
+        return socket;                                                                                                  // Return connected socket
+       }
+      catch (Exception E) {stop("Unix domain socket open error:", E, traceBack(E));}                                    // Something went badly wrong
+      return null;
+     }
    }
 
 //D1 Tests                                                                                                              // Tests
@@ -1513,24 +1642,24 @@ public class Test                                                               
    }
 
   static void test_files()
-   {final String p = "/tmp/z/z/", a = p+"aaa.txt", b = p+"bbb.txt";
+   {final String p = "/tmp/z/z/"+pid()+"/", a = p+"aaa.txt", b = p+"bbb.txt";
     final StringBuilder s = new StringBuilder();
     s.append("Hello\nWorld");
     writeFile(a, s);
     writeFile(b, s);
     ok(readFile(a),  "[Hello, World]");
     final Stack<Path> f = findFiles(p);
-    ok(findFiles(p), "[/tmp/z/z/aaa.txt, /tmp/z/z/bbb.txt]");
+    ok(findFiles(p), "["+p+"aaa.txt, "+p+"bbb.txt]");
 
     stopTest(()->deleteAllFiles(p, 1), "Delete request would delete 2 files, which is more than the specified limit of: 1");
 
-    ok(findFiles(p), "[/tmp/z/z/aaa.txt, /tmp/z/z/bbb.txt]");
+    ok(findFiles(p), "["+p+"aaa.txt, "+p+"bbb.txt]");
     deleteAllFiles(p, 2);
     ok(findFiles(p), "[]");
-    ok(!folderExists("/tmp/z/z/"));
+    ok(!folderExists(p));
     ok(fileName(a), "aaa.txt");
     ok(fileExt(a), "txt");
-    ok(folderName(a), "/tmp/z/z/");
+    ok(folderName(a), p);
    }
 
   static void test_join_stack()
@@ -1715,6 +1844,43 @@ Test.java:.*?:testCallerName
     ok(roundUp(7, 3), 9);
    }
 
+  static void test_startCopies()                                                                                        // Test separately from the command line: timeout 1m perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Test.java" --javaHome "/home/phil/btreeList" startCopies
+   {final String key = "server=";
+    if (mainArg(key) == null && mainArg("startCopies") != null) startCopies(2, key);                                    // Only run if the enabling keyword is present and the supressing keyword is not
+   }
+
+  static void test_unixDomainServer()
+   {final String server = "server=", client = "client=", file = "/tmp/uxds.sock";
+    if (mainArg(server) != null)
+     {new UnixDomainServer(file)                                                                                        // Server
+       {ByteBuffer processMessage(ByteBuffer Message)                                                                   // Process a message received by the server
+         {final int        N = Message.getInt();                                                                        // Get message content
+          final ByteBuffer b = ByteBuffer.allocate(Integer.BYTES);                                                      // Allocate result buffer
+          b.putInt(N<<1);                                                                                               // Out going message
+          b.flip();                                                                                                     // Make the buffer ready for sending
+          return b;                                                                                                     // Send result
+         }
+       };
+     }
+    else if (mainArg(client) != null)
+     {waitForFileToExist(file, 1000);
+      final SocketChannel c = UnixDomainServer.openClientUnixDomainSocket(file);
+      for(int i = 0, N = 9; i < N; ++i)
+       {final ByteBuffer b = ByteBuffer.allocate(Integer.BYTES); b.putInt(i); b.flip();
+        final ByteBuffer r = UnixDomainServer.writeMessageToSocketAndReadResponse(c, b);
+        ok(r.getInt(), i<<1);
+       }
+      if (true)                                                                                                         // Send terminate message
+       {final ByteBuffer b = ByteBuffer.allocate(0); b.flip();
+        final ByteBuffer r = UnixDomainServer.writeMessageToSocketAndReadResponse(c, b);
+       }
+     }
+    else
+     {startCopies(1, server);
+      startCopies(1, client);
+     }
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_log_two();
     test_power_two();
@@ -1735,10 +1901,13 @@ Test.java:.*?:testCallerName
     test_callerName();
     test_trimRightAndPad();
     test_roundUp();
+    test_startCopies();
+    test_unixDomainServer();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_unixDomainServer();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
