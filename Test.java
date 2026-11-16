@@ -35,7 +35,6 @@ public class Test                                                               
   final static String        coverageAnalysisSubStart = "zz"+"();";                                                     // A string indicating the start of a subroutine - method entries only
 //final static String        coverageAnalysisSubStart = "z"+"();";                                                      // Any labeled statement
   static final TreeMap<String, Integer>      coverage = new TreeMap<>();                                                // Count of how many times each line has been executed
-  static String                             testGroup = null;                                                           // Tests can be split into groups so that they can be run in parallel
 
   static boolean              stopShouldThrowStopTest = false;                                                          // Stop should through an exception rather than actually stopping - useful during testing to confirm that errors are detected
   static int                        currentTestNumber = 0;                                                              // Current test being run
@@ -1211,7 +1210,7 @@ public class Test                                                               
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
-  static boolean rtg (int i)  {return testGroup == null || testGroup.equals("rtg="+i);}                                 // Whether to run the indicated test group
+  static boolean rtg (int i)  {return mainArg("rtg=").equals(""+i);}                                                    // Whether to run the indicated test group
 
   static boolean ok (boolean b)                                                                                         // Check test results match expected results.
    {if (b) {++testsPassed; return true;}
@@ -1743,7 +1742,7 @@ Test.java:.*?:testCallerName
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {mainArguments = args; testGroup = mainArg("rtg=");                                                                  // Test groups if supplied
+   {mainArguments = args;                                                                                             // Test groups if supplied
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {if (github_action) oldTests(); else newTests();                                                                   // Tests to run
       testSummary();                                                                                                    // Summarize test results
