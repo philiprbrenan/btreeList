@@ -2149,7 +2149,7 @@ Zero:
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
-   {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
+   {mainArguments = args; testGroup = mainArg("rtg=");                                                                  // Test groups if supplied
     try                                                                                                                 // Protected execution block.
      {deleteAllFilesInVerilogTestsFolder();                                                                             // Delete generated Verilog files created by a prior run of the current test
       if (github_action) oldTests(); else newTests();                                                                   // Select tests.
