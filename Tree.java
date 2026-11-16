@@ -2930,7 +2930,7 @@ Leaf   at:  12 size:   2, count:   2
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {mainArguments = args; testGroup = mainArg("rtg=");                                                                  // Test groups if supplied
+   {mainArguments = args;                                                                                             // Test groups if supplied
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFilesInVerilogTestsFolder();                                                                             // Delete generated Verilog files created by a prior run of the current test
       if (github_action) oldTests(); else newTests();                                                                   // Tests to run
