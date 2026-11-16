@@ -4388,7 +4388,7 @@ Locks, size: 2
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {mainArguments = args; testGroup = mainArg("rtg=");                                                                  // Test groups if supplied
+   {mainArguments = args;                                                                                             // Test groups if supplied
 say("AAAA", testGroup);
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFilesInVerilogTestsFolder();                                                                             // Delete generated Verilog files created by a prior run of the current test
