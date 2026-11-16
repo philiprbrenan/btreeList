@@ -42,6 +42,7 @@ public class Test                                                               
   static long                         currentTestTime = System.nanoTime();                                              // Time current test started
   static int             testsPassed = 0, testsFailed = 0;                                                              // Number of tests passed and failed
 
+  static String []                      mainArguments;                                                                  // Arguments at start
   static double elapsedTime (Long Start) {return (System.nanoTime() - Start) / 1_000_000_000.0;}                        // Elapsed time in seconds since start
 
   Test () {testsStartHere();}                                                                                           // Constructor
@@ -1440,7 +1441,13 @@ public class Test                                                               
      }
    }
 
-  String curentCommandLine () {return ProcessHandle.current().info().commandLine().get();}                                    // The command use to launch the current process
+  static String currentCommandLine () {return ProcessHandle.current().info().commandLine().get();}                      // The command use to launch the current process
+
+  static String mainArg(String Arg)                                                                                     // Retrieve a command line argument by prefix
+   {if (mainArguments == null) stop("No command line arguments recorded - did you set mainArguments?");
+    for (String a: mainArguments) if (a.regionMatches(true, 0, Arg, 0, Arg.length())) return a.substring(Arg.length()); // Look for first argument matching the supplied prefix
+    return null;
+   }
 
 //D1 Tests                                                                                                              // Tests
 
@@ -1736,7 +1743,8 @@ Test.java:.*?:testCallerName
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
+   {mainArguments = args; testGroup = mainArg("rtg=");                                                                  // Test groups if supplied
+    try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {if (github_action) oldTests(); else newTests();                                                                   // Tests to run
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
