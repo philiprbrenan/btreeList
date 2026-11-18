@@ -2505,29 +2505,29 @@ keys     :    0   0   0   0
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {if (rtg( 1)) test_slots();
-    if (rtg( 2)) test_locateNearestFreeSlotToKey();
-    if (rtg( 3)) test_alloc();
-    if (rtg( 4)) test_set_del_slot_key();
-    if (rtg( 5)) test_compact();
-    if (rtg( 6)) test_redistribute();
-    if (rtg( 7)) test_shift();
-    if (rtg( 8)) test_mergeFromRightEven();
-    if (rtg( 9)) test_mergeFromLeftEven();
-    if (rtg(10)) test_mergeFromRightOdd();
-    if (rtg(11)) test_mergeFromLeftOdd();
-    if (rtg(12)) test_find();
-    if (rtg(13)) test_findGe();
-    if (rtg(14)) test_findRight();
-    if (rtg(15)) test_insert();
-    if (rtg(16)) test_insert2();
-    if (rtg(17)) test_splitRightEven();
-    if (rtg(18)) test_splitLeftEven();
-    if (rtg(29)) test_splitRightOdd();
-    if (rtg(20)) test_splitLeftOdd();
-    if (rtg(21)) test_clear();
-    if (rtg(22)) test_insertKnown();
-    if (rtg(23)) test_delete();
+   {if (runTest( 1)) test_slots();
+    if (runTest( 2)) test_locateNearestFreeSlotToKey();
+    if (runTest( 3)) test_alloc();
+    if (runTest( 4)) test_set_del_slot_key();
+    if (runTest( 5)) test_compact();
+    if (runTest( 6)) test_redistribute();
+    if (runTest( 7)) test_shift();
+    if (runTest( 8)) test_mergeFromRightEven();
+    if (runTest( 9)) test_mergeFromLeftEven();
+    if (runTest(10)) test_mergeFromRightOdd();
+    if (runTest(11)) test_mergeFromLeftOdd();
+    if (runTest(12)) test_find();
+    if (runTest(13)) test_findGe();
+    if (runTest(14)) test_findRight();
+    if (runTest(15)) test_insert();
+    if (runTest(16)) test_insert2();
+    if (runTest(17)) test_splitRightEven();
+    if (runTest(18)) test_splitLeftEven();
+    if (runTest(29)) test_splitRightOdd();
+    if (runTest(20)) test_splitLeftOdd();
+    if (runTest(21)) test_clear();
+    if (runTest(22)) test_insertKnown();
+    if (runTest(23)) test_delete();
 //  test_stuck();
    }
 
