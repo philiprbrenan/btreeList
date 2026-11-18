@@ -2906,22 +2906,22 @@ Leaf   at:  12 size:   2, count:   2
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {if (rtg( 1)) test_tree();
-    if (rtg( 2)) test_insert();
-    if (rtg( 3)) test_insertMerged();
-    if (rtg( 4)) test_insertReverse();
-    if (rtg( 5)) test_insertRandom32();
-    if (rtg( 6)) test_deleteAscending();                                                                                // 68090 integers, 2374 fast integers, 24307 bits: with both For and ForCount in bitset with fast integer indexes.  Openroad takes hours with  fast integers. Die larger than 2000*2000?  Restricted fast integers to first 4 for loops in bitset:  68090 integers, 1366 fast integers, 24307 bits.
-    if (rtg( 7)) test_deleteDescending();
-    if (rtg( 8)) test_deleteRandom32();
-    if (rtg( 9)) test_update();
-    if (rtg(10)) test_find();
-    //if (rtg(11)) test_rootFanOut();
-    //if (rtg(12)) test_rootFanOut2();
-    //if (rtg(13)) test_rootFanOut3();
-    if (rtg(14)) test_traverse();
-    if (rtg(15)) {};
-    if (rtg(16)) {}
+   {if (runTest( 1)) test_tree();
+    if (runTest( 2)) test_insert();
+    if (runTest( 3)) test_insertMerged();
+    if (runTest( 4)) test_insertReverse();
+    if (runTest( 5)) test_insertRandom32();
+    if (runTest( 6)) test_deleteAscending();                                                                                // 68090 integers, 2374 fast integers, 24307 bits: with both For and ForCount in bitset with fast integer indexes.  Openroad takes hours with  fast integers. Die larger than 2000*2000?  Restricted fast integers to first 4 for loops in bitset:  68090 integers, 1366 fast integers, 24307 bits.
+    if (runTest( 7)) test_deleteDescending();
+    if (runTest( 8)) test_deleteRandom32();
+    if (runTest( 9)) test_update();
+    if (runTest(10)) test_find();
+    //if (runTest(11)) test_rootFanOut();
+    //if (runTest(12)) test_rootFanOut2();
+    //if (runTest(13)) test_rootFanOut3();
+    if (runTest(14)) test_traverse();
+    if (runTest(15)) {};
+    if (runTest(16)) {}
    }
 
   static void newTests()                                                                                                // Tests being worked on
