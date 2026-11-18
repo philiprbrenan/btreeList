@@ -2126,22 +2126,22 @@ Zero:
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
-   {if (rtg( 1)) test_prevNext();
-    if (rtg( 2)) test_prevNext01();
-    if (rtg( 3)) test_prevNext10();
-    if (rtg( 4)) test_oneZero();
-    if (rtg( 5)) test_fullEmpty();
-    if (rtg( 6)) test_count();
-    if (rtg( 7)) test_powerPosOneZero16();
-    if (rtg( 8)) test_twoOrMoreOnes();
-    if (rtg( 9)) test_limits();
-    if (rtg(10)) test_lowHighZero();
-    if (rtg(11)) test_b4();
-    if (rtg(12)) test_b7();
-    if (rtg(13)) test_b8();
-    if (rtg(14)) test_b9();
-    if (rtg(15)) test_b10();
-    if (rtg(16)) test_set();
+   {if (runTest( 1)) test_prevNext();
+    if (runTest( 2)) test_prevNext01();
+    if (runTest( 3)) test_prevNext10();
+    if (runTest( 4)) test_oneZero();
+    if (runTest( 5)) test_fullEmpty();
+    if (runTest( 6)) test_count();
+    if (runTest( 7)) test_powerPosOneZero16();
+    if (runTest( 8)) test_twoOrMoreOnes();
+    if (runTest( 9)) test_limits();
+    if (runTest(10)) test_lowHighZero();
+    if (runTest(11)) test_b4();
+    if (runTest(12)) test_b7();
+    if (runTest(13)) test_b8();
+    if (runTest(14)) test_b9();
+    if (runTest(15)) test_b10();
+    if (runTest(16)) test_set();
    }
 
   static void newTests()                                                                                                // Tests under development.
