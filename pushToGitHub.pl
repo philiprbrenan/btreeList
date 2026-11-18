@@ -164,7 +164,7 @@ END
 
     for my $t(@t)                                                                                                       # Tasks
      {my $C  = $$t{class};
-      my $G  = "rtg=".$$t{group};
+      my $G  = "runTest=".$$t{group};
       my $N  = $$t{name};
 
       $y .= <<END;
