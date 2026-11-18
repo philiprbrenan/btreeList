@@ -45,6 +45,8 @@ public class Test                                                               
   static int             testsPassed = 0, testsFailed = 0;                                                              // Number of tests passed and failed
 
   static String []                      mainArguments;                                                                  // Arguments at start
+  static int                           runTestCurrent = 0;                                                              // The current test
+  final  static String                        runTest = "runTest=";                                                     // Request a test by number
   static double elapsedTime (Long Start) {return (System.nanoTime() - Start) / 1_000_000_000.0;}                        // Elapsed time in seconds since start
 
   Test () {testsStartHere();}                                                                                           // Constructor
@@ -1223,7 +1225,11 @@ public class Test                                                               
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
-  static boolean rtg (int i)  {return mainArg("rtg=").equals(""+i);}                                                    // Whether to run the indicated test group
+  static boolean runTest (int TestNumber)                                                                               // Whether to run the indicated test group
+   {final String n = mainArg(runTest);                                                                                  // Whether the  number of the test to be executed was specified
+    runTestCurrent = TestNumber;                                                                                        // Current test number
+    return n == null || n.equals(""+TestNumber);                                                                        // Execute all tests or a specific test
+   }
 
   static boolean ok (boolean b)                                                                                         // Check test results match expected results.
    {if (b) {++testsPassed; return true;}
@@ -1457,19 +1463,25 @@ public class Test                                                               
   static String currentCommandLine () {return ProcessHandle.current().info().commandLine().get();}                      // The command use to launch the current process
 
   static String mainArg(String Arg)                                                                                     // Retrieve a command line argument by prefix
-   {if (mainArguments == null) stop("No command line arguments recorded - did you set mainArguments?");
-    for (String a: mainArguments) if (a.regionMatches(true, 0, Arg, 0, Arg.length())) return a.substring(Arg.length()); // Look for first argument matching the supplied prefix
+   {if (mainArguments == null) stop("No command line arguments recorded - did you set mainArguments?");                 // Complain if no arguments were recorded by the main program entry point
+    for (int i = mainArguments.length; i > 0; --i)                                                                      // Arguments in reverse
+     {final String a = mainArguments[i-1];                                                                              // Each argument
+      if (a.regionMatches(true, 0, Arg, 0, Arg.length())) return a.substring(Arg.length());                             // Look for the last argument matching the supplied prefix. This allow subsequent calls to conveniently add overriding parameters at the end
+     }
     return null;
    }
 
-  static void startCopies(int N, String Parameter)                                                                      // Start N copies of the current program. Each started copy is given a unique command line keyword
+  static void startCopies(int N, String Indicator, String...Parameters)                                                                      // Start N copies of the current program. Each started copy is given a unique command line keyword
    {final String c = currentCommandLine();
+    final StringBuilder s = new StringBuilder(); for (String p: Parameters) s.append(" "+p);
+    final String S = ""+s;
+
     try
      {for(int i = 1; i <= N; ++i)
-       {final String C = f("%s %s=$d", c, Parameter, i);
+       {final String C = f("%s %s=%d%s", c, Indicator, i, S);
         new ProcessBuilder("sh", "-c", C)
          .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-         .redirectError(ProcessBuilder.Redirect.INHERIT)
+         .redirectError (ProcessBuilder.Redirect.INHERIT)
          .start();
        }
      }
