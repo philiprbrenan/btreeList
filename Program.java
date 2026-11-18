@@ -4345,52 +4345,61 @@ Locks, size: 2
               test_remoteExecution(false);
    }
 
+
+  static void test_currentTestNumber (int T)
+   {sayCurrentTestName();
+    final String server = "server";
+    if (mainArg(server) != null)                                                                                        // On the server
+     {if (runTestCurrent != T) stop("Wrong test number:", T, "expected:", runTestCurrent);
+     }
+    else startCopies(1, server, "runTest="+T);                                                                          // Start server as a copy of this program with additional parameters
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {if (rtg( 1)) test_ifThen();
-    if (rtg( 2)) test_ifElse();
-    if (rtg( 3)) test_forCount();
-    if (rtg( 4)) test_For();
-    if (rtg( 5)) test_addition();
-    if (rtg( 6)) test_programming();
-    if (rtg( 7)) test_clearSet();
-    if (rtg( 8)) test_andOr();
-    if (rtg( 9)) test_add();
-    if (rtg(10)) test_fibonacci();
-    if (rtg(11)) test_mod();
-    if (rtg(12)) test_incremental();
-    if (rtg(13)) test_remote();
-    if (rtg(14)) test_variables();
-    if (rtg(15)) test_mem();
-    if (rtg(16)) test_namedMemory();
-    if (rtg(17)) test_memory();
-//  if (rtg(18)) test_memoryNegative();                                                                                 // No longer using negative numbers per Open Road
-    if (rtg(19)) test_memoryRef();
-    if (rtg(20)) test_verilogArray();
-    if (rtg(21)) test_arrayConstant();
-    if (rtg(22)) test_lastInstructionBase();
-    if (rtg(23)) test_boolean();
-    if (rtg(24)) test_ifInc();
-    if (rtg(25)) test_forLoops();
-    if (rtg(26)) test_fastInt();
-    if (rtg(27)) test_pcConstant();
-    if (rtg(28)) test_compareZero();
-    if (rtg(29)) test_upDown();
-    if (rtg(30)) test_maxMin();
-    if (rtg(31)) test_lock();
-    if (rtg(32)) test_push();
-    if (rtg(33)) test_Until();
-    //if (rtg(34)) test_remoteExecution();
-    if (rtg(35)) {}
-    if (rtg(36)) {}
+   {if (runTest( 1)) test_ifThen();
+    if (runTest( 2)) test_ifElse();
+    if (runTest( 3)) test_forCount();
+    if (runTest( 4)) test_For();
+    if (runTest( 5)) test_addition();
+    if (runTest( 6)) test_programming();
+    if (runTest( 7)) test_clearSet();
+    if (runTest( 8)) test_andOr();
+    if (runTest( 9)) test_add();
+    if (runTest(10)) test_fibonacci();
+    if (runTest(11)) test_mod();
+    if (runTest(12)) test_incremental();
+    if (runTest(13)) test_remote();
+    if (runTest(14)) test_variables();
+    if (runTest(15)) test_mem();
+    if (runTest(16)) test_namedMemory();
+    if (runTest(17)) test_memory();
+//  if (runTest(18)) test_memoryNegative();                                                                             // No longer using negative numbers per Open Road
+    if (runTest(19)) test_memoryRef();
+    if (runTest(20)) test_verilogArray();
+    if (runTest(21)) test_arrayConstant();
+    if (runTest(22)) test_lastInstructionBase();
+    if (runTest(23)) test_boolean();
+    if (runTest(24)) test_ifInc();
+    if (runTest(25)) test_forLoops();
+    if (runTest(26)) test_fastInt();
+    if (runTest(27)) test_pcConstant();
+    if (runTest(28)) test_compareZero();
+    if (runTest(29)) test_upDown();
+    if (runTest(30)) test_maxMin();
+    if (runTest(31)) test_lock();
+    if (runTest(32)) test_push();
+    if (runTest(33)) test_Until();
+    //if (runTest(34)) test_remoteExecution();
+    if (runTest(35)) test_currentTestNumber(35);
+    if (runTest(36)) {}
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_remoteExecution();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {mainArguments = args;                                                                                             // Test groups if supplied
+   {mainArguments = args;                                                                                               // Test groups if supplied
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFilesInVerilogTestsFolder();                                                                             // Delete generated Verilog files created by a prior run of the current test
       if (github_action) oldTests(); else newTests();                                                                   // Tests to run
