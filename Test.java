@@ -895,6 +895,7 @@ public class Test                                                               
      }
     return FilePath;
    }
+
   static String deleteFile (String FilePath) {return deleteFile(FilePath, false);}
 
   static String makePath (String Folder)                                                                                // Make a path
@@ -1132,15 +1133,21 @@ public class Test                                                               
 
   static Timer timer () {return new Timer();}                                                                           // Create a new timer
 
-  static boolean waitForFileToExist(String FilePath, int Timeout)                                                       // Wait for a Unix domain socket file to appear, up to a timeout in milliseconds
+  static boolean waitForFileToExist(String FilePath, int TimeOut)                                                       // Wait for a Unix domain socket file to appear, up to a timeout in milliseconds
    {final Path path = Path.of(FilePath);
-    final long end = System.currentTimeMillis() + Timeout;
+    final long end = System.currentTimeMillis() + TimeOut;
     while (System.currentTimeMillis() < end)
      {if (Files.exists(path)) return true;                                                                              // Socket file exists
       try {Thread.sleep(10);}                                                                                           // Wait briefly before checking again
       catch (InterruptedException E) {Thread.currentThread().interrupt(); return false;}                                // Stop if interrupted
      }
     return Files.exists(path);                                                                                          // Check once more at timeout
+   }
+
+  static void sleep(double TimeOut)                                                                                     // Sleep for seconds
+   {final int t = (int)(TimeOut * 1000);                                                                                // Time is specified in seconds which should be converted to milliseconds
+    try {Thread.sleep(t);}                                                                                              // Wait briefly before checking again
+    catch (Exception E) {stop("Unable to sleep for specified time in millisecond:", TimeOut);}                          // Describe any errors thata rose
    }
 
 //D1 Printing                                                                                                           // Print log messages
@@ -1493,10 +1500,14 @@ public class Test                                                               
   static class UnixDomainServer
    {final int L = 999;                                                                                                  // Upper limit on the number of messages that can be processes
     UnixDomainServer(String SocketPath)                                                                                 // Run a unix domain server that accepts integer messages from a  single client, processes them and return the results to the client.  Messages are encoded as an integer giving the total message length followed by the bytes of the message
-     {try
+     {
+say("SSSSS11111", SocketPath);
+      try
       (ServerSocketChannel s = openServerUnixDomainSocket(SocketPath);                                                  // Open server socket and bind to named path
              SocketChannel c = s.accept())                                                                              // Accept a connection request from a client
-       {for(int l = 0; l < L; ++l)                                                                                      // Process messages from the client
+       {
+say("SSSSS2222");
+        for(int l = 0; l < L; ++l)                                                                                      // Process messages from the client
          {final ByteBuffer i = readMessageFromSocket(c);                                                                // Read message from client
           if (i.remaining() > 0)                                                                                        // Finished on a zero length message
            {final ByteBuffer o = processMessage(i);                                                                     // Process message and obtain a resulting message to send back
@@ -1513,6 +1524,7 @@ public class Test                                                               
 
     ByteBuffer processMessage(ByteBuffer Message)                                                                       // Process a message sent to the server on the server and send the processing results from the server back to the client
      {final ByteBuffer b = ByteBuffer.allocate(Integer.BYTES);                                                          // Sample output message
+say("SSSSS33333", Message);
       b.putInt(42);                                                                                                     // Load message
       b.flip();                                                                                                         // Make the buffer ready for sending
       return b;                                                                                                         // Return the resulting messsage
@@ -1564,15 +1576,16 @@ public class Test                                                               
     static ServerSocketChannel openServerUnixDomainSocket(String SocketPath)                                            // Open a server Unix domain socket
      {try {Files.deleteIfExists(Path.of(SocketPath));}                                                                  // Remove any existing socket file
       catch (Exception E) {stop("Cannot remove existing socket:", E, traceBack(E));}                                    // Something went badly wrong
-
+      deleteFile(SocketPath);
       try
        {ServerSocketChannel socket = ServerSocketChannel.open(StandardProtocolFamily.UNIX);                             // Open Unix domain socket
 
         try
-         {socket.bind(UnixDomainSocketAddress.of(SocketPath));
+         {makePath(fpx(SocketPath));
+          socket.bind(UnixDomainSocketAddress.of(SocketPath));
           return socket;
          }
-        catch (Exception E) {socket.close(); stop("Unix domain socket bind error:", E, traceBack(E));}                  // Something went badly wrong
+        catch (Exception E) {socket.close(); stop("Unix domain socket bind error:", SocketPath, E, traceBack(E));}      // Something went badly wrong
        }
       catch (Exception E) {stop("Unix domain socket server open error:", E, traceBack(E));}                             // Something went badly wrong
       return null;
