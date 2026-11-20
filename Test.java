@@ -1500,13 +1500,14 @@ public class Test                                                               
   static class UnixDomainServer
    {final int L = 999;                                                                                                  // Upper limit on the number of messages that can be processes
     UnixDomainServer(String SocketPath)                                                                                 // Run a unix domain server that accepts integer messages from a  single client, processes them and return the results to the client.  Messages are encoded as an integer giving the total message length followed by the bytes of the message
-     {
-say("SSSSS11111", SocketPath);
-      try
+     {try
       (ServerSocketChannel s = openServerUnixDomainSocket(SocketPath);                                                  // Open server socket and bind to named path
              SocketChannel c = s.accept())                                                                              // Accept a connection request from a client
        {
-say("SSSSS2222");
+say("Local: "     + c.getLocalAddress());
+say("Remote:"     + c.getRemoteAddress());
+say("Open:  "     + c.isOpen());
+say("Connected: " + c.isConnected());
         for(int l = 0; l < L; ++l)                                                                                      // Process messages from the client
          {final ByteBuffer i = readMessageFromSocket(c);                                                                // Read message from client
           if (i.remaining() > 0)                                                                                        // Finished on a zero length message
@@ -1524,7 +1525,6 @@ say("SSSSS2222");
 
     ByteBuffer processMessage(ByteBuffer Message)                                                                       // Process a message sent to the server on the server and send the processing results from the server back to the client
      {final ByteBuffer b = ByteBuffer.allocate(Integer.BYTES);                                                          // Sample output message
-say("SSSSS33333", Message);
       b.putInt(42);                                                                                                     // Load message
       b.flip();                                                                                                         // Make the buffer ready for sending
       return b;                                                                                                         // Return the resulting messsage
@@ -1536,7 +1536,13 @@ say("SSSSS33333", Message);
       try
        {final ByteBuffer h = ByteBuffer.allocate(H);                                                                    // Allocate buffer for h
 
-        while (h.hasRemaining()) if (Socket.read(h) <= 0) stop("Invalid message h");                                    // Read header
+       say("RRRRxxxx1111", currentCommandLine());
+        while (h.hasRemaining())
+         {final int r = Socket.read(h);                                                                 // Read header
+          say("RRRRxxxx2222", r, currentCommandLine());
+          if (r <= 0) stop("Invalid message", currentCommandLine());
+         }
+        say("RRRRxxxx33333", currentCommandLine());
 
         h.flip();                                                                                                       // Read from buffer
         final int size = h.getInt();                                                                                    // Get size of message
@@ -1597,7 +1603,7 @@ say("SSSSS33333", Message);
         socket.connect(UnixDomainSocketAddress.of(SocketPath));                                                         // Connect to server
         return socket;                                                                                                  // Return connected socket
        }
-      catch (Exception E) {stop("Unix domain socket open error:", E, traceBack(E));}                                    // Something went badly wrong
+      catch (Exception E) {stop("Unix domain socket open error:", SocketPath, E, traceBack(E));}                                    // Something went badly wrong
       return null;
      }
    }
@@ -1875,7 +1881,7 @@ Test.java:.*?:testCallerName
    }
 
   static void test_unixDomainServer()
-   {final String server = "server=", client = "client=", file = "/tmp/uxds.sock";
+   {final String server = "server=", client = "client=", file = "/tmp/test_udxs.sock";
     if (mainArg(server) != null)
      {new UnixDomainServer(file)                                                                                        // Server
        {ByteBuffer processMessage(ByteBuffer Message)                                                                   // Process a message received by the server
