@@ -19,7 +19,7 @@ public class Program extends Test                                               
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
-  final static boolean                   generateVerilog = true;                                                        // Generate Verilog version of each program
+  final static boolean                   generateVerilog =!true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
@@ -65,7 +65,6 @@ public class Program extends Test                                               
   static String                                subsTrace = null;                                                        // Traceback through the methods currently active
   final Int                                         Zero;                                                               // Integer constant zero
   final Int                                          One;                                                               // Integer constant one
-  final Int                          remoteExecutionMode;                                                               // Remote execution mode
   final String                               programName;                                                               // Name of program to assist in debugging multi program executions
   final Build                                      build;                                                               // Build parameter list used to construct the program
   final boolean            checkAllLocksHaveBeenReleased;                                                               // Confirm that all locks have been released at the end of program execution
@@ -86,10 +85,12 @@ public class Program extends Test                                               
   boolean                                      immediate = false;                                                       // Execute immediately if true else generate machine code and execute later
   boolean                        initializedForExecution = false;                                                       // Whether the program has been initialized for execution or not
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
-  //static RemoteExecution.Modes       remoteExecutionMode = RemoteExecution.Modes.Local;                               // Normally run in local mode, but client and server modes are also possible
+  static RemoteExecution.Modes       remoteExecutionMode = RemoteExecution.Modes.Local;                                 // Normally run in local mode, but client and server modes are also possible
   static int                         remoteExecutionArea = 0;                                                           // The area of memory controlled by server mode
   ByteBuffer                   currentServerInputMessage;                                                               // Current input message being processed when operating in server mode
   ByteBuffer                   currentServerExputMessage;                                                               // Current output message being created when operating in server mode
+  String        clientSocketName;
+  SocketChannel clientSocket;
 
   static class Build                                                                                                    // Builder for this program
    {boolean                     immediate = false;                                                                      // Immediate mode
@@ -136,15 +137,18 @@ public class Program extends Test                                               
     mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea) :                  // Main memory associated with either the main program or a sub program using an independent memory
                       program().mainMemory;                                                                             // Sub program uses main program memory
 
-    remoteExecutionMode = new Int("remote execution mode");
-    new I()                                                                                                             // Set the execution mode
-     {void a()
-       {if      (mainArg("server=") != null) remoteExecutionMode.constant(RemoteExecution.Modes.Server.ordinal());     // Set execution mode to Server
-        else if (mainArg("client=") != null) remoteExecutionMode.constant(RemoteExecution.Modes.Client.ordinal());     // Set execution mode to client
-        else                                 remoteExecutionMode.constant(RemoteExecution.Modes.Local .ordinal());     // Set execution mode to Local by default
-       }
-      boolean trace() {return false;}
-     };
+//    remoteExecutionMode = new Int("remote execution mode");
+//    new I()                                                                                                             // Set the execution mode
+//     {void a()
+//       {if      (mainArg("server=") != null) remoteExecutionMode.constant(RemoteExecution.Modes.Server.ordinal());     // Set execution mode to Server
+//        else if (mainArg("client=") != null) remoteExecutionMode.constant(RemoteExecution.Modes.Client.ordinal());     // Set execution mode to client
+//        else                                 remoteExecutionMode.constant(RemoteExecution.Modes.Local .ordinal());     // Set execution mode to Local by default
+//       }
+//      boolean trace() {return false;}
+//     };
+    if      (mainArg("server=") != null) remoteExecutionMode = RemoteExecution.Modes.Server;                            // Set execution mode to Server
+    else if (mainArg("client=") != null) remoteExecutionMode = RemoteExecution.Modes.Client;                            // Set execution mode to client
+    else                                 remoteExecutionMode = RemoteExecution.Modes.Local ;                            // Set execution mode to Local by default
 
     code();                                                                                                             // Load or execute the code associated with this program
    }
@@ -377,6 +381,48 @@ public class Program extends Test                                               
              void Else () {}                                                                                            // Else clause
    } // If
 
+//D2 Server, Client Local If                                                                                            // If Server|Client|local
+
+  abstract class IfSLC                                                                                                  // If statement to locate server, client or local code
+   {IfSLC ()
+     {if (immediate())                                                                                                  // Immediate execution
+       {if (condition()) Then();
+        else             Else();
+       }
+     else                                                                                                               // Machine code
+       {final Label lse = new Label();                                                                                  // Start of else
+        final Label end = new Label();                                                                                  // End of if
+
+        final I Then = new I(false)                                                                                     // Jump to else if condition is false
+         {void   a() {if (!condition()) program().pc = lse.offset;}
+          String v()
+           {return "if (0) pc <= "+cawci+"; else pc <= pc + 1;";   // FIX ME
+           }
+          int traces () {return 0;}
+         };
+        Then();                                                                                                         // Then body
+        final I Else = new I(false)                                                                                     // Jump over else to end
+         {void     a() {program().pc  = end.offset;}
+          String   v() {return   "pc <= "+cawci+";";}
+          int traces() {return 0;}
+         };
+        lse.set();                                                                                                      // Start of else
+        Else();                                                                                                         // Else body
+        end.set();                                                                                                      // End of the if statement
+        pcConstant(Then, lse);                                                                                          // Set then jump now we know its target
+        pcConstant(Else, end);                                                                                          // Set else jump now we know its target
+       }
+     }
+    abstract void Then ();                                                                                              // Then clause
+             void Else () {}                                                                                            // Else clause
+
+    abstract boolean condition();
+   } // IfSLC
+
+  abstract class IfServer extends IfSLC {boolean condition() {return remoteExecutionMode == RemoteExecution.Modes.Server;}} // If statement to locate server code
+  abstract class IfClient extends IfSLC {boolean condition() {return remoteExecutionMode == RemoteExecution.Modes.Client;}} // If statement to locate client code
+  abstract class IfLocal  extends IfSLC {boolean condition() {return remoteExecutionMode == RemoteExecution.Modes.Local ;}} // If statement to locate local code
+
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
   interface Computable {}                                                                                               // Something we can compute with
@@ -404,6 +450,8 @@ public class Program extends Test                                               
     Bit ()                       {ai();  del(false);     bits().push(this);}                                            // Constructors. Set newly constructed integers to invalid and minus one
     Bit (boolean I)              {ai();  ie(Ops.set, I); bits().push(this); constant();}                                // Constant because a constant was supplied during construction
     Bit (Bit     I)              {ai();  ie(Ops.set, I); bits().push(this);}
+
+    Bit constant (boolean I)     {i = I; v = constant = true; return this;}                                             // Set a constant value
 
     boolean      b ()            {x(); return i;}
     void         x ()            {if (!v) variableNotSet("Bit", name);}                                                 // Check a value has been set for the boolean
@@ -650,11 +698,11 @@ public class Program extends Test                                               
       ints().push(this);
      }
 
-    Int constant (int I) {i = I; v = constant = true; say("KKKK1111", id, I, v, constant, currentCommandLine()); x();return this;}                                               // Set a constant value
+    Int constant (int I) {i = I; v = constant = true; return this;}                                                     // Set a constant value
 
     int        i ()       {x();   reads++;  return i;}                                                                  // Get current value
     int        i (int I)  {i = I; writes++; return i;}                                                                  // Set current value value
-    void       x ()       {if (!v) {say("KKKK22222", id, v, constant, currentCommandLine()); variableNotSet("Int", name);}}                                                        // Check a value has been set for the integer
+    void       x ()       {if (!v) variableNotSet("Int", name);}                                                        // Check a value has been set for the integer
     int     in0j ()       {return fast ? i()                   : intMemory().read0Int;}                                 // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
     int     in1j ()       {return fast ? i()                   : intMemory().read1Int;}                                 // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
     int     in2j ()       {return fast ? i()                   : intMemory().read2Int;}                                 // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
@@ -1824,7 +1872,7 @@ endmodule
          }
         executing(null);                                                                                                // Show that we are no longer executing an instruction
        }
-      else  {program().code.push(this); if (codeSize() == 8) stop("Failing instruction", currentCommandLine());}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
+      else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
      }
 
     I () {this(true);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
@@ -1928,14 +1976,12 @@ endmodule
     Execute(Build Build)                                                                                                // Finalize the execution request
      { start = Build.start  != null ? Build.start  : 0;
       finish = Build.finish != null ? Build.finish : codeSize();
-say("DDDD88888", remoteExecutionMode, currentCommandLine());
 
       executeInstructions();
      }
 
     void executeInstructions ()                                                                                         // Execute the code of the program
      {currentPc = pc = start;                                                                                           // Reset program counter to start of program
-say("DDDD9999", remoteExecutionMode, currentCommandLine());
 
       for(steps = 0; steps < maxSteps && pc >= 0 && pc < finish; ++steps)                                               // Execute each instruction within a specified number of steps
        {final I i = code.elementAt(pc);
@@ -1948,7 +1994,6 @@ say("DDDD9999", remoteExecutionMode, currentCommandLine());
            {instructionCover.get(i.traceTest).count++;
            }
 
-say("DDDD101010", steps, pc, remoteExecutionMode, currentCommandLine());
           i.a();                                                                                                        // Execute the instruction
           i.executed++;                                                                                                 // Count the executions of the instruction
           if (i.trace())                                                                                                // Check tracing
@@ -1989,33 +2034,35 @@ say("DDDD101010", steps, pc, remoteExecutionMode, currentCommandLine());
     if (!suppressInstructionCoverage) initializeInstructionCoverage();                                                  // Update instruction coverage by location in Java code where instruction was generated
     if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                           // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
 
-say("DDDD1111", currentCommandLine());
-
     if (mainArg("server=") != null)                                                                                     // Running in server mode executing blocks of code as requested by the client
      {final String p = remoteExecutionServerSocketPath(mainArg("server="));                                             // Server socket name
-say("DDDD22222", remoteExecutionMode, currentCommandLine());
-sleep(20);
-say("DDDD33333", currentCommandLine());
       final UnixDomainServer server = new UnixDomainServer(p)                                                           // Start server on known socket
        {final ByteBuffer processMessage(ByteBuffer Message)                                                             // Process a message sent to the server on the server and send the processing results from the server back to the client
-         {
-say("DDDD4444", currentCommandLine());
-          currentServerInputMessage = Message;                                                                          // The received message becomes the buffer to be unpacked by the server code
-          final int firstLine = Message.getInt(0);                                                                      // First instruction to be executed
-          final int lastLine  = Message.getInt(1);                                                                      // Execute up to this instruction
+         {currentServerInputMessage = Message;                                                                          // The received message becomes the buffer to be unpacked by the server code
+//say("SSSS1111", Message.remaining());
+//say("Position: " + Message.position());
+//say("Limit:    " + Message.limit());
+//say("Capacity: " + Message.capacity());
+//say("Remaining:" + Message.remaining());
+//ByteBuffer copy = Message.duplicate();
+//while (copy.hasRemaining()) say(f("%02X ", copy.get()));
+
+          final int firstLine = Message.getInt(1*Integer.BYTES);                                                        // First instruction to be executed
+          final int lastLine  = Message.getInt(2*Integer.BYTES);                                                        // Execute up to this instruction
+say("SSSS22222", firstLine, lastLine, codeSize());
+//say("Position: " + Message.position());
+//say("Limit:    " + Message.limit());
+//say("Capacity: " + Message.capacity());
+//say("Remaining:" + Message.remaining());
           new Execute(new Execute.Build().start(firstLine).finish(lastLine));                                           // Execute requested instructions
           return currentServerExputMessage;
          }
        };
-say("DDDD5555");
-sleep(20);
-say("DDDD6666");
       return;                                                                                                           // Once the server exits the processing of this program is complete
      }
 
     initializedForExecution = true;                                                                                     // The program is now ready for execution
 
-say("DDDD7777", remoteExecutionMode, currentCommandLine());
     new Execute(new Execute.Build());                                                                                   // Execute instructions
 
     if (steps >= maxSteps && pc >= 0 && pc < codeSize()) stop("Out of steps after step:", steps);                       // Show ran out of steps
@@ -2986,36 +3033,46 @@ endmodule
      {Collections.addAll(inParameters,  in());
       Collections.addAll(outParameters, out());
 
-      new If (remoteExecutionMode.eq(RemoteExecution.Modes.Client.ordinal()))                                           // Code marked for remote execution is not executed on the client but on the server. The instruction sequqnce must be identical on both client and server
+      new IfClient()                                                                                                    // Code marked for remote execution is not executed on the client but on the server. The instruction sequqnce must be identical on both client and server
        {void Then()                                                                                                     // Client mode,
          {new I()
            {void a()
-             {say("RRRR1111");
-              final  SocketChannel s = UnixDomainServer.openClientUnixDomainSocket(remoteExecutionServerSocketPath(""+Target.i()));// Server socket
-              unpackResponse(UnixDomainServer.writeMessageToSocketAndReadResponse(s, packRequest()));
+             {say("RRRR1111", currentCommandLine());
+              if (clientSocketName == null) clientSocketName = remoteExecutionServerSocketPath(""+Target.i());                                          // Server socket name
+              if (clientSocket     == null) clientSocket     = UnixDomainServer.openClientUnixDomainSocket(clientSocketName);                          // Server socket
+              unpackResponse(UnixDomainServer.writeMessageToSocketAndReadResponse(clientSocket, packRequest()));
              }
             boolean trace() {return false;}
            };
          }
         void Else()                                                                                                     // Execution of code either locally or remotely on the associated server.  The server decodes the instructions to be executed by peeking at the message and then hands control to this block of code
          {start = code.size();                                                                                          // Location of start instruction
-          new If (remoteExecutionMode.eq(RemoteExecution.Modes.Server.ordinal()))
+          new IfServer()
            {void Then()                                                                                                 // Server mode
              {new I()
                {void a()
-                 {say("RRRR2222");
+                 {currentServerInputMessage.position(0);
+                   say("RRRR2222", currentServerInputMessage);
+say("Position: " + currentServerInputMessage.position());
+say("Limit:    " + currentServerInputMessage.limit());
+say("Capacity: " + currentServerInputMessage.capacity());
+say("Remaining:" + currentServerInputMessage.remaining());
+ByteBuffer copy = currentServerInputMessage.duplicate();
+
+//while (copy.hasRemaining())  say(f("%02d ", copy.get()));
                   unpackRequest(currentServerInputMessage);                                                             // Unpack request and set local variables to match
+say("RRRR3333");
                  }
                 boolean trace() {return false;}
                };
              }
            };
           body();                                                                                                       // Instructions to be executed
-          new If (remoteExecutionMode.eq(RemoteExecution.Modes.Server.ordinal()))
+          new IfServer()
            {void Then()
              {new I()
                {void a()
-                 {say("RRRR3333");
+                 {say("RRRR4444");
                   currentServerExputMessage = packResponse();                                                           // Pack server response and send it back to the client
                  }
                 boolean trace() {return false;}
@@ -3025,6 +3082,13 @@ endmodule
           finish = code.size();                                                                                         // Location of finish instruction
          }
        };
+new I()
+ {void a()
+   {say("RRRR6666", currentCommandLine());
+   }
+  boolean trace() {return false;}
+ };
+
      }
     abstract void       body ();                                                                                        // Instructions to be executed
     abstract Computable[] in ();                                                                                        // Identify the input parameters
@@ -3032,7 +3096,7 @@ endmodule
 
     void pack (ByteBuffer Buffer, Stack<Computable> Parameters, boolean Instructions)                                   // Pack data into a buffer ready to be sent to the server or client
      {final ByteBuffer X = Buffer;
-      X.putInt(0);
+      X.putInt(0);                                                                                                      // Reserve length field
       if (Instructions) {X.putInt(start); X.putInt(finish);}                                                            // Range of instructions to be executed if requested
       for (Computable c : Parameters)                                                                                   // Load each parameter
        {switch (c)
@@ -3044,6 +3108,9 @@ endmodule
        }
       X.putInt(0, X.position());                                                                                        // Insert length field at front
       X.flip();                                                                                                         // Prepare buffer for writing into the socket
+say("RRRR5555");
+ByteBuffer copy = X.duplicate();
+while (copy.hasRemaining())  say(f("%02d ", copy.get()));
      }
 
     ByteBuffer packRequest ()                                                                                           // Pack a request for execution and send it to the server
@@ -3065,20 +3132,24 @@ endmodule
 
       for (Computable c : Parameters)
        {switch (c)
-         {case Bit  B -> {final int id  = X.getInt(); bits.elementAt(id).set(X.getInt() > 0);}
-          case Int  I -> {final int id  = X.getInt(); ints.elementAt(id).set(X.getInt());}
+         {case Bit  B -> {final int id  = X.getInt(); bits.elementAt(id).constant(X.getInt() > 0);}
+          case Int  I -> {final int id  = X.getInt(); ints.elementAt(id).constant(X.getInt());}
           case Bint C -> {final int idb = X.getInt(), idi = X.getInt(), valid = X.getInt();
-                          bits.elementAt(idb).set(valid != 0);
-                          if (valid != 0) ints.elementAt(idi).set(X.getInt());
+                          bits.elementAt(idb).constant(valid != 0);
+                          if (valid != 0) ints.elementAt(idi).constant(X.getInt());
                          }
           default -> stop("Unknown computable type:"+c);
          }
        }
-      if (Instructions) new Execute(new Execute.Build().start(start).finish(finish));
+      //if (Instructions) new Execute(new Execute.Build().start(start).finish(finish));
      }
 
     void  unpackRequest (ByteBuffer B) {unpack(B, inParameters, true);}                                                 // Unpack request and execute the decoded instruction range
     void unpackResponse (ByteBuffer B) {unpack(B, inParameters, false);}                                                // Unpack response into local program which can now proceed executing as if the remote code had just been executed inline
+
+    void closeServer()                                                                                                  // The client closes the server after the client work is finished
+     {if (clientSocket != null)  UnixDomainServer.writeMessageToSocket(clientSocket, null);
+     }
 
     interface Reference                                                                                                 // Get a reference to the remote execution request from an object: the reference is built by an inner class so a method of locating the object created from the inner class is required
      {RemoteExecution reference();
@@ -3092,9 +3163,9 @@ endmodule
       Server                                                                                                            // Server mode executes remotely executable code on behalf of clients. The server waits for a request, unpacks the parameters into the corresponding variables, executes the instructions generated by the "RemoteExecution.body" method and then sends a response back containing the execution results to be loaded into the fields declared in the remotely executable class.
      };
     public String toString() {return f("%4d first,  %4d last\n", start, finish);}                                       // Print the instruction locations
-   }
+   } // RemoteExecution
 
-  String remoteExecutionServerSocketPath (String Name) {return "/tmp/udxs/"+Name+".sock";}                              // Server socket name
+  static String remoteExecutionServerSocketPath (String Name) {return "/tmp/udxs/"+Name+".sock";}                       // Server socket name
 
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
@@ -4367,8 +4438,10 @@ Locks, size: 2
     RemoteExecutionTest(Int In)
      {r = new RemoteExecution(new Int(1))                                                                               // Request remote execution
        {void body()                                                                                                     // Computation to be performed on the server with this name
-         {out.set(In).up();
-          new I() {void a() {say("AAAA", currentCommandLine());} boolean trace() {return false;}};
+         {
+          new I() {void a() {say("Body 1111");} boolean trace() {return false;}};
+          out.set(In).up();
+          new I() {void a() {say("Body 2222");} boolean trace() {return false;}};
          }
         Computable[] in () {return new Computable[]{In};}                                                               // Input variables to be used to send the server
         Computable[]out () {return new Computable[]{out};}                                                              // Output variables to be returned to the caller
@@ -4380,20 +4453,23 @@ Locks, size: 2
   static void test_remoteExecution ()
    {sayCurrentTestName();
 
-
     if (mainArg("server") == null && mainArg("client") == null)
      {startCopies(1, "server");
+      waitForFileToExist("/tmp/udxs//1.sock", 10);
       startCopies(1, "client");
      }
     else
-     {
-say("ZZZZ11111", currentCommandLine());
-      new Program(new Build())
+     {new Program(new Build())
        {protected void code()
          {final Int                 a = new Int("a");
-          final RemoteExecutionTest r = new RemoteExecutionTest(new Int(2));
-          r.out.ok(4);
+          final RemoteExecutionTest r = new RemoteExecutionTest(new Int(64));
+new I() {void a() {say("AAAA", r.out);} boolean trace() {return false;}};
+          r.out.ok(128);
           execute();
+          if (mainArg("client") != null)
+           {say("CCCC close1111");
+            r.reference().closeServer();
+           }
          }
        };
      }
