@@ -994,7 +994,7 @@ class Tree extends Program                                                      
 
 //D2 Split                                                                                                              // Split nodes in the tree to make the tree wider
 
-  private class SplitRootBranch                                                                                                 // Split the root branch of the tree
+  private class SplitRootBranch                                                                                         // Split the root branch of the tree
    {final Branch root;                                                                                                  // The root branch
     final Branch left;                                                                                                  // The left branch of the split
     final Branch right;                                                                                                 // The left branch of the split
@@ -2911,7 +2911,7 @@ Leaf   at:  12 size:   2, count:   2
     if (runTest( 3)) test_insertMerged();
     if (runTest( 4)) test_insertReverse();
     if (runTest( 5)) test_insertRandom32();
-    if (runTest( 6)) test_deleteAscending();                                                                                // 68090 integers, 2374 fast integers, 24307 bits: with both For and ForCount in bitset with fast integer indexes.  Openroad takes hours with  fast integers. Die larger than 2000*2000?  Restricted fast integers to first 4 for loops in bitset:  68090 integers, 1366 fast integers, 24307 bits.
+    if (runTest( 6)) test_deleteAscending();                                                                            // 68090 integers, 2374 fast integers, 24307 bits: with both For and ForCount in bitset with fast integer indexes.  Openroad takes hours with  fast integers. Die larger than 2000*2000?  Restricted fast integers to first 4 for loops in bitset:  68090 integers, 1366 fast integers, 24307 bits.
     if (runTest( 7)) test_deleteDescending();
     if (runTest( 8)) test_deleteRandom32();
     if (runTest( 9)) test_update();
@@ -2930,7 +2930,7 @@ Leaf   at:  12 size:   2, count:   2
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {mainArguments = args;                                                                                             // Test groups if supplied
+   {mainArguments = args;                                                                                               // Test groups if supplied
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFilesInVerilogTestsFolder();                                                                             // Delete generated Verilog files created by a prior run of the current test
       if (github_action) oldTests(); else newTests();                                                                   // Tests to run
