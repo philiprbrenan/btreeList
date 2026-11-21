@@ -1138,13 +1138,11 @@ public class Test                                                               
    {final Path path = Path.of(FilePath);
     final long end = System.currentTimeMillis() + TimeOut;
     while (System.currentTimeMillis() < end)
-//   {if (Files.exists(path)) return true;                                                                              // Socket file exists
-     {if (fileExists(FilePath)) return true;                                                                                // Socket file exists
+     {if (fileExists(FilePath)) return true;                                                                            // Socket file exists
       try {Thread.sleep(10);}                                                                                           // Wait briefly before checking again
       catch (InterruptedException E) {Thread.currentThread().interrupt(); return false;}                                // Stop if interrupted
      }
-// return Files.exists(path);                                                                                          // Check once more at timeout
-    return fileExists(FilePath);                                                                                          // Check once more at timeout
+    return fileExists(FilePath);                                                                                        // Check once more at timeout
    }
 
   static void sleep(double TimeOut)                                                                                     // Sleep for seconds
@@ -1218,7 +1216,7 @@ public class Test                                                               
    {void action();
    }
 
-  static void stopTest (Stoppable Action, String StartsWith)                                                                // Run a test that is expected to stop and, instead,  capture the stop message and test it
+  static void stopTest (Stoppable Action, String StartsWith)                                                            // Run a test that is expected to stop and, instead,  capture the stop message and test it
    {final boolean s = stopShouldThrowStopTest;
     try
      {stopShouldThrowStopTest = true;
@@ -1967,7 +1965,7 @@ Test.java:.*?:testCallerName
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {mainArguments = args;                                                                                             // Test groups if supplied
+   {mainArguments = args;                                                                                               // Test groups if supplied
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {if (github_action) oldTests(); else newTests();                                                                   // Tests to run
       testSummary();                                                                                                    // Summarize test results
