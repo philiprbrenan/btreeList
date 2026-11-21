@@ -120,7 +120,7 @@ public class Program extends Test                                               
     checkAllLocksHaveBeenReleased = Build.checkAllLocksHaveBeenReleased;                                                // Check all locks have been released at the end of program execution
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
-    unixDomainServers = new UnixDomainServer[Build.numberOfServers];                                                    // Local execution as opposed to client / sever execution
+    unixDomainServers = new UnixDomainServer[mainArg("server=") != null ? 1 : Build.numberOfServers];                   // Local execution as opposed to client / sever execution. On the server there is only one server, but the client has access to all the servers.
 
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
     code            = p ? new Stack<>()       : program().code;                                                         // Machine code instructions
@@ -377,7 +377,7 @@ public class Program extends Test                                               
 
 //D2 Server, Client Local If                                                                                            // If Server|Client|Local execution
 
-  abstract class IfSLC                                                                                                  // If statement to locate server, client or local code
+  abstract class IfSLC                                                                                                  // If statement to locate server, client or local execution mode. Having a specific if statement to detect this situation avoids having to declare an extra variable
    {IfSLC ()
      {if (immediate())                                                                                                  // Immediate execution
        {if (condition()) Then();
@@ -423,7 +423,7 @@ public class Program extends Test                                               
 
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
-  final class Bit implements Computable                                                                                 // A boolean value
+  final class Bit implements Computable                                                                                 // A boolean value that can be computed with
    {boolean         i = false;                                                                                          // Value of the boolean
     boolean         v = false;                                                                                          // Whether the current value of the integer is valid or not
     boolean        nd = false;                                                                                          // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
