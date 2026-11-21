@@ -413,9 +413,9 @@ public class Program extends Test                                               
     abstract boolean condition();
    } // IfSLC
 
-  abstract class IfServer extends IfSLC {boolean condition() {return remoteExecutionMode == RemoteExecution.Modes.Server;}} // If statement to locate server code
-  abstract class IfClient extends IfSLC {boolean condition() {return remoteExecutionMode == RemoteExecution.Modes.Client;}} // If statement to locate client code
-  abstract class IfLocal  extends IfSLC {boolean condition() {return remoteExecutionMode == RemoteExecution.Modes.Local ;}} // If statement to locate local code
+  abstract class IfServer extends IfSLC{boolean condition() {return remoteExecutionMode==RemoteExecution.Modes.Server;}}// If statement to locate server code
+  abstract class IfClient extends IfSLC{boolean condition() {return remoteExecutionMode==RemoteExecution.Modes.Client;}}// If statement to locate client code
+  abstract class IfLocal  extends IfSLC{boolean condition() {return remoteExecutionMode==RemoteExecution.Modes.Local ;}}// If statement to locate local code
 
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
@@ -1382,7 +1382,7 @@ public class Program extends Test                                               
       I.T();                                                                                                            // Retrieve value of the indexing integer from the memory that holds integers so it can be used to index this memory
 
       new I()                                                                                                           // Set the target index to read from this memory
-       {void   a() {        readWriteIndex       =     I.in0j();     jTrace(f("%8d getInt1 Get index %8d",  currentPc(), lui(I.in0j())));}
+       {void   a() {       readWriteIndex        =     I.in0j();     jTrace(f("%8d getInt1 Get index %8d",  currentPc(), lui(I.in0j())));}
         String v() {return readWriteIndex() + " <= " + I.in0v()+"; "+vTrace(  "%8d getInt1 Get index %8d", "pc",             I.in0v());}
        }.c(I);
 
@@ -2029,24 +2029,13 @@ endmodule
     if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                           // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
 
     for(int i = 0, N = unixDomainServers.length; i < N; ++i)                                                            // Start all the requested servers
-     {unixDomainServers[i] =  new UnixDomainServer()                                                                 // Start server on known socket
+     {unixDomainServers[i] =  new UnixDomainServer()                                                                    // Start server on known socket
        {final ByteBuffer processMessage(ByteBuffer Message)                                                             // Process a message sent to the server on the server and send the processing results from the server back to the client
          {currentServerInputMessage = Message;                                                                          // The received message becomes the buffer to be unpacked by the server code
-//say("SSSS1111", Message.remaining());
-//say("Position: " + Message.position());
-//say("Limit:    " + Message.limit());
-//say("Capacity: " + Message.capacity());
-//say("Remaining:" + Message.remaining());
-//ByteBuffer copy = Message.duplicate();
-//while (copy.hasRemaining()) say(f("%02X ", copy.get()));
 
           final int firstLine = Message.getInt(1*Integer.BYTES);                                                        // First instruction to be executed
           final int lastLine  = Message.getInt(2*Integer.BYTES);                                                        // Execute up to this instruction
-//say("SSSS22222", firstLine, lastLine, codeSize());
-//say("Position: " + Message.position());
-//say("Limit:    " + Message.limit());
-//say("Capacity: " + Message.capacity());
-//say("Remaining:" + Message.remaining());
+
           new Execute(new Execute.Build().start(firstLine).finish(lastLine));                                           // Execute requested instructions
           return currentServerExputMessage;
          }
@@ -3035,7 +3024,7 @@ endmodule
              {final int a = Area.i(), l = unixDomainServers.length;
               if (a <  0) stop("Referenced area of memory cannot be negative, area:", a);
               if (a >= l) stop("Referenced area of memory has not been mapped, area:", a, "limit:", l);
-              final UnixDomainServer u = unixDomainServers[a];                                                   // The server to be used for this area of memory
+              final UnixDomainServer u = unixDomainServers[a];                                                          // The server to be used for this area of memory
               unpackResponse(u.writeMessageToSocketAndReadResponse(packRequest()));
              }
             boolean trace() {return false;}
@@ -3081,7 +3070,8 @@ endmodule
        {switch (c)
          {case Bit  B -> {X.putInt(B.id);   X.putInt(B.b() ? 1 : 0);}
           case Int  I -> {X.putInt(I.id);   X.putInt(I.i());}
-          case Bint C -> {X.putInt(C.b.id); X.putInt(C.i.id); X.putInt(C.valid().b() ? 1 : 0); if (C.valid().b()) X.putInt(C.ii());}
+          case Bint C -> {X.putInt(C.b.id); X.putInt(C.i.id); X.putInt(C.valid().b() ? 1 : 0);
+                          if (C.valid().b()) X.putInt(C.ii());}
           default     ->  stop("Unknown computable type:"+c);
          }
        }
@@ -3117,21 +3107,10 @@ endmodule
           default -> stop("Unknown computable type:"+c);
          }
        }
-      //if (Instructions) new Execute(new Execute.Build().start(start).finish(finish));
      }
 
     void  unpackRequest (ByteBuffer B) {unpack(B, inParameters, true);}                                                 // Unpack request and execute the decoded instruction range
     void unpackResponse (ByteBuffer B) {unpack(B, inParameters, false);}                                                // Unpack response into local program which can now proceed executing as if the remote code had just been executed inline
-
-//  void closeServer()                                                                                                  // The client closes the server after the client work is finished
-//   {if (clientSocket != null)  UnixDomainServer.writeMessageToSocket(clientSocket, null);
-//   }
-
-//  interface Reference                                                                                                 // Get a reference to the remote execution request from an object: the reference is built by an inner class so a method of locating the object created from the inner class is required
-//   {RemoteExecution reference();
-//   }
-
-    enum Types {Bit, Int, Bint};                                                                                        // Types of data that can be transmitted
 
     enum Modes                                                                                                          // Names for the execution modes of a delayed mode program
      {Local,                                                                                                            // Execution is confined to one process in which all instructions are executed as a single program
@@ -3140,8 +3119,6 @@ endmodule
      };
     public String toString() {return f("%4d first,  %4d last\n", start, finish);}                                       // Print the instruction locations
    } // RemoteExecution
-
-  static String remoteExecutionServerSocketPath (String Name) {return "/tmp/udxs/"+Name+".sock";}                       // Server socket name
 
 //D1 Tests                                                                                                              // Methods useful during testing of byte machine programs
 
@@ -4429,7 +4406,7 @@ Locks, size: 2
         final RemoteExecutionTest r = new RemoteExecutionTest(new Int(64));
         r.out.ok(128);
         execute();
-say("AAAA", r.out);
+        ok(r.out.i(), 128);                                                                                             // Cannot be an instruction because the program has finished executing
        }
      };
    }
@@ -4483,8 +4460,8 @@ say("AAAA", r.out);
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_remoteExecution();
+   {//oldTests();
+    test_remoteExecution();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
