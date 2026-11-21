@@ -68,6 +68,7 @@ public class Program extends Test                                               
   final String                               programName;                                                               // Name of program to assist in debugging multi program executions
   final Build                                      build;                                                               // Build parameter list used to construct the program
   final boolean            checkAllLocksHaveBeenReleased;                                                               // Confirm that all locks have been released at the end of program execution
+  final UnixDomainServer []            unixDomainServers;                                                               // Array of servers
   I                                            executing = null;                                                        // Instruction currently being executed
   I                                            compiling = null;                                                        // Instruction currently being compiled
   int                                      transactionId;                                                               // Transaction Id - this is used to identify the holders of a lock
@@ -89,8 +90,8 @@ public class Program extends Test                                               
   static int                         remoteExecutionArea = 0;                                                           // The area of memory controlled by server mode
   ByteBuffer                   currentServerInputMessage;                                                               // Current input message being processed when operating in server mode
   ByteBuffer                   currentServerExputMessage;                                                               // Current output message being created when operating in server mode
-  String        clientSocketName;
-  SocketChannel clientSocket;
+//  String        clientSocketName;
+//  SocketChannel clientSocket;
 
   static class Build                                                                                                    // Builder for this program
    {boolean                     immediate = false;                                                                      // Immediate mode
@@ -99,6 +100,7 @@ public class Program extends Test                                               
     Integer                          size = null;                                                                       // Size of memory used by this program
     AddressToArea           addressToArea = addressToZero();                                                            // Address to area mapping
     String                           name = null;                                                                       // Name of the program for debugging purposes - a program is not required to have a name
+    Integer               numberOfServers = null;                                                                       // Number of servers used by this program
 
     Build immediate ()                                      {immediate     = true;                         return this;}
     Build immediate (boolean Immediate)                     {immediate     = Immediate;                    return this;}
@@ -106,6 +108,7 @@ public class Program extends Test                                               
     Build      name (String       Name)                     {name          = Name;                         return this;}
     Build    memory (int Size)                              {size = Size; addressToArea = addressToZero(); return this;}
     Build    memory (int Size, AddressToArea AddressToArea) {size = Size; addressToArea = AddressToArea;   return this;}
+    Build        cs (int NumberOfServers)                   {numberOfServers = NumberOfServers;            return this;}
     Build    checkAllLocksHaveBeenReleased ()               {checkAllLocksHaveBeenReleased = true;         return this;}
    }  // Build
 
@@ -116,6 +119,11 @@ public class Program extends Test                                               
     programName     = Build.name;                                                                                       // Program name
     checkAllLocksHaveBeenReleased = Build.checkAllLocksHaveBeenReleased;                                                // Check all locks have been released at the end of program execution
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
+
+    if (Build.numberOfServers != null)                                                                                  // Array of servers
+     {unixDomainServers = new UnixDomainServer [Build.numberOfServers];
+     }
+    else unixDomainServers = null;                                                                                      // Local execution as opposed to client / sever execution
 
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
     code            = p ? new Stack<>()       : program().code;                                                         // Machine code instructions
@@ -137,18 +145,9 @@ public class Program extends Test                                               
     mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea) :                  // Main memory associated with either the main program or a sub program using an independent memory
                       program().mainMemory;                                                                             // Sub program uses main program memory
 
-//    remoteExecutionMode = new Int("remote execution mode");
-//    new I()                                                                                                             // Set the execution mode
-//     {void a()
-//       {if      (mainArg("server=") != null) remoteExecutionMode.constant(RemoteExecution.Modes.Server.ordinal());     // Set execution mode to Server
-//        else if (mainArg("client=") != null) remoteExecutionMode.constant(RemoteExecution.Modes.Client.ordinal());     // Set execution mode to client
-//        else                                 remoteExecutionMode.constant(RemoteExecution.Modes.Local .ordinal());     // Set execution mode to Local by default
-//       }
-//      boolean trace() {return false;}
-//     };
-    if      (mainArg("server=") != null) remoteExecutionMode = RemoteExecution.Modes.Server;                            // Set execution mode to Server
-    else if (mainArg("client=") != null) remoteExecutionMode = RemoteExecution.Modes.Client;                            // Set execution mode to client
-    else                                 remoteExecutionMode = RemoteExecution.Modes.Local ;                            // Set execution mode to Local by default
+    if      (mainArg("server=")    != null) remoteExecutionMode = RemoteExecution.Modes.Server;                         // Set execution mode to Server
+    else if (Build.numberOfServers != null) remoteExecutionMode = RemoteExecution.Modes.Client;                         // Set execution mode to client
+    else                                    remoteExecutionMode = RemoteExecution.Modes.Local ;                         // Set execution mode to Local by default
 
     code();                                                                                                             // Load or execute the code associated with this program
    }
@@ -2034,9 +2033,8 @@ endmodule
     if (!suppressInstructionCoverage) initializeInstructionCoverage();                                                  // Update instruction coverage by location in Java code where instruction was generated
     if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                           // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
 
-    if (mainArg("server=") != null)                                                                                     // Running in server mode executing blocks of code as requested by the client
-     {final String p = remoteExecutionServerSocketPath(mainArg("server="));                                             // Server socket name
-      final UnixDomainServer server = new UnixDomainServer(p)                                                           // Start server on known socket
+    for(int i = 0, N = unixDomainServers.length; i < N; ++i)                                                            // Start all the requested servers
+     {unixDomainServers[i] =  new UnixDomainServer()                                                                 // Start server on known socket
        {final ByteBuffer processMessage(ByteBuffer Message)                                                             // Process a message sent to the server on the server and send the processing results from the server back to the client
          {currentServerInputMessage = Message;                                                                          // The received message becomes the buffer to be unpacked by the server code
 //say("SSSS1111", Message.remaining());
@@ -2049,7 +2047,7 @@ endmodule
 
           final int firstLine = Message.getInt(1*Integer.BYTES);                                                        // First instruction to be executed
           final int lastLine  = Message.getInt(2*Integer.BYTES);                                                        // Execute up to this instruction
-say("SSSS22222", firstLine, lastLine, codeSize());
+//say("SSSS22222", firstLine, lastLine, codeSize());
 //say("Position: " + Message.position());
 //say("Limit:    " + Message.limit());
 //say("Capacity: " + Message.capacity());
@@ -2058,7 +2056,7 @@ say("SSSS22222", firstLine, lastLine, codeSize());
           return currentServerExputMessage;
          }
        };
-      return;                                                                                                           // Once the server exits the processing of this program is complete
+      if (unixDomainServers[0].onServer) return;                                                                        // Only one server per program
      }
 
     initializedForExecution = true;                                                                                     // The program is now ready for execution
@@ -2070,6 +2068,8 @@ say("SSSS22222", firstLine, lastLine, codeSize());
 
     if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
     if (checkAllLocksHaveBeenReleased) checkAllLocksHaveBeenReleased();                                                 // Optionally confirm that all locks have been released
+    UnixDomainServer.closeClientUnixDomainSockets();                                                                    // Close all opened sockets
+
     printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
 
     final GenerateVerilog g = new GenerateVerilog();                                                                    // Generate corresponding Verilog code
@@ -3029,7 +3029,7 @@ endmodule
     final Stack<Computable>  inParameters = new Stack<>();                                                              // Input data fields
     final Stack<Computable> outParameters = new Stack<>();                                                              // Output data fields
 
-    RemoteExecution(Int Target)                                                                                         // Execute the code in method "body" on the specified target process,.
+    RemoteExecution(Int Area)                                                                                           // Execute the code in method "body" on the specified area of memory
      {Collections.addAll(inParameters,  in());
       Collections.addAll(outParameters, out());
 
@@ -3037,10 +3037,11 @@ endmodule
        {void Then()                                                                                                     // Client mode,
          {new I()
            {void a()
-             {say("RRRR1111", currentCommandLine());
-              if (clientSocketName == null) clientSocketName = remoteExecutionServerSocketPath(""+Target.i());                                          // Server socket name
-              if (clientSocket     == null) clientSocket     = UnixDomainServer.openClientUnixDomainSocket(clientSocketName);                          // Server socket
-              unpackResponse(UnixDomainServer.writeMessageToSocketAndReadResponse(clientSocket, packRequest()));
+             {final int a = Area.i(), l = unixDomainServers.length;
+              if (a <  0) stop("Referenced area of memory cannot be negative, area:", a);
+              if (a >= l) stop("Referenced area of memory has not been mapped, area:", a, "limit:", l);
+              final UnixDomainServer u = unixDomainServers[a];                                                   // The server to be used for this area of memory
+              unpackResponse(u.writeMessageToSocketAndReadResponse(packRequest()));
              }
             boolean trace() {return false;}
            };
@@ -3052,16 +3053,7 @@ endmodule
              {new I()
                {void a()
                  {currentServerInputMessage.position(0);
-                   say("RRRR2222", currentServerInputMessage);
-say("Position: " + currentServerInputMessage.position());
-say("Limit:    " + currentServerInputMessage.limit());
-say("Capacity: " + currentServerInputMessage.capacity());
-say("Remaining:" + currentServerInputMessage.remaining());
-ByteBuffer copy = currentServerInputMessage.duplicate();
-
-//while (copy.hasRemaining())  say(f("%02d ", copy.get()));
                   unpackRequest(currentServerInputMessage);                                                             // Unpack request and set local variables to match
-say("RRRR3333");
                  }
                 boolean trace() {return false;}
                };
@@ -3072,8 +3064,7 @@ say("RRRR3333");
            {void Then()
              {new I()
                {void a()
-                 {say("RRRR4444");
-                  currentServerExputMessage = packResponse();                                                           // Pack server response and send it back to the client
+                 {currentServerExputMessage = packResponse();                                                           // Pack server response and send it back to the client
                  }
                 boolean trace() {return false;}
                };
@@ -3082,13 +3073,6 @@ say("RRRR3333");
           finish = code.size();                                                                                         // Location of finish instruction
          }
        };
-new I()
- {void a()
-   {say("RRRR6666", currentCommandLine());
-   }
-  boolean trace() {return false;}
- };
-
      }
     abstract void       body ();                                                                                        // Instructions to be executed
     abstract Computable[] in ();                                                                                        // Identify the input parameters
@@ -3108,9 +3092,6 @@ new I()
        }
       X.putInt(0, X.position());                                                                                        // Insert length field at front
       X.flip();                                                                                                         // Prepare buffer for writing into the socket
-say("RRRR5555");
-ByteBuffer copy = X.duplicate();
-while (copy.hasRemaining())  say(f("%02d ", copy.get()));
      }
 
     ByteBuffer packRequest ()                                                                                           // Pack a request for execution and send it to the server
@@ -3147,13 +3128,13 @@ while (copy.hasRemaining())  say(f("%02d ", copy.get()));
     void  unpackRequest (ByteBuffer B) {unpack(B, inParameters, true);}                                                 // Unpack request and execute the decoded instruction range
     void unpackResponse (ByteBuffer B) {unpack(B, inParameters, false);}                                                // Unpack response into local program which can now proceed executing as if the remote code had just been executed inline
 
-    void closeServer()                                                                                                  // The client closes the server after the client work is finished
-     {if (clientSocket != null)  UnixDomainServer.writeMessageToSocket(clientSocket, null);
-     }
+//  void closeServer()                                                                                                  // The client closes the server after the client work is finished
+//   {if (clientSocket != null)  UnixDomainServer.writeMessageToSocket(clientSocket, null);
+//   }
 
-    interface Reference                                                                                                 // Get a reference to the remote execution request from an object: the reference is built by an inner class so a method of locating the object created from the inner class is required
-     {RemoteExecution reference();
-     }
+//  interface Reference                                                                                                 // Get a reference to the remote execution request from an object: the reference is built by an inner class so a method of locating the object created from the inner class is required
+//   {RemoteExecution reference();
+//   }
 
     enum Types {Bit, Int, Bint};                                                                                        // Types of data that can be transmitted
 
@@ -4432,47 +4413,30 @@ Locks, size: 2
               test_Until(false);
    }
 
-  class RemoteExecutionTest implements RemoteExecution.Reference
+  class RemoteExecutionTest
    {final Int out = new Int("out");
-    final RemoteExecution r;
     RemoteExecutionTest(Int In)
-     {r = new RemoteExecution(new Int(1))                                                                               // Request remote execution
+     {new RemoteExecution(new Int(0))                                                                                   // Request remote execution
        {void body()                                                                                                     // Computation to be performed on the server with this name
-         {
-          new I() {void a() {say("Body 1111");} boolean trace() {return false;}};
-          out.set(In).up();
-          new I() {void a() {say("Body 2222");} boolean trace() {return false;}};
+         {out.set(In).up();
          }
         Computable[] in () {return new Computable[]{In};}                                                               // Input variables to be used to send the server
         Computable[]out () {return new Computable[]{out};}                                                              // Output variables to be returned to the caller
        };
      }
-    public RemoteExecution reference() {return r;}
    }
 
   static void test_remoteExecution ()
    {sayCurrentTestName();
-
-    if (mainArg("server") == null && mainArg("client") == null)
-     {startCopies(1, "server");
-      waitForFileToExist("/tmp/udxs//1.sock", 10);
-      startCopies(1, "client");
-     }
-    else
-     {new Program(new Build())
-       {protected void code()
-         {final Int                 a = new Int("a");
-          final RemoteExecutionTest r = new RemoteExecutionTest(new Int(64));
-new I() {void a() {say("AAAA", r.out);} boolean trace() {return false;}};
-          r.out.ok(128);
-          execute();
-          if (mainArg("client") != null)
-           {say("CCCC close1111");
-            r.reference().closeServer();
-           }
-         }
-       };
-     }
+    new Program(new Build().cs(1))
+     {protected void code()
+       {final Int                 a = new Int("a");
+        final RemoteExecutionTest r = new RemoteExecutionTest(new Int(64));
+        r.out.ok(128);
+        execute();
+say("AAAA", r.out);
+       }
+     };
    }
 
   static void test_currentTestNumber (int T)
@@ -4518,7 +4482,7 @@ new I() {void a() {say("AAAA", r.out);} boolean trace() {return false;}};
     if (runTest(31)) test_lock();
     if (runTest(32)) test_push();
     if (runTest(33)) test_Until();
-    //if (runTest(34)) test_remoteExecution();
+    if (runTest(34)) test_remoteExecution();
     if (runTest(35)) test_currentTestNumber(35);
     if (runTest(36)) {}
    }
