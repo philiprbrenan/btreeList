@@ -87,7 +87,7 @@ public class Program extends Test                                               
   boolean                        initializedForExecution = false;                                                       // Whether the program has been initialized for execution or not
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
   static RemoteExecution.Modes       remoteExecutionMode = RemoteExecution.Modes.Local;                                 // Normally run in local mode, but client and server modes are also possible
-  static int                         remoteExecutionArea = 0;                                                           // The area of memory controlled by server mode
+//static int                         remoteExecutionArea = 0;                                                           // The area of memory controlled by server mode
   ByteBuffer                   currentServerInputMessage;                                                               // Current input message being processed when operating in server mode
   ByteBuffer                   currentServerExputMessage;                                                               // Current output message being created when operating in server mode
 //  String        clientSocketName;
@@ -100,7 +100,7 @@ public class Program extends Test                                               
     Integer                          size = null;                                                                       // Size of memory used by this program
     AddressToArea           addressToArea = addressToZero();                                                            // Address to area mapping
     String                           name = null;                                                                       // Name of the program for debugging purposes - a program is not required to have a name
-    Integer               numberOfServers = null;                                                                       // Number of servers used by this program
+    int                   numberOfServers = 0;                                                                          // Number of servers used by this program
 
     Build immediate ()                                      {immediate     = true;                         return this;}
     Build immediate (boolean Immediate)                     {immediate     = Immediate;                    return this;}
@@ -120,10 +120,7 @@ public class Program extends Test                                               
     checkAllLocksHaveBeenReleased = Build.checkAllLocksHaveBeenReleased;                                                // Check all locks have been released at the end of program execution
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
-    if (Build.numberOfServers != null)                                                                                  // Array of servers
-     {unixDomainServers = new UnixDomainServer [Build.numberOfServers];
-     }
-    else unixDomainServers = null;                                                                                      // Local execution as opposed to client / sever execution
+    unixDomainServers = new UnixDomainServer[Build.numberOfServers];                                                    // Local execution as opposed to client / sever execution
 
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
     code            = p ? new Stack<>()       : program().code;                                                         // Machine code instructions
@@ -146,7 +143,7 @@ public class Program extends Test                                               
                       program().mainMemory;                                                                             // Sub program uses main program memory
 
     if      (mainArg("server=")    != null) remoteExecutionMode = RemoteExecution.Modes.Server;                         // Set execution mode to Server
-    else if (Build.numberOfServers != null) remoteExecutionMode = RemoteExecution.Modes.Client;                         // Set execution mode to client
+    else if (Build.numberOfServers != 0   ) remoteExecutionMode = RemoteExecution.Modes.Client;                         // Set execution mode to client
     else                                    remoteExecutionMode = RemoteExecution.Modes.Local ;                         // Set execution mode to Local by default
 
     code();                                                                                                             // Load or execute the code associated with this program
@@ -332,9 +329,7 @@ public class Program extends Test                                               
     boolean fast () {return false;}                                                                                     // Override for a fast integer as index - but be careful - fast integers quickly increase the die area
    } // ForCount
 
-  abstract class Until  extends For                                                                                     // Keep going until we are told to stop
-   {Until () {super(Integer.MAX_VALUE);}                                                                                // Set a high upper limit
-   } // Until
+  abstract class Until extends For {Until () {super(Integer.MAX_VALUE);}}                                               // Keep going until we are told to stop
 
 //D2 If                                                                                                                 // If then else
 
@@ -380,7 +375,7 @@ public class Program extends Test                                               
              void Else () {}                                                                                            // Else clause
    } // If
 
-//D2 Server, Client Local If                                                                                            // If Server|Client|local
+//D2 Server, Client Local If                                                                                            // If Server|Client|Local execution
 
   abstract class IfSLC                                                                                                  // If statement to locate server, client or local code
    {IfSLC ()
@@ -3526,8 +3521,8 @@ endmodule
     P.execute();
     if ( P.immediate()) ok(P.intMemory.size(), 0);
     if ( Q.immediate()) ok(Q.intMemory.size(), 0);
-    if (!P.immediate() && Program.suppressImmediateOnly) ok(P.intMemory.size(), 8);
-    if (!Q.immediate() && Program.suppressImmediateOnly) ok(Q.intMemory.size(), 8);
+    if (!P.immediate() && Program.suppressImmediateOnly) ok(P.intMemory.size(), 6);
+    if (!Q.immediate() && Program.suppressImmediateOnly) ok(Q.intMemory.size(), 6);
    }
 
   static void test_remote()
@@ -4488,8 +4483,8 @@ say("AAAA", r.out);
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_remoteExecution();
+   {oldTests();
+    //test_remoteExecution();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
