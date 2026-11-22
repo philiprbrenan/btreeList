@@ -1500,7 +1500,8 @@ public class Test                                                               
 
   static class UnixDomainServer                                                                                         // Unix domain server that has only one client per server
    {final static String  serverKeyWord = "server=";                                                                     // The keyword used to indicate that we on the server
-    final static String    areaKeyWord = "area=";                                                                       // The keyword used to indicate that we on the server
+    final static String    areaKeyWord = "area=";                                                                       // The keyword used to associate a caller supplied number with the server
+    final static String  launchKeyWord = "launch=";                                                                     // The keyword used to indicate the position of the server in multi server launch
     final static String      socketDir = "/tmp/udxs";                                                                   // Directory of sockets for client to servers communications
     final String            socketPath;                                                                                 // The socket file we are going to communicate over
     final boolean             onServer;                                                                                 // Whether we are on the server
@@ -1510,7 +1511,7 @@ public class Test                                                               
 
     UnixDomainServer (int Area)                                                                                         // Run a unix domain server that accepts integer messages from a single client, processes them and return the results to the client.  Messages are encoded as an integer giving the total message length followed by the bytes of the message. The area parameter supplies  a unique number to each server started
      {final String server = mainArg(serverKeyWord);                                                                     // Server socket file name
-      onServer   = server != null; onClient = !onServer;                                                                // Whether we are on the server or the client
+      area = Area; onServer   = server != null; onClient = !onServer;                                                   // Whether we are on the server or the client
       socketPath = onServer ? server : fe(socketDir, ""+UUID.randomUUID(), "sock");                                     // Choose a socket name or use the one supplied
 
       if (onServer)                                                                                                     // Run server
@@ -1532,8 +1533,9 @@ public class Test                                                               
         socket = null;                                                                                                  // There is no client socket on the server
        }
       else
-       {startCopies(1, areaKeyWord, serverKeyWord+socketPath);                                                          // Start the server from the client
-        waitForFileToExist(socketPath, 10_000);                                                                         // Wait for sever to start
+       {startCopies(1, launchKeyWord, areaKeyWord+area, serverKeyWord+socketPath);                                      // Start the server from the client
+        if (waitForFileToExist(socketPath, 20_000)) {}                                                                  // Wait for sever to start - this is of course inherently unsatisfactory but forking the java machine reliably is (apparently) difficult.
+        else stop("Socket file does not exist even after waiting:", socketPath);                                        // Complain about missing socket file
         socket = openClientUnixDomainSocket();                                                                          // Client socket visible on client
        }
      }
@@ -1620,14 +1622,25 @@ public class Test                                                               
       return null;
      }
 
-    SocketChannel openClientUnixDomainSocket ()                                                                          // Open a client Unix domain socket
-     {try
-       {final SocketChannel socket = SocketChannel.open(StandardProtocolFamily.UNIX);                                   // Open Unix domain socket
-        socket.connect(UnixDomainSocketAddress.of(socketPath));                                                         // Connect to server
-        new SocketAndPath(socket);                                                                                      // Record the details of the client socket being opened
-        return socket;                                                                                                  // Return connected socket
+    SocketChannel openClientUnixDomainSocket ()                                                                         // Open a client Unix domain socket
+     {for(int i = 0; i < 999; ++i)
+       {try
+         {final SocketChannel socket = SocketChannel.open(StandardProtocolFamily.UNIX);                                 // Open Unix domain socket
+          socket.connect(UnixDomainSocketAddress.of(socketPath));
+          new SocketAndPath(socket);                                                                                    // Record the details of the client socket being opened
+          return socket;
+         }
+        catch (ConnectException E)
+         {try {if (socket != null) socket.close();}
+          catch (IOException X) {stop("Unable to close socket on path:", socketPath, X, traceBack(X));}
+         }
+        catch (IOException F)
+         {try {socket.close();}
+          catch (IOException X) {stop("Unable to close socket on path:", socketPath, X, traceBack(X));}
+         }
+        sleep(0.1);
        }
-      catch (Exception E) {stop("Unix domain socket open error:", socketPath, E, traceBack(E));}                        // Something went badly wrong
+      stop("Unable to open socket on path:", socketPath);                                                               //Unable to open the socket even after multiple tries
       return null;
      }
 
