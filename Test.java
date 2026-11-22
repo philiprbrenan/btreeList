@@ -1506,8 +1506,9 @@ public class Test                                                               
     final boolean             onServer;                                                                                 // Whether we are on the server
     final boolean             onClient;                                                                                 // Whether we are on the client
     final SocketChannel         socket;                                                                                 // Client socket
+    final int                     area;                                                                                 // A nunber supplied by the caller to identify the sever
 
-    UnixDomainServer()                                                                                                  // Run a unix domain server that accepts integer messages from a  single client, processes them and return the results to the client.  Messages are encoded as an integer giving the total message length followed by the bytes of the message
+    UnixDomainServer (int Area)                                                                                         // Run a unix domain server that accepts integer messages from a single client, processes them and return the results to the client.  Messages are encoded as an integer giving the total message length followed by the bytes of the message. The area parameter supplies  a unique number to each server started
      {final String server = mainArg(serverKeyWord);                                                                     // Server socket file name
       onServer   = server != null; onClient = !onServer;                                                                // Whether we are on the server or the client
       socketPath = onServer ? server : fe(socketDir, ""+UUID.randomUUID(), "sock");                                     // Choose a socket name or use the one supplied
@@ -1536,23 +1537,24 @@ public class Test                                                               
         socket = openClientUnixDomainSocket();                                                                          // Client socket visible on client
        }
      }
+    UnixDomainServer () {this(0);}                                                                                      //Assume that the is only one server and give it a default identifying number
 
     class SocketAndPath                                                                                                 // Socket and path that has been opened
      {final SocketChannel socket;
       final String path;
-      SocketAndPath(SocketChannel Socket)                                                                               // Save the latest client socket details
+      SocketAndPath (SocketChannel Socket)                                                                              // Save the latest client socket details
        {socket = Socket; path = socketPath; clientSocketsOpened.push(this);
        }
      }
 
-    ByteBuffer processMessage(ByteBuffer Message)                                                                       // Process a message sent to the server on the server and send the processing results from the server back to the client
+    ByteBuffer processMessage (ByteBuffer Message)                                                                      // Process a message sent to the server on the server and send the processing results from the server back to the client
      {final ByteBuffer b = ByteBuffer.allocate(Integer.BYTES);                                                          // Sample output message
       b.putInt(42);                                                                                                     // Load message
       b.flip();                                                                                                         // Make the buffer ready for sending
       return b;                                                                                                         // Return the resulting messsage
      }
 
-    static ByteBuffer readMessageFromSocket(SocketChannel Socket)                                                       // Read a message whose entire length is expressed in an integer at the start of a message
+    static ByteBuffer readMessageFromSocket (SocketChannel Socket)                                                       // Read a message whose entire length is expressed in an integer at the start of a message
      {final int H = Integer.BYTES;                                                                                      // Header size
       final int L = 256;                                                                                                // Maximum message size in bytes including header
       try
@@ -1579,7 +1581,7 @@ public class Test                                                               
       return null;
      }
 
-    static void writeMessageToSocket(SocketChannel Socket, ByteBuffer Message)                                          // Write a message preceded by its entire length
+    static void writeMessageToSocket (SocketChannel Socket, ByteBuffer Message)                                         // Write a message preceded by its entire length
      {final ByteBuffer m = Message;                                                                                     // Message, whichm ight be null if no message is being supplied
       final int        H = Integer.BYTES;                                                                               // Size of header
       try
@@ -1593,7 +1595,7 @@ public class Test                                                               
       catch (Exception E) {stop("Unix domain socket write error:", E, traceBack(E));}                                   // Something went badly wrong with the message write
      }
 
-    static ByteBuffer writeMessageToSocketAndReadResponse(SocketChannel Socket, ByteBuffer Message)                     // Write a message to the server, wait for the response and return it
+    static ByteBuffer writeMessageToSocketAndReadResponse (SocketChannel Socket, ByteBuffer Message)                    // Write a message to the server, wait for the response and return it
      {        writeMessageToSocket(Socket, Message);
       return readMessageFromSocket(Socket);
      }
@@ -1602,7 +1604,7 @@ public class Test                                                               
      {return writeMessageToSocketAndReadResponse(socket, Message);                                                      // Return response
      }
 
-    ServerSocketChannel openServerUnixDomainSocket()                                                                    // Open a server Unix domain socket
+    ServerSocketChannel openServerUnixDomainSocket ()                                                                   // Open a server Unix domain socket
      {deleteFile(socketPath);
       try
        {ServerSocketChannel socket = ServerSocketChannel.open(StandardProtocolFamily.UNIX);                             // Open Unix domain socket
@@ -1618,7 +1620,7 @@ public class Test                                                               
       return null;
      }
 
-    SocketChannel openClientUnixDomainSocket()                                                                          // Open a client Unix domain socket
+    SocketChannel openClientUnixDomainSocket ()                                                                          // Open a client Unix domain socket
      {try
        {final SocketChannel socket = SocketChannel.open(StandardProtocolFamily.UNIX);                                   // Open Unix domain socket
         socket.connect(UnixDomainSocketAddress.of(socketPath));                                                         // Connect to server
@@ -1629,7 +1631,7 @@ public class Test                                                               
       return null;
      }
 
-    static void closeClientUnixDomainSockets()                                                                          // Close all the opened sockets and their attached severs by sending them an empty message
+    static void closeClientUnixDomainSockets ()                                                                         // Close all the opened sockets and their attached severs by sending them an empty message
      {for (SocketAndPath s : clientSocketsOpened)
        {writeMessageToSocketAndReadResponse(s.socket, null);                                                            // Request closure
         try {s.socket.close();}                                                                                         // Close socket
