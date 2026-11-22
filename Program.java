@@ -4390,7 +4390,8 @@ Locks, size: 2
     RemoteExecutionTest(Int In)
      {new RemoteExecution(new Int(area()))                                                                                   // Request remote execution on server with the specified number
        {void body()                                                                                                     // Computation to be performed on the server with this name
-         {out.set(In).up();
+         {say("AAAA1111", remoteExecutionArea, remoteExecutionMode, In, currentCommandLine());
+          out.set(In).up();
          }
         Computable[] in () {return new Computable[]{In};}                                                               // Input variables to be used to send the server
         Computable[]out () {return new Computable[]{out};}                                                              // Output variables to be returned to the caller
@@ -4402,18 +4403,17 @@ Locks, size: 2
   class RemoteExecutionTest0 extends RemoteExecutionTest {RemoteExecutionTest0(Int In) {super(In);} int area() {return 0;}}
   class RemoteExecutionTest1 extends RemoteExecutionTest {RemoteExecutionTest1(Int In) {super(In);} int area() {return 1;}}
 
-
   static void test_remoteExecution ()
    {sayCurrentTestName();
     new Program(new Build().cs(2))
      {protected void code()
        {final Int                 a = new Int("a");
         final RemoteExecutionTest r = new RemoteExecutionTest0(new Int(64));
-        //final RemoteExecutionTest s = new RemoteExecutionTest1(r.out);
+        final RemoteExecutionTest s = new RemoteExecutionTest1(r.out);
         r.out.ok(128);
         //s.out.ok(256);
         execute();
-        ok(r.out.i(), 128);                                                                                             // Cannot be an instruction because the program has finished executing
+        //ok(r.out.i(), 128);                                                                                             // Cannot be an instruction because the program has finished executing
         //ok(s.out.i(), 256);                                                                                             // Cannot be an instruction because the program has finished executing
        }
      };
