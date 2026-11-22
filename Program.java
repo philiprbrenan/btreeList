@@ -138,7 +138,7 @@ public class Program extends Test                                               
     mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea) :                  // Main memory associated with either the main program or a sub program using an independent memory
                       program().mainMemory;                                                                             // Sub program uses main program memory
 
-    final String av = mainArg(UnixDomainServer.areaKeyWord), sv = mainArg(UnixDomainServer.serverKeyWord);
+    final String av = mainArg(UnixDomainServer.areaKeyWord), sv = mainArg(UnixDomainServer.serverKeyWord);              // Command line keywords that supply information about this server
     if      (sv                    != null) remoteExecutionMode = RemoteExecution.Modes.Server;                         // Set execution mode to Server
     else if (Build.numberOfServers != 0   ) remoteExecutionMode = RemoteExecution.Modes.Client;                         // Set execution mode to client
     else                                    remoteExecutionMode = RemoteExecution.Modes.Local ;                         // Set execution mode to Local by default
@@ -2029,7 +2029,7 @@ endmodule
     if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                           // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
 
     for(int i = 0, N = unixDomainServers.length; i < N; ++i)                                                            // Start all the requested servers
-     {unixDomainServers[i] =  new UnixDomainServer()                                                                    // Start server on known socket
+     {unixDomainServers[i] = new UnixDomainServer(i)                                                                    // Start server on known socket
        {final ByteBuffer processMessage(ByteBuffer Message)                                                             // Process a message sent to the server on the server and send the processing results from the server back to the client
          {currentServerInputMessage = Message;                                                                          // The received message becomes the buffer to be unpacked by the server code
 
@@ -4390,8 +4390,7 @@ Locks, size: 2
     RemoteExecutionTest(Int In)
      {new RemoteExecution(new Int(area()))                                                                                   // Request remote execution on server with the specified number
        {void body()                                                                                                     // Computation to be performed on the server with this name
-         {say("AAAA1111", remoteExecutionArea, remoteExecutionMode, In, currentCommandLine());
-          out.set(In).up();
+         {out.set(In).up();
          }
         Computable[] in () {return new Computable[]{In};}                                                               // Input variables to be used to send the server
         Computable[]out () {return new Computable[]{out};}                                                              // Output variables to be returned to the caller
@@ -4411,10 +4410,8 @@ Locks, size: 2
         final RemoteExecutionTest r = new RemoteExecutionTest0(new Int(64));
         final RemoteExecutionTest s = new RemoteExecutionTest1(r.out);
         r.out.ok(128);
-        //s.out.ok(256);
+        s.out.ok(256);
         execute();
-        //ok(r.out.i(), 128);                                                                                             // Cannot be an instruction because the program has finished executing
-        //ok(s.out.i(), 256);                                                                                             // Cannot be an instruction because the program has finished executing
        }
      };
    }
