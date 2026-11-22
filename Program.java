@@ -86,12 +86,10 @@ public class Program extends Test                                               
   boolean                                      immediate = false;                                                       // Execute immediately if true else generate machine code and execute later
   boolean                        initializedForExecution = false;                                                       // Whether the program has been initialized for execution or not
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
-  static RemoteExecution.Modes       remoteExecutionMode = RemoteExecution.Modes.Local;                                 // Normally run in local mode, but client and server modes are also possible
-//static int                         remoteExecutionArea = 0;                                                           // The area of memory controlled by server mode
+  final RemoteExecution.Modes        remoteExecutionMode;                                                               // Normally run in local mode, but client and server modes are also possible
+  final Integer                      remoteExecutionArea;                                                               // The area of memory controlled by this program if it is running in server mode
   ByteBuffer                   currentServerInputMessage;                                                               // Current input message being processed when operating in server mode
   ByteBuffer                   currentServerExputMessage;                                                               // Current output message being created when operating in server mode
-//  String        clientSocketName;
-//  SocketChannel clientSocket;
 
   static class Build                                                                                                    // Builder for this program
    {boolean                     immediate = false;                                                                      // Immediate mode
@@ -120,8 +118,6 @@ public class Program extends Test                                               
     checkAllLocksHaveBeenReleased = Build.checkAllLocksHaveBeenReleased;                                                // Check all locks have been released at the end of program execution
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
-    unixDomainServers = new UnixDomainServer[mainArg("server=") != null ? 1 : Build.numberOfServers];                   // Local execution as opposed to client / sever execution. On the server there is only one server, but the client has access to all the servers.
-
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
     code            = p ? new Stack<>()       : program().code;                                                         // Machine code instructions
     labels          = p ? new Stack<>()       : program().labels;                                                       // Labels for instructions in this process
@@ -142,9 +138,13 @@ public class Program extends Test                                               
     mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea) :                  // Main memory associated with either the main program or a sub program using an independent memory
                       program().mainMemory;                                                                             // Sub program uses main program memory
 
-    if      (mainArg("server=")    != null) remoteExecutionMode = RemoteExecution.Modes.Server;                         // Set execution mode to Server
+    final String av = mainArg(UnixDomainServer.areaKeyWord), sv = mainArg(UnixDomainServer.serverKeyWord);
+    if      (sv                    != null) remoteExecutionMode = RemoteExecution.Modes.Server;                         // Set execution mode to Server
     else if (Build.numberOfServers != 0   ) remoteExecutionMode = RemoteExecution.Modes.Client;                         // Set execution mode to client
     else                                    remoteExecutionMode = RemoteExecution.Modes.Local ;                         // Set execution mode to Local by default
+
+    remoteExecutionArea = av == null ? null : Integer.valueOf(av);                                                      // Memory area controlled by server if any
+    unixDomainServers   = new UnixDomainServer[sv != null ? 1 : Build.numberOfServers];                                 // Local execution as opposed to client / server execution. On the server there is only one server, but the client has access to all the servers.
 
     code();                                                                                                             // Load or execute the code associated with this program
    }
@@ -664,7 +664,7 @@ public class Program extends Test                                               
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
-  class Int implements Computable                                                                                       // An integer value - noty final because of "fast ints".
+  class Int implements Computable                                                                                       // An integer value - not final because of "fast ints".
    {private int          i = 0;                                                                                         // Value of the integer
     private boolean      v = false;                                                                                     // Whether the current value of the integer is valid or not
             String    name = null;                                                                                      // The name of the variable
@@ -678,7 +678,7 @@ public class Program extends Test                                               
     final boolean     fast;                                                                                             // Make this integer into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
     final int       fastId;                                                                                             // Unique id for fast integer
 
-    Int ()           {ai(); fast = false; fastId = -1; del(0);         ints().push(this);}                              // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for Java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has been already been established by successfully executing the tests associated with the Java version . The integers used in the Java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
+    Int ()           {ai(); fast = false; fastId = -1; del(0);         ints().push(this);}                              // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for Java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has already been established by successfully executing the tests associated with the Java version . The integers used in the Java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
     Int (int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this); constant();}                  // Set the new integer to a known value at this point in the code
     Int (Int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this);}                              // Set the new integer to a specified value at this point in the code
 
@@ -1673,7 +1673,7 @@ endmodule
     class Locks                                                                                                         // Locks held by the currently executing programs.  Static to avoid tying it to a particular program. Although there is, in effect, only one CPU never the less we can have one program called inside another to provide a simulation of more than one program running at a time with the advantages of determinism and repeatability.
      {final TreeMap<Integer,Lock> locks = new TreeMap<>();
 
-      class Lock                                                                                                        // A lock on an area of memory. It is upto the user to respect the lock and to know to how much memory it applies
+      class Lock                                                                                                        // A lock on an area of memory. It is up to the user to respect the lock and to know to how much memory it applies
        {final int             area;                                                                                     // The area being locked
         final int    transactionId;                                                                                     // The transaction that owns this lock
         final String lockTraceBack;                                                                                     // The location in the code that created the lock
@@ -3008,8 +3008,8 @@ endmodule
 //D1 Remote execution                                                                                                   // Methods to enable remote execution of delayed mode code
 
   abstract class RemoteExecution                                                                                        // Isolate code to be executed remotely
-   {int start;
-    int finish;
+   {int start;                                                                                                          // Start execution at this instruction
+    int finish;                                                                                                         // Finish execution when this instruction is reached
     final Stack<Computable>  inParameters = new Stack<>();                                                              // Input data fields
     final Stack<Computable> outParameters = new Stack<>();                                                              // Output data fields
 
@@ -3017,7 +3017,7 @@ endmodule
      {Collections.addAll(inParameters,  in());
       Collections.addAll(outParameters, out());
 
-      new IfClient()                                                                                                    // Code marked for remote execution is not executed on the client but on the server. The instruction sequqnce must be identical on both client and server
+      new IfClient()                                                                                                    // Code marked for remote execution is not executed on the client but on the server. The instruction sequence must be identical on both client and server
        {void Then()                                                                                                     // Client mode,
          {new I()
            {void a()
@@ -4385,10 +4385,10 @@ Locks, size: 2
               test_Until(false);
    }
 
-  class RemoteExecutionTest
+  abstract class RemoteExecutionTest
    {final Int out = new Int("out");
     RemoteExecutionTest(Int In)
-     {new RemoteExecution(new Int(0))                                                                                   // Request remote execution
+     {new RemoteExecution(new Int(area()))                                                                                   // Request remote execution on server with the specified number
        {void body()                                                                                                     // Computation to be performed on the server with this name
          {out.set(In).up();
          }
@@ -4396,17 +4396,25 @@ Locks, size: 2
         Computable[]out () {return new Computable[]{out};}                                                              // Output variables to be returned to the caller
        };
      }
+    abstract int area();
    }
+
+  class RemoteExecutionTest0 extends RemoteExecutionTest {RemoteExecutionTest0(Int In) {super(In);} int area() {return 0;}}
+  class RemoteExecutionTest1 extends RemoteExecutionTest {RemoteExecutionTest1(Int In) {super(In);} int area() {return 1;}}
+
 
   static void test_remoteExecution ()
    {sayCurrentTestName();
-    new Program(new Build().cs(1))
+    new Program(new Build().cs(2))
      {protected void code()
        {final Int                 a = new Int("a");
-        final RemoteExecutionTest r = new RemoteExecutionTest(new Int(64));
+        final RemoteExecutionTest r = new RemoteExecutionTest0(new Int(64));
+        //final RemoteExecutionTest s = new RemoteExecutionTest1(r.out);
         r.out.ok(128);
+        //s.out.ok(256);
         execute();
         ok(r.out.i(), 128);                                                                                             // Cannot be an instruction because the program has finished executing
+        //ok(s.out.i(), 256);                                                                                             // Cannot be an instruction because the program has finished executing
        }
      };
    }
@@ -4438,7 +4446,7 @@ Locks, size: 2
     if (runTest(15)) test_mem();
     if (runTest(16)) test_namedMemory();
     if (runTest(17)) test_memory();
-//  if (runTest(18)) test_memoryNegative();                                                                             // No longer using negative numbers per Open Road
+//  if (runTest(18)) test_memoryNegative();                                                                             // No longer using negative numbers per OpenROAD
     if (runTest(19)) test_memoryRef();
     if (runTest(20)) test_verilogArray();
     if (runTest(21)) test_arrayConstant();
