@@ -284,7 +284,7 @@ public class Test                                                               
   static int abs (int i) {return i >= 0 ? +i : -i;}                                                                     // Absolute value of integer
 
   static int ifs (String n)                                                                                             // Integer from string
-   {final Integer i = Integer.parseInt(n);
+   {final Integer i = Integer.valueOf(n);
     if (i == null) stop("Invalid integer;", n);
     return i;
    }
@@ -1485,8 +1485,8 @@ public class Test                                                               
     if (runTestCurrent > 0) s.append(" "+runTest+runTestCurrent);
 
     try
-     {for(int i = 1; i <= N; ++i)
-       {final String C = f("%s %s=%d%s", c, Indicator, i, ""+s);
+     {for(int i = 0; i < N; ++i)
+       {final String C = f("%s %s%d%s", c, Indicator, i, ""+s);
         new ProcessBuilder("sh", "-c", C)
          .redirectOutput(ProcessBuilder.Redirect.INHERIT)
          .redirectError (ProcessBuilder.Redirect.INHERIT)
@@ -1499,13 +1499,13 @@ public class Test                                                               
 //D1 Unix domain sockets                                                                                                // Run a unix domain socket server using messages with a Java integer message prefix specifying the length of the message. The server only has one client. The server shuts down when the sole client requests termination.  Otherwise messages are exchanged on the one client channel opened until the client requests shut down by sending an empty message.
 
   static class UnixDomainServer                                                                                         // Unix domain server that has only one client per server
-   {final String serverKeyWord = "server=";                                                                             // The keyword used to indicate that we on the server
-    final String    areaKeyWord = "area=";                                                                              // The keyword used to indicate that we on the server
-    final String     socketDir = "/tmp/udxs";                                                                           // Directory of sockets for client to servers communications
-    final String    socketPath;                                                                                         // The socket file we are going to communicate over
-    final boolean     onServer;                                                                                         // Whether we are on the server
-    final boolean     onClient;                                                                                         // Whether we are on the client
-    final SocketChannel socket;                                                                                         // Client socket
+   {final static String  serverKeyWord = "server=";                                                                     // The keyword used to indicate that we on the server
+    final static String    areaKeyWord = "area=";                                                                       // The keyword used to indicate that we on the server
+    final static String      socketDir = "/tmp/udxs";                                                                   // Directory of sockets for client to servers communications
+    final String            socketPath;                                                                                 // The socket file we are going to communicate over
+    final boolean             onServer;                                                                                 // Whether we are on the server
+    final boolean             onClient;                                                                                 // Whether we are on the client
+    final SocketChannel         socket;                                                                                 // Client socket
 
     UnixDomainServer()                                                                                                  // Run a unix domain server that accepts integer messages from a  single client, processes them and return the results to the client.  Messages are encoded as an integer giving the total message length followed by the bytes of the message
      {final String server = mainArg(serverKeyWord);                                                                     // Server socket file name
@@ -1908,7 +1908,7 @@ Test.java:.*?:testCallerName
    }
 
   static void test_startCopies()                                                                                        // Test separately from the command line: timeout 1m perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --run  "/home/phil/btreeList/Test.java" --javaHome "/home/phil/btreeList" startCopies
-   {final String key = "server=";
+   {final String key = UnixDomainServer.serverKeyWord;
     if (mainArg(key) == null && mainArg("startCopies") != null) startCopies(2, key);                                    // Only run if the enabling keyword is present and the supressing keyword is not
    }
 
