@@ -279,8 +279,8 @@ class Tree extends Program                                                      
   private Branch branch (Int Node, boolean Check)                                                                       // Index an existing branch in memory optionally confirming that it really is a branch
    {getLock(Node);                                                                                                      // Lock the branch
     if (immediate() && Check && !isBranch(Node).b()) stop("Not a branch:", Node);                                       // Check the location actually holds a branch
-    final Memory.Ref   r = mainMemory.new Ref(nodeAddress(Node));                                                       // Address branch
-    final Tree      tree = this;                                                                                        // Current tree
+    final Memory.Ref r = mainMemory.new Ref(nodeAddress(Node));                                                         // Address branch
+    final Tree   tree = this;                                                                                           // Current tree
 
     return new Branch(build.branch.parent(program()).memory(r).at(Node))                                                // Base branch at the indexed address
      {Bit full()                                                                                                        // Whether the branch should be regarded as full or not
@@ -958,6 +958,7 @@ class Tree extends Program                                                      
   public Int delete (Int Key)                                                                                           // Delete a key from the tree and return the associated data if the key was present in the tree
    {subStart("Tree.delete");
     final Int data = new Int();                                                                                         // Data associated with key if the key is present in the tree
+    getLock(root());                                                                                                    // Lock the root
     new If (isRootLeaf())
      {void Then()                                                                                                       // The root is a leaf
        {final Leaf             R = leaf(root());                                                                        // Load root
@@ -1064,7 +1065,7 @@ class Tree extends Program                                                      
     Branch Parent, Bint LeftSlot, Bint RightSlot, Int Left, Int Right, boolean Unlock)
    {subStart("Tree.mergeLeftIntoRightSibling");
     final Branch P = Parent;
-    new If (isLeaf(P.top()))                                                                                            // Parent has leaves for children
+    new If (isLeaf(Left))                                                                                               // Parent has leaves for children - check the type of the left child rather than top as we would have to lock and unlock top while left is already locked
      {void Then()                                                                                                       // Merge leaves
        {final Leaf l = leaf(Left );
         final Leaf r = leaf(Right);
@@ -1750,6 +1751,7 @@ Height        :    1
   static void test_deleteAscending(boolean Ex)
    {sayCurrentTestName();
     final int N = 32;
+    //final int N = 6;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {protected void treeCode()
