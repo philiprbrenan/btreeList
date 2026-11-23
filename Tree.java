@@ -2917,9 +2917,9 @@ Leaf   at:  12 size:   2, count:   2
   static void test_csFind()
    {sayCurrentTestName();
     final int N = 32;
-    final String saveFile = "/tmp/memory/deleteAscending";
+    final String saveFile = "/tmp/memory/test_csFind";
 
-    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N))
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(!true))
      {protected void treeCode()
        {if (fileExists(saveFile)) mainMemory.loadMemory(saveFile);
         else
@@ -2936,7 +2936,7 @@ Leaf   at:  12 size:   2, count:   2
        }
      };
 
-    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true))
+    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true).immediate(false))
      {protected void treeCode()
        {mainMemory.loadMemory(saveFile);
         final Bint data = find(new Int(8));                                                                                            // Find the data associated with the specified key in the tree
