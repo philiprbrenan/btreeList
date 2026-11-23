@@ -1751,22 +1751,26 @@ Height        :    1
   static void test_deleteAscending(boolean Ex)
    {sayCurrentTestName();
     final int N = 32;
-    //final int N = 6;
+    final String saveFile = "/tmp/memory/deleteAscending";
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {protected void treeCode()
-       {new ForCount(One, new Int(N+1))
-         {void body(Int Index)
-           {insert(Index, Index.Mul(11));
-            dumpProgramState("AAAA");
-            if (immediate())
-             {final int i = Index.i();
-              if (i >= 1 && i <=  4) height().ok(1);
-              if (i >= 5 && i <= 16) height().ok(2);
-              if (i >= 17)           height().ok(3);
+       {if (fileExists(saveFile)) mainMemory.loadMemory(saveFile);
+        else
+         {new ForCount(One, new Int(N+1))
+           {void body(Int Index)
+             {insert(Index, Index.Mul(11));
+              dumpProgramState("AAAA");
+              if (immediate())
+               {final int i = Index.i();
+                if (i >= 1 && i <=  4) height().ok(1);
+                if (i >= 5 && i <= 16) height().ok(2);
+                if (i >= 17)           height().ok(3);
+               }
              }
-           }
-         };
+           };
+          mainMemory.dumpMemory(saveFile);
+         }
 
         final StringBuilder s = Ex ? printTree() : null;
         final StringBuilder m = new StringBuilder();
