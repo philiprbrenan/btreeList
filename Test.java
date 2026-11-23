@@ -1630,12 +1630,8 @@ public class Test                                                               
           new SocketAndPath(socket);                                                                                    // Record the details of the client socket being opened
           return socket;
          }
-        catch (ConnectException E)
+        catch (Exception E)
          {try {if (socket != null) socket.close();}
-          catch (IOException X) {stop("Unable to close socket on path:", socketPath, X, traceBack(X));}
-         }
-        catch (IOException F)
-         {try {socket.close();}
           catch (IOException X) {stop("Unable to close socket on path:", socketPath, X, traceBack(X));}
          }
         sleep(socketOpenRetryWait);
