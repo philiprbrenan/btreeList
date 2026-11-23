@@ -30,6 +30,7 @@ class Tree extends Program                                                      
 
   final static class Build                                                                                              // Parameters describing a tree
    {boolean       immediate = true;                                                                                     // Immediate execution mode
+    boolean    clientServer = false;                                                                                    // Client sever mode
     int          branchSize;                                                                                            // Size of a branch
     int            leafSize;                                                                                            // Size of a leaf
     int            nodeSize;                                                                                            // Size of a node: a leaf or a branch whichever is bigger. By using fixed size memory allocation we greatly simplify memory allocation - so it is worth adjusting the branch and leaf sizes to be as equal as possible.
@@ -57,7 +58,8 @@ class Tree extends Program                                                      
     Build rootFanLevels (int     Levels       ) {rootFanLevels = Levels;        return this;}
     Build    leafFanOut (int     LeafFanOut   ) {leafFanOut    = LeafFanOut;    return this;}
     Build  branchFanOut (int     BranchFanOut ) {branchFanOut  = BranchFanOut;  return this;}
-    Build          name (String Name)           {name          = Name;          return this;}
+    Build          name (String  Name)          {name          = Name;          return this;}
+    Build            cs (boolean ClientServer)  {clientServer  = ClientServer;  return this;}
 
     Program.Build build()                                                                                               // Describe the program used to execute the tree algorithm
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -76,6 +78,7 @@ class Tree extends Program                                                      
       p.memory(size(), new AddressToArea());                                                                            // Memory size and address to area lambda
       p.immediate(immediate);                                                                                           // Immediate or delayed execution mode
       p.checkLocks(true);                                                                                               // Check locking
+      if (clientServer) p.cs(numberOfNodes+3);                                                                          // Number of separate memory areas
       return p;
      }
 
@@ -1771,8 +1774,6 @@ Height        :    1
            };
           mainMemory.dumpMemory(saveFile);
          }
-        //new I() {void a() {say("BBBB", mainMemory);} boolean trace() {return false;}};
-        //maxSteps(9_999_999);  execute(); if(true) return;
 
         final StringBuilder s = Ex ? printTree() : null;
         final StringBuilder m = new StringBuilder();
@@ -2913,6 +2914,39 @@ Leaf   at:  12 size:   2, count:   2
               test_traverse(false);
    }
 
+  static void test_csFind()
+   {sayCurrentTestName();
+    final int N = 32;
+    final String saveFile = "/tmp/memory/deleteAscending";
+
+    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N))
+     {protected void treeCode()
+       {if (fileExists(saveFile)) mainMemory.loadMemory(saveFile);
+        else
+         {new ForCount(One, new Int(N+1))
+           {void body(Int Index)
+             {insert(Index, Index.Mul(11));
+             }
+           };
+          mainMemory.dumpMemory(saveFile);
+         }
+
+        maxSteps(9_999_999);
+        execute();
+       }
+     };
+
+    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true))
+     {protected void treeCode()
+       {mainMemory.loadMemory(saveFile);
+        final Bint data = find(new Int(8));                                                                                            // Find the data associated with the specified key in the tree
+        data.i().ok(88);
+        maxSteps(9_999_999);
+        execute();
+       }
+     };
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (runTest( 1)) test_tree();
     if (runTest( 2)) test_insert();
@@ -2928,13 +2962,13 @@ Leaf   at:  12 size:   2, count:   2
     //if (runTest(12)) test_rootFanOut2();
     //if (runTest(13)) test_rootFanOut3();
     if (runTest(14)) test_traverse();
-    if (runTest(15)) {};
+    if (runTest(15)) test_csFind();
     if (runTest(16)) {}
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending(!true);
+    test_csFind();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
