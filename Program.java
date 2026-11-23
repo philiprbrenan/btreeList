@@ -1575,22 +1575,32 @@ public class Program extends Test                                               
 
     void dumpMemory(String File)                                                                                        // Write memory into a file
      {makePath(fpx(File));
-       try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(Path.of(File))))
-       {out.writeInt(units.length);
+      new I()
+       {void a()
+         {try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(Path.of(File))))
+           {out.writeInt(units.length);
 
-        for (int a : units) out.writeInt(a);
-       }
-      catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+            for (int a : units) out.writeInt(a);
+           }
+          catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+         }
+        boolean trace() {return false;}
+       };
      }
 
     void loadMemory(String File)                                                                                        // Load memory from a file
-     {try (DataInputStream in = new DataInputStream(Files.newInputStream(Path.of(File))))
-       {final int N = in.readInt();
-        units = new int[N];
+     {new I()
+       {void a()
+         {try (DataInputStream in = new DataInputStream(Files.newInputStream(Path.of(File))))
+           {final int N = in.readInt();
+            units = new int[N];
 
-        for (int i = 0; i < N; i++) units[i] = in.readInt();
-       }
-      catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+            for (int i = 0; i < N; i++) units[i] = in.readInt();
+           }
+          catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+         }
+        boolean trace() {return false;}
+       };
      }
 
 //D3 Verilog                                                                                                            // Verilog representation of memory
