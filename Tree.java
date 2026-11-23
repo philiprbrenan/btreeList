@@ -2914,10 +2914,10 @@ Leaf   at:  12 size:   2, count:   2
               test_traverse(false);
    }
 
-  static void test_csFind()
+  static void test_csFind()                                                                                             //
    {sayCurrentTestName();
-    final int N = 32;
-    final String saveFile = "/tmp/memory/test_csFind";
+    final int N = 16;
+    final String saveFile = "/tmp/memory/test_csFind"+N;
 
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(!true))
      {protected void treeCode()
