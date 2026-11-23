@@ -2932,7 +2932,7 @@ Leaf   at:  12 size:   2, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending(true);
+    test_deleteAscending(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
