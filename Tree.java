@@ -1771,6 +1771,8 @@ Height        :    1
            };
           mainMemory.dumpMemory(saveFile);
          }
+        //new I() {void a() {say("BBBB", mainMemory);} boolean trace() {return false;}};
+        //maxSteps(9_999_999);  execute(); if(true) return;
 
         final StringBuilder s = Ex ? printTree() : null;
         final StringBuilder m = new StringBuilder();
