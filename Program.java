@@ -148,10 +148,10 @@ public class Program extends Test                                               
     numberOfServers     = sv != null ? 1 : Build.numberOfServers;                                                       // Number of servers if running in client server mode
     unixDomainServers   = new UnixDomainServer[numberOfServers];                                                        // Local execution as opposed to client / server execution. On the server there is only one server, but the client has access to all the servers.
     clientServerMode    = remoteExecutionMode != RemoteExecution.Modes.Local;                                           // Local execution as opposed to client / server execution. On the server there is only one server, but the client has access to all the servers.
-
-    if (clientServerMode && build.addressToArea == null) stop("Address to area required in client server mode");
-    if (clientServerMode && !checkLocks)                 stop("Lock checking required in client server mode");
-
+    if (Build.parentProgram == null && clientServerMode)
+     {if (build.addressToArea == null) stop("Address to area required in client server mode");
+      if (!checkLocks)                 stop("Lock checking required in client server mode");
+     }
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -2088,6 +2088,7 @@ endmodule
 
     if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
     if (checkLocks) checkAllLocksHaveBeenReleased();                                                                    // Optionally confirm that all locks have been released
+
     UnixDomainServer.closeClientUnixDomainSockets();                                                                    // Close all opened sockets
 
     printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
