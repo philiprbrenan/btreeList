@@ -1743,7 +1743,8 @@ endmodule
        {void a()
          {final int        a = addressToArea.addressToArea(I.i());                                                      // Lock for this memory area
           final Locks.Lock l = locks.lockDetails(a);                                                                    // Get the lock for this memory area
-          if (l == null) locks.getLock(a);                                                                              // Lock memory before use
+//        if (l == null) locks.getLock(a);                                                                              // Lock memory before use
+          if (l == null) stop("Attempting access to unlocked memory area at location:", I.i(), "area:", a);             // Require memory to be locked before use
           else if (l.transactionId != transactionId)                                                                    // Terminate if an attempt is made to free a lock owned by another transaction
            {stop(l.lockFailTransaction("Unable to access memory locked by a different transaction."));                  // Terminate if an attempt is made to free a lock owned by another transaction
            }
