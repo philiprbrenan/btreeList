@@ -24,7 +24,6 @@ public class Program extends Test                                               
   final static boolean                runSiliconCompiler = true;                                                        // Run silicon compiler on github or print docker command to run it locally when running locally as it takes a long time and so needs to be run from the command line rather than tying up geany for a long time
   final static boolean                          runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the Verilog code is synthesizable
 //final static boolean                        runOpenRAM = true;                                                        // Run OpenRAM to create memories for programs
-  final static boolean                    runWithLocking = true;                                                        // Run with locks imposed on memories. Otherwise ignore lock requests
   final static boolean         compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final static boolean    suppressIntegerUsageStatistics = !github_action;                                              // Print read/write usage of integers
   final static boolean       suppressInstructionCoverage = !github_action;                                              // Track instruction execution by location in Java code where the instruction was generated
@@ -67,8 +66,8 @@ public class Program extends Test                                               
   final Int                                          One;                                                               // Integer constant one
   final String                               programName;                                                               // Name of program to assist in debugging multi program executions
   final Build                                      build;                                                               // Build parameter list used to construct the program
-  final boolean            checkAllLocksHaveBeenReleased;                                                               // Confirm that all locks have been released at the end of program execution
   final UnixDomainServer []            unixDomainServers;                                                               // Array of servers
+  final int                              numberOfServers;                                                               // Number of servers
   I                                            executing = null;                                                        // Instruction currently being executed
   I                                            compiling = null;                                                        // Instruction currently being compiled
   int                                      transactionId;                                                               // Transaction Id - this is used to identify the holders of a lock
@@ -88,12 +87,14 @@ public class Program extends Test                                               
   boolean                              generatingVerilog = false;                                                       // Whether or not we are generating Verilog at the moment
   final RemoteExecution.Modes        remoteExecutionMode;                                                               // Normally run in local mode, but client and server modes are also possible
   final Integer                      remoteExecutionArea;                                                               // The area of memory controlled by this program if it is running in server mode
+  final boolean                               checkLocks;                                                               // Check that memory has been locked before accessing it.  IMplied by client server mode.
+  final boolean                         clientServerMode;                                                               // Running in client server mode if set else local mode
   ByteBuffer                   currentServerInputMessage;                                                               // Current input message being processed when operating in server mode
   ByteBuffer                   currentServerExputMessage;                                                               // Current output message being created when operating in server mode
 
   static class Build                                                                                                    // Builder for this program
    {boolean                     immediate = false;                                                                      // Immediate mode
-    boolean checkAllLocksHaveBeenReleased = false;                                                                      // Check that all locks have been released
+    boolean                     checkLocks = false;                                                                     // Check memory locks
     Program                 parentProgram = null;                                                                       // Parent program
     Integer                          size = null;                                                                       // Size of memory used by this program
     AddressToArea           addressToArea = addressToZero();                                                            // Address to area mapping
@@ -107,7 +108,7 @@ public class Program extends Test                                               
     Build    memory (int Size)                              {size = Size; addressToArea = addressToZero(); return this;}
     Build    memory (int Size, AddressToArea AddressToArea) {size = Size; addressToArea = AddressToArea;   return this;}
     Build        cs (int NumberOfServers)                   {numberOfServers = NumberOfServers;            return this;}
-    Build    checkAllLocksHaveBeenReleased ()               {checkAllLocksHaveBeenReleased = true;         return this;}
+    Build checkLocks (boolean CheckLocks)                   {checkLocks    =  CheckLocks;                  return this;}
    }  // Build
 
   Program (Build Build)                                                                                                 // Construct
@@ -115,7 +116,7 @@ public class Program extends Test                                               
     immediate       = Build.immediate;                                                                                  // Immediate or delayed execution. If after lock testing is in progress immediate mode is required
     parentProgram   = Build.parentProgram == null ? this : Build.parentProgram;                                         // Parent program that will contain the code
     programName     = Build.name;                                                                                       // Program name
-    checkAllLocksHaveBeenReleased = Build.checkAllLocksHaveBeenReleased;                                                // Check all locks have been released at the end of program execution
+    checkLocks      = Build.checkLocks || Build.numberOfServers > 0;                                                    // Check memory locks either optionally or because we are in client server mode
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
 
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
@@ -141,10 +142,15 @@ public class Program extends Test                                               
     final String av = mainArg(UnixDomainServer.areaKeyWord), sv = mainArg(UnixDomainServer.serverKeyWord);              // Command line keywords that supply information about this server
     if      (sv                    != null) remoteExecutionMode = RemoteExecution.Modes.Server;                         // Set execution mode to Server
     else if (Build.numberOfServers != 0   ) remoteExecutionMode = RemoteExecution.Modes.Client;                         // Set execution mode to client
-    else                                    remoteExecutionMode = RemoteExecution.Modes.Local ;                         // Set execution mode to Local by default
+    else                                    remoteExecutionMode = RemoteExecution.Modes.Local;                          // Set execution mode to Local by default
 
     remoteExecutionArea = av == null ? null : Integer.valueOf(av);                                                      // Memory area controlled by server if any
-    unixDomainServers   = new UnixDomainServer[sv != null ? 1 : Build.numberOfServers];                                 // Local execution as opposed to client / server execution. On the server there is only one server, but the client has access to all the servers.
+    numberOfServers     = sv != null ? 1 : Build.numberOfServers;                                                       // Number of servers if running in client server mode
+    unixDomainServers   = new UnixDomainServer[numberOfServers];                                                        // Local execution as opposed to client / server execution. On the server there is only one server, but the client has access to all the servers.
+    clientServerMode    = remoteExecutionMode != RemoteExecution.Modes.Local;                                           // Local execution as opposed to client / server execution. On the server there is only one server, but the client has access to all the servers.
+
+    if (clientServerMode && build.addressToArea == null) stop("Address to area required in client server mode");
+    if (clientServerMode && !checkLocks)                 stop("Lock checking required in client server mode");
 
     code();                                                                                                             // Load or execute the code associated with this program
    }
@@ -1567,6 +1573,26 @@ public class Program extends Test                                               
       return ""+s;
      }
 
+    void dumpMemory(String File)                                                                                        // Write memory into a file
+     {makePath(fpx(File));
+       try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(Path.of(File))))
+       {out.writeInt(units.length);
+
+        for (int a : units) out.writeInt(a);
+       }
+      catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+     }
+
+    void loadMemory(String File)                                                                                        // Load memory from a file
+     {try (DataInputStream in = new DataInputStream(Files.newInputStream(Path.of(File))))
+       {final int N = in.readInt();
+        units = new int[N];
+
+        for (int i = 0; i < N; i++) units[i] = in.readInt();
+       }
+      catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+     }
+
 //D3 Verilog                                                                                                            // Verilog representation of memory
 
     String index ()         {return "index_memory_"+id;}                                                                // Integer to index this memory
@@ -1694,7 +1720,7 @@ endmodule
       Lock lockDetails (int Area) {return locks.get(Area);}                                                             // Get details of a lock
 
       void getLock (int Area)                                                                                           // Get a lock on an area in memory
-       {if (!runWithLocking) return;                                                                                    // Optionally ignore locking to facilitate testing
+       {if (!checkLocks) return;                                                                                        // Optionally ignore locking to facilitate testing
         final Lock l = lockDetails(Area);                                                                               // Locate lock for area
         if (l == null) new Lock(Area);                                                                                  // Create a lock description for this area as no lock for this area currently exists
         else if (l.transactionId != transactionId())                                                                    // Lock exists but is owned by a different process
@@ -1703,7 +1729,7 @@ endmodule
        }
 
       void freeLock (int Area)                                                                                          // Free a read lock if it exists or complain if it does not
-       {if (!runWithLocking) return;                                                                                    // Optionally ignore locking to facilitate testing
+       {if (!checkLocks) return;                                                                                        // Optionally ignore locking to facilitate testing
         final Lock l = lockDetails(Area);                                                                               // Locate lock for area
         if (l == null) stop("No lock to free for area:", Area);                                                         // Create a lock description for this area
         if (l.transactionId != transactionId())                                                                         // Lock exists but is owned by a different process
@@ -1713,7 +1739,7 @@ endmodule
        }
 
       boolean isLocked (int Area)                                                                                       // Check whether the area has been locked
-       {if (!runWithLocking) return false;                                                                              // Optionally ignore locking to facilitate testing
+       {if (!checkLocks) return false;                                                                                  // Optionally ignore locking to facilitate testing
         final Lock l = lockDetails(Area); return l != null && l.transactionId == transactionId();
        }
 
@@ -1736,17 +1762,16 @@ endmodule
       public String printLocks () {return ""+printLocks(false);}                                                        // Print locks compactly
      }
 
-    void lockMemory (Int I)                                                                                             // Lock the memory associated with an address
-     {if (!runWithLocking || addressToArea == null) return;                                                             // Only create locks on permanent memory that might be accessed from more than one transaction
-
+    void lockMemory (Int I)                                                                                             // Check that the memory area associated with an address is locked. This is crucial in client server mode to ensure that each memory area is processed by one transaction at a time
+     {if (!checkLocks) return;                                                                                          // Only create locks on permanent memory that might be accessed from more than one transaction
       new I()
        {void a()
-         {final int        a = addressToArea.addressToArea(I.i());                                                      // Lock for this memory area
+         {if (remoteExecutionMode == RemoteExecution.Modes.Local) return;                                               // Require memory to be locked before use in client/server mode.
+          final int        a = addressToArea.addressToArea(I.i());                                                      // Area from memory address
           final Locks.Lock l = locks.lockDetails(a);                                                                    // Get the lock for this memory area
-//        if (l == null) locks.getLock(a);                                                                              // Lock memory before use
-          if (l == null) stop("Attempting access to unlocked memory area at location:", I.i(), "area:", a);             // Require memory to be locked before use
-          else if (l.transactionId != transactionId)                                                                    // Terminate if an attempt is made to free a lock owned by another transaction
-           {stop(l.lockFailTransaction("Unable to access memory locked by a different transaction."));                  // Terminate if an attempt is made to free a lock owned by another transaction
+          if (l == null) stop("Attempting access to unlocked memory area at location:", I.i(), "area:", a);             // Confirm memory is locked
+          else if (l.transactionId != transactionId)                                                                    // Check the lock is owned by the current transaction
+           {stop(l.lockFailTransaction("Unable to access memory locked by a different transaction."));
            }
          }
         boolean trace() {return false;}
@@ -1764,9 +1789,9 @@ endmodule
      }
 
     void freeAllLocksInstruction ()                                                                                     // Create an instruction to free all the locks held by a transaction
-     {if (!runWithLocking || addressToArea == null) return;                                                             // Only create locks on permanent memory that might be accessed from more than one transaction
+     {if (!checkLocks) return;
       new I()
-       {void        a () {freeAllLocks();}                                                                              // Search for locks created by the current transaction
+       {void        a () {freeAllLocks();}
         String      v () {return "/* freeAllLocks */";}
         boolean trace () {return false;}
        };
@@ -1817,14 +1842,14 @@ endmodule
     Locks.Lock    lockDetails (int Area) {return locks.locks.get(Area);}                                                // Get details of a lock
 
     void assertIsLocked (Int Area)                                                                                      // Assert that the current transaction already has a lock
-     {if (runWithLocking &&  !isLocked(Area.i()))
+     {if (checkLocks && !isLocked(Area.i()))
        {stop("Expected a lock on an area to be in place, but the area has not been locked, area:", Area,
              "transaction:", transactionId());
        }
      }
 
     void checkAllLocksHaveBeenReleased ()                                                                               // Confirm that all locks have been released unless this is a sub program
-     {if (!runWithLocking) return;                                                                                      // Ignoring locking
+     {if (!checkLocks) return;                                                                                          // Ignoring locking
       if (mainMemory == null) return;                                                                                   // No memory to lock
       final Memory.Locks L = locks();
       if (L != null && L.size() > 0) stop("Not all locks were released:", L.dumpLocks());
@@ -2011,7 +2036,7 @@ endmodule
 
   void execute ()                                                                                                       // Execute the current code
    {if (immediate() || !suppressImmediateOnly)                                                                          // The code has already been executed interpretively and, optionally, that is all that is required
-     {if (checkAllLocksHaveBeenReleased) checkAllLocksHaveBeenReleased();
+     {if (checkLocks) checkAllLocksHaveBeenReleased();
       return;
      }
     if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
@@ -2052,7 +2077,7 @@ endmodule
     if (!generateVerilog) say(f("            Execution: %,12d", steps));                                                // Show number of steps unless we are going to print this in during the Verilog process
 
     if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
-    if (checkAllLocksHaveBeenReleased) checkAllLocksHaveBeenReleased();                                                 // Optionally confirm that all locks have been released
+    if (checkLocks) checkAllLocksHaveBeenReleased();                                                                    // Optionally confirm that all locks have been released
     UnixDomainServer.closeClientUnixDomainSockets();                                                                    // Close all opened sockets
 
     printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
@@ -3536,7 +3561,7 @@ endmodule
 
   static void test_mem(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(4).checkAllLocksHaveBeenReleased())
+    final Program P = new Program(new Build().immediate(Ex).memory(4))
      {protected void code()
        {final Memory m = mainMemory;
         final Int     N0 = new Int    ("ZERO",  0);
@@ -3627,14 +3652,7 @@ writeIntEnable =        0
         m.putBit(n1, n2, new Bit(false));
         m.putBit(n1, n3, new Bit(true));
         m.getInt(n1).ok(11);
-        //stop(m.printLocks());
-        ok(()->m.printLocks(), """
-Locks, size: 1
-    #   Area  Trans
-    1      0      0
-""");
 
-        m.freeAllLocksInstruction();
         scDieAreaX = 1000; scDieAreaY = 1000;
         execute();
        }
@@ -3666,7 +3684,7 @@ Locks, size: 1
 
   static void test_memory(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(2).checkAllLocksHaveBeenReleased())
+    final Program P = new Program(new Build().immediate(Ex).memory(2))
      {protected void code()
        {final Memory m = mainMemory;
         final Int Z = new Int("Z", 0);
@@ -3680,6 +3698,8 @@ Locks, size: 1
             m.getInt(O).ok(2);
             m.getInt(Z).ok(1);
             dumpProgramState("AAAA");
+            m.dumpMemory("/tmp/memory/testmemory.txt");
+            m.loadMemory("/tmp/memory/testmemory.txt");
             m.getBit(O, Z).ok(false);
             m.getBit(O, O).ok(true );
             m.getBit(O, T).ok(false);
@@ -3697,13 +3717,6 @@ Locks, size: 1
          };
         final Int r = new Int(m.getInt(O));
         r.ok(514);
-        //stop(m.printLocks());
-        ok(()->m.printLocks(), """
-Locks, size: 1
-    #   Area  Trans
-    1      0      0
-""");
-        m.freeAllLocksInstruction();
         scDieAreaX = 1000; scDieAreaY = 1000;
         execute();
        }
@@ -3740,7 +3753,7 @@ Locks, size: 1
 
   static void test_memoryRef(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(10).checkAllLocksHaveBeenReleased())
+    final Program P = new Program(new Build().immediate(Ex).memory(10))
      {protected void code()
        {final Memory     M = mainMemory;
         final Memory.Ref m = M.new Ref(2);
@@ -3857,13 +3870,6 @@ writeIntEnable =        0
 """);
            }
          };
-        //stop(M.printLocks());
-        ok(()->M.printLocks(), """
-Locks, size: 1
-    #   Area  Trans
-    1      0      0
-""");
-        M.freeAllLocksInstruction();
         maxSteps(9_999);
         execute();
        }
@@ -4466,8 +4472,8 @@ Locks, size: 2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_remoteExecution();
+   {oldTests();
+    //test_remoteExecution();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
