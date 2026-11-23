@@ -31,6 +31,8 @@ public class Test                                                               
   final static TreeSet<String>           filesWritten = new TreeSet<>();                                                // Files written
   final static TreeSet<String>          testsExecuted = new TreeSet<>();                                                // Tests executed
   final static TreeMap<String,Integer> testsStartHere = new TreeMap<>();                                                // The line number at which the tests start in each file so we can separate code written to test and code written to be tested
+  final static int                  socketOpenRetries = 999;                                                            // Number of times to try and open a socket
+  final static double             socketOpenRetryWait = 0.1;                                                            // Wait between socket open retries in seconds
   final static boolean               coverageAnalysis = false;                                                          // Enables coverage checks
   static       boolean                          debug = false;                                                          // Global debug flag
 // Uncomment zz for methods not called analysis
@@ -1534,9 +1536,7 @@ public class Test                                                               
        }
       else
        {startCopies(1, launchKeyWord, areaKeyWord+area, serverKeyWord+socketPath);                                      // Start the server from the client
-        if (waitForFileToExist(socketPath, 20_000)) {}                                                                  // Wait for sever to start - this is of course inherently unsatisfactory but forking the java machine reliably is (apparently) difficult.
-        else stop("Socket file does not exist even after waiting:", socketPath);                                        // Complain about missing socket file
-        socket = openClientUnixDomainSocket();                                                                          // Client socket visible on client
+        socket = openClientUnixDomainSocket();                                                                          // Open socket retrying if necessary
        }
      }
     UnixDomainServer () {this(0);}                                                                                      //Assume that the is only one server and give it a default identifying number
@@ -1623,7 +1623,7 @@ public class Test                                                               
      }
 
     SocketChannel openClientUnixDomainSocket ()                                                                         // Open a client Unix domain socket
-     {for(int i = 0; i < 999; ++i)
+     {for(int i = 0; i < socketOpenRetries; ++i)
        {try
          {final SocketChannel socket = SocketChannel.open(StandardProtocolFamily.UNIX);                                 // Open Unix domain socket
           socket.connect(UnixDomainSocketAddress.of(socketPath));
@@ -1638,7 +1638,7 @@ public class Test                                                               
          {try {socket.close();}
           catch (IOException X) {stop("Unable to close socket on path:", socketPath, X, traceBack(X));}
          }
-        sleep(0.1);
+        sleep(socketOpenRetryWait);
        }
       stop("Unable to open socket on path:", socketPath);                                                               //Unable to open the socket even after multiple tries
       return null;
