@@ -57,6 +57,8 @@ my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                
 my @java  = grep {fe($_) =~ m(java)is} @files;                                                                          # Java files minus excluded files
    @files = changedFiles $shaFile,     @files;                                                                          # Filter out files that have not changed
 
+say STDERR "AAAA ", dump(\@files);
+
 if (!@files)                                                                                                            # No new files
  {say "Everything up to date";
   exit;
