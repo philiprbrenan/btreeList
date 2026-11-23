@@ -1527,7 +1527,7 @@ public class Test                                                               
              }
             else
              {writeMessageToSocket(c, null);                                                                            // Send an empty message back in response to a close request
-              break;
+              System.exit(0);                                                                                           // Close the server down
              }
            }
          }
