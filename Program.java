@@ -1762,7 +1762,7 @@ endmodule
       public String printLocks () {return ""+printLocks(false);}                                                        // Print locks compactly
      }
 
-    void lockMemory (Int I)                                                                                             // Check that the memory area associated with an address is locked. This is crucial in client server mode to ensure that each memory area is processed by one transaction at a time
+    void lockMemory (Int I)                                                                                             // Check that the memory area associated with an address is locked. This is crucial in client server mode to ensure that each memory area is processed by one transaction at a time even when there are gaps between remote execution requests while the transaction does something else before accessing the data in the locked area again
      {if (!checkLocks) return;                                                                                          // Only create locks on permanent memory that might be accessed from more than one transaction
       new I()
        {void a()
