@@ -1,4 +1,4 @@
-# Test 2026-11-23 at 13:59:15
+# Test 2026-11-23 at 19:14:32
 
 name: btreeList
 run-name: Remote execution, Verilog, SiliconCompiler
@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [ArrayConstant_1, BitSet_1, BitSet_2, BitSet_3, BitSet_4, BitSet_5, BitSet_6, BitSet_7, BitSet_8, BitSet_9, BitSet_10, BitSet_11, BitSet_12, BitSet_13, BitSet_14, BitSet_15, Branch_1, Branch_2, Branch_3, Branch_4, Branch_5, Branch_6, Branch_7, Branch_8, Branch_9, Branch_10, Branch_11, Branch_12, Gds_1, Leaf_1, Leaf_2, Leaf_3, Leaf_4, Leaf_5, Leaf_6, Leaf_7, Leaf_8, Leaf_9, Leaf_10, Lef_1, Program_1, Program_2, Program_3, Program_4, Program_5, Program_6, Program_7, Program_8, Program_9, Program_10, Program_11, Program_12, Program_13, Program_14, Program_15, Program_16, Program_17, Program_18, Program_19, Program_20, Program_21, Program_22, Program_23, Program_24, Program_25, Program_26, Program_27, Program_28, Program_29, Program_30, Program_31, Program_32, Program_33, Program_34, Program_35, Program_36, Ram_1, Rom_1, Slots_1, Slots_2, Slots_3, Slots_4, Slots_5, Slots_6, Slots_7, Slots_8, Slots_9, Slots_10, Slots_11, Slots_12, Slots_13, Slots_14, Slots_15, Slots_16, Slots_17, Slots_18, Slots_19, Slots_20, Slots_21, Slots_22, Slots_23, Test_1, Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11, Tree_12, Tree_13, Tree_14, Tree_15, Tree_16]
+        task: [ArrayConstant_1, BitSet_1, BitSet_2, BitSet_3, BitSet_4, BitSet_5, BitSet_6, BitSet_7, BitSet_8, BitSet_9, BitSet_10, BitSet_11, BitSet_12, BitSet_13, BitSet_14, BitSet_15, Branch_1, Branch_2, Branch_3, Branch_4, Branch_5, Branch_6, Branch_7, Branch_8, Branch_9, Branch_10, Branch_11, Branch_12, Gds_1, Leaf_1, Leaf_2, Leaf_3, Leaf_4, Leaf_5, Leaf_6, Leaf_7, Leaf_8, Leaf_9, Leaf_10, Lef_1, Program_1, Program_2, Program_3, Program_4, Program_5, Program_6, Program_7, Program_8, Program_9, Program_10, Program_11, Program_12, Program_13, Program_14, Program_15, Program_16, Program_17, Program_18, Program_19, Program_20, Program_21, Program_22, Program_23, Program_24, Program_25, Program_26, Program_27, Program_28, Program_29, Program_30, Program_31, Program_32, Program_33, Program_34, Program_35, Program_36, Ram_1, Rom_1, Slots_1, Slots_2, Slots_3, Slots_4, Slots_5, Slots_6, Slots_7, Slots_8, Slots_9, Slots_10, Slots_11, Slots_12, Slots_13, Slots_14, Slots_15, Slots_16, Slots_17, Slots_18, Slots_19, Slots_20, Slots_21, Slots_22, Slots_23, Test_1, Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11, Tree_12, Tree_13, Tree_14, Tree_15, Tree_16, UnixDomainSocketDemo_1]
 
     steps:
     - uses: actions/checkout@v6
@@ -30,7 +30,7 @@ jobs:
     - name: Position files in package
       run: |
         mkdir -p verilog com/AppaApps/Silicon
-        cp ArrayConstant.java BitSet.java Branch.java Gds.java Leaf.java Lef.java Program.java Ram.java Rom.java Slots.java Test.java Tree.java com/AppaApps/Silicon
+        cp ArrayConstant.java BitSet.java Branch.java Gds.java Leaf.java Lef.java Program.java Ram.java Rom.java Slots.java Test.java Tree.java UnixDomainSocketDemo.java com/AppaApps/Silicon
         tree --prune -I '*.class'
 
     - name: Java
@@ -1926,6 +1926,22 @@ jobs:
           verilog/**
           !verilog/**/*.gzEND
         if-no-files-found: ignore
+
+    - name: UnixDomainSocketDemo_1
+      if: ${{             matrix.task == 'UnixDomainSocketDemo_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/UnixDomainSocketDemo runTest=1
+        tree --prune -I '*.class'
+
+    - name: Upload UnixDomainSocketDemo_1
+      if: ${{ always() && matrix.task == 'UnixDomainSocketDemo_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: sc_UnixDomainSocketDemo_1
+        path: |
+          verilog/**
+          !verilog/**/*.gzEND
+        if-no-files-found: ignore
   release:
     needs: sc
     if: github.event_name == 'push' && needs.sc.result == 'success'
@@ -1944,7 +1960,7 @@ jobs:
       - name: Build Silicon.jar
         run: |
           mkdir -p com/AppaApps/Silicon
-          cp ArrayConstant.java BitSet.java Branch.java Gds.java Leaf.java Lef.java Program.java Ram.java Rom.java Slots.java Test.java Tree.java com/AppaApps/Silicon
+          cp ArrayConstant.java BitSet.java Branch.java Gds.java Leaf.java Lef.java Program.java Ram.java Rom.java Slots.java Test.java Tree.java UnixDomainSocketDemo.java com/AppaApps/Silicon
           javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
           jar -v --create --file Silicon.jar -C Classes .
           pwd
