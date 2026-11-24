@@ -17,7 +17,7 @@ import java.nio.channels.*;
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "Remote execution";                                          // How memory is shared between main program and sub program
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog =!true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
@@ -426,6 +426,8 @@ public class Program extends Test                                               
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
   interface Computable {}                                                                                               // Something we can compute with
+
+  Computable[]computables(Computable...C) {return C;}                                                                   // An array of something we can compute with
 
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
@@ -1778,6 +1780,14 @@ endmodule
        {void a()
          {if (remoteExecutionMode == RemoteExecution.Modes.Local) return;                                               // Require memory to be locked before use in client/server mode.
           final int        a = addressToArea.addressToArea(I.i());                                                      // Area from memory address
+          if (clientServerMode)                                                                                         // If we are in client server mode then memory accesses can only occur on the server
+           {if (remoteExecutionArea == null)
+             {stop("Memory access being performed locally instead of on server, area:", a, executing.traceBack);        // Each server controls a memory area
+             }
+            if (remoteExecutionArea != a)
+             {stop("On wrong server for area, server:", remoteExecutionArea, "area:", a, executing.traceBack);          // The area associated with the server must match the area associated with the address being dereferenced
+             }
+           }
           final Locks.Lock l = locks.lockDetails(a);                                                                    // Get the lock for this memory area
           if (l == null) stop("Attempting access to unlocked memory area at location:", I.i(), "area:", a);             // Confirm memory is locked
           else if (l.transactionId != transactionId)                                                                    // Check the lock is owned by the current transaction
@@ -2089,7 +2099,7 @@ endmodule
     if (subs .size() > 0) stop("Subroutine starts contains:",  subs);                                                   // Confirm that all subroutine opens had matching closes
     if (checkLocks) checkAllLocksHaveBeenReleased();                                                                    // Optionally confirm that all locks have been released
 
-    UnixDomainServer.closeClientUnixDomainSockets();                                                                    // Close all opened sockets
+    UnixDomainServer.closeClientUnixDomainSockets();                                                                    // Close all opened sockets to servbers
 
     printProgramExecutionStatistics();                                                                                  // Statistics on program and its execution
 
@@ -3050,9 +3060,9 @@ endmodule
     final Stack<Computable>  inParameters = new Stack<>();                                                              // Input data fields
     final Stack<Computable> outParameters = new Stack<>();                                                              // Output data fields
 
-    RemoteExecution(Int Area)                                                                                           // Execute the code in method "body" on the specified area of memory
-     {Collections.addAll(inParameters,  in());
-      Collections.addAll(outParameters, out());
+    RemoteExecution(Int Area, Computable[]In, Computable...Out)                                                         // Execute the code in method "body" on the specified "area" of memory after copying the variables named in "in" from the local variables to the target server. When the computation is complete copy the resulting "out" variables back into the local variables.
+     {Collections.addAll(inParameters,  In);
+      Collections.addAll(outParameters, Out);
 
       new IfClient()                                                                                                    // Code marked for remote execution is not executed on the client but on the server. The instruction sequence must be identical on both client and server
        {void Then()                                                                                                     // Client mode,
@@ -3096,8 +3106,6 @@ endmodule
        };
      }
     abstract void       body ();                                                                                        // Instructions to be executed
-    abstract Computable[] in ();                                                                                        // Identify the input parameters
-    abstract Computable[]out ();                                                                                        // Identify the output parameters
 
     void pack (ByteBuffer Buffer, Stack<Computable> Parameters, boolean Instructions)                                   // Pack data into a buffer ready to be sent to the server or client
      {final ByteBuffer X = Buffer;
@@ -4406,12 +4414,10 @@ Locks, size: 2
   abstract class RemoteExecutionTest
    {final Int out = new Int("out");
     RemoteExecutionTest(Int In)
-     {new RemoteExecution(new Int(area()))                                                                                   // Request remote execution on server with the specified number
+     {new RemoteExecution(new Int(area()), new Computable[]{In}, out)                                                   // Request remote execution on server with the specified number
        {void body()                                                                                                     // Computation to be performed on the server with this name
          {out.set(In).up();
          }
-        Computable[] in () {return new Computable[]{In};}                                                               // Input variables to be used to send the server
-        Computable[]out () {return new Computable[]{out};}                                                              // Output variables to be returned to the caller
        };
      }
     abstract int area();
@@ -4429,6 +4435,24 @@ Locks, size: 2
         final RemoteExecutionTest s = new RemoteExecutionTest1(r.out);
         r.out.ok(128);
         s.out.ok(256);
+        execute();
+       }
+     };
+   }
+
+  static void test_remoteExecutionVars ()
+   {sayCurrentTestName();
+    new Program(new Build().cs(2))
+     {protected void code()
+       {final Int a = new Int("a", 3);
+        final Int b = new Int("b");
+        new RemoteExecution(new Int(0), computables(a), b)
+         {void body()
+           {b.set(a).up();
+           }
+         };
+        a.ok(3);
+        b.ok(6);
         execute();
        }
      };
@@ -4479,12 +4503,12 @@ Locks, size: 2
     if (runTest(33)) test_Until();
     if (runTest(34)) test_remoteExecution();
     if (runTest(35)) test_currentTestNumber(35);
-    if (runTest(36)) {}
+    if (runTest(36)) test_remoteExecutionVars();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_remoteExecution();
+   {//oldTests();
+    test_remoteExecutionVars();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
