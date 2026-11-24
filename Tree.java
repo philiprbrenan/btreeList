@@ -25,6 +25,7 @@ class Tree extends Program                                                      
   final Build               build;                                                                                      // Memory containing the tree base followed by the leaves and branches of the tree
   final int   linesToPrintABranch = 4;                                                                                  // The number of lines required to print a branch
   final Memory          mergePath;                                                                                      // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+  final static int freeChainOffset = 0, countOffset = 1, heightOffset = 2;                                              // Offset of control areas beyond the nodes comprising the tree
 
 //D1 Construction                                                                                                       // Construct and layout a tree
 
@@ -109,9 +110,9 @@ class Tree extends Program                                                      
 
       int addressToArea(int Address)                                                                                    // Overridable convert an address in memory to a lock index
        {if (Address < freeChain) return Address >>> logTwoSizeOfNode;                                                   // Lock number is normally the index of the node
-        if (Address < count)     return numberOfNodes + 0;                                                              // Lock number for free chain
-        if (Address < height)    return numberOfNodes + 1;                                                              // Lock number for count field
-                                 return numberOfNodes + 2;                                                              // Lock number for height field
+        if (Address < count)     return numberOfNodes + freeChainOffset;                                                // Lock number for free chain
+        if (Address < height)    return numberOfNodes + countOffset;                                                    // Lock number for count field
+                                 return numberOfNodes + heightOffset;                                                   // Lock number for height field
        }
      }
    }
@@ -162,23 +163,27 @@ class Tree extends Program                                                      
 
   protected void treeCode () {}                                                                                         // Override to apply code to the tree
 
+  int freeChainArea () {return numberOfNodes + freeChainOffset;}                                                        // Lock number / area for free chain
+  int     countArea () {return numberOfNodes + countOffset;}                                                            // Lock number / area for count field
+  int    heightArea () {return numberOfNodes + heightOffset;}                                                           // Lock number / area for height field
+
   int   maxLeafSize () {return maxLeafSize;}                                                                            // Maximum size of a leaf
   int maxBranchSize () {return maxBranchSize;}                                                                          // Maximum size of a branch
   int numberOfNodes () {return numberOfNodes;}                                                                          // Maximum number of nodes in tree
-  private int           mnl () {return maximumNumberOfLevels;}                                                          // Maximum number of levels
-  private int          mnl2 () {return maximumNumberOfLevels << 1;}                                                     // Twice the maximum number of levels to make sure that we really do have enough space to describe a path through the tree
+  private int   mnl () {return maximumNumberOfLevels;}                                                                  // Maximum number of levels
+  private int  mnl2 () {return maximumNumberOfLevels << 1;}                                                             // Twice the maximum number of levels to make sure that we really do have enough space to describe a path through the tree
 
   void         lockRoot () { getLock(root());}                                                                          // Lock root
   void       unlockRoot () {freeLock(root());}                                                                          // Unlock root
   Bit      rootIsLocked () {return isLocked(Zero);}                                                                     // Test whether the root is locked
   Bit    rootIsUnLocked () {return isLocked(Zero).flip();}                                                              // Test whether the root is unlocked
 
-  private void   lockFreeChain () { getLock(numberOfNodes + 0);}                                                        // Lock free chain
-  private void       lockCount () { getLock(numberOfNodes + 1);}                                                        // Lock free count of number of entries in tree
-  private void      lockHeight () { getLock(numberOfNodes + 2);}                                                        // Lock free height of tree
-  private void unlockFreeChain () {freeLock(numberOfNodes + 0);}                                                        // Unlock free chain
-  private void     unlockCount () {freeLock(numberOfNodes + 1);}                                                        // Unlock count of entries in tree
-  private void    unlockHeight () {freeLock(numberOfNodes + 2);}                                                        // Unlock height of tree
+  private void   lockFreeChain () { getLock(freeChainArea());}                                                          // Lock free chain
+  private void       lockCount () { getLock(    countArea());}                                                          // Lock free count of number of entries in tree
+  private void      lockHeight () { getLock(   heightArea());}                                                          // Lock free height of tree
+  private void unlockFreeChain () {freeLock(freeChainArea());}                                                          // Unlock free chain
+  private void     unlockCount () {freeLock(    countArea());}                                                          // Unlock count of entries in tree
+  private void    unlockHeight () {freeLock(   heightArea());}                                                          // Unlock height of tree
 
   private Int      allocate ()                                                                                          // Allocate a leaf or a branch using the first free node on the free chain
    {lockFreeChain();
