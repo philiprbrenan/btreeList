@@ -150,9 +150,15 @@ class Tree extends Program                                                      
 
     mergePath        = new Memory(mnl2(), "mergePath", new Memory.ReadWrite(), null);                                   // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
+
     lockFreeChain();                                                                                                    // Lock free chain
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
-    for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
+//  for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
+    new ForCount(new Int(numberOfNodes))                                                                                // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
+     {void body(Int Index)
+       {freeChain.set(Index);
+       }
+     };
     unlockFreeChain();                                                                                                  // Unlock free chain
 
     height(One);                                                                                                        // Current height of the tree is the one leaf root
@@ -2941,10 +2947,10 @@ Leaf   at:  12 size:   2, count:   2
        }
      };
 
-    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true).immediate(false))
+    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(!true).immediate(false))
      {protected void treeCode()
-       {mainMemory.loadMemory(saveFile);
-        final Bint data = find(new Int(8));                                                                                            // Find the data associated with the specified key in the tree
+       {mainMemory.loadMemory(saveFile);                                                                                // Reload memory so it matches the snapshot exactly
+        final Bint data = find(new Int(8));                                                                             // Find the data associated with the specified key in the tree
         data.i().ok(88);
         maxSteps(9_999_999);
         execute();
