@@ -14,8 +14,8 @@ public class BitSet extends Program                                             
   final boolean        powerOfTwo;                                                                                      // Some operations can be optimized if the bitset has a number of elements that is a power of two
   final boolean        trackCount;                                                                                      // Track the count of number of bits set to one
   final Int            bitSizeInt;                                                                                      // Bitsize as an Int to avoid overloading the program counter indexed constant array
-  final Build               build;                                                                                      // Memory to use
-  final Memory.Ref      memoryRef;                                                                                      // Build used to create bitset
+  final Build               build;                                                                                      // Build used to create bitset
+  final Memory.Ref      memoryRef;                                                                                      // Memory used by bitset bits
   final Memory.Ref    memoryCount;                                                                                      // Memory for count field if present
   static int         bitsetNumbers = 0;                                                                                 // Bitsets created
   final  int          bitsetNumber = ++bitsetNumbers;                                                                   // Number of this bitset
