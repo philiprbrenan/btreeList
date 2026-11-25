@@ -157,14 +157,20 @@ class Leaf extends Program implements Program.Locatable                         
         slots.refUsedSlotsToKeys.offset, slots.refUsedSlotsToKeys.offsetBits,
         slots.refUsedKeys.offset,        slots.refUsedKeys.offsetBits,
         slots.refKeys.offset,            slots.refKeys.offsetBits,
+        slots.usedKeys.memoryRef.offset, slots.usedKeys.memoryCount.offset,
        Zero),  slot, data)
        {void body()
          {final Slots.Find f = slots.new Find(key);                                                                     // Locate the specified key in the leaf
-  new I() {void a() {say("DDDD1111", key, f.equal);} boolean trace() {return false;}};
+new I() {void a() {say("DDDD1111", key, f.equal);} boolean trace() {return false;}};
           new If (f.equal)                                                                                              // Found a matching key
            {void Then()                                                                                                 // Key exists in leaf
              {slot.set(f.slot.i());                                                                                     // Record indexing slot to show that the key was found
               data.set(data(keyIndex(f.slot.i())));                                                                     // Data associated with key
+new I() {void a() {say("DDDD2222", key, f.slot.i());} boolean trace() {return false;}};
+             }
+            void Else()                                                                                                 // Key does not exist in the leaf
+             {data.set(0);                                                                                              // There is no data because the key was not found, but we set data to zero to avoid having to transfer the validity of each bit and integer across the network
+  new I() {void a() {say("DDDD3333", key, f.equal, data);} boolean trace() {return false;}};
              }
            };
          }
