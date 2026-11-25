@@ -165,6 +165,13 @@ public class Program extends Test                                               
   Memory.Locks      locks () {return program().mainMemory.locks;}                                                       // Locks on the main memory used by the program
   int       transactionId () {return program().transactionId;}                                                          // Number of transaction being executed by this program
   void      transactionId (int TransactionId) {program().transactionId = TransactionId;}                                // Set the transaction id
+  Integer               remoteExecutionArea () {return program().remoteExecutionArea;}                                  // Remote execution area of main program
+  boolean                  clientServerMode () {return program().clientServerMode;}                                     // Client server mode of main program
+  RemoteExecution.Modes remoteExecutionMode () {return program().remoteExecutionMode;}                                  // Remote execution mode of main program
+  UnixDomainServer []     unixDomainServers () {return program().unixDomainServers;}                                    // Array of servers
+  int                       numberOfServers () {return program().numberOfServers;}                                      // Number of servers
+  ByteBuffer      currentServerInputMessage () {return program().currentServerInputMessage;}                            // Current input message being processed when operating in server mode
+  ByteBuffer      currentServerExputMessage () {return program().currentServerExputMessage;}                            // Current output message being created when operating in server mode
 
   void immediateModeCheck ()                                                                                            // Check that code is being executed in immediate mode
    {final String m = "Immediate mode only, cannot be run in delayed execution mode";
@@ -420,9 +427,9 @@ public class Program extends Test                                               
     abstract boolean condition();
    } // IfSLC
 
-  abstract class IfServer extends IfSLC{boolean condition() {return remoteExecutionMode==RemoteExecution.Modes.Server;}}// If statement to locate server code
-  abstract class IfClient extends IfSLC{boolean condition() {return remoteExecutionMode==RemoteExecution.Modes.Client;}}// If statement to locate client code
-  abstract class IfLocal  extends IfSLC{boolean condition() {return remoteExecutionMode==RemoteExecution.Modes.Local ;}}// If statement to locate local code
+  abstract class IfServer extends IfSLC{boolean condition() {return remoteExecutionMode()==RemoteExecution.Modes.Server;}}// If statement to locate server code
+  abstract class IfClient extends IfSLC{boolean condition() {return remoteExecutionMode()==RemoteExecution.Modes.Client;}}// If statement to locate client code
+  abstract class IfLocal  extends IfSLC{boolean condition() {return remoteExecutionMode()==RemoteExecution.Modes.Local ;}}// If statement to locate local code
 
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
@@ -1732,16 +1739,16 @@ endmodule
         final Lock l = lockDetails(Area);                                                                               // Locate lock for area
         if (l == null) new Lock(Area);                                                                                  // Create a lock description for this area as no lock for this area currently exists
         else if (l.transactionId != transactionId())                                                                    // Lock exists but is owned by a different process
-         {stop(l.lockFailTransaction("Memory already locked by a different transaction."));                             // Terminate main program if it cannot get the lock
+         {stopIn(l.lockFailTransaction("Memory already locked by a different transaction."));                           // Terminate main program if it cannot get the lock
          }
        }
 
       void freeLock (int Area)                                                                                          // Free a read lock if it exists or complain if it does not
        {if (!checkLocks) return;                                                                                        // Optionally ignore locking to facilitate testing
         final Lock l = lockDetails(Area);                                                                               // Locate lock for area
-        if (l == null) stop("No lock to free for area:", Area);                                                         // Create a lock description for this area
+        if (l == null) stopIn("No lock to free for area:", Area);                                                       // Create a lock description for this area
         if (l.transactionId != transactionId())                                                                         // Lock exists but is owned by a different process
-         {stop(l.lockFailTransaction("Unable to free memory lock obtained by a different transaction."));               // Terminate if an attempt is made to free a lock owned by another transaction
+         {stopIn(l.lockFailTransaction("Unable to free memory lock obtained by a different transaction."));               // Terminate if an attempt is made to free a lock owned by another transaction
          }
         locks.remove(Area);                                                                                             // Remove lock
        }
@@ -1774,20 +1781,20 @@ endmodule
      {if (!checkLocks) return;                                                                                          // Only create locks on permanent memory that might be accessed from more than one transaction
       new I()
        {void a()
-         {if (remoteExecutionMode == RemoteExecution.Modes.Local) return;                                               // Require memory to be locked before use in client/server mode.
+         {if (remoteExecutionMode() == RemoteExecution.Modes.Local) return;                                             // Require memory to be locked before use in client/server mode.
           final int        a = addressToArea.addressToArea(I.i());                                                      // Area from memory address
-          if (clientServerMode)                                                                                         // If we are in client server mode then memory accesses can only occur on the server
-           {if (remoteExecutionArea == null)
-             {stop("Memory access being performed locally instead of on server, area:", a, executing.traceBack);        // Each server controls a memory area
+          if (clientServerMode())                                                                                       // If we are in client server mode then memory accesses can only occur on the server
+           {if (remoteExecutionArea() == null)
+             {stopIn("Memory access being performed locally instead of on server, area:", a, executing.traceBack);      // Each server controls a memory area
              }
-            if (remoteExecutionArea != a)
-             {stop("On wrong server for area, server:", remoteExecutionArea, "area:", a, executing.traceBack);          // The area associated with the server must match the area associated with the address being dereferenced
+            if (remoteExecutionArea() != a)
+             {stopIn("On wrong server for area, server:", remoteExecutionArea, "area:", a, executing.traceBack);        // The area associated with the server must match the area associated with the address being dereferenced
              }
            }
           final Locks.Lock l = locks.lockDetails(a);                                                                    // Get the lock for this memory area
-          if (l == null) stop("Attempting access to unlocked memory area at location:", I.i(), "area:", a);             // Confirm memory is locked
+          if (l == null) stopIn("Attempting access to unlocked memory area at location:", I.i(), "area:", a);           // Confirm memory is locked
           else if (l.transactionId != transactionId)                                                                    // Check the lock is owned by the current transaction
-           {stop(l.lockFailTransaction("Unable to access memory locked by a different transaction."));
+           {stopIn(l.lockFailTransaction("Unable to access memory locked by a different transaction."));
            }
          }
         boolean trace() {return false;}
@@ -2070,16 +2077,16 @@ endmodule
     if (!suppressInstructionCoverage) initializeInstructionCoverage();                                                  // Update instruction coverage by location in Java code where instruction was generated
     if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                           // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
 
-    for(int i = 0, N = unixDomainServers.length; i < N; ++i)                                                            // Start all the requested servers
+    for(int i = 0, N = numberOfServers(); i < N; ++i)                                                                   // Start all the requested servers
      {unixDomainServers[i] = new UnixDomainServer(i)                                                                    // Start server on known socket
        {final ByteBuffer processMessage(ByteBuffer Message)                                                             // Process a message sent to the server on the server and send the processing results from the server back to the client
-         {currentServerInputMessage = Message;                                                                          // The received message becomes the buffer to be unpacked by the server code
+         {program().currentServerInputMessage = Message;                                                                          // The received message becomes the buffer to be unpacked by the server code
 
           final int firstLine = Message.getInt(1*Integer.BYTES);                                                        // First instruction to be executed
           final int lastLine  = Message.getInt(2*Integer.BYTES);                                                        // Execute up to this instruction
 
           new Execute(new Execute.Build().start(firstLine).finish(lastLine));                                           // Execute requested instructions
-          return currentServerExputMessage;
+          return currentServerExputMessage();
          }
        };
       if (unixDomainServers[0].onServer) return;                                                                        // Only one server per program
@@ -2187,6 +2194,17 @@ cd {f}; yosys -q {y}                                                            
     m.append("\nDefined at:\n"+TraceBack);                                                                              // Variable defined here
     if (i != null) m.append("\nReferenced at:\n"+i.traceBack);                                                          // Variable referenced here
     m.append("\n====\n");
+    stop(m);                                                                                                            // Stop with message
+   }
+
+  void stopIn (Object...Message)                                                                                        // Stop inside an instruction with a trace back to the code that generated the instruction
+   {final StringBuilder m = saySb(Message);
+    final I i = executing();                                                                                            // Instruction requesting stop
+    if (i != null  && i.traceBack != null)                                                                              // Traceback to requesting instruction available
+     {m.append("\nOccurred in instruction generated executing on: "+remoteExecutionMode+" at:\n"+i.traceBack);
+      m.append("\n====\n");
+     }
+    else m.append("\nOccurred on: "+remoteExecutionMode);
     stop(m);                                                                                                            // Stop with message
    }
 
@@ -3070,10 +3088,10 @@ endmodule
        {void Then()                                                                                                     // Client mode,
          {new I()
            {void a()
-             {final int a = Area.i(), l = unixDomainServers.length;
-              if (a <  0) stop("Referenced area of memory cannot be negative, area:", a);
-              if (a >= l) stop("Referenced area of memory has not been mapped, area:", a, "limit:", l);
-              final UnixDomainServer u = unixDomainServers[a];                                                          // The server to be used for this area of memory
+             {final int a = Area.i(), l = numberOfServers();
+              if (a <  0) stopIn("Referenced area of memory cannot be negative, area:", a);
+              if (a >= l) stopIn("Referenced area of memory has not been mapped, area:", a, "limit:", l);
+              final UnixDomainServer u = unixDomainServers()[a];                                                        // The server to be used for this area of memory
               unpackResponse(u.writeMessageToSocketAndReadResponse(packRequest()));
              }
             boolean trace() {return false;}
@@ -3085,8 +3103,8 @@ endmodule
            {void Then()                                                                                                 // Server mode
              {new I()
                {void a()
-                 {currentServerInputMessage.position(0);
-                  unpackRequest(currentServerInputMessage);                                                             // Unpack request and set local variables to match
+                 {currentServerInputMessage().position(0);
+                  unpackRequest(currentServerInputMessage());                                                             // Unpack request and set local variables to match
                  }
                 boolean trace() {return false;}
                };
@@ -3097,7 +3115,7 @@ endmodule
            {void Then()
              {new I()
                {void a()
-                 {currentServerExputMessage = packResponse();                                                           // Pack server response and send it back to the client
+                 {program().currentServerExputMessage = packResponse();                                                           // Pack server response and send it back to the client
                  }
                 boolean trace() {return false;}
                };
@@ -3107,7 +3125,7 @@ endmodule
          }
        };
      }
-    abstract void       body ();                                                                                        // Instructions to be executed
+    abstract void body ();                                                                                              // Instructions to be executed
 
     void pack (ByteBuffer Buffer, Stack<Computable> Parameters, boolean Instructions)                                   // Pack data into a buffer ready to be sent to the server or client
      {final ByteBuffer X = Buffer;
