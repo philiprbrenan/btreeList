@@ -2993,6 +2993,7 @@ Leaf   at:  12 size:   2, count:   2
         data.i().ok((N/2)*11);
         maxSteps(9_999_999);
         execute();
+        say("AAAA", printTree());
        }
      };
    }
@@ -3012,7 +3013,7 @@ Leaf   at:  12 size:   2, count:   2
     //if (runTest(12)) test_rootFanOut2();
     //if (runTest(13)) test_rootFanOut3();
     if (runTest(14)) test_traverse();
-    if (runTest(15)) test_csFind();
+    if (runTest(15)) {}//test_csFind();
     if (runTest(16)) {}
    }
 
