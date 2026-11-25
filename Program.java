@@ -132,8 +132,8 @@ public class Program extends Test                                               
     pcConstant      = p ? new TreeMap<>()     : program().pcConstant;                                                   // Instruction equivalence set identified by program counter
     intMemory       = p ? new Memory(0, "Ints", new Memory.ReadWrite(), null) : program().intMemory;                    // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
     bitMemory       = p ? new Memory(0, "Bits", new Memory.ReadWrite(), null) : program().bitMemory;                    // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
-    Zero            = new Int(0);                                                                                       // Integer constant zero
-    One             = new Int(1);                                                                                       // Integer constant one
+    Zero            = p ? new Int(0) : program().Zero;                                                                  // Integer constant zero
+    One             = p ? new Int(1) : program().One;                                                                   // Integer constant one
 
     final boolean s =     Build.size != null;                                                                           // An amount of memory was requested
     final int     S = s ? Build.size : 0;                                                                               // Amount of memory required
@@ -1223,8 +1223,8 @@ public class Program extends Test                                               
 //D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the Verilog representationOperations on integer values
 
   final class Bint implements Computable                                                                                // An integer that can be specified as valid or invalid
-   {private final Bit b = new Bit(false);                                                                               // Whether the associated integer is valid or invalid
-    private final Int i = new Int();                                                                                    // The integer component
+   {final Bit b = new Bit(false);                                                                                       // Whether the associated integer is valid or invalid
+    final Int i = new Int();                                                                                            // The integer component
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
     Bit    b ()      {i.bint++;          return b;   }                                                                  // Return boolean component
     int   ii ()      {                   return i().i();}                                                               // Return integer value if available
@@ -3136,8 +3136,12 @@ endmodule
        {switch (c)
          {case Bit  B -> {X.putInt(B.id);   X.putInt(B.b() ? 1 : 0);}
           case Int  I -> {X.putInt(I.id);   X.putInt(I.i());}
-          case Bint C -> {X.putInt(C.b.id); X.putInt(C.i.id); X.putInt(C.valid().b() ? 1 : 0);
-                          if (C.valid().b()) X.putInt(C.ii());}
+          case Bint C -> {
+            X.putInt(C.b.id);
+            X.putInt(C.i.id);
+            X.putInt(C.b.v ? 1 : 0);
+                          if (C.b.v)
+                          X.putInt(C.ii());}
           default     ->  stop("Unknown computable type:"+c);
          }
        }
