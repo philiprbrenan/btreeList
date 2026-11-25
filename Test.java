@@ -1650,6 +1650,12 @@ public class Test                                                               
      }
    }
 
+  static String dumpByteBuffer (ByteBuffer B)                                                                           // Dump a byte buffer
+   {final StringBuilder s = new StringBuilder(f("capacity=%d position=%d limit=%d%n", B.capacity(), B.position(), B.limit()));
+    final int N = min(16, B.limit());
+    for (int i = 0; i < N; i++) s.append(f("%4d: %3d%n", i, B.get(i) & 0xFF));
+    return ""+s;
+   }
 
 //D1 Tests                                                                                                              // Tests
 
