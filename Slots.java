@@ -840,9 +840,11 @@ class Slots extends Program                                                     
     Find (Int Key)                                                                                                      // Find the location of the specified search key in the slots by stepping down from the top of the one tree checking first the left sub tree then the right to successively narrow the range in which the equal key should appear
      {final BitSet u = usedSlotsToKeys;
 
+new I() {void a() {say("EEEE11111", Key);} boolean trace() {return false;}};
       new If (empty())                                                                                                  // Nothing to find if all the slots are empty
        {void Then()
          {set(Zero, new Bit(false), new Bit(false));                                                                    // Empty
+new I() {void a() {say("EEEE2222", Key);} boolean trace() {return false;}};
          }
         void Else()                                                                                                     // Not empty
          {final Int p = u.topOne().dup();                                                                               // Position in ones tree - start at the top
