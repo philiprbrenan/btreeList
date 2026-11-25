@@ -151,9 +151,16 @@ class Leaf extends Program implements Program.Locatable                         
 
     FindLeafKey (Int Key)
      {key.set(Key);                                                                                                     // Record the search key
-      new RemoteExecution(at.i(), computables(key, refSlots.offset),  slot, data)
+      new RemoteExecution(at.i(), computables(key, refSlots.offset, refSlots.offsetBits,
+        slots.refSlotsToKeys.offset,     slots.refSlotsToKeys.offsetBits,
+        slots.refKeysToSlots.offset,     slots.refKeysToSlots.offsetBits,
+        slots.refUsedSlotsToKeys.offset, slots.refUsedSlotsToKeys.offsetBits,
+        slots.refUsedKeys.offset,        slots.refUsedKeys.offsetBits,
+        slots.refKeys.offset,            slots.refKeys.offsetBits,
+       Zero),  slot, data)
        {void body()
          {final Slots.Find f = slots.new Find(key);                                                                     // Locate the specified key in the leaf
+  new I() {void a() {say("DDDD1111", key, f.equal);} boolean trace() {return false;}};
           new If (f.equal)                                                                                              // Found a matching key
            {void Then()                                                                                                 // Key exists in leaf
              {slot.set(f.slot.i());                                                                                     // Record indexing slot to show that the key was found
