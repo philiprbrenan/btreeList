@@ -3,6 +3,7 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Log changes to memory so that the changes can be undone
+// Add current transaction field to the end of memory after height so that each memory area can record the transaction currently being used to process it and thus make the memory area wait for a transaction to finish before another transaction can start processing the same block of memory
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -442,6 +443,7 @@ public class Program extends Test                                               
     private boolean constant = false;                                                                                   // A  constant if true and this should not be modified
     boolean      fast = false;                                                                                          // Make this bit into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
     String       name = null;                                                                                           // The name of the variable
+    String  traceBack = traceBack();                                                                                    // The location in the code at which this bit was declared
 
     enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
 
@@ -456,7 +458,7 @@ public class Program extends Test                                               
     Bit constant (boolean I)     {i = I; v = constant = true; return this;}                                             // Set a constant value
 
     boolean      b ()            {x(); return i;}
-    void         x ()            {if (!v) variableNotSet("Bit", name);}                                                 // Check a value has been set for the boolean
+    void         x ()            {if (!v) variableNotSet("Bit", name, id, traceBack);}                                  // Check a value has been set for the boolean
     Bit   constant ()            {constant = true; return this;}                                                        // Mark as a constant
 
     Bit        set ()            {return ie(Ops.set,  true); }                                                          // Boolean operations which modify the target
@@ -681,7 +683,7 @@ public class Program extends Test                                               
           boolean       in = false;                                                                                     // An input wire: named at the top and set by the constructor to a constant
           boolean      out = false;                                                                                     // An output register named at the top and set by the constructor to the value of a variable
           boolean constant = false;                                                                                     // A  constant if true and this should not be modified
-    final String traceBack = suppressIntegerUsageStatistics ? null : traceBack();                                       // Location of this integer
+    final String traceBack = traceBack();                                                                               // The code location at which this integer was created
     int nr0, nr1, nr2, nw, dup, reads, writes, bint;                                                                    // Number of reads and writes via instruction processing, number of duplications, number of reads and writes outside instructions
     final boolean     fast;                                                                                             // Make this integer into an individual Verilog register to shorten the access path at the cost of increasing the number of individual registers.
     final int       fastId;                                                                                             // Unique id for fast integer
@@ -704,7 +706,7 @@ public class Program extends Test                                               
 
     int        i ()       {x();   reads++;  return i;}                                                                  // Get current value
     int        i (int I)  {i = I; writes++; return i;}                                                                  // Set current value value
-    void       x ()       {if (!v) variableNotSet("Int", name);}                                                        // Check a value has been set for the integer
+    void       x ()       {if (!v) variableNotSet("Int", name, id, traceBack);}                                         // Check a value has been set for the integer
     int     in0j ()       {return fast ? i()                   : intMemory().read0Int;}                                 // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
     int     in1j ()       {return fast ? i()                   : intMemory().read1Int;}                                 // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
     int     in2j ()       {return fast ? i()                   : intMemory().read2Int;}                                 // Java value of integer retrieved either from the memory used for integers or from the array of fast integers
@@ -1370,13 +1372,7 @@ public class Program extends Test                                               
     Memory clear (Int Start, int Width)                                                                                 // Clear memory range in Java
      {subStart("Program.Memory.clear(II)");
       if (readOnly) stop("Target memory is read only and so can not be cleared even in part");
-      final Int z = Zero;
-
-      new ForCount (Start, Start.Add(Width))
-       {void body(Int Index)
-         {putInt(Index, z);
-         }
-       };
+      new ForCount (Start, Start.Add(Width)) {void body(Int Index) {putInt(Index, Zero);}};
       subFinish();
       return this;
      }
@@ -1519,8 +1515,8 @@ public class Program extends Test                                               
       final Int offsetBits;                                                                                             // Offset of this reference in memory in bits
       final Memory       m = Memory.this;
 
-      Ref (int Offset) {offset.set(Offset); offsetBits = offset.Mul(Integer.SIZE);}                                     // Offset this ref
-      Ref (Int Offset) {offset.set(Offset); offsetBits = offset.Mul(Integer.SIZE);}                                     // Offset this ref
+      Ref (int Offset) {offset.set(Offset).constant(); offsetBits = offset.Mul(Integer.SIZE).constant();}               // Offset this ref
+      Ref (Int Offset) {offset.set(Offset).constant(); offsetBits = offset.Mul(Integer.SIZE).constant();}               // Offset this ref
 
       Ref       copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from this or another memory
       Ref      clear (int Width)            {m.clear(offset, Width);                         return this;}              // Clear memory by setting its bytes to zero
@@ -2183,11 +2179,15 @@ cd {f}; yosys -q {y}                                                            
      }
    }
 
-  void variableNotSet (String Type, String Name)                                                                        // Variable not yet set message
-   {final I i = executing();
-    final String m = (Name != null ? '"'+Name+'"'+", " : "") + "has not been set yet";
-    if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possible
-    else           stop(Type, m);                                                                                       // No traceback available
+  void variableNotSet (String Type, String Name, int Id, String TraceBack)                                              // Variable not yet set message
+   {final I i = executing();                                                                                            // Instruction executing refence to unset variable
+    final StringBuilder m = new StringBuilder(Type+" variable not yet set!");                                           // Message
+    m.append(" Id: "+Id);                                                                                               // Id of variable
+    if (Name != null) m.append(" Name: "+Name);                                                                         // Name if known
+    m.append("\nDefined at:\n"+TraceBack);                                                                              // Variable defined here
+    if (i != null) m.append("\nReferenced at:\n"+i.traceBack);                                                          // Variable referenced here
+    m.append("\n====\n");
+    stop(m);                                                                                                            // Stop with message
    }
 
 //D2 Dump                                                                                                               // Dump the state of the program at requested locations during execution of both Java and Verilog so that the evolution of memories, variables, registers can be confirmed
@@ -2233,7 +2233,7 @@ cd {f}; yosys -q {y}                                                            
     for (Bit b : bits()) {b.i = false; b.v = false;}
    }
 
-  void dumpJavaVariables ()                                                                                             // Dump all memories and variables to the Java trace file
+  StringBuilder dumpAllJavaVariables ()                                                                                 // Dump all memories and variables to the Java trace file
    {final StringBuilder s = new StringBuilder();
     for (Int  i  : ints())                                                                                              // Dump ints
      {s.append(f("Int  %8d ==    %s%8d", i.id, (i.fast ? "*" : " "), lui(i.i)));                                        // Take underlying value regardless of whether the integer has been set because whether the integer has been set is not available on Verilog yet the traces must match
@@ -2246,8 +2246,10 @@ cd {f}; yosys -q {y}                                                            
       if (b.name != null) s.append(" "+b.name);
       s.append('\n');
      }
-    appendJavaTrace(""+s);
+    return s;
    }
+
+  void dumpJavaVariables () {appendJavaTrace(""+dumpAllJavaVariables());}                                               // Dump all memories and variables to the Java trace file
 
   void dumpJava ()                                                                                                      // Dump all memories and variables to the Java trace file
    {dumpJavaMemories();
@@ -3111,6 +3113,7 @@ endmodule
      {final ByteBuffer X = Buffer;
       X.putInt(0);                                                                                                      // Reserve length field
       if (Instructions) {X.putInt(start); X.putInt(finish);}                                                            // Range of instructions to be executed if requested
+
       for (Computable c : Parameters)                                                                                   // Load each parameter
        {switch (c)
          {case Bit  B -> {X.putInt(B.id);   X.putInt(B.b() ? 1 : 0);}
@@ -3140,22 +3143,23 @@ endmodule
      {final ByteBuffer X = Buffer;
       X.getInt();                                                                                                       // Skip length
       if (Instructions) {start  = X.getInt(); finish = X.getInt();}                                                     // Optionally get instruction range
-
-      for (Computable c : Parameters)
-       {switch (c)
-         {case Bit  B -> {final int id  = X.getInt(); bits.elementAt(id).constant(X.getInt() > 0);}
-          case Int  I -> {final int id  = X.getInt(); ints.elementAt(id).constant(X.getInt());}
-          case Bint C -> {final int idb = X.getInt(), idi = X.getInt(), valid = X.getInt();
-                          bits.elementAt(idb).constant(valid != 0);
-                          if (valid != 0) ints.elementAt(idi).constant(X.getInt());
-                         }
-          default -> stop("Unknown computable type:"+c);
+      if (X.position() < X.limit())                                                                                     // Data exists in the buffer so unpack it
+       {for (Computable c : Parameters)
+         {switch (c)
+           {case Bit  B -> {final int id  = X.getInt(); bits.elementAt(id).constant(X.getInt() > 0);}
+            case Int  I -> {final int id  = X.getInt(); ints.elementAt(id).constant(X.getInt());}
+            case Bint C -> {final int idb = X.getInt(), idi = X.getInt(), valid = X.getInt();
+                            bits.elementAt(idb).constant(valid != 0);
+                            if (valid != 0) ints.elementAt(idi).constant(X.getInt());
+                           }
+            default -> stop("Unknown computable type:"+c);
+           }
          }
        }
      }
 
-    void  unpackRequest (ByteBuffer B) {unpack(B, inParameters, true);}                                                 // Unpack request and execute the decoded instruction range
-    void unpackResponse (ByteBuffer B) {unpack(B, inParameters, false);}                                                // Unpack response into local program which can now proceed executing as if the remote code had just been executed inline
+    void  unpackRequest (ByteBuffer B) {unpack(B, inParameters,  true);}                                                // Unpack request and execute the decoded instruction range
+    void unpackResponse (ByteBuffer B) {unpack(B, outParameters, false);}                                               // Unpack response into local program which can now proceed executing as if the remote code had just been executed inline
 
     enum Modes                                                                                                          // Names for the execution modes of a delayed mode program
      {Local,                                                                                                            // Execution is confined to one process in which all instructions are executed as a single program
@@ -4442,7 +4446,7 @@ Locks, size: 2
 
   static void test_remoteExecutionVars ()
    {sayCurrentTestName();
-    new Program(new Build().cs(2))
+    new Program(new Build().cs(2).immediate(false))
      {protected void code()
        {final Int a = new Int("a", 3);
         final Int b = new Int("b");
