@@ -144,20 +144,22 @@ class Leaf extends Program implements Program.Locatable                         
   private Int          keyIndex (Int Index) {return slots.getSlotToKeyIndex(Index);}                                    // The index of the key from the index of the slot in the leaf
   private Int          keyValue (Int Index) {return slots.getSlotToKeyValue(Index);}                                    // The value of the key from the index of the slot in the leaf
 
-  private Slots.Find findKey (Int Key) {return slots.new Find(Key);}                                                    // Locate the specified key in the leaf
-
   public class FindLeafKey                                                                                              // Find a key within a leaf
    {final Int   key = new Int( "key");                                                                                  // Search key
     final Bint slot = new Bint("slot");                                                                                 // Slot that indexes key if found
     final Int  data = new Int( "data");                                                                                 // Data associated with found key
 
-    FindLeafKey(Int Key)
+    FindLeafKey (Int Key)
      {key.set(Key);                                                                                                     // Record the search key
-      final Slots.Find f = findKey(Key);                                                                                // Locate the specified key in the leaf
-      new If (f.equal)                                                                                                  // Found a matching key
-       {void Then()                                                                                                     // Key exists in leaf
-         {slot.set(f.slot.i());                                                                                         // Record indexing slot to show that the key was found
-          data.set(data(keyIndex(slot.i())));                                                                           // Data associated with key
+      new RemoteExecution(at.i(), computables(key, refSlots.offset),  slot, data)
+       {void body()
+         {final Slots.Find f = slots.new Find(key);                                                                     // Locate the specified key in the leaf
+          new If (f.equal)                                                                                              // Found a matching key
+           {void Then()                                                                                                 // Key exists in leaf
+             {slot.set(f.slot.i());                                                                                     // Record indexing slot to show that the key was found
+              data.set(data(keyIndex(f.slot.i())));                                                                     // Data associated with key
+             }
+           };
          }
        };
      }
