@@ -149,7 +149,6 @@ class Tree extends Program                                                      
     refCount         = unitMemoryRef.step(build.memoryPositions.posCount);                                              // Memory for key count
     refHeight        = unitMemoryRef.step(build.memoryPositions.posHeight);                                             // Memory for height of tree
 
-
     mergePath        = new Memory(mnl2(), "mergePath", new Memory.ReadWrite(), null);                                   // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
@@ -172,7 +171,8 @@ class Tree extends Program                                                      
 
     height(One);                                                                                                        // Current height of the tree is the one leaf root
 
-    leaf().unlockLeaf();                                                                                                // Initialize the root as a leaf and unlock it
+//  leaf().unlockLeaf();                                                                                                // Initialize the root as a leaf and unlock it
+    leaf();                                                                                                             // Initialize the root as a leaf
     treeCode();
    }
 
@@ -249,8 +249,15 @@ class Tree extends Program                                                      
   private Bit   isRootLeaf () {return checkType(root(), BranchOrLeaf.leaf  );}                                          // Whether the root is a leaf
 
   private Bit checkType (Int Node, BranchOrLeaf Type)                                                                   // Check the type of a node
-   {final Int a = nodeAddress(Node);
-    final Int t = mainMemory.getInt(a);
+   {final Int a = nodeAddress(Node);                                                                                    // Area of memory containing node
+
+    final Int t = new Int("t");
+    new RemoteExecution(a, computables(a), t)                                                                           // Get type of memory area
+     {void body()
+       {t.set(mainMemory.getInt(a));
+       }
+     };
+
     final Bit r = new Bit(false);
     new If (t.eq(Type.value())) {void Then() {r.set(true);}};
     return r;
@@ -2959,27 +2966,25 @@ Leaf   at:  12 size:   2, count:   2
               test_traverse(false);
    }
 
-  static void test_csFind()                                                                                             //
+  static void test_csFind()
    {sayCurrentTestName();
     final int N = 2;
     final String saveFile = "/tmp/memory/test_csFind"+N;
 
-    final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(!true))
-     {protected void treeCode()
-       {if (fileExists(saveFile)) mainMemory.loadMemory(saveFile);
-        else
+    if (!fileExists(saveFile))
+     {final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(true))
+       {protected void treeCode()
          {new ForCount(One, new Int(N+1))
            {void body(Int Index)
              {insert(Index, Index.Mul(11));
              }
            };
+          maxSteps(9_999_999);
+          execute();
           mainMemory.dumpMemory(saveFile);
          }
-
-        maxSteps(9_999_999);
-        execute();
-       }
-     };
+       };
+     }
 
     final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true).immediate(false))
      {protected void treeCode()
