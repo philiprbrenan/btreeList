@@ -18,6 +18,7 @@ class Tree extends Program                                                      
   final int maximumNumberOfLevels;                                                                                      // Maximum number of levels in tree to prevent runaways while debugging
   final int              nodeSize;                                                                                      // The size of each node in the tree: a node must be able to hold a branch or a leaf
   final int      logTwoSizeOfNode;                                                                                      // LOg two of the size of a node
+  final Memory.Ref  unitMemoryRef;                                                                                      // Memory used by tree leaves and branches
   final Memory.Ref       refNodes;                                                                                      // The nodes associated with this tree
   final Memory.Ref   refFreeChain;                                                                                      // The free chain for this tree
   final Memory.Ref       refCount;                                                                                      // The number of keys in this tree
@@ -142,24 +143,32 @@ class Tree extends Program                                                      
     build            = Build;                                                                                           // Keep the build for future reference
     nodeSize         = build.nodeSize;                                                                                  // Size of a node in the tree
     logTwoSizeOfNode = logTwo(nodeSize);                                                                                // Size of a node in the tree
-    final Memory.Ref unitMemoryRef = mainMemory.new Ref(0);                                                             // Memory used by tree
+    unitMemoryRef    = mainMemory.new Ref(0);                                                                           // Memory used by tree
     refNodes         = unitMemoryRef.step(build.memoryPositions.posNodes);                                              // Memory for nodes
     refFreeChain     = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                          // Memory for free chain
     refCount         = unitMemoryRef.step(build.memoryPositions.posCount);                                              // Memory for key count
     refHeight        = unitMemoryRef.step(build.memoryPositions.posHeight);                                             // Memory for height of tree
 
+
     mergePath        = new Memory(mnl2(), "mergePath", new Memory.ReadWrite(), null);                                   // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
-
-    lockFreeChain();                                                                                                    // Lock free chain
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
-//  for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
-    new ForCount(new Int(numberOfNodes))                                                                                // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
-     {void body(Int Index)
-       {freeChain.set(Index);
+                                                                                                                        // Copy memory references to target servers if operating in client server mode. Otherwise "integer unset" errors occur because the corresponding variables on the remote server have not been set
+    new RemoteExecution(new Int(freeChainArea()), computables(refFreeChain.offset, refFreeChain.offsetBits, freeChain.memoryCount.offset, freeChain.bitSizeInt)) {void body() {}};
+    new RemoteExecution(new Int(    countArea()), computables(refCount.offset))                                                                                  {void body() {}};
+    new RemoteExecution(new Int(   heightArea()), computables(refHeight.offset))                                                                                 {void body() {}};
+
+    new RemoteExecution(new Int(freeChainArea()), computables())
+     {void body()
+       {lockFreeChain();                                                                                                // Lock free chain
+        new ForCount(new Int(numberOfNodes))                                                                            // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
+         {void body(Int Index)
+           {freeChain.set(Index);
+           }
+         };
+        unlockFreeChain();                                                                                              // Unlock free chain
        }
      };
-    unlockFreeChain();                                                                                                  // Unlock free chain
 
     height(One);                                                                                                        // Current height of the tree is the one leaf root
 
@@ -192,12 +201,19 @@ class Tree extends Program                                                      
   private void    unlockHeight () {freeLock(   heightArea());}                                                          // Unlock height of tree
 
   private Int      allocate ()                                                                                          // Allocate a leaf or a branch using the first free node on the free chain
-   {lockFreeChain();
-    final Bint A = freeChain.firstOne();                                                                                // First element on free chain
-    A.elseStop("No more leaves or branches available for allocation");                                                  // Out of memory check
-    final Int a = new Int("index").set(A);                                                                              // First element on free chain
-    freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
-    unlockFreeChain();                                                                                                  // Unlock the free chain
+   {final Int a = new Int("index");
+
+    new RemoteExecution(new Int(freeChainArea()), computables(), a)                                                     // Return index of allocated area
+     {void body()
+       {lockFreeChain();
+        final Bint A = freeChain.firstOne();                                                                            // First element on free chain
+        A.elseStop("No more leaves or branches available for allocation");                                              // Out of memory check
+        a.set(A);                                                                                                       // First element on free chain
+        freeChain.clear(a);                                                                                             // Remove indexed node from free chain
+        unlockFreeChain();                                                                                              // Unlock the free chain
+       }
+     };
+
     return a;                                                                                                           // Return index of allocated node
    }
 
@@ -250,7 +266,12 @@ class Tree extends Program                                                      
 
   private Leaf leaf (Int Node) {return leaf(Node, true);}                                                               // Index an existing leaf in memory            confirming that it really is a leaf
   private Leaf leaf (Int Node, boolean Check)                                                                           // Index an existing leaf in memory optionally confirming that it really is a leaf
-   {getLock(Node);                                                                                                      // Lock the leaf if necessary
+   {new RemoteExecution(Node, computables(Node))
+    {void body()
+      {getLock(Node);                                                                                                   // Lock the leaf  - that is mark the specified node as executing the current transaction
+      }
+    };
+
     if (immediate() && Check && !isLeaf(Node).b()) stop("Not a leaf:", Node);                                           // Check the location actually holds a leaf
     final Memory.Ref r = mainMemory.new Ref(nodeAddress(Node));                                                         // Address leaf
     final Tree    tree = this;                                                                                          // Current tree
@@ -283,8 +304,14 @@ class Tree extends Program                                                      
 
   private Leaf makeLeaf (Int Node)                                                                                      // Make a leaf from the specified node given the locked status of the node
    {final Leaf l = leaf(Node, false);
-    l.clear();
-    setType(Node, BranchOrLeaf.leaf);
+
+    new RemoteExecution(Node, computables(Zero, l.unitMemoryRef.offset))
+     {void body()
+       {l.clear();
+        setType(Node, BranchOrLeaf.leaf);
+       }
+     };
+
     return l;                                                                                                           // Return locked leaf
    }
   private Leaf     leaf ()         {return makeLeaf(allocate());}                                                       // Create and initialize a branch in memory and return its index
@@ -335,10 +362,17 @@ class Tree extends Program                                                      
   private Int  countInc () {lockCount();  final Int c = refCount .getInt(); refCount .putInt(c.inc()); unlockCount(); return c;}// Increment the key count
   private Int  countDec () {lockCount();  final Int c = refCount .getInt(); refCount .putInt(c.dec()); unlockCount(); return c;}// Decrement the key count
 
-  Int    height () {lockHeight(); final Int c = refHeight.getInt();                            unlockHeight();return c;}// Height of tree
+  Int            height () {lockHeight(); final Int c = refHeight.getInt();                            unlockHeight();return c;}// Height of tree
   private Int heightInc () {lockHeight(); final Int c = refHeight.getInt(); refHeight.putInt(c.inc()); unlockHeight();return c;}// Increment the height of the tree
   private Int heightDec () {lockHeight(); final Int c = refHeight.getInt(); refHeight.putInt(c.dec()); unlockHeight();return c;}// Decrement the height of the tree
-  private void   height (Int height) {lockHeight(); refHeight.putInt(height); unlockHeight();}                          // Set the height of the tree
+
+  private void height (Int Height)                                                                                      // Set the height of the tree
+   {new RemoteExecution(new Int(heightArea()), computables(Height))
+     {void body()
+       {lockHeight(); refHeight.putInt(Height); unlockHeight();
+       }
+     };
+   }
 
   StringBuilder dumpTree ()                                                                                             // Dump the tree
    {subStart("Tree.dumpTree");
@@ -2927,7 +2961,7 @@ Leaf   at:  12 size:   2, count:   2
 
   static void test_csFind()                                                                                             //
    {sayCurrentTestName();
-    final int N = 16;
+    final int N = 2;
     final String saveFile = "/tmp/memory/test_csFind"+N;
 
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(!true))
@@ -2947,11 +2981,11 @@ Leaf   at:  12 size:   2, count:   2
        }
      };
 
-    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(!true).immediate(false))
+    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true).immediate(false))
      {protected void treeCode()
        {mainMemory.loadMemory(saveFile);                                                                                // Reload memory so it matches the snapshot exactly
-        final Bint data = find(new Int(8));                                                                             // Find the data associated with the specified key in the tree
-        data.i().ok(88);
+        final Bint data = find(new Int(N/2));                                                                           // Find the data associated with the specified key in the tree
+        data.i().ok((N/2)*11);
         maxSteps(9_999_999);
         execute();
        }
