@@ -530,7 +530,6 @@ public class BitSet extends Program                                             
     final Int  p = new Int("p", 0);                                                                                     // Offset of first bit
     final Bint r = new Bint();                                                                                          // Result
     final Bit  b = getBit(p);
-new I() {void a() {say("IIIII11111", p, b);} boolean trace() {return false;}};
     new If (getBit(p))                                                                                                  // Try the first bit of the bitset
      {void Then() {r.set(p);          }                                                                                 // First bit of bitset is set
       void Else() {r.copy(nextOne(p));}                                                                                 // Find the next set bit if there is one. Use copy because the result might be invalid showing that there is no first one
@@ -627,7 +626,6 @@ new I() {void a() {say("IIIII11111", p, b);} boolean trace() {return false;}};
    {subStart("Bitset.firstZero");
     final Int  p = Zero;
     final Bint r = new Bint();                                                                                          // Result
-new I() {void a() {say("GGGGG1111", p);} boolean trace() {return false;}};
     new If (getBit(p))
      {void Then() {r.copy(nextZero(p));}                                                                                // Use copy because the result might be invalid showing that there is no first zero
       void Else() {r.set(p);          }
@@ -657,30 +655,23 @@ new I() {void a() {say("GGGGG1111", p);} boolean trace() {return false;}};
     final Int  p    = new Int(Start);                                                                                   // Start position
     final Int  Q    = p.Inc().constant();
 
-new I() {void a() {say("FFFF1111", Q, p);} boolean trace() {return false;}};
     new If (Q.le(limitUpperZero(p)))                                                                                    // Adjacent bit exists
      {void Then()                                                                                                       // Found the adjacent bit to the right
-       {
-new I() {void a() {say("FFFF2222");} boolean trace() {return false;}};
-         new If (getBitNC(Q))                                                                                            // Adjacent bit exists and is set so we must search
+       {new If (getBitNC(Q))                                                                                            // Adjacent bit exists and is set so we must search
          {void Then()                                                                                                   // Found the adjacent bit to the right
            {p.set(parentZero(p));                                                                                       // Move in the zeros tree
-new I() {void a() {say("FFFF3333", p);} boolean trace() {return false;}};
             new For(logBitSize())                                                                                       // Traverse down through the tree to the root
              {void body(Int I, Bit C)
                {final Int q = p.Inc().constant();                                                                       // Next bit over
-new I() {void a() {say("FFFF4444", q);} boolean trace() {return false;}};
 
                 new If (q.le(limitUpperZero(p)))                                                                        // Found adjacent bit set to one to the right of the path up from the start bit
                  {void Then()                                                                                           // Found the adjacent bit to the right
                    {new If (getBitNC(q).flip())                                                                         // Found adjacent bit set to one to the right of the path up from the start bit
                      {void Then()                                                                                       // Found the adjacent bit to the right
                        {Next.set(lowZero(q));                                                                           // Lowest one bit in adjacent zeros tree
-new I() {void a() {say("FFFF55555", Next);} boolean trace() {return false;}};
                        }
                       void Else()                                                                                       // No adjacent one yet
                        {p.set(parentZero(p));                                                                           // Move up to parent
-new I() {void a() {say("FFFF66666", p);} boolean trace() {return false;}};
                         C.set();                                                                                        // Whether we are done yet
                        }
                      };
