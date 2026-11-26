@@ -2,6 +2,7 @@
 // Leaf of a B-tree implemented using distributed sparse slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Reduce the amount of data sent in FindLeafKey.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -151,7 +152,8 @@ class Leaf extends Program implements Program.Locatable                         
 
     FindLeafKey (Int Key)
      {key.set(Key);                                                                                                     // Record the search key
-      new RemoteExecution(at.i(), computables(key, refSlots.offset, refSlots.offsetBits,
+      new RemoteExecution(at.i(), computables(key,
+        refSlots.offset,                 refSlots.offsetBits,
         slots.refSlotsToKeys.offset,     slots.refSlotsToKeys.offsetBits,
         slots.refKeysToSlots.offset,     slots.refKeysToSlots.offsetBits,
         slots.refUsedSlotsToKeys.offset, slots.refUsedSlotsToKeys.offsetBits,
