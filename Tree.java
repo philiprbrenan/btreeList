@@ -2987,8 +2987,8 @@ Leaf   at:  12 size:   2, count:   2
              {insert(Index, Index.Mul(11));
              }
            };
-          final Bint data = find(new Int(N/2));                                                                         // Find the data associated with the specified key in the tree
-          data.i().ok((N/2)*11);
+          find(new Int(1)).i().ok(11);
+          find(new Int(2)).i().ok(22);
           maxSteps(9_999_999);
           execute();
           mainMemory.dumpMemory(saveFile);
