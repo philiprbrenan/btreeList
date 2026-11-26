@@ -26,6 +26,7 @@ class Tree extends Program                                                      
   final Build               build;                                                                                      // Memory containing the tree base followed by the leaves and branches of the tree
   final int   linesToPrintABranch = 4;                                                                                  // The number of lines required to print a branch
   final Memory          mergePath;                                                                                      // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+  final String         memoryFile;                                                                                      // An optional file containing the contents of memory for this tree
   final static int freeChainOffset = 0, countOffset = 1, heightOffset = 2;                                              // Offset of control areas beyond the nodes comprising the tree
 
 //D1 Construction                                                                                                       // Construct and layout a tree
@@ -46,6 +47,7 @@ class Tree extends Program                                                      
     int        branchFanOut =  0;
 
     String             name;
+    String       memoryFile;
     BitSet.Build  freeChain;
     Branch.Build     branch;
     Leaf  .Build       leaf;
@@ -62,6 +64,7 @@ class Tree extends Program                                                      
     Build  branchFanOut (int     BranchFanOut ) {branchFanOut  = BranchFanOut;  return this;}
     Build          name (String  Name)          {name          = Name;          return this;}
     Build            cs (boolean ClientServer)  {clientServer  = ClientServer;  return this;}
+    Build    memoryFile (String MemoryFile)     {memoryFile    = MemoryFile;    return this;}
 
     Program.Build build()                                                                                               // Describe the program used to execute the tree algorithm
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -80,6 +83,7 @@ class Tree extends Program                                                      
       p.memory(size(), new AddressToArea());                                                                            // Memory size and address to area lambda
       p.immediate(immediate);                                                                                           // Immediate or delayed execution mode
       p.checkLocks(true);                                                                                               // Check locking
+      p.load(memoryFile);                                                                                               // Load memory from this file if possible
       if (clientServer) p.cs(numberOfNodes+3);                                                                          // Number of separate memory areas
       return p;
      }
@@ -127,6 +131,7 @@ class Tree extends Program                                                      
     rootFanLevels    = Build.rootFanLevels;                                                                             // Number of levels including the root to be subjected to root fan out
     leafFanOut       = min(Build.leafFanOut,   maxLeafSize);                                                            // Fan out at leaf if requested
     branchFanOut     = min(Build.branchFanOut, maxBranchSize);                                                          // Fan out at branch if requested
+    memoryFile       = Build.memoryFile;                                                                                // Load tree memory from this file if supplied
 
     final String  m  = "The maximum ";
     final String  m1 = m + "leaf size must be 2 or more, not: "   +maxLeafSize;
@@ -148,8 +153,7 @@ class Tree extends Program                                                      
     refFreeChain     = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                          // Memory for free chain
     refCount         = unitMemoryRef.step(build.memoryPositions.posCount);                                              // Memory for key count
     refHeight        = unitMemoryRef.step(build.memoryPositions.posHeight);                                             // Memory for height of tree
-
-    mergePath        = new Memory(mnl2(), "mergePath", new Memory.ReadWrite(), null);                                   // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    mergePath        = new Memory(mnl2(), "mergePath", new Memory.ReadWrite(), null, null);                             // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
                                                                                                                         // Copy memory references to target servers if operating in client server mode. Otherwise "integer unset" errors occur because the corresponding variables on the remote server have not been set
@@ -157,22 +161,24 @@ class Tree extends Program                                                      
     new RemoteExecution(new Int(    countArea()), computables(refCount.offset))                                                                                  {void body() {}};
     new RemoteExecution(new Int(   heightArea()), computables(refHeight.offset))                                                                                 {void body() {}};
 
-    new RemoteExecution(new Int(freeChainArea()), computables())
-     {void body()
-       {lockFreeChain();                                                                                                // Lock free chain
-        new ForCount(new Int(numberOfNodes))                                                                            // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
-         {void body(Int Index)
-           {freeChain.set(Index);
-           }
-         };
-        unlockFreeChain();                                                                                              // Unlock free chain
-       }
-     };
+    if (memoryFile == null)                                                                                             // Initialize the tree unless memory has been reloaded from a prior snap shot
+     {new RemoteExecution(new Int(freeChainArea()), computables())
+       {void body()
+         {lockFreeChain();                                                                                              // Lock free chain
+          new ForCount(new Int(numberOfNodes))                                                                          // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
+           {void body(Int Index)
+             {freeChain.set(Index);
+             }
+           };
+          unlockFreeChain();                                                                                            // Unlock free chain
+         }
+       };
 
-    height(One);                                                                                                        // Current height of the tree is the one leaf root
+      height(One);                                                                                                      // Current height of the tree is the one leaf root
 
-//  leaf().unlockLeaf();                                                                                                // Initialize the root as a leaf and unlock it
-    leaf();                                                                                                             // Initialize the root as a leaf
+//    leaf().unlockLeaf();                                                                                              // Initialize the root as a leaf and unlock it
+      leaf();                                                                                                           // Initialize the root as a leaf
+    }
     treeCode();
    }
 
@@ -2979,6 +2985,8 @@ Leaf   at:  12 size:   2, count:   2
              {insert(Index, Index.Mul(11));
              }
            };
+          final Bint data = find(new Int(N/2));                                                                         // Find the data associated with the specified key in the tree
+          data.i().ok((N/2)*11);
           maxSteps(9_999_999);
           execute();
           mainMemory.dumpMemory(saveFile);
@@ -2986,14 +2994,13 @@ Leaf   at:  12 size:   2, count:   2
        };
      }
 
-    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true).immediate(false))
+    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true).immediate(false).memoryFile(saveFile))
      {protected void treeCode()
-       {mainMemory.loadMemory(saveFile);                                                                                // Reload memory so it matches the snapshot exactly
-        final Bint data = find(new Int(N/2));                                                                           // Find the data associated with the specified key in the tree
+       {final Bint data = find(new Int(N/2));                                                                           // Find the data associated with the specified key in the tree
         data.i().ok((N/2)*11);
         maxSteps(9_999_999);
         execute();
-        say("AAAA", printTree());
+        //say("AAAA", printTree());
        }
      };
    }
