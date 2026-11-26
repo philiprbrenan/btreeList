@@ -4,6 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Log changes to memory so that the changes can be undone
 // Add current transaction field to the end of memory after height so that each memory area can record the transaction currently being used to process it and thus make the memory area wait for a transaction to finish before another transaction can start processing the same block of memory
+// Remove initializeJavaMemory(), initializeJavaVars() if possible and move loadMemory call to Memory constructor
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -18,7 +19,7 @@ import java.nio.channels.*;
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "Remote execution";                                          // How memory is shared between main program and sub program
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog =!true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
@@ -69,6 +70,7 @@ public class Program extends Test                                               
   final Build                                      build;                                                               // Build parameter list used to construct the program
   final UnixDomainServer []            unixDomainServers;                                                               // Array of servers
   final int                              numberOfServers;                                                               // Number of servers
+  final String                                memoryFile;                                                               // Load memory from this file if specified
   I                                            executing = null;                                                        // Instruction currently being executed
   I                                            compiling = null;                                                        // Instruction currently being compiled
   int                                      transactionId;                                                               // Transaction Id - this is used to identify the holders of a lock
@@ -101,6 +103,7 @@ public class Program extends Test                                               
     AddressToArea           addressToArea = addressToZero();                                                            // Address to area mapping
     String                           name = null;                                                                       // Name of the program for debugging purposes - a program is not required to have a name
     int                   numberOfServers = 0;                                                                          // Number of servers used by this program
+    String                     memoryFile;                                                                              // Memory file
 
     Build immediate ()                                      {immediate     = true;                         return this;}
     Build immediate (boolean Immediate)                     {immediate     = Immediate;                    return this;}
@@ -108,6 +111,7 @@ public class Program extends Test                                               
     Build      name (String       Name)                     {name          = Name;                         return this;}
     Build    memory (int Size)                              {size = Size; addressToArea = addressToZero(); return this;}
     Build    memory (int Size, AddressToArea AddressToArea) {size = Size; addressToArea = AddressToArea;   return this;}
+    Build      load (String MemoryFile)                     {memoryFile    = MemoryFile;                   return this;}
     Build        cs (int NumberOfServers)                   {numberOfServers = NumberOfServers;            return this;}
     Build checkLocks (boolean CheckLocks)                   {checkLocks    =  CheckLocks;                  return this;}
    }  // Build
@@ -119,6 +123,7 @@ public class Program extends Test                                               
     programName     = Build.name;                                                                                       // Program name
     checkLocks      = Build.checkLocks || Build.numberOfServers > 0;                                                    // Check memory locks either optionally or because we are in client server mode
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
+    memoryFile      = Build.memoryFile;                                                                                 // Memory file
 
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
     code            = p ? new Stack<>()       : program().code;                                                         // Machine code instructions
@@ -130,14 +135,14 @@ public class Program extends Test                                               
     dumpLocations   = p ? new DumpLocations() : program().dumpLocations;                                                // Locations in the code at which dumps have been requested
     verilogArrays   = p ? new VerilogArrays() : program().verilogArrays;                                                // Verilog read only array definitions that are mapped to Read Only Memory to prevent Yosys from expanding them.
     pcConstant      = p ? new TreeMap<>()     : program().pcConstant;                                                   // Instruction equivalence set identified by program counter
-    intMemory       = p ? new Memory(0, "Ints", new Memory.ReadWrite(), null) : program().intMemory;                    // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
-    bitMemory       = p ? new Memory(0, "Bits", new Memory.ReadWrite(), null) : program().bitMemory;                    // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    intMemory       = p ? new Memory(0, "Ints", new Memory.ReadWrite(), null, null) : program().intMemory;              // Integer memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
+    bitMemory       = p ? new Memory(0, "Bits", new Memory.ReadWrite(), null, null) : program().bitMemory;              // Boolean memory - the Java phases use their own storage for integers and booleans but do rely on the memory control registers
     Zero            = p ? new Int(0) : program().Zero;                                                                  // Integer constant zero
     One             = p ? new Int(1) : program().One;                                                                   // Integer constant one
 
     final boolean s =     Build.size != null;                                                                           // An amount of memory was requested
     final int     S = s ? Build.size : 0;                                                                               // Amount of memory required
-    mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea) :                  // Main memory associated with either the main program or a sub program using an independent memory
+    mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea, memoryFile) :      // Main memory associated with either the main program or a sub program using an independent memory
                       program().mainMemory;                                                                             // Sub program uses main program memory
 
     final String av = mainArg(UnixDomainServer.areaKeyWord), sv = mainArg(UnixDomainServer.serverKeyWord);              // Command line keywords that supply information about this server
@@ -172,6 +177,7 @@ public class Program extends Test                                               
   int                       numberOfServers () {return program().numberOfServers;}                                      // Number of servers
   ByteBuffer      currentServerInputMessage () {return program().currentServerInputMessage;}                            // Current input message being processed when operating in server mode
   ByteBuffer      currentServerExputMessage () {return program().currentServerExputMessage;}                            // Current output message being created when operating in server mode
+  Memory                         mainMemory () {return program().mainMemory;}                                           // Main memory for this program
 
   void immediateModeCheck ()                                                                                            // Check that code is being executed in immediate mode
    {final String m = "Immediate mode only, cannot be run in delayed execution mode";
@@ -696,7 +702,7 @@ public class Program extends Test                                               
     final int       fastId;                                                                                             // Unique id for fast integer
 
     Int ()           {ai(); fast = false; fastId = -1; del(0);         ints().push(this);}                              // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for Java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has already been established by successfully executing the tests associated with the Java version . The integers used in the Java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
-    Int (int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this); constant();}                  // Set the new integer to a known value at this point in the code
+    Int (int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this); constant(I);}                 // Set the new integer to a known value at this point in the code
     Int (Int I)      {ai(); fast = false; fastId = -1; ie(Ops.set, I); ints().push(this);}                              // Set the new integer to a specified value at this point in the code
 
     Int (String Name)        {this();  name = Name; out = top;}                                                         // Constructor with name supplied. Output register if it is at the top
@@ -1300,6 +1306,7 @@ public class Program extends Test                                               
     final int                      id;                                                                                  // Unique identifier for this memory
     final Locks                 locks;                                                                                  // Locks held over areas of memory
     final AddressToArea addressToArea;                                                                                  // Lambda to translate address to areas that can be locked
+    final String           memoryFile;                                                                                  // Load memory from this file if specified
     boolean                  readOnly;                                                                                  // Read only memory if true
     int []                      units;                                                                                  // Bytes of main memory
     int                       read0Int = 0;                                                                             // Integer read from memory via first  virtual read port
@@ -1313,12 +1320,13 @@ public class Program extends Test                                               
 
     static int bitsPerUnit () {return Integer.SIZE;}                                                                    // Bits per memory unit
 
-    Memory (int Length, String Name, Writability Writability, AddressToArea AddressToArea)                              // Create and clear some memory
-     {name = Name; readOnly = Writability.readOnly(); addressToArea = AddressToArea;
+    Memory (int Length, String Name, Writability Writability, AddressToArea AddressToArea, String MemoryFile)           // Create and clear some memory
+     {name = Name; readOnly = Writability.readOnly(); addressToArea = AddressToArea; memoryFile = MemoryFile;
       locks = new Locks();                                                                                              // Locks for this memory
       units = new int[Length];
       for(int i = 0; i < Length; ++i) units[i] = 0;                                                                     // Clear memory. In Verilog this is done using readmemh in an initial block. For a real chip perhaps an instruction to do this?
       final Stack<Memory> m = memories(); id = m.size(); m.push(this);                                                  // Give the memory a unique identifier and save it in the main program
+      if (memoryFile != null) loadMemory(memoryFile);
      }
 
     static abstract class          Writability {boolean readWrite() {return false;} boolean readOnly() {return true ;}} // Read, write status of memory
@@ -1545,6 +1553,7 @@ public class Program extends Test                                               
 
     public String toString ()                                                                                           // Print memory
      {final StringBuilder s = new StringBuilder();
+      s.append("Memory size: "+units.length+":"+size());
       for (int i = 0, N = size(); i < N; i++) s.append(f("%4d %3d\n", i, units[i]));
       return ""+s;
      }
@@ -1580,32 +1589,23 @@ public class Program extends Test                                               
 
     void dumpMemory(String File)                                                                                        // Write memory into a file
      {makePath(fpx(File));
-      new I()
-       {void a()
-         {try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(Path.of(File))))
-           {out.writeInt(units.length);
+      try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(Path.of(File))))
+       {out.writeInt(units.length);
 
-            for (int a : units) out.writeInt(a);
-           }
-          catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
-         }
-        boolean trace() {return false;}
-       };
+        for (int a : units) out.writeInt(a);
+       }
+      catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
      }
 
-    void loadMemory(String File)                                                                                        // Load memory from a file
-     {new I()
-       {void a()
-         {try (DataInputStream in = new DataInputStream(Files.newInputStream(Path.of(File))))
-           {final int N = in.readInt();
-            units = new int[N];
+    void loadMemory(String File)                                                                                        // Load memory from a file if supplied
+     {if (File == null) return;
+      try (DataInputStream in = new DataInputStream(Files.newInputStream(Path.of(File))))
+       {final int N = in.readInt();
+        units = new int[N];
 
-            for (int i = 0; i < N; i++) units[i] = in.readInt();
-           }
-          catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
-         }
-        boolean trace() {return false;}
-       };
+        for (int i = 0; i < N; i++) units[i] = in.readInt();
+       }
+      catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
      }
 
 //D3 Verilog                                                                                                            // Verilog representation of memory
@@ -2062,7 +2062,7 @@ endmodule
      {if (checkLocks) checkAllLocksHaveBeenReleased();
       return;
      }
-    if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
+    if (codeSize() == 0) stop("No code to execute");                                                                    // Complain if there is no code to execute
 
     if ( initializedForExecution) stop("Already executed");                                                             // The idea is to produce a complete program the first time
     if (!initializedForExecution) traceFiles.delete_java();                                                             // Clear Java trace file at first execution of main program
@@ -2071,8 +2071,9 @@ endmodule
     intMemory().reallocate(nextIntId);                                                                                  // Resize integer memory now we know how big to make it
     bitMemory().reallocate(nextBitId);                                                                                  // Resize boolean memory now we know how big to make it
 
-    initializeJavaMemory();                                                                                             // Initialize memory
-    initializeJavaVars();                                                                                               // Initialize variables
+//  initializeJavaMemory();                                                                                             // Initialize memory
+//  initializeJavaVars();                                                                                               // Initialize variables
+//  if (mainMemory.memoryFile != null) mainMemory.loadMemory(mainMemory.memoryFile);                                    // Load memory from a file
 
     if (!suppressInstructionCoverage) initializeInstructionCoverage();                                                  // Update instruction coverage by location in Java code where instruction was generated
     if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                           // Code size check unless we are executing Verilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
@@ -2080,7 +2081,7 @@ endmodule
     for(int i = 0, N = numberOfServers(); i < N; ++i)                                                                   // Start all the requested servers
      {unixDomainServers[i] = new UnixDomainServer(i)                                                                    // Start server on known socket
        {final ByteBuffer processMessage(ByteBuffer Message)                                                             // Process a message sent to the server on the server and send the processing results from the server back to the client
-         {program().currentServerInputMessage = Message;                                                                          // The received message becomes the buffer to be unpacked by the server code
+         {program().currentServerInputMessage = Message;                                                                // The received message becomes the buffer to be unpacked by the server code
 
           final int firstLine = Message.getInt(1*Integer.BYTES);                                                        // First instruction to be executed
           final int lastLine  = Message.getInt(2*Integer.BYTES);                                                        // Execute up to this instruction
@@ -2247,8 +2248,8 @@ cd {f}; yosys -q {y}                                                            
   void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpJavaMemoryInDecimal());}               // Dump all the memories
 
   void initializeJavaVars ()                                                                                            // Initialize Java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the Verilog version
-   {for (Int i : ints()) {i.i(0);      i.v = false;}
-    for (Bit b : bits()) {b.i = false; b.v = false;}
+   {for (Int i : ints()) if (!i.constant) {i.i(0);      i.v = false;}
+    for (Bit b : bits()) if (!b.constant) {b.i = false; b.v = false;}
    }
 
   StringBuilder dumpAllJavaVariables ()                                                                                 // Dump all memories and variables to the Java trace file
@@ -3569,8 +3570,8 @@ endmodule
     P.execute();
     if ( P.immediate()) ok(P.intMemory.size(), 0);
     if ( Q.immediate()) ok(Q.intMemory.size(), 0);
-    if (!P.immediate() && Program.suppressImmediateOnly) ok(P.intMemory.size(), 6);
-    if (!Q.immediate() && Program.suppressImmediateOnly) ok(Q.intMemory.size(), 6);
+    if (!P.immediate() && Program.suppressImmediateOnly) ok(P.intMemory.size(), 4);
+    if (!Q.immediate() && Program.suppressImmediateOnly) ok(Q.intMemory.size(), 4);
    }
 
   static void test_remote()
@@ -3713,7 +3714,7 @@ writeIntEnable =        0
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {protected void code()
-       {final Memory m = new Memory(2, "test memory name", new Memory.ReadWrite(), null);
+       {final Memory m = new Memory(2, "test memory name", new Memory.ReadWrite(), null, null);
         final Int a = new Int("a"); a.set(2); m.putInt(One, a);
         dumpProgramState("aaaa");
         scDieAreaX = 500; scDieAreaY = 500;
@@ -3743,8 +3744,10 @@ writeIntEnable =        0
             m.getInt(O).ok(2);
             m.getInt(Z).ok(1);
             dumpProgramState("AAAA");
-            m.dumpMemory("/tmp/memory/testmemory.txt");
-            m.loadMemory("/tmp/memory/testmemory.txt");
+            if (immediate())
+             {m.dumpMemory("/tmp/memory/testmemory.txt");
+              m.loadMemory("/tmp/memory/testmemory.txt");
+             }
             m.getBit(O, Z).ok(false);
             m.getBit(O, O).ok(true );
             m.getBit(O, T).ok(false);
@@ -4533,8 +4536,8 @@ Locks, size: 2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_remoteExecutionVars();
+   {oldTests();
+    //test_remoteExecutionVars();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
