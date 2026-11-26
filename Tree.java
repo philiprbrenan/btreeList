@@ -859,7 +859,7 @@ class Tree extends Program                                                      
          }
        };
 
-      freeAllLocks();                                                                                                   // Free any remaining lock as the tree is now in a valid state
+      mainMemory.freeAllLocksInstruction();                                                                             // Free any remaining lock as the tree is now in a valid state
       squashRoot();                                                                                                     // Reduce the height of the tree if possible
       subFinish();
      }
@@ -915,9 +915,9 @@ class Tree extends Program                                                      
            }
          };
         heightDec();                                                                                                    // Decrease the height of the tree
+        freeLock(root());                                                                                               // Free the root
        }
      };
-    freeLock(root());                                                                                                   // Free the root
    }
 
 //D1 Public Methods                                                                                                     // Public methods for find, insert, delete etc.
@@ -954,7 +954,10 @@ class Tree extends Program                                                      
                 final Branch b = makeBranch(root());                                                                    // Make the root into a branch
                 b.insert(k, l.getLocation().i());                                                                       // Insert the left leaf
                 b.top(r.getLocation().i());                                                                             // The right leaf becomes top of the root branch
-                new If (Key.le(k)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};             // Insert left or right leaf depending on key versus splitting key
+                new If (Key.le(k))                                                                                      // Insert left or right leaf depending on key versus splitting key
+                 {void Then() {l.insert(Key, Data);}
+                  void Else() {r.insert(Key, Data);}
+                 };
                 b.level(One);                                                                                           // Level of a root branch made by splitting a leaf
                 heightInc();                                                                                            // The tree is now one level higher as we have split the root leaf
                 l.unlockLeaf(); r.unlockLeaf();
@@ -964,7 +967,6 @@ class Tree extends Program                                                      
                }
              };
             countInc();                                                                                                 // Count inserted key
-            unlockRoot();
            }
          };
        }
@@ -975,18 +977,18 @@ class Tree extends Program                                                      
         new If (F.slot)                                                                                                 // Key exists in full leaf
          {void Then()
            {F.setData(Data);                                                                                            // Update data associated with key indexed by the found slot
-            freeLock(f.leaf);                                                                                           // Release the lock on the leaf obtained by find leaf
            }
           void Else()                                                                                                   // Key is not present in the leaf
            {new If (l.full())                                                                                           // The target leaf is full
-             {void Then() {freeLock(f.leaf); insertFullLeaf(Key, Data);}                                                // Insert into a tree known to have a branch at the root and probably still has a full target leaf for the key
-              void Else() {l.insert(Key, Data); freeLock(f.leaf);}                                                      // Insert a new key into a non full leaf
+             {void Then() {insertFullLeaf(Key, Data);}                                                                  // Insert into a tree known to have a branch at the root and probably still has a full target leaf for the key
+              void Else() {l.insert(Key, Data);}                                                                        // Insert a new key into a non full leaf
              };
             countInc();                                                                                                 // Count inserted key
            }
          };
        }
      };
+    mainMemory().freeAllLocksInstruction();
     subFinish();
    }
 
@@ -2976,7 +2978,7 @@ Leaf   at:  12 size:   2, count:   2
 
   static void test_csFind()
    {sayCurrentTestName();
-    final int N = 2;
+    final int N = 4;
     final String saveFile = "/tmp/memory/test_csFind"+N;
 
     if (!fileExists(saveFile))
@@ -2987,8 +2989,12 @@ Leaf   at:  12 size:   2, count:   2
              {insert(Index, Index.Mul(11));
              }
            };
-          find(new Int(1)).i().ok(11);
-          find(new Int(2)).i().ok(22);
+          find(new Int(0)).valid().ok(false);
+          new ForCount(One, new Int(N+1))
+           {void body(Int Index)
+             {find(Index).i().ok(Index.Mul(11));
+             }
+           };
           maxSteps(9_999_999);
           execute();
           mainMemory.dumpMemory(saveFile);
@@ -2998,8 +3004,9 @@ Leaf   at:  12 size:   2, count:   2
 
     final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true).immediate(false).memoryFile(saveFile))
      {protected void treeCode()
-       {final Bint data = find(new Int(N/2));                                                                           // Find the data associated with the specified key in the tree
-        data.i().ok((N/2)*11);
+       {find(new Int(0)).valid().ok(false);
+        find(new Int(1)).i().ok(11);
+        find(new Int(2)).i().ok(22);
         maxSteps(9_999_999);
         execute();
         //say("AAAA", printTree());
