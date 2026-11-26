@@ -260,7 +260,9 @@ class Tree extends Program                                                      
     final Int t = new Int("t");
     new RemoteExecution(a, computables(a), t)                                                                           // Get type of memory area
      {void body()
-       {t.set(mainMemory.getInt(a));
+       {getLock(a);
+        t.set(mainMemory.getInt(a));
+        freeLock(a);
        }
      };
 
