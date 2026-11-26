@@ -1099,13 +1099,14 @@ class Tree extends Program                                                      
     new If (Right.mergeLeft(Left))                                                                                      // Successfully merged
      {void Then()
        {P.deleteSlot(LeftSlot);                                                                                         // The left sibling can now be unlocked and freed
-        Left.unlockLeaf(); if (Unlock) Right.unlockLeaf();
+        //Left.unlockLeaf();
         free(Left);
        }
       void Else()
-       {Left.unlockLeaf(); if (Unlock) Right.unlockLeaf();
+       {//Left.unlockLeaf();
        }
      };
+    //if (Unlock) Right.unlockLeaf();
     subFinish();
    }
 
@@ -1220,7 +1221,7 @@ class Tree extends Program                                                      
         getLock(r);                                                                                                     // Lock the right node as it is off the already locked path
         mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                            // Merge freeing right because we have completed the merge cycle at this level
        }
-      void Else() {freeLock(Parent.top());}                                                                             // Top has to be freed as the last merge at this level and we want to clear the locks on this level
+//    void Else() {freeLock(Parent.top());}                                                                             // Top has to be freed as the last merge at this level and we want to clear the locks on this level
      };
     subFinish();
    }
@@ -2978,7 +2979,7 @@ Leaf   at:  12 size:   2, count:   2
 
   static void test_csFind()
    {sayCurrentTestName();
-    final int N = 6;
+    final int N = 16;
     final String saveFile = "/tmp/memory/test_csFind"+N;
 
     if (!fileExists(saveFile))
