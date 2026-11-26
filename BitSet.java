@@ -747,7 +747,7 @@ public class BitSet extends Program                                             
 //D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
 
   public Bit  full () {return new Bit(firstZero().notValid());}                                                         // Whether the bitset is full - in log N time. It might be better to keep a separate count field if the extra overhead can be justified
-  public Bit empty () {new I() {void a() {say("HHHH", program().mainMemory.units, program().mainMemory, remoteExecutionMode, remoteExecutionArea, printBitSet());} boolean trace() {return false;}};return new Bit(firstOne ().notValid());}                                                         // Whether the bitset is empty
+  public Bit empty () {return new Bit(firstOne ().notValid());}                                                         // Whether the bitset is empty
 
   public Bit twoOrMoreOnes ()                                                                                           //N Whether there two or more ones in the bitset
    {subStart("Bitset.twoOrMoreOnes");
