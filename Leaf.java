@@ -158,7 +158,11 @@ class Leaf extends Program implements Program.Locatable                         
         slots.refUsedKeys.offset,        slots.refUsedKeys.offsetBits,
         slots.refKeys.offset,            slots.refKeys.offsetBits,
         slots.usedKeys.memoryRef.offset, slots.usedKeys.memoryCount.offset,
-       Zero),  slot, data)
+
+//slots.usedSlotsToKeys.LogBitSize, slots.usedSlotsToKeys.LogBitSize1,
+//slots.usedKeys.LogBitSize,        slots.usedKeys.LogBitSize1,
+
+        Zero),  slot, data)
        {void body()
          {final Slots.Find f = slots.new Find(key);                                                                     // Locate the specified key in the leaf
 new I() {void a() {say("DDDD1111", key, f.equal);} boolean trace() {return false;}};
