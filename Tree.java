@@ -258,11 +258,11 @@ class Tree extends Program                                                      
    {final Int a = nodeAddress(Node);                                                                                    // Area of memory containing node
 
     final Int t = new Int("t");
-    new RemoteExecution(a, computables(a), t)                                                                           // Get type of memory area
+    new RemoteExecution(Node, computables(Node), t)                                                                     // Get type of memory area
      {void body()
-       {getLock(a);
-        t.set(mainMemory.getInt(a));
-        freeLock(a);
+       {getLock(Node);
+        t.set(mainMemory.getInt(nodeAddress(Node)));                                                                    // The type of the memoryy (Leaf or Branch) is held in the first integer of the memory
+        freeLock(Node);
        }
      };
 
@@ -930,7 +930,7 @@ class Tree extends Program                                                      
     final Leaf.FindLeafKey f = L.new FindLeafKey(Key);                                                                  // Search for key in leaf
     final Bint          data = new Bint();                                                                              // Data associated with key if the key is present in the tree
     new If (f.slot) {void Then() {data.set(f.data);}};                                                                  // Record data associated with key if the key was found
-    L.unlockLeaf();                                                                                                     // Safe to free the read lock on the leaf because we have the data associated with the key
+    mainMemory.freeAllLocksInstruction();                                                                               // Safe to free all the locks because we now have the data associated with the key
 
     subFinish();
     return data;                                                                                                        // Will be set to invalid unless the key was found in which case it will contain the data associated with the key
@@ -2978,7 +2978,7 @@ Leaf   at:  12 size:   2, count:   2
 
   static void test_csFind()
    {sayCurrentTestName();
-    final int N = 4;
+    final int N = 6;
     final String saveFile = "/tmp/memory/test_csFind"+N;
 
     if (!fileExists(saveFile))
@@ -3005,8 +3005,11 @@ Leaf   at:  12 size:   2, count:   2
     final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true).immediate(false).memoryFile(saveFile))
      {protected void treeCode()
        {find(new Int(0)).valid().ok(false);
-        find(new Int(1)).i().ok(11);
-        find(new Int(2)).i().ok(22);
+        new ForCount(One, new Int(N+1))
+         {void body(Int Index)
+           {find(Index).i().ok(Index.Mul(11));
+           }
+         };
         maxSteps(9_999_999);
         execute();
         //say("AAAA", printTree());
