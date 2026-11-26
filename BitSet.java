@@ -14,6 +14,8 @@ public class BitSet extends Program                                             
   final boolean        powerOfTwo;                                                                                      // Some operations can be optimized if the bitset has a number of elements that is a power of two
   final boolean        trackCount;                                                                                      // Track the count of number of bits set to one
   final Int            bitSizeInt;                                                                                      // Bitsize as an Int to avoid overloading the program counter indexed constant array
+  final Int            LogBitSize;                                                                                      // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
+  final Int           LogBitSize1;                                                                                      // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
   final Build               build;                                                                                      // Build used to create bitset
   final Memory.Ref      memoryRef;                                                                                      // Memory used by bitset bits
   final Memory.Ref    memoryCount;                                                                                      // Memory for count field if present
@@ -89,6 +91,8 @@ public class BitSet extends Program                                             
     unitsSize        = Build.units();                                                                                   // Memory units needed for the bitset and its bit trees
     if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = program().mainMemory.new Ref(0);        // Use memory supplied by caller or create a reference to the default memory
     memoryCount      = trackCount ? memoryRef.step(unitsNeeded() - 1) : null;                                           // Maintain a count field at the end to determine the number of bits set to one in O(1) time
+    LogBitSize       = new Int("LogBitSize",  logBitSize)  ;                                                                           // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
+    LogBitSize1      = new Int("LogBitSize1", logBitSize-1);                                                                           // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
 
     luoVerilog       = "x_bitSet_limitsUpperOne_" +bitSize;                                                             // Verilog procedures to make references to constant arrays rather than holding them in memory
     luzVerilog       = "x_bitSet_limitsUpperZero_"+bitSize;
@@ -107,14 +111,15 @@ public class BitSet extends Program                                             
     heightZero       = new int[top_zero()+2];      heightZero();                                                        // Height of each node in the zeros tree
     posOne           = new int[top_one() +1];     posOneArray();                                                        // Position in row in ones tree from position in zeros tree
     posZero          = new int[top_zero()+2];    posZeroArray();                                                        // Position in row in zeros tree from position in zeros tree
+
     bitSetCode();                                                                                                       // Code for this bit set
    }
 
   BitSet initializeMemory () {memoryRef.clear(unitsNeeded()); return this;}                                             // Initialize memory
   private int unitsNeeded () {return build.units();}                                                                    // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
   int                size () {return build.bitSize;}                                                                    // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
-  Int          logBitSize () {return new Int(logBitSize)  ;}                                                            // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
-  Int         logBitSize1 () {return new Int(logBitSize-1);}                                                            // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
+  Int          logBitSize () {return LogBitSize   ;}                                                                    // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
+  Int         logBitSize1 () {return LogBitSize1  ;}                                                                    // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
 
   Int               count ()                                                                                            // Count of number of set bits in bitset if this information is being tracked it is available in order (1) time otherwise it is not provided
    {if (!trackCount) stop("Count capability not requested, use Build.count(true) to do so");
@@ -524,7 +529,8 @@ public class BitSet extends Program                                             
    {subStart("Bitset.firstOne");
     final Int  p = new Int("p", 0);                                                                                     // Offset of first bit
     final Bint r = new Bint();                                                                                          // Result
-
+    final Bit  b = getBit(p);
+new I() {void a() {say("IIIII11111", p, b);} boolean trace() {return false;}};
     new If (getBit(p))                                                                                                  // Try the first bit of the bitset
      {void Then() {r.set(p);          }                                                                                 // First bit of bitset is set
       void Else() {r.copy(nextOne(p));}                                                                                 // Find the next set bit if there is one. Use copy because the result might be invalid showing that there is no first one
@@ -552,7 +558,7 @@ public class BitSet extends Program                                             
     final Bint Next = new Bint();                                                                                       // Next one if any
     final Int  p    = new Int(Start);                                                                                   // Start position
 
-    new For(logBitSize ())                                                                                              // Traverse down through the tree to the root
+    new For(logBitSize())                                                                                              // Traverse down through the tree to the root
      {void body(Int I, Bit C)
        {final Int q = p.Inc();                                                                                          // Next bit over
         new If (q.le(limitUpperOne(p)))                                                                                 // Found adjacent bit set to one to the right of the path up from the start bit
@@ -621,6 +627,7 @@ public class BitSet extends Program                                             
    {subStart("Bitset.firstZero");
     final Int  p = Zero;
     final Bint r = new Bint();                                                                                          // Result
+new I() {void a() {say("GGGGG1111", p);} boolean trace() {return false;}};
     new If (getBit(p))
      {void Then() {r.copy(nextZero(p));}                                                                                // Use copy because the result might be invalid showing that there is no first zero
       void Else() {r.set(p);          }
@@ -650,23 +657,30 @@ public class BitSet extends Program                                             
     final Int  p    = new Int(Start);                                                                                   // Start position
     final Int  Q    = p.Inc().constant();
 
+new I() {void a() {say("FFFF1111", Q, p);} boolean trace() {return false;}};
     new If (Q.le(limitUpperZero(p)))                                                                                    // Adjacent bit exists
      {void Then()                                                                                                       // Found the adjacent bit to the right
-       {new If (getBitNC(Q))                                                                                            // Adjacent bit exists and is set so we must search
+       {
+new I() {void a() {say("FFFF2222");} boolean trace() {return false;}};
+         new If (getBitNC(Q))                                                                                            // Adjacent bit exists and is set so we must search
          {void Then()                                                                                                   // Found the adjacent bit to the right
            {p.set(parentZero(p));                                                                                       // Move in the zeros tree
+new I() {void a() {say("FFFF3333", p);} boolean trace() {return false;}};
             new For(logBitSize())                                                                                       // Traverse down through the tree to the root
              {void body(Int I, Bit C)
                {final Int q = p.Inc().constant();                                                                       // Next bit over
+new I() {void a() {say("FFFF4444", q);} boolean trace() {return false;}};
 
                 new If (q.le(limitUpperZero(p)))                                                                        // Found adjacent bit set to one to the right of the path up from the start bit
                  {void Then()                                                                                           // Found the adjacent bit to the right
                    {new If (getBitNC(q).flip())                                                                         // Found adjacent bit set to one to the right of the path up from the start bit
                      {void Then()                                                                                       // Found the adjacent bit to the right
                        {Next.set(lowZero(q));                                                                           // Lowest one bit in adjacent zeros tree
+new I() {void a() {say("FFFF55555", Next);} boolean trace() {return false;}};
                        }
                       void Else()                                                                                       // No adjacent one yet
                        {p.set(parentZero(p));                                                                           // Move up to parent
+new I() {void a() {say("FFFF66666", p);} boolean trace() {return false;}};
                         C.set();                                                                                        // Whether we are done yet
                        }
                      };
@@ -742,7 +756,7 @@ public class BitSet extends Program                                             
 //D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
 
   public Bit  full () {return new Bit(firstZero().notValid());}                                                         // Whether the bitset is full - in log N time. It might be better to keep a separate count field if the extra overhead can be justified
-  public Bit empty () {return new Bit(firstOne ().notValid());}                                                         // Whether the bitset is empty
+  public Bit empty () {new I() {void a() {say("HHHH", program().mainMemory.units, program().mainMemory, remoteExecutionMode, remoteExecutionArea, printBitSet());} boolean trace() {return false;}};return new Bit(firstOne ().notValid());}                                                         // Whether the bitset is empty
 
   public Bit twoOrMoreOnes ()                                                                                           //N Whether there two or more ones in the bitset
    {subStart("Bitset.twoOrMoreOnes");
@@ -870,6 +884,8 @@ public class BitSet extends Program                                             
     subFinish();
     return ""+s;
    }
+
+  String printBitSet() {return toString();}                                                                             // Print a bit set
 
 //D1 Tests                                                                                                              // Tests
 
