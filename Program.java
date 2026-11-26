@@ -19,7 +19,7 @@ import java.nio.channels.*;
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "Remote execution";                                          // How memory is shared between main program and sub program
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean         suppressTraceBackComments =!true;                                                        // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog =!true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
@@ -2244,13 +2244,13 @@ cd {f}; yosys -q {y}                                                            
      } //Location
    } //DumpLocations
 
-  void initializeJavaMemory () {for(Memory m : memories()) for (int i = 0, N = m.size(); i < N;++i) m.units[i] = 0;}    // Clear all of memory to zero
+//void initializeJavaMemory () {for(Memory m : memories()) for (int i = 0, N = m.size(); i < N;++i) m.units[i] = 0;}    // Clear all of memory to zero
   void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpJavaMemoryInDecimal());}               // Dump all the memories
 
-  void initializeJavaVars ()                                                                                            // Initialize Java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the Verilog version
-   {for (Int i : ints()) if (!i.constant) {i.i(0);      i.v = false;}
-    for (Bit b : bits()) if (!b.constant) {b.i = false; b.v = false;}
-   }
+//void initializeJavaVars ()                                                                                            // Initialize Java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the Verilog version
+// {for (Int i : ints()) if (!i.constant) {i.i(0);      i.v = false;}
+//  for (Bit b : bits()) if (!b.constant) {b.i = false; b.v = false;}
+// }
 
   StringBuilder dumpAllJavaVariables ()                                                                                 // Dump all memories and variables to the Java trace file
    {final StringBuilder s = new StringBuilder();
