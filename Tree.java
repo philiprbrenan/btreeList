@@ -82,7 +82,8 @@ class Tree extends Program                                                      
       if (name != null) p.name(name);                                                                                   // Optional name of program containing tree code
       p.memory(size(), new AddressToArea());                                                                            // Memory size and address to area lambda
       p.immediate(immediate);                                                                                           // Immediate or delayed execution mode
-      p.checkLocks(true);                                                                                               // Check locking
+//    p.checkLocks(true);                                                                                               // Check locking
+      p.checkLocks(false);    // While implementing remote execution
       p.load(memoryFile);                                                                                               // Load memory from this file if possible
       if (clientServer) p.cs(numberOfNodes+3);                                                                          // Number of separate memory areas
       return p;
@@ -473,7 +474,7 @@ class Tree extends Program                                                      
        {new If(isAllocated(Index))
          {void Then()
            {final boolean locked = isLocked(Index).b();
-             new If (isLeaf(Index))
+            new If (isLeaf(Index))
              {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void a() {s.append(t);} boolean trace() {return false;}};}
               void Else() {final StringBuilder t = branch(Index).print(); new I() {void a() {s.append(t);} boolean trace() {return false;}};}
              };
@@ -504,6 +505,7 @@ class Tree extends Program                                                      
            {void Then()
              {leaf.set(p);                                                                                              // Record leaf
               final Leaf.FirstEntry f = leaf(p).new FirstEntry();                                                       // Details of first entry in leaf
+say("BBBB11111", f);
               new If (f.slot)                                                                                           // Leaf not empty
                {void Then()
                  {key .set(f.key);                                                                                      // Key from first slot
@@ -878,7 +880,7 @@ class Tree extends Program                                                      
       final Leaf l = leaf(leaf);
       final Bit  e = new Bit("empty");                                                                                  // Leaf is now empty and so can be removed along with its empty parents from the tree
 
-      new RemoteExecution(new Int(l.at.i()), computables(), e)
+      new RemoteExecution(new Int(l.at.i()), computables(l.slots.refUsedKeys.offset, l.slots.refUsedKeys.offsetBits), e)
        {void body()
          {e.set(l.empty());                                                                                             // Leaf is now empty and so can be removed along with its empty parents from the tree
          }
@@ -1241,17 +1243,16 @@ class Tree extends Program                                                      
 
   private void mergeLeftLeft (Branch Parent, Bint Pos)                                                                  // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed.  Ensure that both nodes in the merge are locked
    {subStart("mergeLeftLeft");
-    final Branch P = Parent;                                                                                            // Parent containing siblings
-    final Bint   R = new Bint();                                                                                        // Right child of merge
+    final Bint R = new Bint();                                                                                          // Right child of merge
 
     new If (Pos)                                                                                                        // Merging relative to top
-     {void Then() {R.copy(P.prevSlot(Pos.i()));}                                                                        // Merge entirely within body of parent
-      void Else() {R.copy(P.lastSlot());}                                                                               // Left once from top
+     {void Then() {R.copy(Parent.prevSlot(Pos.i()));}                                                                   // Merge entirely within body of parent
+      void Else() {R.copy(Parent.lastSlot());}                                                                          // Left once from top
      };
 
     new If (R)                                                                                                          // There is a right child for the merge
      {void Then()
-       {final Bint L = P.prevSlot(R.i());                                                                               // Left of right child
+       {final Bint L = Parent.prevSlot(R.i());                                                                          // Left of right child
         new If (L)                                                                                                      // There is a left position
          {void Then()
            {final Int l = stepDownAt(Parent, L.i());                                                                    // Index of left child for merge
@@ -1879,11 +1880,12 @@ Height        :    1
   static void test_deleteAscending(boolean Ex)
    {sayCurrentTestName();
     final int N = 32;
-    final String saveFile = "/tmp/memory/deleteAscending";
+    final String saveFile = "/tmp/memory/deleteAscending"+N;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {protected void treeCode()
-       {if (fileExists(saveFile)) mainMemory.loadMemory(saveFile);
+       {say("AAAA", checkLocks);
+        if (fileExists(saveFile)) mainMemory.loadMemory(saveFile);
         else
          {new ForCount(One, new Int(N+1))
            {void body(Int Index)
@@ -1906,7 +1908,10 @@ Height        :    1
         new ForCount(new Int(N))
          {void body(Int Index)
            {final Int k = Index.Inc();
-            final FirstEntry f = new FirstEntry(); f.key.ok(k); freeLock(f.leaf.i());
+            final FirstEntry f = new FirstEntry();
+            f.key.ok(k);
+            freeLock(f.leaf.i());
+
             delete(k).ok(k.Mul(11));
             if (Ex) s.append(printTree());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
@@ -1957,8 +1962,8 @@ bec5f5f8a10f48c58d2511ce6de2c856
 27c13a104305cc7f5fb4416354fcd276
 """);
 
-        //stop(s);
-        if (Ex) ok(s, """
+        stop(s);
+        if (Ex) ok(""+s, """
                                                           0016                                                                       |
                                                           (0,2)  5                                                                   |
                                                           [9,2]2                                                                     |
@@ -3142,7 +3147,8 @@ Leaf   at:  12 size:   2, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_csDelete();
+    //test_csDelete();
+      test_deleteAscending(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
