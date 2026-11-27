@@ -32,7 +32,7 @@ public class Program extends Test                                               
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final int                     instructionTraceLocation = 20277;                                                       // Trace instructions +/-10 instructions of this instruction regardless of the setting of "suppressInstructionTracing"
+  final int                     instructionTraceLocation = 5273;                                                        // Trace instructions +/-100 instructions of this instruction regardless of the setting of "suppressInstructionTracing"
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
@@ -98,7 +98,7 @@ public class Program extends Test                                               
 
   static class Build                                                                                                    // Builder for this program
    {boolean                     immediate = false;                                                                      // Immediate mode
-    boolean                     checkLocks = false;                                                                     // Check memory locks
+    boolean                    checkLocks = false;                                                                      // Check memory locks
     Program                 parentProgram = null;                                                                       // Parent program
     Integer                          size = null;                                                                       // Size of memory used by this program
     AddressToArea           addressToArea = addressToZero();                                                            // Address to area mapping
@@ -1747,9 +1747,10 @@ endmodule
       void freeLock (int Area)                                                                                          // Free a read lock if it exists or complain if it does not
        {if (!checkLocks) return;                                                                                        // Optionally ignore locking to facilitate testing
         final Lock l = lockDetails(Area);                                                                               // Locate lock for area
-        if (l == null) stopIn("No lock to free for area:", Area);                                                       // Create a lock description for this area
+//      if (l == null) stopIn("No lock to free for area:", Area);                                                       // Complain if the lock does not exist
+        if (l == null) return;                                                                                          // The lock is already free - perhaps complain if the lock is already free?
         if (l.transactionId != transactionId())                                                                         // Lock exists but is owned by a different process
-         {stopIn(l.lockFailTransaction("Unable to free memory lock obtained by a different transaction."));               // Terminate if an attempt is made to free a lock owned by another transaction
+         {stopIn(l.lockFailTransaction("Unable to free memory lock obtained by a different transaction."));             // Terminate if an attempt is made to free a lock owned by another transaction
          }
         locks.remove(Area);                                                                                             // Remove lock
        }
@@ -1893,13 +1894,18 @@ endmodule
     return "{"+j+"}";
    }
 
+  void freeAllLocks ()                                                                                                  // Create an instruction to free all the locks held by a transaction on mainmemory
+   {if (!checkLocks) return;
+    mainMmeory.freeAllLocksInstruction();
+   }
+
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
 //D2 Instruction                                                                                                        // An instruction represents code to be executed by a process in a single clock cycle == process step
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber = program().code.size();                                                                // The number of this instruction
-    final String      traceBack = !suppressLocateInstructions || (instructionNumber >= instructionTraceLocation-10 && instructionNumber < instructionTraceLocation+10) ? traceBack() : null; // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String      traceBack = !suppressLocateInstructions || (instructionNumber >= instructionTraceLocation-100 && instructionNumber < instructionTraceLocation+100) ? traceBack() : null; // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String      traceTest =  suppressInstructionCoverage ? null : traceTest();                                    // Line at which this instruction was created up to the enclosing test - suppressible because it imposes a lot of extra processing
     final String       traceSub =  subsTrace;                                                                           // Sub during which this instruction was created
     final boolean        noJump;                                                                                        // The instruction will handle setting the program counter if false
