@@ -1600,13 +1600,18 @@ public class Program extends Test                                               
 
     void loadMemory(String File)                                                                                        // Load memory from a file if supplied
      {if (File == null) return;
-      try (DataInputStream in = new DataInputStream(Files.newInputStream(Path.of(File))))
-       {final int N = in.readInt();
-        units = new int[N];
+      new I()
+       {void a()
+         {try (DataInputStream in = new DataInputStream(Files.newInputStream(Path.of(File))))
+           {final int N = in.readInt();
+            units = new int[N];
 
-        for (int i = 0; i < N; i++) units[i] = in.readInt();
-       }
-      catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+            for (int i = 0; i < N; i++) units[i] = in.readInt();
+           }
+          catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+         }
+        boolean trace() {return false;}
+       };
      }
 
 //D3 Verilog                                                                                                            // Verilog representation of memory
@@ -1892,11 +1897,6 @@ endmodule
    {final StringJoiner j = new StringJoiner(", ");
     for (Memory m : memories()) if (m != intMemory() && m != bitMemory) j.add(md5Sum(m.units));
     return "{"+j+"}";
-   }
-
-  void freeAllLocks ()                                                                                                  // Create an instruction to free all the locks held by a transaction on mainmemory
-   {if (!checkLocks) return;
-    mainMmeory.freeAllLocksInstruction();
    }
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
