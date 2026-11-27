@@ -24,11 +24,12 @@ my $doc;                                                                        
 my $gccVersion;                                                                                                         # Alternate version of gcc is set.  Example: --gccVersion gcc-10
 my $run;                                                                                                                # Run
 my $search;                                                                                                             # Search for a local file to make the specified file
+my $show;                                                                                                               # Show the command rather than executing it
 my $showHtml;                                                                                                           # Show html in opera
 #my   $upload;                                                                                                          # Upload files
 my $valgrind;                                                                                                           # Check C memory usage
 my $xmlCatalog;                                                                                                         # Verify xml
-my $timeOut = "1800s";                                                                                                   # Time out
+my $timeOut = "1800s";                                                                                                  # Time out
 
 sub makeWithPerl {                                                                                                      # Make a file
 
@@ -41,6 +42,7 @@ GetOptions(
   'javaHome=s'  =>\$javaHome,
   'run'         =>\$run,
   'search!'     =>\$search,
+  'show'        =>\$show,
   'showHtml!'   =>\$showHtml,
   'valgrind'    =>\$valgrind,
 #  'upload'      =>\$upload,
@@ -97,9 +99,10 @@ if ($file =~ m(\.java\Z))                                                       
   my $jars = join ":", @jars;
 
   my $cp = $d; $cp = "$d:$jars" if @jars;                                                                               # Class path needs the classes created by this compile and any mentioned jar files
+  my $pr = "-parameters";                                                                                               # Additional parameters
 
   if ($compile)                                                                                                         # Compile
-   {my $c = "javac -g -d $d -cp $cp -Xlint -Xdiags:verbose $file -Xmaxerrs 8";                                          # Syntax check Java
+   {my $c = "javac $pr -g -d $d -cp $cp -Xlint -Xdiags:verbose $file -Xmaxerrs 8";                                      # Syntax check Java
     say STDERR $c;
     print STDERR qx($c);
    }
@@ -108,15 +111,12 @@ if ($file =~ m(\.java\Z))                                                       
 
     my $class = $package ? "$package.$Name" : $Name;                                                                    # Class location
     my $p = join ' ', @ARGV;                                                                                            # Collect the remaining parameters and pass them to the java application
-#   my $f = profile($file);
     my $f = $file;
-    my $c = "javac -g -d $d -cp $cp $f && timeout $timeOut java -XX:+UseZGC -ea -cp $cp $class $p";
-#   xxx($c);
-    qx($c);
-#   runTests($file, $c);
-#   unlink $f;
+    my $c = "javac $pr -g -d $d -cp $cp $f && timeout $timeOut java -XX:+UseZGC -ea -cp $cp $class $p";
+    say STDERR $c if     $show;
+    qx($c)        unless $show;;
    }
-  &removeClasses;
+  #&removeClasses;                                                                                                      # Avoid cluttering up the local folder with any generated class files
   exit;
  }
 
