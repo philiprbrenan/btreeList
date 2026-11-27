@@ -1564,7 +1564,8 @@ public class Test                                                               
 
         while (h.hasRemaining())
          {final int r = Socket.read(h);                                                                                 // Read header
-          if (r <= 0) stop("Invalid message", currentCommandLine());
+          //if (r <= 0) stop("Invalid message", currentCommandLine());
+          if (r <= 0) System.exit(0);                                                                                   // To avoid being flooded with termination messages when a process encounters an error
          }
 
         h.flip();                                                                                                       // Read from buffer
