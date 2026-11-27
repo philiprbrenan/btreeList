@@ -876,7 +876,15 @@ class Tree extends Program                                                      
      {subStart("Tree.mergeUp");
 
       final Leaf l = leaf(leaf);
-      new If (l.empty())                                                                                                // Leaf is now empty and so can be removed along with its empty parents from the tree
+      final Bit  e = new Bit("empty");                                                                                  // Leaf is now empty and so can be removed along with its empty parents from the tree
+
+      new RemoteExecution(new Int(l.at.i()), computables(), e)
+       {void body()
+         {e.set(l.empty());                                                                                             // Leaf is now empty and so can be removed along with its empty parents from the tree
+         }
+       };
+
+      new If (e)                                                                                                        // Leaf is now empty and so can be removed along with its empty parents from the tree
        {void Then()
          {final Int q = new Int("q").set(leaf);                                                                         // Last child
           new For(mnl())                                                                                                // Back up along path
@@ -3074,7 +3082,7 @@ Leaf   at:  12 size:   2, count:   2
 
   static void test_csDelete()
    {sayCurrentTestName();
-    final int N = 2;
+    final int N = 4;
     final String saveFile = "/tmp/memory/test_csDelete"+N;
 
     if (!fileExists(saveFile))
