@@ -179,18 +179,22 @@ class Branch extends Program implements Program.Locatable                       
        {void body()
          {lockBranch();                                                                                                 // Lock the branch
           final Slots.Find f = slots.new Find(Key); eqKey.set(f.equal);                                                 // Find result
+new I() {void a() {say("BBBBB11111", Key, eqKey);} boolean trace() {return false;}};
           new If (f.empty)                                                                                              // Found the index of a key that is greater than or equal to the search key
            {void Then()                                                                                                 // Step through top because the body of the branch is empty
              {node.set(top());
+new I() {void a() {say("BBBBB2222");} boolean trace() {return false;}};
              }
             void Else()
              {new If (f.equal.or(f.lower))                                                                              // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
                {void Then()
                  {slot.set(f.slot.i());                                                                                 // Step through slot
                   node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                  // Next node
+new I() {void a() {say("BBBBB3333");} boolean trace() {return false;}};
                  }
                 void Else()                                                                                             // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
                  {final Bint n = slots.nextSlot(f.slot.i());                                                            // Next slot
+new I() {void a() {say("BBBBB4444", n.i());} boolean trace() {return false;}};
                   new If (n)                                                                                            // Next slot is valid
                    {void Then() {node.set(data(slots.getSlotToKeyIndex(n.i()))); slot.set(n.i());}                      // Node at next level down
                     void Else() {node.set(top());}                                                                      // No next key so step down through top
