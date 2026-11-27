@@ -3200,8 +3200,7 @@ Leaf   at:  12 size:   2, count:   2
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_csDelete();
-    //test_csFind();
-    test_deleteAscending();
+    test_csFind();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
