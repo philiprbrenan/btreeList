@@ -373,15 +373,69 @@ class Tree extends Program                                                      
 
   private Branch branch () {return makeBranch(allocate());}                                                             // Create and initialize a branch in memory and return its index
 
-  Int     count () {lockCount();  final Int c = refCount .getInt();                            unlockCount(); return c;}// Number of keys in tree
-  private Int  countInc () {lockCount();  final Int c = refCount .getInt(); refCount .putInt(c.inc()); unlockCount(); return c;}// Increment the key count
-  private Int  countDec () {lockCount();  final Int c = refCount .getInt(); refCount .putInt(c.dec()); unlockCount(); return c;}// Decrement the key count
+//Int     count () {lockCount();  final Int c = refCount .getInt();                            unlockCount(); return c;}// Number of keys in tree
+//Int  countInc () {lockCount();  final Int c = refCount .getInt(); refCount .putInt(c.inc()); unlockCount(); return c;}// Increment the key count
+//Int  countDec () {lockCount();  final Int c = refCount .getInt(); refCount .putInt(c.dec()); unlockCount(); return c;}// Decrement the key count
 
-  Int            height () {lockHeight(); final Int c = refHeight.getInt();                            unlockHeight();return c;}// Height of tree
-  private Int heightInc () {lockHeight(); final Int c = refHeight.getInt(); refHeight.putInt(c.inc()); unlockHeight();return c;}// Increment the height of the tree
-  private Int heightDec () {lockHeight(); final Int c = refHeight.getInt(); refHeight.putInt(c.dec()); unlockHeight();return c;}// Decrement the height of the tree
+//Int    height () {lockHeight(); final Int c = refHeight.getInt();                            unlockHeight();return c;}// Height of tree
+//Int heightInc () {lockHeight(); final Int c = refHeight.getInt(); refHeight.putInt(c.inc()); unlockHeight();return c;}// Increment the height of the tree
+//Int heightDec () {lockHeight(); final Int c = refHeight.getInt(); refHeight.putInt(c.dec()); unlockHeight();return c;}// Decrement the height of the tree
 
-  private void height (Int Height)                                                                                      // Set the height of the tree
+  Int    count ()                                                                                                       // Count of tree
+   {final Int c = new Int("Count");
+    new RemoteExecution(new Int(countArea()), computables(refCount.offset))
+     {void body()
+       {lockCount(); c.set(refCount.getInt());  unlockCount();
+       }
+     };
+    return c;
+   }
+
+
+  void countInc ()                                                                                                      // Increment the count of the tree
+   {new RemoteExecution(new Int(countArea()), computables(refCount.offset))
+     {void body()
+       {lockCount(); refCount.putInt(refCount.getInt().inc()); unlockCount();
+       }
+     };
+   }
+
+  void countDec ()                                                                                                      // Decrement the count of the tree
+   {new RemoteExecution(new Int(countArea()), computables(refCount.offset))
+     {void body()
+       {lockCount(); refCount.putInt(refCount.getInt().dec()); unlockCount();
+       }
+     };
+   }
+
+  Int    height ()                                                                                                      // Height of tree
+   {final Int h = new Int("Height");
+    new RemoteExecution(new Int(heightArea()), computables(refHeight.offset))
+     {void body()
+       {lockHeight(); h.set(refHeight.getInt());  unlockHeight();
+       }
+     };
+    return h;
+   }
+
+
+  void heightInc ()                                                                                                     // Increment the height of the tree
+   {new RemoteExecution(new Int(heightArea()), computables(refHeight.offset))
+     {void body()
+       {lockHeight(); refHeight.putInt(refHeight.getInt().inc()); unlockHeight();
+       }
+     };
+   }
+
+  void heightDec ()                                                                                                     // Decrement the height of the tree
+   {new RemoteExecution(new Int(heightArea()), computables(refHeight.offset))
+     {void body()
+       {lockHeight(); refHeight.putInt(refHeight.getInt().dec()); unlockHeight();
+       }
+     };
+   }
+
+  void height (Int Height)                                                                                              // Set the height of the tree
    {new RemoteExecution(new Int(heightArea()), computables(Height))
      {void body()
        {lockHeight(); refHeight.putInt(Height); unlockHeight();
@@ -1020,9 +1074,9 @@ class Tree extends Program                                                      
     subFinish();
    }
 
-  public Int delete (Int Key)                                                                                           // Delete a key from the tree and return the associated data if the key was present in the tree
+  public Bint delete (Int Key)                                                                                          // Delete a key from the tree and return the associated data if the key was present in the tree
    {subStart("Tree.delete");
-    final Int data = new Int();                                                                                         // Data associated with key if the key is present in the tree
+    final Bint data = new Bint();                                                                                       // Data associated with key if the key is present in the tree
     getLock(root());                                                                                                    // Lock the root
     new If (isRootLeaf())
      {void Then()                                                                                                       // The root is a leaf
@@ -3018,6 +3072,47 @@ Leaf   at:  12 size:   2, count:   2
      };
    }
 
+  static void test_csDelete()
+   {sayCurrentTestName();
+    final int N = 2;
+    final String saveFile = "/tmp/memory/test_csDelete"+N;
+
+    if (!fileExists(saveFile))
+     {final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).immediate(true))
+       {protected void treeCode()
+         {new ForCount(One, new Int(N+1))
+           {void body(Int Index)
+             {insert(Index, Index.Mul(11));
+             }
+           };
+          find(new Int(0)).valid().ok(false);
+          new ForCount(One, new Int(N+1))
+           {void body(Int Index)
+             {find(Index).i().ok(Index.Mul(11));
+             }
+           };
+          maxSteps(9_999_999);
+          execute();
+          mainMemory.dumpMemory(saveFile);
+         }
+       };
+     }
+
+    final Tree T = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(N).cs(true).immediate(false).memoryFile(saveFile))
+     {protected void treeCode()
+       {find(new Int(0)).valid().ok(false);
+        new ForCount(One, new Int(N+1))
+         {void body(Int Index)
+           {delete(Index).i().ok(Index.Mul(11));
+           }
+         };
+        maxSteps(9_999_999);
+        execute();
+        //say("AAAA", printTree());
+       }
+     };
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {if (runTest( 1)) test_tree();
     if (runTest( 2)) test_insert();
@@ -3034,13 +3129,12 @@ Leaf   at:  12 size:   2, count:   2
     //if (runTest(13)) test_rootFanOut3();
     if (runTest(14)) test_traverse();
     if (runTest(15)) {}//test_csFind();
-    if (runTest(16)) {}
+    if (runTest(16)) {}//test_csDelete();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_insert();
-    test_csFind();
+    test_csDelete();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
