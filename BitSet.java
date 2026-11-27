@@ -91,8 +91,8 @@ public class BitSet extends Program                                             
     unitsSize        = Build.units();                                                                                   // Memory units needed for the bitset and its bit trees
     if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = program().mainMemory.new Ref(0);        // Use memory supplied by caller or create a reference to the default memory
     memoryCount      = trackCount ? memoryRef.step(unitsNeeded() - 1) : null;                                           // Maintain a count field at the end to determine the number of bits set to one in O(1) time
-    LogBitSize       = new Int("LogBitSize",  logBitSize)  ;                                                                           // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
-    LogBitSize1      = new Int("LogBitSize1", logBitSize-1);                                                                           // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
+    LogBitSize       = new Int("LogBitSize",  logBitSize)  ;                                                            // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
+    LogBitSize1      = new Int("LogBitSize1", logBitSize-1);                                                            // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
 
     luoVerilog       = "x_bitSet_limitsUpperOne_" +bitSize;                                                             // Verilog procedures to make references to constant arrays rather than holding them in memory
     luzVerilog       = "x_bitSet_limitsUpperZero_"+bitSize;
