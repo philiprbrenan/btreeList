@@ -267,8 +267,7 @@ class Tree extends Program                                                      
        }
      };
 
-    final Bit r = new Bit(false);
-    new If (t.eq(Type.value())) {void Then() {r.set(true);}};
+    final Bit r = new Bit(t.eq(Type.value()));
     return r;
    }
 
@@ -505,7 +504,6 @@ class Tree extends Program                                                      
            {void Then()
              {leaf.set(p);                                                                                              // Record leaf
               final Leaf.FirstEntry f = leaf(p).new FirstEntry();                                                       // Details of first entry in leaf
-say("BBBB11111", f);
               new If (f.slot)                                                                                           // Leaf not empty
                {void Then()
                  {key .set(f.key);                                                                                      // Key from first slot
@@ -904,6 +902,10 @@ say("BBBB11111", f);
                    };
                   step.dec();                                                                                           // Path is now shorter
                  }
+                void Else()
+                 {final Branch.StepDown d = b.new StepDown(key);                                                        // The empty stalk terminates in the boy of a branch so we can remove it
+                  b.slots.delete(d.slot.i());
+                 }
                };
              }
            };
@@ -914,7 +916,7 @@ say("BBBB11111", f);
        {void body(Int Index, Bit Continue)
          {final Int             i = step.Sub(Index).add(start).dec();                                                   // Index of parent branch that contains the split siblings
           final Branch          p = branch(getPath(i));                                                                 // Parent branch containing split children
-          final Branch.StepDown d = p.new StepDown(key   );                                                             // Locate key slot
+          final Branch.StepDown d = p.new StepDown(key);                                                                // Locate key slot
           mergeLeftLeft(  p, d.slot);
           mergeRightRight(p, d.slot);
           mergeLeft(      p, d.slot);
@@ -1689,14 +1691,14 @@ Height        :    1
 
         //stop(printTree());
         if (Ex) ok(printTree(), """
-                                                 {0008                                                             0015                                                                0024   }                                                      |
-                                                 (0,0)                                                             (0,2)                                                               (0,4)    5                                                    |
-                                                 [9,0]2                                                            [14,2]2                                                             [21,4]2                                                       |
-       0002          0004          0006                         0010            0012             0014                              0018             0020             0022                                0026           0028           0030          |
-       (9,0,0)       (9,0,2)       (9,0,4) 8                    (14,0,0)        (14,0,2)         (14,0,4) 13                       (21,0,0)         (21,0,2)         (21,0,4) 18                         (5,0,0)        (5,0,2)        (5,0,4) 2     |
-       [3,0]1        [4,2]1        [7,4]1                       [10,0]1         [6,2]1           [12,4]1                           [15,0]1          [11,2]1          [17,4]1                             [22,0]1        [16,2]1        [24,4]1       |
-1,2           3,4           5,6             7,8        9,10             11,12           13,14               15            17,18            19,20            21,22               23,24            25,26          27,28          29,30            31,32|
-(3,9,0)       (4,9,2)       (7,9,4)         (8,9)      (10,14,0)        (6,14,2)        (12,14,4)           (13,14)       (15,21,0)        (11,21,2)        (17,21,4)           (18,21)          (22,5,0)       (16,5,2)       (24,5,4)         (2,5)|
+                                                 0008                                                              0015                                                                0024                                                         |
+                                                 (0,0)                                                             (0,2)                                                               (0,4)   5                                                    |
+                                                 [9,0]2                                                            [14,2]2                                                             [21,4]2                                                      |
+       0002          0004          0006                         0010            0012             0014                              0018             0020             0022                               0026           0028           0030          |
+       (9,0,0)       (9,0,2)       (9,0,4) 8                    (14,0,0)        (14,0,2)         (14,0,4) 13                       (21,0,0)         (21,0,2)         (21,0,4) 18                        (5,0,0)        (5,0,2)        (5,0,4) 2     |
+       [3,0]1        [4,2]1        [7,4]1                       [10,0]1         [6,2]1           [12,4]1                           [15,0]1          [11,2]1          [17,4]1                            [22,0]1        [16,2]1        [24,4]1       |
+1,2           3,4           5,6             7,8        9,10             11,12           13,14               15            17,18            19,20            21,22               23,24           25,26          27,28          29,30            31,32|
+(3,9,0)       (4,9,2)       (7,9,4)         (8,9)      (10,14,0)        (6,14,2)        (12,14,4)           (13,14)       (15,21,0)        (11,21,2)        (17,21,4)           (18,21)         (22,5,0)       (16,5,2)       (24,5,4)         (2,5)|
 """);
 
         ok(()->mainMemoryMd5Sum(), "0e71c12fa8fae5a4beba0e335636a2a5");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
@@ -1705,14 +1707,14 @@ Height        :    1
 
         //stop(printTree());
         if (Ex) ok(printTree(), """
-                                                 {0008                                            0014                                                                0024   }                                                      |
-                                                 (0,0)                                            (0,2)                                                               (0,4)    5                                                    |
-                                                 [9,0]2                                           [14,2]2                                                             [21,4]2                                                       |
-       0002          0004          0006                         0010            0012                              0018             0020             0022                                0026           0028           0030          |
-       (9,0,0)       (9,0,2)       (9,0,4) 8                    (14,0,0)        (14,0,2) 12                       (21,0,0)         (21,0,2)         (21,0,4) 18                         (5,0,0)        (5,0,2)        (5,0,4) 2     |
-       [3,0]1        [4,2]1        [7,4]1                       [10,0]1         [6,2]1                            [15,0]1          [11,2]1          [17,4]1                             [22,0]1        [16,2]1        [24,4]1       |
-1,2           3,4           5,6             7,8        9,10             11,12              13,14         17,18            19,20            21,22               23,24            25,26          27,28          29,30            31,32|
-(3,9,0)       (4,9,2)       (7,9,4)         (8,9)      (10,14,0)        (6,14,2)           (12,14)       (15,21,0)        (11,21,2)        (17,21,4)           (18,21)          (22,5,0)       (16,5,2)       (24,5,4)         (2,5)|
+                                                 0008                                             0014                                                                0024                                                         |
+                                                 (0,0)                                            (0,2)                                                               (0,4)   5                                                    |
+                                                 [9,0]2                                           [14,2]2                                                             [21,4]2                                                      |
+       0002          0004          0006                         0010            0012                              0018             0020             0022                               0026           0028           0030          |
+       (9,0,0)       (9,0,2)       (9,0,4) 8                    (14,0,0)        (14,0,2) 12                       (21,0,0)         (21,0,2)         (21,0,4) 18                        (5,0,0)        (5,0,2)        (5,0,4) 2     |
+       [3,0]1        [4,2]1        [7,4]1                       [10,0]1         [6,2]1                            [15,0]1          [11,2]1          [17,4]1                            [22,0]1        [16,2]1        [24,4]1       |
+1,2           3,4           5,6             7,8        9,10             11,12              13,14         17,18            19,20            21,22               23,24           25,26          27,28          29,30            31,32|
+(3,9,0)       (4,9,2)       (7,9,4)         (8,9)      (10,14,0)        (6,14,2)           (12,14)       (15,21,0)        (11,21,2)        (17,21,4)           (18,21)         (22,5,0)       (16,5,2)       (24,5,4)         (2,5)|
 """);
 
         ok(()->mainMemoryMd5Sum(), "0781400ee30ae789dfa9eda01884ab0d");                                                 // Confirm that main memory in immediate and delayed modes arrives at the same state
@@ -1884,8 +1886,9 @@ Height        :    1
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {protected void treeCode()
-       {say("AAAA", checkLocks);
-        if (fileExists(saveFile)) mainMemory.loadMemory(saveFile);
+       {if (fileExists(saveFile))
+         {mainMemory.loadMemory(saveFile);
+         }
         else
          {new ForCount(One, new Int(N+1))
            {void body(Int Index)
@@ -1901,9 +1904,11 @@ Height        :    1
            };
           mainMemory.dumpMemory(saveFile);
          }
+        dumpProgramState("BBBB");
 
         final StringBuilder s = Ex ? printTree() : null;
         final StringBuilder m = new StringBuilder();
+
 
         new ForCount(new Int(N))
          {void body(Int Index)
@@ -1911,7 +1916,6 @@ Height        :    1
             final FirstEntry f = new FirstEntry();
             f.key.ok(k);
             freeLock(f.leaf.i());
-
             delete(k).ok(k.Mul(11));
             if (Ex) s.append(printTree());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
@@ -1931,38 +1935,38 @@ Height        :    1
 5aa61a70a53234097012cacfab5d2f34
 35cbfbe938db2740e8096a2dab5cebdb
 3029f2b4c0644a50a8fc7c0add94f203
-5d10b9fb8a272f92076808bac64a12e7
-1ce6866cb3208503ff6b6cf41a6ac35c
-baec6a5812288a535949f1b0512e1175
-a5ce1b04bf3a5159b6c4cd0315a6d7bc
-d8e13524ec375feb038762c7f34e5eb2
-aea383673ede5cf8f434283703e4dbe9
-4888238459fc902deba304e1fcdd36e2
-b25f07772d91f7c2d9d57d3340f77178
-7829404cea2465b455091ff9e8b098e6
-2a8d8dabc597f13cf34d6f223d13034f
-9b9ec03c961addc9b729bd2c978adab5
-e7077cc4d8a4c5ccdebf118216341c35
-6108696a802b0e28b0e9a3b681c21d5a
-a2dd443d494addf3c397095c4eb80d8a
-0346d9d2cf1844e0ff3b0f57d2cc10b8
-142fcd8dae51af1f29482dd45d4e6dca
-5526ecdf48ecbc4fc9d5c43a2f49f4d3
-da815ee002a8004a97df68a40500846c
-ef14026e4e1839dba44bc41dee8f6b56
-4c35e5ce16d2229862a5c9ae5da21293
-cade043f4f69e9a558b14150b7e19cc9
-c8d770e2451d6e6086a97b84e4e7c5af
-ec0ac2cc4142966a77f0d79fad30fcef
-3b6f4c37f6bb6a5706c07b0607e0eb72
-541f07d20765966ee23152ae4d6e9b26
-e95851ca5f3d8ad9c95dc700b56eb752
-bec5f5f8a10f48c58d2511ce6de2c856
-9bedba789dec3ea66893077bbacab123
-27c13a104305cc7f5fb4416354fcd276
+851d3ab51987df887b34a55ee284737b
+071f12a61dbdeb5640473c176147b5cd
+a5742faf97e259fa4160fbda8ae70c6d
+8987431a428829c228b5b92b6b89bb1d
+885cd265504c432229f5a9023df7ec1b
+7ef3584780de910c2b75ced88d31e913
+96142c799a5dc9e386139a020f7c650c
+813d0888e2a651df79a05d12b4fd3f73
+f77b99f95f67493a75186e73a5e2bc88
+e94204eb596d5e00c6aa07f62458249e
+0a8ad68c52841e6266f9e938c44c346b
+150c47d2c9f157eb764bc185a527a180
+2f3f0c69e66d05ff1bfb50e1d29ac516
+c6e6e58b6ee9ba84c4f3db62f1575314
+eee627a337d43102e9bdb0dbed01f327
+25509a87baab3facce50ff452d53687d
+bc1ca0fa7b6c88044e93555febfdf34a
+cc04a8594a4934ef2fcfafc13c868b72
+816b84755ab5763eaaf501762a75b442
+d550537e0774e3c8326b04b1e7e253d2
+62592d70fbf09135128f94d31d1815c5
+0bccf533a39c2fe0edddf619a15396e2
+41c6f79117b3473434979815bd51fe58
+a3eff6a38b577676eb07fbb72b30f8e5
+ecf8e1fe2c47fdd6a829c8528ec746a6
+52321d1769650944637bfb3dc6d92106
+8cd1407860b938489b8586acf8f19a0b
+2df25a7d8c09abd6525d8f5300c5843a
+8d11623904602dc86a7d3aaa1c9c86d6
 """);
 
-        stop(s);
+        //stop(s);
         if (Ex) ok(""+s, """
                                                           0016                                                                       |
                                                           (0,2)  5                                                                   |
@@ -2092,13 +2096,11 @@ bec5f5f8a10f48c58d2511ce6de2c856
                           [10,0]1           [6,2]1            [12,4]1             |
   16           17,18,19,20       21,22,23,24       25,26,27,28         29,30,31,32|
   (8,9)        (10,5,0)          (6,5,2)           (12,5,4)            (2,5)      |
-{}                                                                     |
-   5                                                                   |
-               0020              0024              0028                |
-               (5,0,0)           (5,0,2)           (5,0,4) 2           |
-               [10,0]1           [6,2]1            [12,4]1             |
-    17,18,19,20       21,22,23,24       25,26,27,28         29,30,31,32|
-    (10,5,0)          (6,5,2)           (12,5,4)            (2,5)      |
+           0020              0024             0028                |
+           (0,0)             (0,2)            (0,4)   2           |
+           [10,0]1           [6,2]1           [12,4]1             |
+17,18,19,20       21,22,23,24      25,26,27,28         29,30,31,32|
+(10,0,0)          (6,0,2)          (12,0,4)            (2,0)      |
         0020              0024             0028                |
         (0,0)             (0,2)            (0,4)   2           |
         [10,0]1           [6,2]1           [12,4]1             |
@@ -2174,15 +2176,22 @@ bec5f5f8a10f48c58d2511ce6de2c856
   static void test_deleteDescending(boolean Ex)
    {sayCurrentTestName();
     final int  N = 32;
+    final String saveFile = "/tmp/memory/deleteAscending"+N;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {protected void treeCode()
-       {new ForCount(One, new Int(N+1))
-         {void body(Int Index)
-           {insert(Index, Index.Mul(11));
-           }
-         };
-        dumpProgramState("AAAA");
+       {if (fileExists(saveFile))
+         {mainMemory.loadMemory(saveFile);
+         }
+        else
+         {new ForCount(One, new Int(N+1))
+           {void body(Int Index)
+             {insert(Index, Index.Mul(11));
+              dumpProgramState("AAAA");
+             }
+           };
+         }
+        dumpProgramState("BBBB");
 
         final StringBuilder s = Ex ? printTree() : null;
         final StringBuilder m = new StringBuilder();
@@ -2445,15 +2454,22 @@ aa5e343f6b3b1296e12384b4c49e105f
   static void test_deleteRandom32(boolean Ex)
    {sayCurrentTestName();
     final int  N = random_32.length;
+    final String saveFile = "/tmp/memory/deleteAscending"+N;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {protected void treeCode()
-       {new ForCount(One, new Int(N+1))
-         {void body(Int Index)
-           {insert(Index, Index.Mul(11));
-           }
-         };
-        dumpProgramState("AAAA");
+       {if (fileExists(saveFile))
+         {mainMemory.loadMemory(saveFile);
+         }
+        else
+         {new ForCount(One, new Int(N+1))
+           {void body(Int Index)
+             {insert(Index, Index.Mul(11));
+              dumpProgramState("AAAA");
+             }
+           };
+         }
+        dumpProgramState("BBBB");
 
         final StringBuilder s = Ex ? printTree() : null;
         final StringBuilder m = new StringBuilder();
@@ -2470,7 +2486,7 @@ aa5e343f6b3b1296e12384b4c49e105f
               boolean trace() {return false;}
              };
             k.TW();                                                                                                     // Write key into variable
-            delete(k);
+            delete(k).ok(k.Mul(11));
 
             if (Ex) s.append(printTree());
             new I() {void a() {m.append(mainMemoryMd5Sum()+"\n");} boolean trace() {return false;}};
@@ -2524,14 +2540,14 @@ dccbfa70b58e9d65597159a702c6e62d
        [3,0]1        [4,2]1           [7,4]1                                 [10,0]1           [6,2]1            [12,4]1             |
 1,2,3,4       5,6,7,8       9,10,11,12         13,14,15,16        17,18,19,20       21,22,23,24       25,26,27,28         29,30,31,32|
 (3,9,0)       (4,9,2)       (7,9,4)            (8,9)              (10,5,0)          (6,5,2)           (12,5,4)            (2,5)      |
-                                                        0016                                                                       |
-                                                        (0,2)  5                                                                   |
-                                                        [9,2]2                                                                     |
-       {0004         0008          0011   }                                0020              0024              0028                |
-       (9,0,0)       (9,0,2)       (9,0,4)  8                              (5,0,0)           (5,0,2)           (5,0,4) 2           |
-       [3,0]1        [4,2]1        [7,4]1                                  [10,0]1           [6,2]1            [12,4]1             |
-1,2,3,4       5,6,7,8       9,10,11          13,14,15,16        17,18,19,20       21,22,23,24       25,26,27,28         29,30,31,32|
-(3,9,0)       (4,9,2)       (7,9,4)          (8,9)              (10,5,0)          (6,5,2)           (12,5,4)            (2,5)      |
+                                                       0016                                                                       |
+                                                       (0,2)  5                                                                   |
+                                                       [9,2]2                                                                     |
+       0004          0008          0011                                   0020              0024              0028                |
+       (9,0,0)       (9,0,2)       (9,0,4) 8                              (5,0,0)           (5,0,2)           (5,0,4) 2           |
+       [3,0]1        [4,2]1        [7,4]1                                 [10,0]1           [6,2]1            [12,4]1             |
+1,2,3,4       5,6,7,8       9,10,11         13,14,15,16        17,18,19,20       21,22,23,24       25,26,27,28         29,30,31,32|
+(3,9,0)       (4,9,2)       (7,9,4)         (8,9)              (10,5,0)          (6,5,2)           (12,5,4)            (2,5)      |
                                                        0016                                                                       |
                                                        (0,2)  5                                                                   |
                                                        [9,2]2                                                                     |
@@ -2564,22 +2580,22 @@ dccbfa70b58e9d65597159a702c6e62d
        [3,0]1        [4,2]1        [7,4]1                                 [10,0]1        [6,2]1         [12,4]1             |
 2,4           5,6,7,8       9,10,11         13,14,15,16        17,18,19,20       21,22,24       25,26,28         29,30,31,32|
 (3,9,0)       (4,9,2)       (7,9,4)         (8,9)              (10,5,0)          (6,5,2)        (12,5,4)         (2,5)      |
-                                                       0016                                                               |
-                                                       (0,2)  5                                                           |
-                                                       [9,2]2                                                             |
-       0004          0008          0011                                {0019          0024           0028   }             |
-       (9,0,0)       (9,0,2)       (9,0,4) 8                           (5,0,0)        (5,0,2)        (5,0,4)  2           |
-       [3,0]1        [4,2]1        [7,4]1                              [10,0]1        [6,2]1         [12,4]1              |
-2,4           5,6,7,8       9,10,11         13,14,15,16        17,18,19       21,22,24       25,26,28          29,30,31,32|
-(3,9,0)       (4,9,2)       (7,9,4)         (8,9)              (10,5,0)       (6,5,2)        (12,5,4)          (2,5)      |
-                                                        0016                                                              |
-                                                        (0,2)  5                                                          |
-                                                        [9,2]2                                                            |
-       {0004         0007          0011   }                             0019           0024           0028                |
-       (9,0,0)       (9,0,2)       (9,0,4)  8                           (5,0,0)        (5,0,2)        (5,0,4) 2           |
-       [3,0]1        [4,2]1        [7,4]1                               [10,0]1        [6,2]1         [12,4]1             |
-2,4           5,6,7         9,10,11          13,14,15,16        17,18,19       21,22,24       25,26,28         29,30,31,32|
-(3,9,0)       (4,9,2)       (7,9,4)          (8,9)              (10,5,0)       (6,5,2)        (12,5,4)         (2,5)      |
+                                                       0016                                                              |
+                                                       (0,2)  5                                                          |
+                                                       [9,2]2                                                            |
+       0004          0008          0011                                0019           0024           0028                |
+       (9,0,0)       (9,0,2)       (9,0,4) 8                           (5,0,0)        (5,0,2)        (5,0,4) 2           |
+       [3,0]1        [4,2]1        [7,4]1                              [10,0]1        [6,2]1         [12,4]1             |
+2,4           5,6,7,8       9,10,11         13,14,15,16        17,18,19       21,22,24       25,26,28         29,30,31,32|
+(3,9,0)       (4,9,2)       (7,9,4)         (8,9)              (10,5,0)       (6,5,2)        (12,5,4)         (2,5)      |
+                                                       0016                                                              |
+                                                       (0,2)  5                                                          |
+                                                       [9,2]2                                                            |
+       0004          0007          0011                                0019           0024           0028                |
+       (9,0,0)       (9,0,2)       (9,0,4) 8                           (5,0,0)        (5,0,2)        (5,0,4) 2           |
+       [3,0]1        [4,2]1        [7,4]1                              [10,0]1        [6,2]1         [12,4]1             |
+2,4           5,6,7         9,10,11         13,14,15,16        17,18,19       21,22,24       25,26,28         29,30,31,32|
+(3,9,0)       (4,9,2)       (7,9,4)         (8,9)              (10,5,0)       (6,5,2)        (12,5,4)         (2,5)      |
                                                        0016                                                              |
                                                        (0,2)  5                                                          |
                                                        [9,2]2                                                            |
@@ -2612,14 +2628,14 @@ dccbfa70b58e9d65597159a702c6e62d
        [4,2]1        [7,4]1                              [10,0]1        [6,2]1         [12,4]1          |
 4,5,6,7       9,10,11         13,14,15,16        17,19          21,22,24       26,28            29,30,32|
 (4,9,2)       (7,9,4)         (8,9)              (10,5,0)       (6,5,2)        (12,5,4)         (2,5)   |
-                                      {0015 }                                                         |
-                                      (0,2)   5                                                       |
-                                      [9,2]2                                                          |
-       0007          0011                              0019           0024           0028             |
-       (9,0,2)       (9,0,4) 8                         (5,0,0)        (5,0,2)        (5,0,4) 2        |
-       [4,2]1        [7,4]1                            [10,0]1        [6,2]1         [12,4]1          |
-4,5,6,7       9,10,11         13,14,15         17,19          21,22,24       26,28            29,30,32|
-(4,9,2)       (7,9,4)         (8,9)            (10,5,0)       (6,5,2)        (12,5,4)         (2,5)   |
+                                      0015                                                           |
+                                      (0,2)  5                                                       |
+                                      [9,2]2                                                         |
+       0007          0011                             0019           0024           0028             |
+       (9,0,2)       (9,0,4) 8                        (5,0,0)        (5,0,2)        (5,0,4) 2        |
+       [4,2]1        [7,4]1                           [10,0]1        [6,2]1         [12,4]1          |
+4,5,6,7       9,10,11         13,14,15        17,19          21,22,24       26,28            29,30,32|
+(4,9,2)       (7,9,4)         (8,9)           (10,5,0)       (6,5,2)        (12,5,4)         (2,5)   |
                                    0015                                                           |
                                    (0,2)  5                                                       |
                                    [9,2]2                                                         |
@@ -2654,11 +2670,11 @@ dccbfa70b58e9d65597159a702c6e62d
        [4,0]1          [8,2]1           [6,4]1             |
 4,6,7        9,10,14,15      17,19,22,24        26,28,29,30|
 (4,0,0)      (8,0,2)         (6,0,4)            (2,0)      |
-       {0007           0015          0022  }             |
-       (0,0)           (0,2)         (0,4)   2           |
-       [4,0]1          [8,2]1        [6,4]1              |
-4,6,7        9,10,14,15      17,19,22         26,28,29,30|
-(4,0,0)      (8,0,2)         (6,0,4)          (2,0)      |
+       0007            0015          0022               |
+       (0,0)           (0,2)         (0,4)  2           |
+       [4,0]1          [8,2]1        [6,4]1             |
+4,6,7        9,10,14,15      17,19,22        26,28,29,30|
+(4,0,0)      (8,0,2)         (6,0,4)         (2,0)      |
        0007            0015          0022               |
        (0,0)           (0,2)         (0,4)  2           |
        [4,0]1          [8,2]1        [6,4]1             |
@@ -3148,7 +3164,7 @@ Leaf   at:  12 size:   2, count:   2
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_csDelete();
-      test_deleteAscending(true);
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
