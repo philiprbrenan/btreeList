@@ -32,7 +32,7 @@ public class Program extends Test                                               
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final int                     instructionTraceLocation = 11495;                                                       // Trace instructions +/-10 instructions of this instruction regardless of the setting of "suppressInstructionTracing"
+  final int                     instructionTraceLocation = 20277;                                                       // Trace instructions +/-10 instructions of this instruction regardless of the setting of "suppressInstructionTracing"
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
@@ -1779,7 +1779,8 @@ endmodule
      }
 
     void lockMemory (Int I)                                                                                             // Check that the memory area associated with an address is locked. This is crucial in client server mode to ensure that each memory area is processed by one transaction at a time even when there are gaps between remote execution requests while the transaction does something else before accessing the data in the locked area again
-     {if (!checkLocks) return;                                                                                          // Only create locks on permanent memory that might be accessed from more than one transaction
+     {if (!checkLocks) return;                                                                                          // Lock checking is being suppressed to aid debugging
+      if (addressToArea == null) return;                                                                                // Only create locks on permanent memory that might be accessed from more than one transaction
       new I()
        {void a()
          {if (remoteExecutionMode() == RemoteExecution.Modes.Local) return;                                             // Require memory to be locked before use in client/server mode.
@@ -2053,8 +2054,10 @@ endmodule
           executing = null;                                                                                             // Show no instruction currently being executed
          }
         catch(Exception E)
-         {if (executing == null) stop("Exception:", E, "while executing:", traceBack(E));
-          else stop("Exception:", E, "\nin instruction:", executing.traceBack, "\nwhile executing:", traceBack(E));
+         {final I j = executing;
+          if (j == null) stop("Exception:", E, "while executing:", traceBack(E));
+          else stop("Exception:", E, "\nin instruction id:", j.instructionNumber,
+           "Instruction defined at:", j.traceBack, "\nwhile executing:", traceBack(E));
          }
        }
      }
@@ -2196,7 +2199,7 @@ cd {f}; yosys -q {y}                                                            
     m.append(" Id: "+Id);                                                                                               // Id of variable
     if (Name != null) m.append(" Name: "+Name);                                                                         // Name if known
     m.append("\nDefined at:\n"+TraceBack);                                                                              // Variable defined here
-    if (i != null) m.append("\nReferenced at:\n"+i.traceBack);                                                          // Variable referenced here
+    if (i != null) m.append("\nReferenced at instruction: "+i.instructionNumber+"\n"+i.traceBack);                      // Variable referenced here
     m.append("\n====\n");
     stop(m);                                                                                                            // Stop with message
    }
