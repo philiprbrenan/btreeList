@@ -661,16 +661,22 @@ class Tree extends Program                                                      
       final Int p = root().dup();                                                                                       // Start at root
       key.set(Key);                                                                                                     // Record the search key for posterity
 
+new I() {void a() {say("AAAA1111", Key);} boolean trace() {return false;}};
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
-         {new If (isLeaf(p))                                                                                            // On a leaf
+         {
+new I() {void a() {say("AAAA2222", p);} boolean trace() {return false;}};
+
+           new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
              {leaf.set(p);                                                                                              // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
+new I() {void a() {say("AAAA3333", p);} boolean trace() {return false;}};
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down details
               freeLock(p);
               p.set(d.node);                                                                                            // Step down to next level
+new I() {void a() {say("AAAA4444", p);} boolean trace() {return false;}};
               Continue.set();                                                                                           // Continue search
              }
            };
@@ -912,15 +918,26 @@ class Tree extends Program                                                      
          }
        };
 
+      final Merge m = new Merge();                                                                                      // Merge request
       new For(start, step)                                                                                              // Start at branch immediately above the leaf and work upwards
        {void body(Int Index, Bit Continue)
          {final Int             i = step.Sub(Index).add(start).dec();                                                   // Index of parent branch that contains the split siblings
           final Branch          p = branch(getPath(i));                                                                 // Parent branch containing split children
           final Branch.StepDown d = p.new StepDown(key);                                                                // Locate key slot
-          mergeLeftLeft(  p, d.slot);
-          mergeRightRight(p, d.slot);
-          mergeLeft(      p, d.slot);
-          mergeRight(     p, d.slot);
+          new ForCount(new Int(4))                                                                                      // Try each merge possibility in turn
+           {void body(Int Index)
+             {m.valid.clear();
+              new If (Index.eq(0)) {void Then() {mergeLeftLeft(  p, d.slot, m);}};
+              new If (Index.eq(1)) {void Then() {mergeRightRight(p, d.slot, m);}};
+              new If (Index.eq(2)) {void Then() {mergeLeft(      p, d.slot, m);}};                                      // Cannot unlock right hand sode after merge
+              new If (Index.eq(3)) {void Then() {mergeRight(     p, d.slot, m);}};
+              new If (m.valid)                                                                                          // Perform merge if possible
+               {void Then()
+                 {mergeLeftIntoRightSibling(p, m.L, m.R, m.l, m.r, Index.eq(2));
+                 }
+               };
+             }
+           };
           new If (over) {void Then() {Continue.set(over.notValid().or(i.ge(over.i())));} void Else() {Continue.set();}};
          }
        };
@@ -1159,7 +1176,22 @@ class Tree extends Program                                                      
 
 //D2 Merge                                                                                                              // Merge nodes in the tree to make the tree narrower
 
-  private void mergeLeftLeafIntoRightSibling (Branch Parent, Int LeftSlot, Leaf Left, Leaf Right, boolean Unlock)       // Merge the specified left leaf sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
+  private class Merge                                                                                                   // Merge parameter list
+   {Bint     L = new Bint("Merge.L");                                                                                   // Left slot within parent or top if not defined
+    Bint     R = new Bint("Merge.R");                                                                                   // Right slot within parent or top if not defined
+    Int      l = new  Int("Merge.l");                                                                                   // Index of left child
+    Int      r = new  Int("Merge.r");                                                                                   // Index of right child
+    Bit  valid = new  Bit("Merge.valid");                                                                               // Whether right lock can be released
+    void set(Bint L, Bint R, Int l, Int r)                                                                              // Set a parameter list
+     {valid.set();
+      this.L.copy(L);                                                                                                   // Left slot within parent or top if not defined
+      this.R.copy(R);                                                                                                   // Right slot within parent or top if not defined
+      this.l.set(l);                                                                                                    // Index of left child
+      this.r.set(r);                                                                                                    // Index of right child
+     }
+   }
+
+  private void mergeLeftLeafIntoRightSibling (Branch Parent, Int LeftSlot, Leaf Left, Leaf Right, Bit Unlock)           // Merge the specified left leaf sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {subStart("Tree.mergeLeftLeafIntoRightSibling");
     final Branch P = Parent;
     new If (Right.mergeLeft(Left))                                                                                      // Successfully merged
@@ -1176,25 +1208,26 @@ class Tree extends Program                                                      
     subFinish();
    }
 
-  private void mergeLeftBranchIntoRightSibling (Branch Parent, Int LeftSlot, Branch Left, Branch Right, boolean Unlock) // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
+  private void mergeLeftBranchIntoRightSibling (Branch Parent, Int LeftSlot, Branch Left, Branch Right, Bit Unlock)     // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {subStart("Tree.mergeLeftBranchIntoRightSibling");
     final Branch P = Parent;
     final Int    k = P.keyValue(LeftSlot);                                                                              // The parent key for the left sibling
     new If (Right.mergeLeft(Left, k))                                                                                   // Successfully merged
      {void Then()                                                                                                       // The left sibling can now be freed
        {P.deleteSlot(LeftSlot);                                                                                         // Remove from parent
-        Left.unlockBranch(); if (Unlock) Right.unlockBranch();
+        //Left.unlockBranch();
         free(Left);
        }
       void Else()
-       {Left.unlockBranch(); if (Unlock) Right.unlockBranch();
+       {//Left.unlockBranch();
        }
      };
+    //if (Unlock) Right.unlockLeaf();
     subFinish();
    }
 
   private void mergeLeftIntoRightSibling (                                                                              // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
-    Branch Parent, Bint LeftSlot, Bint RightSlot, Int Left, Int Right, boolean Unlock)
+    Branch Parent, Bint LeftSlot, Bint RightSlot, Int Left, Int Right, Bit Unlock)
    {subStart("Tree.mergeLeftIntoRightSibling");
     final Branch P = Parent;
     new If (isLeaf(Left))                                                                                               // Parent has leaves for children - check the type of the left child rather than top as we would have to lock and unlock top while left is already locked
@@ -1217,7 +1250,7 @@ class Tree extends Program                                                      
   private Int  stepDownAt (Branch Parent, Int Slot) {return Parent.data(Parent.keyIndex(Slot));}                        // Step down through a slot
   private Int stepDownTop (Branch Parent)           {return Parent.top();}                                              // Step down through top
 
-  private void mergeLeft (Branch Parent, Bint Pos)                                                                      // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed.  Ensure that both nodes in the merge are locked
+  private void mergeLeft (Branch Parent, Bint Pos, Merge Merge)                                                         // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed.  Ensure that both nodes in the merge are locked
    {subStart("Tree.mergeLeft");
     final Branch P = Parent;                                                                                            // Parent containing siblings
     final Bint   L = new Bint();                                                                                        // Left child slot
@@ -1236,14 +1269,15 @@ class Tree extends Program                                                      
          {void Then() {r.set(stepDownAt (Parent, Pos.i()));}                                                            // Siblings entirely within body of parent
           void Else() {r.set(stepDownTop(Parent));}                                                                     // Right node of merge is top of parent
          };
-        mergeLeftIntoRightSibling(Parent, L, Pos, l, r, false);                                                         // Merge
+        //mergeLeftIntoRightSibling(Parent, L, Pos, l, r, false);                                                         // Merge
+        Merge.set(L, Pos, l, r);
        }
      };
 
     subFinish();
    }
 
-  private void mergeLeftLeft (Branch Parent, Bint Pos)                                                                  // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed.  Ensure that both nodes in the merge are locked
+  private void mergeLeftLeft (Branch Parent, Bint Pos, Merge Merge)                                                     // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed.  Ensure that both nodes in the merge are locked
    {subStart("mergeLeftLeft");
     final Bint R = new Bint();                                                                                          // Right child of merge
 
@@ -1260,7 +1294,8 @@ class Tree extends Program                                                      
            {final Int l = stepDownAt(Parent, L.i());                                                                    // Index of left child for merge
             final Int r = stepDownAt(Parent, R.i());                                                                    // Index of right child for merge
             getLock(l); getLock(r);                                                                                     // Both nodes are off the already locked path so they will need to be locked
-            mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                        // Merge
+            //mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                        // Merge
+            Merge.set(L, R, l, r);
            }
          };
        }
@@ -1270,28 +1305,28 @@ class Tree extends Program                                                      
 
 //D3 Merge Right                                                                                                        // Merge single and double right
 
-  private void mergeRight (Branch Parent, Bint Pos)                                                                     // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. Ensure that both nodes in the merge are locked
+  private void mergeRight (Branch Parent, Bint Pos, Merge Merge)                                                        // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. Ensure that both nodes in the merge are locked
    {subStart("Tree.mergeRight");
-    final Branch P = Parent;                                                                                            // Parent containing siblings
     final Bint   L = Pos;
     new If (L)                                                                                                          // Lock right node of merge
      {void Then()                                                                                                       // Not top
        {final  Int l = stepDownAt(Parent, L.i());                                                                       // Index of left child for merge
-        final Bint R = P.nextSlot(L.i());                                                                               // Next right sibling
+        final Bint R = Parent.nextSlot(L.i());                                                                               // Next right sibling
         final Int  r = new Int("r");
         new If (R)
          {void Then() {r.set(stepDownAt(Parent, R.i()));}                                                               // Right sibling in body of parent is the right node of the merge
           void Else() {r.set(stepDownTop(Parent));}                                                                     // Top of parent is the right node for the merge
          };
         getLock(r);                                                                                                     // Lock the right node as it is off the already locked path
-        mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                            // Merge freeing right because we have completed the merge cycle at this level
+        //mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                            // Merge freeing right because we have completed the merge cycle at this level
+        Merge.set(L, R, l, r);
        }
 //    void Else() {freeLock(Parent.top());}                                                                             // Top has to be freed as the last merge at this level and we want to clear the locks on this level
      };
     subFinish();
    }
 
-  private void mergeRightRight (Branch Parent, Bint Pos)                                                                // Merge the right hand sibling of the specified sibling with the right hand sibling of the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. Ensure that both nodes in the merge are locked
+  private void mergeRightRight (Branch Parent, Bint Pos, Merge Merge)                                                   // Merge the right hand sibling of the specified sibling with the right hand sibling of the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. Ensure that both nodes in the merge are locked
    {subStart("Tree.mergeRightRight");
     final Bint L = new Bint();                                                                                          // Left child of merge
 
@@ -1308,7 +1343,8 @@ class Tree extends Program                                                      
               void Else() {r.set(stepDownTop(Parent));}                                                                 // Right hand node is top of parent
              };
             getLock(l); getLock(r);                                                                                     // Lock the nodes to be merged as they are off the already locked path
-            mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                        // Merge
+            //mergeLeftIntoRightSibling(Parent, L, R, l, r, true);                                                        // Merge
+            Merge.set(L, R, l, r);
            }
          };
        }
@@ -3164,7 +3200,8 @@ Leaf   at:  12 size:   2, count:   2
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_csDelete();
-    test_insert();
+    //test_csFind();
+    test_deleteAscending();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
