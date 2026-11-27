@@ -2204,6 +2204,7 @@ cd {f}; yosys -q {y}                                                            
    {final I i = executing();                                                                                            // Instruction executing refence to unset variable
     final StringBuilder m = new StringBuilder(Type+" variable not yet set!");                                           // Message
     m.append(" Id: "+Id);                                                                                               // Id of variable
+    if (clientServerMode) m.append(", remote Mode: "+remoteExecutionMode+", Area: "+remoteExecutionArea);               // Execution mode
     if (Name != null) m.append(" Name: "+Name);                                                                         // Name if known
     m.append("\nDefined at:\n"+TraceBack);                                                                              // Variable defined here
     if (i != null) m.append("\nReferenced at instruction: "+i.instructionNumber+"\n"+i.traceBack);                      // Variable referenced here
