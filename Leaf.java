@@ -181,7 +181,24 @@ class Leaf extends Program implements Program.Locatable                         
          }
        };
      }
-    void deleteKey ()         {deleteSlot(slot.i());}                                                                   // Delete the key assuming that it exists
+    void deleteKey ()                                                                                                   // Delete the key assuming that it exists
+     {new RemoteExecution(new Int(at.i()), computables(slot.i(),
+        refSlots.offset,                 refSlots.offsetBits,
+        slots.refSlotsToKeys.offset,     slots.refSlotsToKeys.offsetBits,
+        slots.refKeysToSlots.offset,     slots.refKeysToSlots.offsetBits,
+        slots.refUsedSlotsToKeys.offset, slots.refUsedSlotsToKeys.offsetBits,
+        slots.refUsedKeys.offset,        slots.refUsedKeys.offsetBits,
+        slots.refKeys.offset,            slots.refKeys.offsetBits,
+        slots.usedKeys.memoryRef.offset, slots.usedKeys.memoryCount.offset,
+        slots.usedSlotsToKeys.memoryCount.offset,
+        slots.usedKeys       .memoryCount.offset
+
+        ))
+      {void body()
+        {deleteSlot(slot.i());
+        }
+      };
+     }
     void   setData (Int Data) {slotData(slot.i(), Data);}                                                               // Delete the key assuming that it exists
    }
 
