@@ -19,7 +19,7 @@ import java.nio.channels.*;
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final static String                     currentProject = "Remote execution";                                          // How memory is shared between main program and sub program
   final static boolean        suppressInstructionTracing = true;                                                        // Write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-  final static boolean         suppressTraceBackComments = github_action;                                               // Add traceback comments to instructions and integers to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
+  final static boolean        suppressLocateInstructions = true;                                                        // Add traceback comments to instructions to help locate the point in the Java code at which the Verilog was generated - requires a lot of memory. Required for coverage analysis
   final static boolean              compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final static boolean                   generateVerilog =!true;                                                        // Generate Verilog version of each program
   final static boolean                        runVerilog = true;                                                        // Execute  Verilog version of each program
@@ -32,6 +32,7 @@ public class Program extends Test                                               
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
+  final int                     instructionTraceLocation = 11495;                                                       // Trace instructions +/-10 instructions of this instruction regardless of the setting of "suppressInstructionTracing"
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
@@ -1782,10 +1783,12 @@ endmodule
       new I()
        {void a()
          {if (remoteExecutionMode() == RemoteExecution.Modes.Local) return;                                             // Require memory to be locked before use in client/server mode.
-          final int        a = addressToArea.addressToArea(I.i());                                                      // Area from memory address
+          final int a = addressToArea.addressToArea(I.i());                                                             // Area from memory address
           if (clientServerMode())                                                                                       // If we are in client server mode then memory accesses can only occur on the server
-           {if (remoteExecutionArea() == null)
-             {stopIn("Memory access being performed locally instead of on server, area:", a, executing.traceBack);      // Each server controls a memory area
+           {final I i = executing;
+            if (remoteExecutionMode() == RemoteExecution.Modes.Client)                                                  // Attempt to access memory on the client rather than through the server
+             {stopIn("Memory access being performed through client rather than through server, area:", a,
+                     "instruction:", i.instructionNumber, " ", i.traceBack);
              }
             if (remoteExecutionArea() != a)
              {stopIn("On wrong server for area, server:", remoteExecutionArea, "area:", a, executing.traceBack);        // The area associated with the server must match the area associated with the address being dereferenced
@@ -1895,9 +1898,9 @@ endmodule
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber = program().code.size();                                                                // The number of this instruction
-    final String      traceBack = suppressTraceBackComments   ? null : traceBack();                                     // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
-    final String      traceTest = suppressInstructionCoverage ? null : traceTest();                                     // Line at which this instruction was created up to the enclosing test - suppressible because it imposes a lot of extra processing
-    final String       traceSub = subsTrace;                                                                            // Sub during which this instruction was created
+    final String      traceBack = !suppressLocateInstructions || (instructionNumber >= instructionTraceLocation-10 && instructionNumber < instructionTraceLocation+10) ? traceBack() : null; // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String      traceTest =  suppressInstructionCoverage ? null : traceTest();                                    // Line at which this instruction was created up to the enclosing test - suppressible because it imposes a lot of extra processing
+    final String       traceSub =  subsTrace;                                                                           // Sub during which this instruction was created
     final boolean        noJump;                                                                                        // The instruction will handle setting the program counter if false
     int                executed = 0;                                                                                    // The number of times executed
 
@@ -1932,7 +1935,7 @@ endmodule
 
     String instructionLocation () {return traceBack != null ? traceBack : traceSub  != null ? traceSub : "";}           // Trace the location at which the instruction was generated
     String instructionLocationAsComment ()                                                                              // Trace the location at which the instruction was generated as a comment
-     {if (!suppressTraceBackComments)
+     {if (!suppressLocateInstructions)
        {if (traceBack != null) return "/*" + traceBack.replaceAll("\\n", ", ") + "*/";                                  // Appending trace comments makes the code easier to debug but inhibits code compression
         if (traceSub  != null) return "/*" + traceSub .replaceAll("\\n", ", ") + "*/";
        }
@@ -2510,7 +2513,7 @@ cd {f}; yosys -q {y}                                                            
                 q(dateTime),  q(pV(source)), q(pV(name)), execSteps, instructionSets, codeSize, percent()));
 
       s.append(f( ", \"suppressInstructionTracing\" : \"%d\"",  suppressInstructionTracing ? 1 : 0));                   // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
-      s.append(f(  ", \"suppressTraceBackComments\" : \"%d\"",   suppressTraceBackComments ? 1 : 0));                   // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
+      s.append(f( ", \"suppressLocateInstructions\" : \"%d\"",  suppressLocateInstructions ? 1 : 0));                   // Add trace comments to trace output to locate the point in the Java code at which the Verilog was generated - requires a lot of memory
       s.append(f(       ", \"compressInstructions\" : \"%d\"",        compressInstructions ? 1 : 0));                   // Compress out identical instructions
       s.append(f(  ", \"compressInstructionLabels\" : \"%d\"",   compressInstructionLabels ? 1 : 0));                   // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
       s.append(f(            ", \"generateVerilog\" : \"%d\"",             generateVerilog ? 1 : 0));                   // Generate Verilog version of each program
@@ -2531,7 +2534,7 @@ cd {f}; yosys -q {y}                                                            
       for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
       pcConstantArray = verilogArrays().new Array("pcConstant", pcConstant());                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
       pcMatchSetArray = verilogArrays().new Array("pcMatchSet", instructionMatches.pcMatchSet());                       // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
-      if (!suppressTraceBackComments) printInstructionLocations();                                                      // Create a file showing the traceback at the time each instruction was created
+      if (!suppressLocateInstructions) printInstructionLocations();                                                      // Create a file showing the traceback at the time each instruction was created
 
       try {out = Files.newBufferedWriter(Path.of(codeFile));}
       catch(Exception e) {stop("Unable to open file:", codeFile, e, fullTraceBack(e)); throw new RuntimeException(e);}
