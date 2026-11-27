@@ -11,3 +11,6 @@ EX_00_WD=
 FT_02_LB=All
 FT_02_CM=javac -g -d ~/btreeList/Classes -cp ~/btreeList/Classes ~/btreeList/*.java
 FT_02_WD=
+EX_01_LB=Show Command
+EX_01_CM=perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --show  "%d/%f" --javaHome "%d"
+EX_01_WD=
