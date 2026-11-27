@@ -32,7 +32,7 @@ public class Program extends Test                                               
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final int                     instructionTraceLocation = 5273;                                                        // Trace instructions +/-100 instructions of this instruction regardless of the setting of "suppressInstructionTracing"
+  final int                     instructionTraceLocation = 3716;                                                        // Trace instructions +/-100 instructions of this instruction regardless of the setting of "suppressInstructionTracing"
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
@@ -1607,6 +1607,7 @@ public class Program extends Test                                               
             units = new int[N];
 
             for (int i = 0; i < N; i++) units[i] = in.readInt();
+say("LLLLL", N, remoteExecutionArea(), remoteExecutionMode());
            }
           catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
          }
