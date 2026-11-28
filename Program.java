@@ -32,7 +32,8 @@ public class Program extends Test                                               
   final static boolean       suppressExecutionStatistics = true;                                                        // Print wasted read and write operations and other execution statistics
   final static boolean             suppressImmediateOnly = true;                                                        // Only run the immediate mode version to establish test results if false otherwise run immediate and delayed modes if true
   final static int                        verilogTimeOut = 4000;                                                        // Time out a Icarus Verilog run after this many seconds if running locally
-  final int                     instructionTraceLocation = 3716;                                                        // Trace instructions +/-100 instructions of this instruction regardless of the setting of "suppressInstructionTracing"
+  final int                     instructionTraceLocation = 36475;                                                       // Trace instructions near this instruction regardless of the setting of "suppressInstructionTracing"
+  final int                deltaInstructionTraceLocation = 2000;                                                        // Definition of near for instructions
 
   final static FileNames                   verilogFolder = new FileNames().verilog();                                   // Verilog folder contains temporary files which hold the generated Verilog and related files
   final static FileNames              verilogTestsFolder = verilogFolder.tests();                                       // Verilog tests
@@ -1609,7 +1610,7 @@ public class Program extends Test                                               
       catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
      }
 
-    void loadMemoryInstruction(String File)                                                                                        // Load memory from a file if supplied
+    void loadMemoryInstruction(String File)                                                                             // Load memory from a file if supplied
      {if (File == null) return;
       new I()
        {void a()
@@ -1925,7 +1926,7 @@ endmodule
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber = program().code.size();                                                                // The number of this instruction
-    final String      traceBack = !suppressLocateInstructions || (instructionNumber >= instructionTraceLocation-100 && instructionNumber < instructionTraceLocation+100) ? traceBack() : null; // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String      traceBack = !suppressLocateInstructions || (instructionNumber >= instructionTraceLocation-deltaInstructionTraceLocation && instructionNumber < instructionTraceLocation+deltaInstructionTraceLocation) ? traceBack() : null; // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String      traceTest =  suppressInstructionCoverage ? null : traceTest();                                    // Line at which this instruction was created up to the enclosing test - suppressible because it imposes a lot of extra processing
     final String       traceSub =  subsTrace;                                                                           // Sub during which this instruction was created
     final boolean        noJump;                                                                                        // The instruction will handle setting the program counter if false
@@ -2564,7 +2565,7 @@ cd {f}; yosys -q {y}                                                            
       for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
       pcConstantArray = verilogArrays().new Array("pcConstant", pcConstant());                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
       pcMatchSetArray = verilogArrays().new Array("pcMatchSet", instructionMatches.pcMatchSet());                       // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
-      if (!suppressLocateInstructions) printInstructionLocations();                                                      // Create a file showing the traceback at the time each instruction was created
+      if (!suppressLocateInstructions) printInstructionLocations();                                                     // Create a file showing the traceback at the time each instruction was created
 
       try {out = Files.newBufferedWriter(Path.of(codeFile));}
       catch(Exception e) {stop("Unable to open file:", codeFile, e, fullTraceBack(e)); throw new RuntimeException(e);}
@@ -3138,7 +3139,7 @@ endmodule
              {new I()
                {void a()
                  {currentServerInputMessage().position(0);
-                  unpackRequest(currentServerInputMessage());                                                             // Unpack request and set local variables to match
+                  unpackRequest(currentServerInputMessage());                                                           // Unpack request and set local variables to match
                  }
                 boolean trace() {return false;}
                };
@@ -3149,7 +3150,7 @@ endmodule
            {void Then()
              {new I()
                {void a()
-                 {program().currentServerExputMessage = packResponse();                                                           // Pack server response and send it back to the client
+                 {program().currentServerExputMessage = packResponse();                                                 // Pack server response and send it back to the client
                  }
                 boolean trace() {return false;}
                };
@@ -3161,21 +3162,16 @@ endmodule
      }
     abstract void body ();                                                                                              // Instructions to be executed
 
-    void pack (ByteBuffer Buffer, Stack<Computable> Parameters, boolean Instructions)                                   // Pack data into a buffer ready to be sent to the server or client
+    void pack (ByteBuffer Buffer, Stack<Computable> Parameters, boolean Instructions)                                    // Pack data into a buffer ready to be sent to the server or client
      {final ByteBuffer X = Buffer;
       X.putInt(0);                                                                                                      // Reserve length field
       if (Instructions) {X.putInt(start); X.putInt(finish);}                                                            // Range of instructions to be executed if requested
 
       for (Computable c : Parameters)                                                                                   // Load each parameter
        {switch (c)
-         {case Bit  B -> {X.putInt(B.id);   X.putInt(B.b() ? 1 : 0);}
-          case Int  I -> {X.putInt(I.id);   X.putInt(I.i());}
-          case Bint C -> {
-            X.putInt(C.b.id);
-            X.putInt(C.i.id);
-            X.putInt(C.b.v ? 1 : 0);
-                          if (C.b.v)
-                          X.putInt(C.ii());}
+         {case Bit  B -> {X.putInt(B.b() ? 1 : 0);}
+          case Int  I -> {X.putInt(I.i());}
+          case Bint C -> {X.putInt(C.b.v ? 1 : 0); if (C.b.v) X.putInt(C.ii());}                                        // Send the associated integer only if it is valid
           default     ->  stop("Unknown computable type:"+c);
          }
        }
@@ -3202,11 +3198,11 @@ endmodule
       if (X.position() < X.limit())                                                                                     // Data exists in the buffer so unpack it
        {for (Computable c : Parameters)
          {switch (c)
-           {case Bit  B -> {final int id  = X.getInt(); bits.elementAt(id).constant(X.getInt() > 0);}
-            case Int  I -> {final int id  = X.getInt(); ints.elementAt(id).constant(X.getInt());}
-            case Bint C -> {final int idb = X.getInt(), idi = X.getInt(), valid = X.getInt();
-                            bits.elementAt(idb).constant(valid != 0);
-                            if (valid != 0) ints.elementAt(idi).constant(X.getInt());
+           {case Bit  B -> {bits.elementAt(B.id).constant(X.getInt() > 0);}
+            case Int  I -> {ints.elementAt(I.id).constant(X.getInt());}
+            case Bint C -> {final int valid = X.getInt();                                                               // Get the associated integer only if it is valid
+                            bits.elementAt(C.b.id).constant(valid != 0);
+                            if (valid != 0) ints.elementAt(C.i.id).constant(X.getInt());
                            }
             default -> stop("Unknown computable type:"+c);
            }
