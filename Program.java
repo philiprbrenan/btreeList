@@ -142,9 +142,6 @@ public class Program extends Test                                               
 
     final boolean s =     Build.size != null;                                                                           // An amount of memory was requested
     final int     S = s ? Build.size : 0;                                                                               // Amount of memory required
-if (remoteExecutionMode() == RemoteExecution.Modes.Server)
- {say("EEEE", remoteExecutionArea(), build.memoryFile);                                                                                //
- }
 
     mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea, memoryFile) :      // Main memory associated with either the main program or a sub program using an independent memory
                       program().mainMemory;                                                                             // Sub program uses main program memory
@@ -1603,16 +1600,20 @@ if (remoteExecutionMode() == RemoteExecution.Modes.Server)
 
     void loadMemory(String File)                                                                                        // Load memory from a file if supplied
      {if (File == null) return;
+      try (DataInputStream in = new DataInputStream(Files.newInputStream(Path.of(File))))
+       {final int N = in.readInt();
+        units = new int[N];
+
+        for (int i = 0; i < N; i++) units[i] = in.readInt();
+       }
+      catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+     }
+
+    void loadMemoryInstruction(String File)                                                                                        // Load memory from a file if supplied
+     {if (File == null) return;
       new I()
        {void a()
-         {try (DataInputStream in = new DataInputStream(Files.newInputStream(Path.of(File))))
-           {final int N = in.readInt();
-            units = new int[N];
-
-            for (int i = 0; i < N; i++) units[i] = in.readInt();
-say("LLLLL", N, remoteExecutionArea(), remoteExecutionMode());
-           }
-          catch(Exception E) {stop("Unable to read memory from file:", File,  E, traceBack(E));}
+         {loadMemory(File);
          }
         boolean trace() {return false;}
        };
@@ -3458,7 +3459,7 @@ endmodule
         final Int N = new Int("N", 10);
         final StringBuilder s = new StringBuilder();
         new For(N)
-         {void body(Int Index, Bit Continue)
+         {void body(Int Index,  Bit Continue)
            {dumpProgramState("AAAA");
             b.add(a.dup().inc());
             dumpProgramState("BBBB");
