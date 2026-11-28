@@ -179,22 +179,18 @@ class Branch extends Program implements Program.Locatable                       
        {void body()
          {lockBranch();                                                                                                 // Lock the branch
           final Slots.Find f = slots.new Find(Key); eqKey.set(f.equal);                                                 // Find result
-new I() {void a() {say("BBBBB11111", Key, eqKey);} boolean trace() {return false;}};
           new If (f.empty)                                                                                              // Found the index of a key that is greater than or equal to the search key
            {void Then()                                                                                                 // Step through top because the body of the branch is empty
              {node.set(top());
-new I() {void a() {say("BBBBB2222");} boolean trace() {return false;}};
              }
             void Else()
              {new If (f.equal.or(f.lower))                                                                              // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
                {void Then()
                  {slot.set(f.slot.i());                                                                                 // Step through slot
                   node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                  // Next node
-new I() {void a() {say("BBBBB3333");} boolean trace() {return false;}};
                  }
                 void Else()                                                                                             // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
                  {final Bint n = slots.nextSlot(f.slot.i());                                                            // Next slot
-new I() {void a() {say("BBBBB4444", n.i());} boolean trace() {return false;}};
                   new If (n)                                                                                            // Next slot is valid
                    {void Then() {node.set(data(slots.getSlotToKeyIndex(n.i()))); slot.set(n.i());}                      // Node at next level down
                     void Else() {node.set(top());}                                                                      // No next key so step down through top
@@ -265,14 +261,14 @@ new I() {void a() {say("BBBBB4444", n.i());} boolean trace() {return false;}};
   private void compactLeft ()                                                                                           // Compact a branch to the left
    {subStart("Branch.compactLeft");
     slots.compactSlotsLeft();                                                                                           // Compact the slots to match
-    slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                                              // Compact the slots to match
+    slots.compactKeysLeft((t, s)->{data(t, data(s));});                                                                // Compact the slots to match
     subFinish();
    }
 
   private void compactRight ()                                                                                          // Compact a branch to the right
    {subStart("Branch.compactRight");
     slots.compactSlotsRight();                                                                                          // Compact the slots to match
-    slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                                             // Compact the slots to match
+    slots.compactKeysRight((t, s)->{data(t, data(s));});                                                                // Compact the slots to match
     subFinish();
    }
 
@@ -339,8 +335,8 @@ new I() {void a() {say("BBBBB4444", n.i());} boolean trace() {return false;}};
         final Slots ls = left .slots;
         final Slots Rs = Right.slots;
         left .compactLeft();    Right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
-        ls.compactKeysLeft ((S, t, s)->{left .data(t, left .data(s));});
-        Rs.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
+        ls.compactKeysLeft ((t, s)->{left .data(t, left .data(s));});
+        Rs.compactKeysRight((t, s)->{Right.data(t, Right.data(s));});
 
         final Int lt = left .top();                                                                                     // Left top
         final Int Rt = Right.top();                                                                                     // Right top
@@ -367,8 +363,8 @@ new I() {void a() {say("BBBBB4444", n.i());} boolean trace() {return false;}};
         final Slots Ls = Left .slots;
         final Slots rs = right.slots;
         Left .compactLeft();    right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
-        Ls.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
-        rs.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
+        Ls.compactKeysLeft ((t, s)->{Left .data(t, Left .data(s));});
+        rs.compactKeysRight((t, s)->{right.data(t, right.data(s));});
 
         final Int lt = Left .top();                                                                                     // Left top
         final Int rt = right.top();                                                                                     // Right top
