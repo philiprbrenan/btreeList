@@ -311,9 +311,9 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  interface CompactKey {void update(Slots Slots, Int target, Int Source);}                                              // Observe the compaction of a key so that external data can be compacted in the same way
+  interface CompactKey {void update(Int target, Int Source);}                                                           // Observe the compaction of a key so that external data can be compacted in the same way
 
-  void compactKeysLeft () {compactKeysLeft((S, t, s)->{});}                                                             // Compact the keys to the left using as few moves as possible
+  void compactKeysLeft () {compactKeysLeft((t, s)->{});}                                                                // Compact the keys to the left using as few moves as possible
   void compactKeysLeft (CompactKey CompactKey)                                                                          // Compact the keys to the left using as few moves as possible while allowing the caller to observe the moves made
    {subStart("Slots.compactKeysLeft");
     final Slots slots = this;
@@ -328,7 +328,7 @@ class Slots extends Program                                                     
                 new If (K.i().gt(k.i()))                                                                                // Compaction possible
                  {void Then()
                    {moveKey(k, K, Continue);
-                    if (CompactKey != null) CompactKey.update(slots, k.i(), K.i());                                     // Expose the compaction move
+                    if (CompactKey != null) CompactKey.update(k.i(), K.i());                                            // Expose the compaction move
                    }
                  };
                }
@@ -340,7 +340,7 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  void compactKeysRight () {compactKeysRight((S, t, s)->{});}                                                           // Compact the keys to the right using as few moves as possible
+  void compactKeysRight () {compactKeysRight((t, s)->{});}                                                              // Compact the keys to the right using as few moves as possible
   void compactKeysRight (CompactKey CompactKey)                                                                         // Compact the keys to the right using as few moves as possible while allowing the caller to observe the moves made
    {subStart("Slots.compactKeysRight");
     final Slots slots = this;
@@ -355,7 +355,7 @@ class Slots extends Program                                                     
                 new If (K.i().lt(k.i()))                                                                                // Compaction possible
                  {void Then()
                    {moveKey(k, K, Continue);
-                    if (CompactKey != null) CompactKey.update(slots, k.i(), K.i());                                     // Expose the compaction move
+                    if (CompactKey != null) CompactKey.update(k.i(), K.i());                                            // Expose the compaction move
                    }
                  };
                }
@@ -492,7 +492,7 @@ class Slots extends Program                                                     
 
 //D5 Even                                                                                                               // Merge slots with an even maximum number of keys
 
-  Bit mergeFromRightEven (Slots Right) {return mergeFromRightEven(Right, (S, t, s)->{});}                               //N Merge the specified slots from the right without observing the results
+  Bit mergeFromRightEven (Slots Right) {return mergeFromRightEven(Right, (t, s)->{});}                                  //N Merge the specified slots from the right without observing the results
   Bit mergeFromRightEven (Slots Right, CompactKey CompactKey)                                                           //N Merge the specified slots from the right
    {subStart("Slots.mergeFromRightEven");
     final Slots left = this;                                                                                            // Identify left hand side
@@ -507,7 +507,7 @@ class Slots extends Program                                                     
         if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
          {left .compactSlotsLeft( );
           Right.compactSlotsRight();
-          left .compactKeysLeft(CompactKey);
+          left .compactKeysLeft( CompactKey);
           Right.compactKeysRight(CompactKey);
          }
         new ForCount (N.Sub(rc), N)                                                                                     // Merge right into left
@@ -525,7 +525,7 @@ class Slots extends Program                                                     
     return r.constant();
    }
 
-  Bit mergeFromLeftEven (Slots Left) {return mergeFromLeftEven(Left, (S, t, s)->{});}                                   // Merge the specified slots from the right
+  Bit mergeFromLeftEven (Slots Left) {return mergeFromLeftEven(Left, (t, s)->{});}                                      // Merge the specified slots from the right
   Bit mergeFromLeftEven (Slots Left, CompactKey CompactKey)                                                             // Merge the specified slots from the right
    {subStart("Slots.mergeFromLeftEven");
     final Slots right = this;
@@ -540,8 +540,8 @@ class Slots extends Program                                                     
         if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
          {Left .compactSlotsLeft ();
           right.compactSlotsRight();
-          Left .compactKeysLeft  (CompactKey);
-          right.compactKeysRight (CompactKey);
+          Left .compactKeysLeft( CompactKey);
+          right.compactKeysRight(CompactKey);
          }
         new ForCount (lc)
          {void body(Int Index)
@@ -560,7 +560,7 @@ class Slots extends Program                                                     
 
 //D5 Odd                                                                                                                // Merge slots with an odd maximum number of keys and insert the splitting key/  The process of compacting the keys can optionally be observed to align other data structures with the slots
 
-  Bit mergeFromRightOdd (Slots Right, Int Sk) {return mergeFromRightOdd(Right, Sk, (S, t, s)->{});}                     //N Merge the specified slots from the right without observing the key compaction process
+  Bit mergeFromRightOdd (Slots Right, Int Sk) {return mergeFromRightOdd(Right, Sk, (t, s)->{});}                        //N Merge the specified slots from the right without observing the key compaction process
   Bit mergeFromRightOdd (Slots Right, Int Sk, CompactKey CompactKey)                                                    //N Merge the specified slots from the right observing the key compaction process
    {subStart("Slots.mergeFromRightOdd");
     final Slots left = this;
@@ -595,7 +595,7 @@ class Slots extends Program                                                     
     return r.constant();
    }
 
-  Bit mergeFromLeftOdd (Slots Left, Int Sk) {return mergeFromLeftOdd(Left, Sk, (S, t, s)->{});}                         // Merge the specified slots from the right without observing the key compaction process
+  Bit mergeFromLeftOdd (Slots Left, Int Sk) {return mergeFromLeftOdd(Left, Sk, (t, s)->{});}                           // Merge the specified slots from the right without observing the key compaction process
   Bit mergeFromLeftOdd (Slots Left, Int Sk, CompactKey CompactKey)                                                      // Merge the specified slots from the right observing the key compaction process
    {subStart("Slots.mergeFromLeftOdd");
     final Slots right = this;
@@ -608,10 +608,10 @@ class Slots extends Program                                                     
      {void Then()
        {r.set(true);
         if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
-         {Left .compactSlotsLeft ();
+         {Left .compactSlotsLeft();
           right.compactSlotsRight();
-          Left .compactKeysLeft  (CompactKey);
-          right.compactKeysRight (CompactKey);
+          Left .compactKeysLeft( CompactKey);
+          right.compactKeysRight(CompactKey);
          }
         new ForCount (lc)
          {void body(Int Index)
@@ -1325,7 +1325,7 @@ keys     :    0   1   0   2
 """);
 
         final StringBuilder T = new StringBuilder();
-        compactKeysLeft((S, b, a)->{new I() {void a() {T.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
+        compactKeysLeft((b, a)->{new I() {void a() {T.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
         //stop(s);}};
         ok(()->T, "3->0;");
         s.check(s.print(), """
@@ -1339,7 +1339,7 @@ keys     :    2   1   0   0
 """);
 
         final StringBuilder U = new StringBuilder();
-        compactKeysRight((S, b, a)->{new I() {void a() {U.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
+        compactKeysRight((b, a)->{new I() {void a() {U.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
         //stop(s);}};
         ok(()->U, "0->3;1->2;");
         s.check(s.print(), """
@@ -1353,7 +1353,7 @@ keys     :    0   0   1   2
 """);
 
         final StringBuilder W = new StringBuilder();
-        compactKeysLeft ((S, b, a)->{new I() {void a() {W.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
+        compactKeysLeft ((b, a)->{new I() {void a() {W.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
         compactSlotsLeft();
         //stop(s);}};
         ok(()->W, "3->0;2->1;");
@@ -1368,7 +1368,7 @@ keys     :    2   1   0   0
 """);
 
         final StringBuilder X = new StringBuilder();
-        compactKeysRight ((S, b, a)->{new I() {void a() {X.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
+        compactKeysRight ((b, a)->{new I() {void a() {X.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
         compactSlotsRight();
         //stop(s);}};
         ok(()->X, "0->3;1->2;");
