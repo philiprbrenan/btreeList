@@ -3459,7 +3459,7 @@ endmodule
         final Int N = new Int("N", 10);
         final StringBuilder s = new StringBuilder();
         new For(N)
-         {void body(Int Index,  Bit Continue)
+         {void body(Int Index, Bit Continue)
            {dumpProgramState("AAAA");
             b.add(a.dup().inc());
             dumpProgramState("BBBB");
