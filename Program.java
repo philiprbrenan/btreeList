@@ -125,7 +125,6 @@ public class Program extends Test                                               
     checkLocks      = Build.checkLocks || Build.numberOfServers > 0;                                                    // Check memory locks either optionally or because we are in client server mode
     makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
     memoryFile      = Build.memoryFile;                                                                                 // Memory file
-
     final boolean p = program() == this;                                                                                // Whether we are in the executable program
     code            = p ? new Stack<>()       : program().code;                                                         // Machine code instructions
     labels          = p ? new Stack<>()       : program().labels;                                                       // Labels for instructions in this process
@@ -143,6 +142,10 @@ public class Program extends Test                                               
 
     final boolean s =     Build.size != null;                                                                           // An amount of memory was requested
     final int     S = s ? Build.size : 0;                                                                               // Amount of memory required
+if (remoteExecutionMode() == RemoteExecution.Modes.Server)
+ {say("EEEE", remoteExecutionArea(), build.memoryFile);                                                                                //
+ }
+
     mainMemory      = p || s ? new Memory(S, "program", new Memory.ReadWrite(), build.addressToArea, memoryFile) :      // Main memory associated with either the main program or a sub program using an independent memory
                       program().mainMemory;                                                                             // Sub program uses main program memory
 
@@ -1898,6 +1901,21 @@ endmodule
    {final StringJoiner j = new StringJoiner(", ");
     for (Memory m : memories()) if (m != intMemory() && m != bitMemory) j.add(md5Sum(m.units));
     return "{"+j+"}";
+   }
+
+  String printMainMemory()                                                                                              // Print main memory
+   {final int [] m = mainMemory.units;
+    final int W = 10, N = m.length, n = min(N, W*W*sqrt(W));
+    final StringBuilder s = new StringBuilder("Main Memory: "+N+"\n");
+
+    for(int i = 0; i < n; i += W)
+     {s.append(f("%4d  ", i));
+      for(int j = 0; j < W; j++) s.append(i+j < n ? f("%4d ", m[i+j]) : " ".repeat(W));
+      s.append("\n");
+     }
+    s.append("\n");
+
+    return ""+s;
    }
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
