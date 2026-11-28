@@ -245,12 +245,12 @@ class Leaf extends Program implements Program.Locatable                         
 
   private void compactLeft ()                                                                                           // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
-    slots.compactKeysLeft((S, t, s)->{data(t, data(s));});                                                              // Compact the slots to match
+    slots.compactKeysLeft((t, s)->{data(t, data(s));});                                                                 // Compact the slots to match
    }
 
   private void compactRight ()                                                                                          // Compact a leaf to the right
    {slots.compactSlotsRight();                                                                                          // Compact the slots to match
-    slots.compactKeysRight((S, t, s)->{data(t, data(s));});                                                             // Compact the slots to match
+    slots.compactKeysRight((t, s)->{data(t, data(s));});                                                                // Compact the slots to match
    }
 
 //D2 Split                                                                                                              // Split a full leaf into two leaves
@@ -291,8 +291,8 @@ class Leaf extends Program implements Program.Locatable                         
      {void Then()
        {r.set();
         left .compactLeft();    Right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
-        left .slots.compactKeysLeft ((S, t, s)->{left .data(t, left .data(s));});
-        Right.slots.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
+        left .slots.compactKeysLeft ((t, s)->{left .data(t, left .data(s));});
+        Right.slots.compactKeysRight((t, s)->{Right.data(t, Right.data(s));});
 
         left.copyMergeData(Right, new Int(maxSize).Sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
         left.slots.mergeFromRightEven(Right.slots);                                                                     // Merge the slots
@@ -312,8 +312,8 @@ class Leaf extends Program implements Program.Locatable                         
        {r.set();
         Left .compactLeft();
         right.compactRight();                                                                                           // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
-        Left .slots.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
-        right.slots.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
+        Left .slots.compactKeysLeft ((t, s)->{Left .data(t, Left .data(s));});
+        right.slots.compactKeysRight((t, s)->{right.data(t, right.data(s));});
 
         right.copyMergeData(Left, Zero, lc);                                                                            // Copy the data values associated with the slots
         right.slots.mergeFromLeftEven(Left.slots);                                                                      // Merge the slots
