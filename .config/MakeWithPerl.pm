@@ -101,8 +101,15 @@ if ($file =~ m(\.java\Z))                                                       
   my $cp = $d; $cp = "$d:$jars" if @jars;                                                                               # Class path needs the classes created by this compile and any mentioned jar files
   my $pr = "-parameters";                                                                                               # Additional parameters
 
+  my $folder  = fp $file;                                                                                               # Folder
+  my @files   = grep {fp($_) eq $folder} searchDirectoryTreesForMatchingFiles($folder, qw(java));                       # Files to compile
+  my $shaFile = fpe $folder, q(sha);                                                                                    # Sh256 file sums for each known file to detect changes
+     @files = changedFiles $shaFile, @files;                                                                            # Filter out files that have not changed
+  @files = ($file) unless @files;                                                                                       # Compile current file if all files are up to date
+  my $files = join " ", @files;                                                                                         # Files to be compiled
+
   if ($compile)                                                                                                         # Compile
-   {my $c = "javac $pr -g -d $d -cp $cp -Xlint -Xdiags:verbose $file -Xmaxerrs 8";                                      # Syntax check Java
+   {my $c = "javac $pr -g -d $d -cp $cp -Xlint -Xdiags:verbose $files -Xmaxerrs 8";                                     # Syntax check Java
     say STDERR $c;
     print STDERR qx($c);
    }
@@ -111,8 +118,7 @@ if ($file =~ m(\.java\Z))                                                       
 
     my $class = $package ? "$package.$Name" : $Name;                                                                    # Class location
     my $p = join ' ', @ARGV;                                                                                            # Collect the remaining parameters and pass them to the java application
-    my $f = $file;
-    my $c = "javac $pr -g -d $d -cp $cp $f && timeout $timeOut java -XX:+UseZGC -ea -cp $cp $class $p";
+    my $c = "javac $pr -g -d $d -cp $cp $files && timeout $timeOut java -XX:+UseZGC -ea -cp $cp $class $p";
     say STDERR $c if     $show;
     qx($c)        unless $show;;
    }
