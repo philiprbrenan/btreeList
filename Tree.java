@@ -84,7 +84,7 @@ class Tree extends Program                                                      
       p.immediate(immediate);                                                                                           // Immediate or delayed execution mode
 //    p.checkLocks(true);                                                                                               // Check locking
       p.checkLocks(false);    // While implementing remote execution
-      p.load(memoryFile);                                                                                               // Load memory from this file if possible
+      if (memoryFile != null) p.load(memoryFile);                                                                     // Load memory from this file if possible
       if (clientServer) p.cs(numberOfNodes+3);                                                                          // Number of separate memory areas
       return p;
      }
@@ -661,22 +661,16 @@ class Tree extends Program                                                      
       final Int p = root().dup();                                                                                       // Start at root
       key.set(Key);                                                                                                     // Record the search key for posterity
 
-new I() {void a() {say("AAAA1111", Key);} boolean trace() {return false;}};
       new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bit Continue)
-         {
-new I() {void a() {say("AAAA2222", p);} boolean trace() {return false;}};
-
-           new If (isLeaf(p))                                                                                            // On a leaf
+         {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
              {leaf.set(p);                                                                                              // Show the key and matching leaf, free the read lock after the key and data have been read from the leaf
-new I() {void a() {say("AAAA3333", p);} boolean trace() {return false;}};
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).new StepDown(key);                                                    // Step down details
               freeLock(p);
               p.set(d.node);                                                                                            // Step down to next level
-new I() {void a() {say("AAAA4444", p);} boolean trace() {return false;}};
               Continue.set();                                                                                           // Continue search
              }
            };
@@ -1923,7 +1917,7 @@ Height        :    1
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {protected void treeCode()
        {if (fileExists(saveFile))
-         {mainMemory.loadMemory(saveFile);
+         {mainMemory.loadMemoryInstruction(saveFile);
          }
         else
          {new ForCount(One, new Int(N+1))
@@ -2217,7 +2211,7 @@ ecf8e1fe2c47fdd6a829c8528ec746a6
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {protected void treeCode()
        {if (fileExists(saveFile))
-         {mainMemory.loadMemory(saveFile);
+         {mainMemory.loadMemoryInstruction(saveFile);
          }
         else
          {new ForCount(One, new Int(N+1))
@@ -2495,7 +2489,7 @@ aa5e343f6b3b1296e12384b4c49e105f
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {protected void treeCode()
        {if (fileExists(saveFile))
-         {mainMemory.loadMemory(saveFile);
+         {mainMemory.loadMemoryInstruction(saveFile);
          }
         else
          {new ForCount(One, new Int(N+1))
@@ -3132,7 +3126,6 @@ Leaf   at:  12 size:   2, count:   2
          };
         maxSteps(9_999_999);
         execute();
-        //say("AAAA", printTree());
        }
      };
    }
@@ -3193,14 +3186,15 @@ Leaf   at:  12 size:   2, count:   2
     //if (runTest(12)) test_rootFanOut2();
     //if (runTest(13)) test_rootFanOut3();
     if (runTest(14)) test_traverse();
-    if (runTest(15)) {}//test_csFind();
+    if (runTest(15)) test_csFind();
     if (runTest(16)) {}//test_csDelete();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_csDelete();
-    test_csFind();
+    //test_csFind();
+    test_deleteAscending();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
